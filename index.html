@@ -7686,7 +7686,7 @@ window.__vhGame = function () { (function () {
     stop: function () { if (COOP.room) { try { COOP.room.leave(); } catch (e) {} } COOP.room = null; COOP.on = false; COOP.pe = null; COOP.rp = null; if (COOP.timer) { clearInterval(COOP.timer); COOP.timer = 0; } COOP.setStatus(""); COOP.ui(); },
     setStatus: function (t) { COOP.status = t; COOP.ui(); },
     link: function () {
-      var base = "https://raposiojd-dev.github.io/voidhammer/";
+      var base = "https://raposiojd-dev.github.io/Voidhammer/";
       try { if (/^https?:$/.test(location.protocol) && !/claude/i.test(location.hostname) && !/usercontent|claudeusercontent/i.test(location.hostname)) base = location.href.split("#")[0]; } catch (e) {}
       return base + "#join-" + COOP.code;
     },
