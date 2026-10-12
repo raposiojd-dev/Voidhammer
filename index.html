@@ -7509,7 +7509,7 @@ window.__vhGame = function () { (function () {
   }
   // ---- v97: two-player co-op in walk-view areas (host runs the enemies) ----
   var COOP = {
-    room: null, code: "", host: false, on: false, seq: 0, hits: [], hurt: [], hseen: 0, useen: 0, pe: null, gotSnap: 0, hitIds: {}, status: "",
+    room: null, code: "", host: false, on: false, seq: 0, hits: [], hurt: [], hseen: 0, useen: 0, pe: null, gotSnap: 0, hitIds: {}, status: "", chat: [], cseen: 0, clog: [],
     guest: function () { return !!(COOP.on && !COOP.host && COOP.sync() && COOP.pe && COOP.pe.sn); },
     sync: function () { return COOP.shared() && !(AR && AR.sp && AR.sp.over); },
     dm: function () { return COOP.on && (COOP.sync() || (F && F.fr && !F.fr.gone)) ? 2 : 1; },
@@ -7542,7 +7542,7 @@ window.__vhGame = function () { (function () {
     },
     // what I tell the other player
     mine: function () {
-      var o = { vh: 1, ar: AR ? AR.id : "", nm: (ORIGINS[ovWho()] || { name: "Friend" }).name, sn: null };
+      var o = { vh: 1, ch: COOP.chat, ar: AR ? AR.id : "", nm: (ORIGINS[ovWho()] || { name: "Friend" }).name, sn: null };
       if (AR) {
         var p = AR.p; o.x = Math.round(p.x * 2) / 2; o.y = Math.round(p.y * 2) / 2; o.fx = p.face.x; o.fy = p.face.y; o.hp = Math.round(p.hp * 10) / 10; o.mx = p.max;
         o.at = p.atk > 0 ? 1 : 0; o.an = Math.round(p.anim * 10) / 10; o.lk = pLook();
@@ -7605,6 +7605,11 @@ window.__vhGame = function () { (function () {
       var sh = COOP.sync();
       if (pr && !COOP.synced) { COOP.synced = 1; (COOP.pe.hi || []).forEach(function (h) { COOP.hseen = Math.max(COOP.hseen, h.s); }); (COOP.pe.hu || []).forEach(function (h) { COOP.useen = Math.max(COOP.useen, h.s); }); }
       if (!pr) COOP.synced = 0;
+      if (pr && COOP.pe && COOP.pe.ch) {
+        if (!COOP.cinit) { COOP.cinit = 1; COOP.pe.ch.forEach(function (m) { COOP.cseen = Math.max(COOP.cseen, m.s); }); }
+        COOP.pe.ch.forEach(function (m) { if (m.s > COOP.cseen) { COOP.cseen = m.s; COOP.addLog(COOP.pe.nm || "Friend", m.t, false); } });
+      }
+      if (!pr) COOP.cinit = 0;
       if (sh && pr) {
         var pe2 = COOP.pe;
         if (COOP.host) (pe2.hi || []).forEach(function (h) { if (h.s > COOP.hseen) { COOP.hseen = h.s; COOP.applyHit(h); } });
@@ -7614,6 +7619,22 @@ window.__vhGame = function () { (function () {
         }
       }
       COOP.hostDouble(); COOP.battle(); COOP.push(); COOP.ui();
+    },
+    // ---- chat ----
+    say: function (t) {
+      t = String(t || "").replace(/\s+/g, " ").trim().slice(0, 140); if (!t || !COOP.on) return;
+      COOP.chat.push({ s: ++COOP.seq, t: t }); if (COOP.chat.length > 6) COOP.chat.shift();
+      COOP.addLog("You", t, true); COOP.push();
+    },
+    addLog: function (who, t, me) {
+      COOP.clog.push({ w: who, t: t, me: me, at: Date.now() }); if (COOP.clog.length > 40) COOP.clog.shift();
+      try { sfx("click"); } catch (e) {}
+      COOP.drawLog();
+    },
+    drawLog: function () {
+      var now = Date.now(), box = document.getElementById("mplog"), ov = document.getElementById("mpover");
+      if (box) { box.textContent = ""; COOP.clog.slice(-12).forEach(function (m) { var d = document.createElement("div"); d.style.color = m.me ? "#f6e3ae" : "#9be0ff"; d.textContent = m.w + ": " + m.t; box.appendChild(d); }); box.scrollTop = box.scrollHeight; }
+      if (ov) { ov.textContent = ""; COOP.clog.filter(function (m) { return now - m.at < 9000; }).slice(-4).forEach(function (m) { var d = document.createElement("div"); d.style.cssText = "background:#000000a8;padding:2px 6px;margin-top:2px;border-radius:3px;color:" + (m.me ? "#f6e3ae" : "#9be0ff"); d.textContent = m.w + ": " + m.t; ov.appendChild(d); }); }
     },
     // ---- panel ----
     // transport: PeerJS (WebRTC, no account) first, claude.ai room as a fallback
@@ -7683,7 +7704,7 @@ window.__vhGame = function () { (function () {
         }).then(function (nr) { if (nr) COOP.begin(nr, code, host); }).catch(function (e) { COOP.setStatus("Could not connect: " + ((e && e.message) || "try again")); });
       });
     },
-    stop: function () { if (COOP.room) { try { COOP.room.leave(); } catch (e) {} } COOP.room = null; COOP.on = false; COOP.pe = null; COOP.rp = null; if (COOP.timer) { clearInterval(COOP.timer); COOP.timer = 0; } COOP.setStatus(""); COOP.ui(); },
+    stop: function () { if (COOP.room) { try { COOP.room.leave(); } catch (e) {} } COOP.room = null; COOP.on = false; COOP.pe = null; COOP.rp = null; COOP.chat = []; COOP.cinit = 0; if (COOP.timer) { clearInterval(COOP.timer); COOP.timer = 0; } COOP.setStatus(""); COOP.ui(); },
     setStatus: function (t) { COOP.status = t; COOP.ui(); },
     link: function () {
       var base = "https://raposiojd-dev.github.io/Voidhammer/";
@@ -7698,6 +7719,7 @@ window.__vhGame = function () { (function () {
         else line = "Connected: " + (pr.nm || "player") + (COOP.shared() ? " (with you)" : " (in another place)");
       }
       document.getElementById("mpstat").textContent = line;
+      var cb = document.getElementById("mpchatbox"); if (cb) cb.hidden = !COOP.on;
       document.getElementById("mpidle").hidden = COOP.on; document.getElementById("mpon").hidden = !COOP.on;
       if (COOP.on) { document.getElementById("mpcode").textContent = COOP.code; }
       var jb2 = document.getElementById("mpjoinb"); if (jb2) jb2.hidden = !COOP.canJoin();
@@ -7713,8 +7735,14 @@ window.__vhGame = function () { (function () {
         '<div id="mpidle"><button id="mphost" style="width:100%;padding:9px;margin-bottom:8px;background:#3a2a14;color:#f6e3ae;border:1px solid #d8a030;font:600 12px monospace">Host a game</button>' +
         '<div style="display:flex;gap:6px"><input id="mpin" maxlength="6" placeholder="CODE" style="flex:1;min-width:0;padding:8px;background:#0c0a08;color:#f6e3ae;border:1px solid #8a5a2a;font:600 13px monospace;text-transform:uppercase"><button id="mpjoin" style="padding:8px 12px;background:#3a2a14;color:#f6e3ae;border:1px solid #d8a030;font:600 12px monospace">Join</button></div></div>' +
         '<div id="mpon" hidden>Code <b id="mpcode" style="font-size:16px;letter-spacing:.15em"></b><div style="display:flex;gap:6px;margin-top:8px"><button id="mpcopy" style="flex:1;padding:8px;background:#3a2a14;color:#f6e3ae;border:1px solid #d8a030;font:600 11px monospace">Copy invite link</button><button id="mpleave" style="padding:8px;background:#3a1414;color:#f6e3ae;border:1px solid #b24a3a;font:600 11px monospace">Leave</button></div></div>' +
+        '<div id="mpchatbox" hidden style="margin-top:8px"><div id="mplog" style="height:84px;overflow:auto;background:#0c0a08;border:1px solid #5a3a1a;padding:4px;font-size:11px"></div><div style="display:flex;gap:6px;margin-top:6px"><input id="mpmsg" maxlength="140" placeholder="Say something…" style="flex:1;min-width:0;padding:8px;background:#0c0a08;color:#f6e3ae;border:1px solid #8a5a2a;font:13px monospace"><button id="mpsend" style="padding:8px 12px;background:#3a2a14;color:#f6e3ae;border:1px solid #d8a030;font:600 12px monospace">Send</button></div></div>' +
         '<div style="margin-top:8px;opacity:.7;font-size:10px">Walk the world map together, clear towns, caves and gates, and join map battles the host starts. Foes are twice as strong while you play together. You both keep your own gear, loot and save. The host runs the enemies.</div>';
       document.body.appendChild(box); document.body.appendChild(tab);
+      var ov = document.createElement("div"); ov.id = "mpover"; ov.setAttribute("style", "position:fixed;left:8px;top:calc(4.2rem + env(safe-area-inset-top,0px));z-index:99996;max-width:70vw;font:11px/1.3 monospace;pointer-events:none"); document.body.appendChild(ov);
+      setInterval(function () { if (COOP.clog.length) COOP.drawLog(); }, 2000);
+      var mi = box.querySelector("#mpmsg"), send = function () { var v = mi.value; mi.value = ""; COOP.say(v); };
+      box.querySelector("#mpsend").addEventListener("click", send);
+      ["keydown", "keyup", "keypress"].forEach(function (n) { mi.addEventListener(n, function (e) { e.stopPropagation(); if (n === "keydown" && e.key === "Enter") send(); }); });
       var jb = document.createElement("button"); jb.id = "mpjoinb"; jb.hidden = true; jb.textContent = "Join your friend's battle";
       jb.setAttribute("style", "position:fixed;left:50%;transform:translateX(-50%);bottom:calc(6.5rem + env(safe-area-inset-bottom,0px));z-index:99998;padding:.8rem 1.3rem;background:#3a1a0e;color:#ffe9b0;border:2px solid #e0a030;font:700 .95rem monospace;letter-spacing:.05em");
       jb.addEventListener("click", function (e) { e.stopPropagation(); COOP.bJoin(); COOP.ui(); });
