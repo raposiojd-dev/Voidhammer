@@ -985,7 +985,7 @@ window.__vhGame = function () { (function () {
         log("Cleared the road for Lord Vashen. Paid in full.", "e"); S.contract = null;
       }
       if (B.kind === "void") { S.voidR = Math.min(VOIDMAX, S.voidR + 14); B.out.push("The edge falls back a little."); }
-      if (B.kind === "rift") { S.rifts = S.rifts.filter(function (r) { return r.id !== B.riftId; }); S.voidR = Math.min(VOIDMAX, S.voidR + 80); S.pushes++; if (S.pushes >= SEAL_AT && !S.sealed) sealVoid(); else if (!S.sealed) B.out.push("Push-back " + S.pushes + " of " + SEAL_AT + ". " + (SEAL_AT - S.pushes) + " more to seal the Void."); S.nextRift = Math.max(S.nextRift, S.day + 25); addXp(150); B.out.push("The Rift closes. The edge is driven back."); news("A Rift was closed. The Void fell back."); }
+      if (B.kind === "rift") { S.rifts = S.rifts.filter(function (r) { return r.id !== B.riftId; }); S.voidR = Math.min(VOIDMAX, S.voidR + 80); S.pushes++; (S.riftBack = S.riftBack || []).push(S.day + 60 + Math.floor(Math.random() * 31)); if (S.pushes >= SEAL_AT && !S.sealed) sealVoid(); else if (!S.sealed) B.out.push("Push-back " + S.pushes + " of " + SEAL_AT + ". " + (SEAL_AT - S.pushes) + " more to seal the Void."); S.nextRift = Math.max(S.nextRift, S.day + 25); addXp(150); B.out.push("The Rift closes. The edge is driven back. It will not stay shut forever."); news("A Rift was closed. The Void fell back."); }
       if (B.kind === "lord") { lordRespawn(B.fac); news("You defeated " + B.title + "."); }
       if (B.siegeId) { var sg = site(B.siegeId); if (sg) { captureSite(sg, "player"); B.out.push("You hold " + sg.name + "."); } }
       log("Won a fight against " + (B.title || (B.kind === "void" ? "Void-touched" : "bandits")) + ". Lost " + lost + " men.", "e");
@@ -1194,6 +1194,7 @@ window.__vhGame = function () { (function () {
     dominionDay(); allyDay(); S.enemies = S.enemies.filter(function (e) { return !e.dead; });
     // rifts
     if (!S.sealed && S.rifts.length < 3 && S.day >= S.nextRift) { S.rifts.push({ id: S.eid++, a: rnd(0, 6.283), cool: 0 }); S.nextRift = S.day + 25; toast("A new Rift has torn open at the edge."); news("A new Rift opened at the edge of the Void."); }
+    if (!S.sealed && !noVoid() && S.riftBack && S.riftBack.length) { var rdue = S.riftBack.filter(function (d) { return S.day >= d; }); if (rdue.length) { S.riftBack = S.riftBack.filter(function (d) { return S.day < d; }); S.pushes = Math.max(0, S.pushes - rdue.length); rdue.forEach(function () { S.rifts.push({ id: S.eid++, a: rnd(0, 6.283), cool: 0 }); }); toast("A Rift you closed has torn open again. Seal progress " + S.pushes + " of " + SEAL_AT + "."); news("A closed Rift reopened. The Void is pushing back."); } }
   }
 
   function moveEnemies(dd) {
@@ -2875,7 +2876,7 @@ window.__vhGame = function () { (function () {
     var dc = Math.round(dist(S.px, S.py, CX, CY));
     if (noVoid()) h += "<p><b>There is no Void in this world.</b> Only the realms remain.</p>";
     else if (S.sealed) h += "<p><b>The Void is sealed.</b> The edge is gone and no Rift can open. Keep the realms at peace and it stays that way.</p>";
-    else h += '<p>Seal progress: ' + S.pushes + ' of ' + SEAL_AT + ' Rifts closed. Close ' + SEAL_AT + ' and the Void is driven off the map for good.</p>';
+    else h += '<p>Seal progress: ' + S.pushes + ' of ' + SEAL_AT + ' Rifts closed. Close ' + SEAL_AT + ' and the Void is driven off the map for good. Closed Rifts can tear open again after two or three months, so do not take too long.' + (S.riftBack && S.riftBack.length ? ' The soonest may return in about ' + Math.max(1, Math.min.apply(null, S.riftBack) - S.day) + ' days.' : '') + '</p>';
     if (!S.sealed && !noVoid()) h += "<p>The edge is " + Math.round(S.voidR) + " from the heart and closes about " + voidRate().toFixed(1) + " a day. " + S.rifts.length + " Rift" + (S.rifts.length === 1 ? "" : "s") + " open. You are " + dc + " from the heart.</p>";
     if (!S.sealed) h += '<p class="dim-t">Push it back: close a Rift at the edge (large fight, +80), kill Void-touched bands (+14 each), build Ward-lanterns in villages, and keep the realms at peace. Wars make it hungrier.</p>';
     if (S.news.length) {
