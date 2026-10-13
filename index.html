@@ -512,7 +512,7 @@ window.__vhGame = function () { (function () {
     var sz = szv(), nv = noVoid();
     function scx(v) { return CX + (v - CX) * sz; }
     sites.forEach(function (q) { q.x = scx(q.x); q.y = scx(q.y); });
-    enemies.forEach(function (q) { q.x = scx(q.x); q.y = scx(q.y); });
+    enemies.forEach(function (q) { q.x = scx(q.x); q.y = scx(q.y); }); ovFeedVillages(sites);
     var NS = {
       v: 1, day: 0, tickDay: 0, speed: 0, crowns: 15 + DF.start, vets: { 2: 0, 3: 0, 4: 0 }, vxp: 0, grain: 0, salvage: 0, loot: {}, gear: {}, xp: 0, skills: {},
       from: {}, kael: "away", held: ["forge", "meal", "mother", "kill", "name"], burned: [],
@@ -581,6 +581,7 @@ window.__vhGame = function () { (function () {
   if (!S.allies) S.allies = [];
   if (!S.hstate) S.hstate = {};
   if (!S.mc) addDominionToSave(S);
+  try { if (ovFeedVillages(S.sites)) S.total = S.sites.length; } catch (e) {}
   if (!S.tut) S.tut = {};
   if (!S.camp) S.camp = { on: false, f: {}, cleared: {}, kills: 0 };
   if (!S.story) S.story = { on: false, seen: {}, ch: {}, fin: null, cur: null };
@@ -968,7 +969,7 @@ window.__vhGame = function () { (function () {
     loseTroops(lost); fadeSparks();
     if (B.allies && B.allies.length) allyLosses(win ? (forceWin ? (how === "burn" ? 0.1 : (1 - pr)) : (1 - pr)) : Math.min(0.85, (1 - pr) + 0.25), win);
     if (win && B.kind === "lord" && B.fac === "metal" && S.mc) { S.mc.defeats++; }
-    if (win && B.kind === "lord") dipBattle(B.fac);
+    if (win && B.kind === "lord") { dipBattle(B.fac); ovRelief(B.eid); }
     if (win && B.kind === "lord" && Math.random() < (B.fac === "metal" ? 0.5 : 0.22) * (1 + 0.3 * tier())) { var my2 = genItem(5, null, 3 + tier()), c2 = cp(); if (!c2.items) c2.items = []; c2.items.push(my2); toast("The hero fell and left " + my2.name + "."); log("A fallen hero left behind " + my2.name + ", a mythic " + SLOTN[my2.slot].toLowerCase() + ".", "e"); }
     if (win) {
       var loot = Math.round(DF.loot * B.en0 * (B.kind === "void" || B.kind === "rift" ? 3 : 1.6) * (1 + 0.15 * (S.skills.scavenger || 0)) * (1 + 0.08 * Math.min(1, (S.gear.blades || 0) / Math.max(1, B.t0))));
@@ -1147,7 +1148,7 @@ window.__vhGame = function () { (function () {
       if (tgt) {
         tgt.gar -= e.n * 0.07 * e.q;
         if (tgt.gar <= 0) { captureSite(tgt, e.fac); e.n = Math.max(10, e.n * 0.8); e.dest = null; }
-        else if (tgt.owner === "player" && dayN() % 4 === 0) toast(e.name + " is besieging " + tgt.name + ".");
+        else if (tgt.owner === "player") ovSiege(tgt, e);
       }
       lords.forEach(function (o) {
         if (o.id > e.id && !o.dead && !e.dead && atWar(e.fac, o.fac) && dist(e.x, e.y, o.x, o.y) < 26) {
@@ -7989,6 +7990,65 @@ window.__vhGame = function () { (function () {
     }
     return false;
   }
+  // ---- every town needs enough villages to feed it: towns 3, castles 2 (a town eats 2.5 a day, each village sends 0.9) ----
+  function ovFeedVillages(sites) {
+  var OVVN = ["Fieldhaven", "Oakmere", "Brindle", "Harrowgate", "Wheatley", "Marrowfen", "Clayford", "Dunmere", "Thistledown", "Rushbrook", "Wetherby", "Larkhollow", "Copperfield", "Elmstead", "Ravenscar", "Sedgemoor", "Barleycross", "Hollinwood"];
+    var sz = szv(), made = 0, used = {};
+    sites.forEach(function (q) { used[q.name] = 1; });
+    sites.filter(function (t) { return t.type !== "village"; }).forEach(function (t) {
+      var have = sites.filter(function (v) { return v.type === "village" && v.seat === t.id; }).length, want = t.type === "castle" ? 2 : 3, k;
+      for (k = have; k < want; k++) {
+        var base = Math.atan2(CY - t.y, CX - t.x), i, placed = false, nm;
+        for (i = 0; i < 24 && !placed; i++) {
+          var ang = base + (i % 2 ? 1 : -1) * (0.5 + 0.45 * Math.floor(i / 2)) + k * 0.9, r = (95 + 18 * Math.floor(i / 6)) * sz, x = t.x + Math.cos(ang) * r, y = t.y + Math.sin(ang) * r;
+          if (Math.hypot(x - CX, y - CY) > 1500 * sz) continue;
+          if (sites.some(function (o) { return Math.hypot(o.x - x, o.y - y) < 62 * sz; })) continue;
+          nm = OVVN.filter(function (n) { return !used[n]; })[0] || (t.name + " Farms " + (k + 1)); used[nm] = 1;
+          var v = mkV(t.id + "_vf" + k, nm, x, y, 56, 22, 36, 56, 32, "", t.id); v.seat = t.id; v.owner = t.owner; sites.push(v); placed = true; made++;
+        }
+      }
+    });
+    return made;
+  }
+  // ---- sieges: tell the player when one of their towns is attacked, and reward breaking the siege ----
+  function ovSiege(tgt, e) {
+    var first = !tgt.atk || S.day - tgt.atk.day > 2;
+    tgt.atk = { id: e.id, name: e.name, day: S.day };
+    if (!first) return;
+    S.speed = 0; try { sfx("sting"); } catch (er) {}
+    toast(tgt.name + " is under attack by " + e.name + "! Rush there to defend it.");
+    news(e.name + " has laid siege to " + tgt.name + ".");
+  }
+  function ovRelief(eid) {
+    var e = enemyById(eid); if (!e) return;
+    S.sites.forEach(function (s) {
+      if (s.owner !== "player" || s.type === "village" || !s.atk) return;
+      if (s.atk.id !== eid && Math.hypot(e.x - s.x, e.y - s.y) > 70) return;
+      s.gar = Math.min(s.gmax * 1.5, s.gar + 30 + 10 * tier()); s.atk = null; bump(s, 4);
+      toast("You broke the siege of " + s.name + ". The garrison cheers."); news("You broke the siege of " + s.name + ".");
+    });
+  }
+  (function () {
+    var el = document.createElement("div"); el.id = "sgalert";
+    el.style.cssText = "position:fixed;left:50%;transform:translateX(-50%);top:214px;z-index:60;display:none;max-width:92vw;padding:8px 12px;border:1px solid #c0503a;background:rgba(40,12,10,.92);color:#f2c8b8;font:600 13px Georgia,serif;border-radius:6px;text-align:center;align-items:center;gap:10px";
+    el.innerHTML = '<span id="sgtxt"></span> <button id="sgrush" style="margin-left:8px;padding:6px 12px;background:#a8382a;color:#fff;border:1px solid #e8b050;border-radius:4px;font:700 12px Georgia,serif;letter-spacing:1px">RUSH</button>';
+    document.body.appendChild(el);
+    var cur = null;
+    el.querySelector("#sgrush").addEventListener("click", function (ev) { ev.stopPropagation(); if (!cur) return; if (AR) leaveArea(); S.target = { t: "p", x: cur.x, y: cur.y, site: cur.id }; S.speed = 1; pausedSpeed = 1; });
+    setInterval(function () {
+      var show = null;
+      try {
+        if (S && S.sites && !B && !sheet && !S.ended) S.sites.forEach(function (s) {
+          if (s.owner !== "player" || !s.atk) return;
+          var l = enemyById(s.atk.id);
+          if (!l || S.day - s.atk.day > 2 || Math.hypot(l.x - s.x, l.y - s.y) > 80) { if (!l || Math.hypot(l.x - s.x, l.y - s.y) > 80) s.atk = null; return; }
+          if (!show || s.gar < show.gar) show = s;
+        });
+      } catch (er) {}
+      cur = show; el.style.display = show ? "flex" : "none";
+      if (show) el.querySelector("#sgtxt").textContent = "⚔ " + show.name + " is under attack by " + show.atk.name + " · garrison " + Math.max(0, Math.round(show.gar));
+    }, 500);
+  })();
 
   // ---- input ----
   (function () {
