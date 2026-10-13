@@ -890,6 +890,7 @@ window.__vhGame = function () { (function () {
   function arrive(id) {
     var s = site(id); if (!s) return;
     bump(s, 2); autoProvision(s);
+    if (ovAttacker(s)) { toast("You ride to the defence of " + s.name + "!"); ovDefend(s); return; }
     openSheet("site", id);
   }
 
@@ -2824,7 +2825,7 @@ window.__vhGame = function () { (function () {
   }
   function ownBody(s) {
     var inc = Math.round(incomeOf(s) * 10) / 10;
-    var h = '<div class="sec">Your hold</div>';
+    var h = ovDefRow(s) + '<div class="sec">Your hold</div>';
     h += '<div class="row"><div class="rd">Garrison<small>Each man costs 0.2 crowns a day. Income after costs: ' + inc + ' crowns a day.</small></div><b>' + Math.round(s.gar) + "</b></div>";
     h += row("Add 5 men to the garrison", "They stay here and guard it.", "Add", "garadd", s.id, "", T() < 6);
     h += row("Take 5 men back", "Leaves it weaker.", "Take", "garsub", s.id, "", s.gar < 11);
@@ -8405,7 +8406,7 @@ window.__vhGame = function () { (function () {
     return '<div class="row"><div class="rd">Garrison<small>' + Math.round(s.gar) + " of " + g.cap + " men. " + (g.full ? "Full, no more arrive." : g.r > 0 ? "About " + (g.r * 7).toFixed(1) + " a week arrive (+" + g.r.toFixed(2) + "/day)." : "Losing men: " + g.r.toFixed(2) + "/day.") + '</small></div><b style="color:' + (g.r < 0 ? "#e0644a" : "#9bc27a") + '">' + (g.full ? "full" : (g.r >= 0 ? "+" : "") + g.r.toFixed(2) + "/d") + "</b></div>";
   }
   function ovVillList(s) {
-    var vs = S.sites.filter(function (v) { return v.type === "village" && v.seat === s.id; }), h = ovGarLine(s) + '<div class="sec">Villages feeding ' + s.name + "</div>", sent = 0;
+    var vs = S.sites.filter(function (v) { return v.type === "village" && v.seat === s.id; }), h = ovDefRow(s) + ovGarLine(s) + '<div class="sec">Villages feeding ' + s.name + "</div>", sent = 0;
     if (!vs.length) return h + '<p class="dim-t">No villages are attached. This place gets no grain from the fields. Its stores only drain.</p>';
     vs.forEach(function (v) {
       var r = ovSend(v, s); sent += r.n;
@@ -8468,6 +8469,20 @@ window.__vhGame = function () { (function () {
       var nm = hit.kind === "bandit" ? "Bandits" : hit.name || "Enemies";
       WAITIN.al = nm + " approach! Paused."; toast(nm + " are closing in on " + WAITIN.name + "!"); ovWaitUi(WAITIN.al);
     } else { if (S.speed > 0) WAITIN.al = null; ovWaitUi(WAITIN.al); }
+  }
+  // ---- defend a besieged town of yours: fight the army at the gates, with the garrison beside you ----
+  function ovAttacker(s) {
+    if (!s || s.owner !== "player" || !s.atk) return null;
+    var e = enemyById(s.atk.id); return e && !e.dead && Math.hypot(e.x - s.x, e.y - s.y) < 110 ? e : null;
+  }
+  function ovDefend(s) {
+    var e = ovAttacker(s); if (!e) { toast("The attackers have gone."); return; }
+    startBattle(e);
+    if (B) { var g = Math.max(0, s.gar) * 0.6; B.p0 += g; B.pCur = B.p0; B.defId = s.id; B.title = "Defend " + s.name; }
+  }
+  function ovDefRow(s) {
+    var e = ovAttacker(s); if (!e) return "";
+    return '<div class="row"><div class="rd"><b style="color:#f08a70">' + s.name + ' is under attack</b><small>' + (e.name || "An army") + " of about " + Math.round(e.n) + " is at the gates. Fight beside the garrison (" + Math.round(s.gar) + " men).</small></div><button class=\"amber\" data-act=\"ovdef\" data-a=\"" + s.id + "\" data-b=\"\">Defend</button></div>";
   }
 
   // ---- input ----
@@ -8605,6 +8620,7 @@ window.__vhGame = function () { (function () {
       case "sgbuild": ovSgBuild(v, y); break;
       case "sgcamp": ovCampOpen(x); break;
       case "ovvil": openSheet("site", x); break;
+      case "ovdef": ovDefend(site(x)); break;
       case "assault":
         if (v && hostileSite(v)) { startBattle({ id: -1, kind: "siege", title: "Assault on " + v.name, n: Math.round(v.gar), q: v.wall * ovDefAdv(v), siegeId: v.id }); return; } break;
       case "starve":
