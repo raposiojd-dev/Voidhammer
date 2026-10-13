@@ -1,13 +1,3 @@
-<!doctype html>
-<html lang="en"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-<meta name="theme-color" content="#0c0b09">
-<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Voidhammer">
-<link rel="manifest" href="manifest.webmanifest">
-<link rel="apple-touch-icon" href="icons/icon-180.png">
-<link rel="icon" href="icons/icon-192.png">
 <title>Voidhammer Campaign</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Cinzel:wght@500;700&family=IM+Fell+English:ital@0;1&display=swap">
 <style>
@@ -60,9 +50,9 @@ button.cast { color: #e6dcff; border-color: #9a7cd0; background: rgba(154,124,20
 .zoom button { width: 2.6rem; padding: 0; font-size: 1rem; background: var(--bg); }
 .enter { gap: 0.6rem; flex-wrap: wrap; position: absolute; left: 1rem; right: 1rem; bottom: 5.2rem; display: flex; justify-content: center; pointer-events: none; }
 .enter button { pointer-events: auto; padding: 0.8rem 1.6rem; }
-.bar { position: absolute; left: 0; right: 0; bottom: 0; display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); background: var(--bg); border-top: 1px solid var(--line); padding-bottom: env(safe-area-inset-bottom, 0px); }
-.mini { position: absolute; left: 10px; bottom: calc(4.3rem + env(safe-area-inset-bottom, 0px) + 10px); width: 108px; height: 108px; border: 1px solid rgba(200,135,58,0.5); border-radius: 8px; background: #0c0b09; box-shadow: 0 2px 10px rgba(0,0,0,0.6); pointer-events: none; z-index: 2; }
-.bar button { border: 0; border-radius: 0; color: var(--muted); min-height: 3.7rem; letter-spacing: 0.1em; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.2rem; font-size: 0.62rem; background: linear-gradient(#17140f, #0e0c09); }
+.bar { position: absolute; left: 0; right: 0; bottom: 0; display: grid; grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); background: var(--bg); border-top: 1px solid var(--line); padding-bottom: env(safe-area-inset-bottom, 0px); }
+.mini { position: absolute; left: 10px; bottom: calc(4rem + env(safe-area-inset-bottom, 0px) + 10px); width: 108px; height: 108px; border: 1px solid rgba(200,135,58,0.5); border-radius: 8px; background: #0c0b09; box-shadow: 0 2px 10px rgba(0,0,0,0.6); pointer-events: none; z-index: 2; }
+.bar button { border: 0; border-radius: 0; color: var(--muted); min-height: 3.4rem; overflow: hidden; letter-spacing: 0.1em; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.2rem; font-size: 0.62rem; background: linear-gradient(#17140f, #0e0c09); }
 .bar button:active { color: var(--amber); }
 
 #title { position: absolute; inset: 0; z-index: 20; background: #0b0912; display: flex; align-items: flex-end; justify-content: center; }
@@ -8065,13 +8055,13 @@ window.__vhGame = function () { (function () {
   function ovSgN(st) { return st && st.type === "castle" ? 3 : 2; }
   function ovDefAdv(st) { return 1.35 + 0.1 * (ovSgN(st) - 1); }
   function siegeBody(s) {
-    var h = siegeBodyOld(s), e = ovEngOf(s.id), n = ovSgN(s), k;
-    h += '<div class="warn"><b>' + n + " layers of wall.</b> " + (n === 3 ? "An outer wall, an inner wall, and the keep." : "An outer wall and the inner ward.") + " Your men cannot cross a wall without a ladder, a tower, a ram at the gate, or a breach. The garrison fights from behind stone and will always fight harder than you would in the open.</div>";
-    h += '<p class="dim-t">Siege works ready: ' + e.lad + " ladders, " + e.ram + " rams, " + e.twr + " towers, " + e.cat + " catapults. Without any, your men carry two rough ladders per wall. Everything you bring is used up in the assault.</p>";
-    for (k in SGE) {
-      var d = SGE[k];
-      h += row(d.n + " · " + d.c + " crowns · " + d.d + (d.d > 1 ? " days" : " day"), d.t + " (ready: " + e[k] + ", most you can bring: " + d.m + ")", "Build", "sgbuild", s.id, k, S.crowns < d.c || e[k] + d.q > d.m || T() < 1);
-    }
+    var f = FAC[s.owner], reb = s.owner === "rebel", n = ovSgN(s), eff = Math.round(s.gar * s.wall * ovDefAdv(s)), my = Math.round(pStrength()), e = ovEngOf(s.id), k;
+    var h = '<div class="warn"><b>' + (reb ? "The rebels hold " : f.name + " hold ") + s.name + '.</b> ' + (reb ? "The people rose when the grain ran out. Any lord may take it back." : "You are at war. The gates are shut to you.") + "</div>";
+    h += "<p>The garrison is about " + Math.round(s.gar / 2) * 2 + " men behind " + n + " layers of wall (" + (n === 3 ? "outer wall, inner wall and keep" : "outer wall and inner ward") + "), worth about " + eff + " in a fight with the defenders' advantage. Your column is worth about " + my + ".</p>";
+    h += '<p class="dim-t">' + (my > eff * 1.15 ? "You are strong enough to try the walls." : my > eff * 0.7 ? "It would be close. Build engines and starve them first." : "Do not assault. You would be cut down.") + " Ready: " + e.lad + " ladders, " + e.ram + " rams, " + e.twr + " towers, " + e.cat + " catapults. Without any, your men carry two rough ladders per wall.</p>";
+    h += row("Make camp and build siege engines", "Choose what to build and watch it go up. Your army eats and the garrison starves while you work. A relief army may come.", "Make camp", "sgcamp", s.id, "", T() < 1, "amber");
+    h += row("Assault the walls now", "With whatever siege works you have built, or rough ladders if none. You will lose more men than in the open.", "Assault", "assault", s.id, "", T() < 3, "amber");
+    if (!reb) h += row("Sue for peace with " + f.name, peaceCost() + " crowns", "Pay", "peace", s.owner, "", S.crowns < peaceCost());
     return h;
   }
   function ovSgBuild(v, k) {
@@ -8293,6 +8283,97 @@ window.__vhGame = function () { (function () {
     if (u.hp < u.hpm) { g.fillStyle = "rgba(0,0,0,0.6)"; g.fillRect(x - 14, y - (u.eng === "twr" ? 66 : 28), 28, 3); g.fillStyle = "#c0503a"; g.fillRect(x - 14, y - (u.eng === "twr" ? 66 : 28), 28 * Math.max(0, u.hp / u.hpm), 3); }
   }
 
+  // ---- the siege camp: pick what to build, watch it go up, then assault ----
+  var CAMP = null, CAMPDAY = 1.4;
+  (function () {
+    var el = document.createElement("div"); el.id = "sgcamp";
+    el.style.cssText = "position:fixed;inset:0;z-index:75;background:#0e0c09;display:none;flex-direction:column;font-family:Georgia,serif;color:#e8dcc0";
+    el.innerHTML = '<div id="sgc_hd" style="padding:12px 14px 4px;font:600 17px Georgia,serif;color:#e8c880"></div><canvas id="sgc_cv" style="width:100%;flex:0 0 40%;min-height:0"></canvas><div id="sgc_st" style="padding:8px 14px;font-size:13px;color:#cdbf9c;line-height:1.5"></div><div id="sgc_bt" style="padding:0 12px;display:grid;grid-template-columns:1fr 1fr;gap:8px"></div><div id="sgc_ac" style="padding:12px;display:flex;gap:8px;margin-top:auto"></div>';
+    document.body.appendChild(el);
+    el.addEventListener("click", function (ev) {
+      var t = ev.target.closest("[data-sg]"); if (!t || t.disabled || !CAMP) return; ev.stopPropagation();
+      var a = t.getAttribute("data-sg"), k = t.getAttribute("data-k");
+      if (a === "build") ovCampQueue(k); else if (a === "wait") { CAMP.wait = !CAMP.wait; ovCampUi(); }
+      else if (a === "leave") ovCampClose(); else if (a === "assault") { var id = CAMP.id; ovCampClose(); act("assault", id); }
+    });
+  })();
+  function ovCampOpen(id) {
+    var s = site(id); if (!s || !hostileSite(s)) return;
+    if (sheet) closeSheet(true);
+    S.speed = 0; S.target = null;
+    CAMP = { id: id, q: [], cur: null, wait: false, prog: 0, last: 0, t: 0, sparks: [] };
+    $("sgcamp").style.display = "flex"; ovCampUi(); requestAnimationFrame(ovCampFrame);
+  }
+  function ovCampClose() { CAMP = null; $("sgcamp").style.display = "none"; lastHud = ""; save(); }
+  function ovCampQueue(k) {
+    var d = SGE[k], e = ovEngOf(CAMP.id), pend = CAMP.q.filter(function (x) { return x === k; }).length + (CAMP.cur && CAMP.cur.k === k ? 1 : 0);
+    if (!d || S.crowns < d.c || e[k] + (pend + 1) * d.q > d.m) return;
+    S.crowns -= d.c; CAMP.q.push(k); ovCampUi();
+  }
+  function ovCampUi() {
+    if (!CAMP) return; var s = site(CAMP.id), e = ovEngOf(CAMP.id), k, h = "";
+    $("sgc_hd").textContent = "Siege camp \u00b7 " + s.name;
+    for (k in SGE) {
+      var d = SGE[k], pend = CAMP.q.filter(function (x) { return x === k; }).length + (CAMP.cur && CAMP.cur.k === k ? 1 : 0), dis = S.crowns < d.c || e[k] + (pend + 1) * d.q > d.m;
+      h += '<button data-sg="build" data-k="' + k + '"' + (dis ? " disabled" : "") + ' style="padding:9px 6px;background:' + (dis ? "#2a241a" : "#4a3418") + ';color:' + (dis ? "#7a7060" : "#f0d9a0") + ';border:1px solid #7a6030;border-radius:5px;font:600 13px Georgia,serif;text-align:left;line-height:1.35">' + d.n + "<br><small style=\"font-weight:400;color:#bfae88\">" + d.c + " crowns \u00b7 " + d.d + (d.d > 1 ? " days" : " day") + " \u00b7 have " + e[k] + (pend ? " (+" + pend + ")" : "") + "</small></button>";
+    }
+    $("sgc_bt").innerHTML = h;
+    $("sgc_ac").innerHTML = '<button data-sg="wait" style="flex:1;padding:12px;background:' + (CAMP.wait ? "#6a3a22" : "#2a241a") + ';color:#f0d9a0;border:1px solid #7a6030;border-radius:5px;font:600 13px Georgia,serif">' + (CAMP.wait ? "Stop waiting" : "Starve them out") + '</button><button data-sg="assault" style="flex:1;padding:12px;background:#a8382a;color:#fff;border:1px solid #e8b050;border-radius:5px;font:700 13px Georgia,serif;letter-spacing:1px">ASSAULT</button><button data-sg="leave" style="flex:0 0 auto;padding:12px;background:#1a1610;color:#cdbf9c;border:1px solid #5a4a30;border-radius:5px;font:600 13px Georgia,serif">Leave</button>';
+    ovCampStatus();
+  }
+  function ovCampStatus() {
+    if (!CAMP) return; var s = site(CAMP.id), c = CAMP.cur, msg = c ? "Building " + SGE[c.k].n.toLowerCase() + " \u00b7 day " + (SGE[c.k].d - c.dleft + 1) + " of " + SGE[c.k].d : CAMP.q.length ? "Next: " + SGE[CAMP.q[0]].n.toLowerCase() : CAMP.wait ? "Waiting. The garrison is eating its stores." : "Choose what to build, starve them out, or assault.";
+    $("sgc_st").innerHTML = "<b>" + msg + "</b><br>Day " + Math.floor(S.day) + " \u00b7 your column " + T() + " men \u00b7 grain " + Math.floor(S.grain) + " \u00b7 crowns " + Math.floor(S.crowns) + " \u00b7 garrison about " + Math.max(0, Math.round(s.gar)) + "<br><span style=\"color:#8a7e62\">Your army eats and is paid every day you camp. Engines you build are used up in the assault.</span>";
+  }
+  function ovCampDay() {
+    var s = site(CAMP.id); S.sieging = CAMP.id; S.px = s.x; S.py = s.y; passDays(1); S.sieging = null;
+    if (sheet || B) { ovCampClose(); return false; }
+    if (!hostileSite(s)) { ovCampClose(); return false; }
+    if (T() < 1) { toast("Your column has melted away."); ovCampClose(); return false; }
+    if (Math.random() < 0.025 && S.enemies.filter(function (q) { return q.kind === "lord" && q.fac === s.owner; }).length < 4) {
+      S.enemies.push({ id: S.eid++, kind: "lord", fac: s.owner, name: "A relief army", x: s.x + 60, y: s.y + 40, n: Math.round(s.gmax * 0.5), q: 1.1, cool: 0, dest: null });
+      log("A relief army marched out of " + s.name + ".", "e"); toast("A relief army marches from " + s.name + "!"); CAMP.wait = false; ovCampUi();
+    }
+    return true;
+  }
+  function ovCampFrame(now) {
+    if (!CAMP) return; var dt = Math.min(0.1, (now - (CAMP.last || now)) / 1000); CAMP.last = now; CAMP.t += dt;
+    if (!CAMP.cur && CAMP.q.length) { var k = CAMP.q.shift(); CAMP.cur = { k: k, dleft: SGE[k].d }; CAMP.prog = 0; ovCampUi(); }
+    if (CAMP.cur || CAMP.wait) {
+      CAMP.prog += dt;
+      if (CAMP.prog >= CAMPDAY) {
+        CAMP.prog -= CAMPDAY;
+        if (!ovCampDay()) return;
+        if (CAMP.cur && --CAMP.cur.dleft <= 0) { var d = SGE[CAMP.cur.k]; ovEngOf(CAMP.id)[CAMP.cur.k] += d.q; toast(d.n + " finished."); CAMP.cur = null; ovCampUi(); }
+        else ovCampStatus();
+      }
+    }
+    ovCampDraw(now); requestAnimationFrame(ovCampFrame);
+  }
+  function ovCampDraw(now) {
+    var cv = $("sgc_cv"), r = window.devicePixelRatio || 1, cw = cv.clientWidth, ch = cv.clientHeight; if (!cw || !ch) return;
+    if (cv.width !== Math.round(cw * r)) { cv.width = Math.round(cw * r); cv.height = Math.round(ch * r); }
+    var g = cv.getContext("2d"), s = site(CAMP.id), e = ovEngOf(CAMP.id), sc = Math.min(cw / 600, ch / 420), n = ovSgN(s), t = now || 0, i, k;
+    g.setTransform(r, 0, 0, r, 0, 0); var gr = g.createLinearGradient(0, 0, 0, ch); gr.addColorStop(0, "#2a3446"); gr.addColorStop(0.42, "#6a5a48"); gr.addColorStop(0.43, "#4d6a34"); gr.addColorStop(1, "#38502a"); g.fillStyle = gr; g.fillRect(0, 0, cw, ch);
+    g.setTransform(r * sc, 0, 0, r * sc, r * (cw - 600 * sc) / 2, 0); g.imageSmoothingEnabled = false;
+    var col = SGCOL[s.owner] || "#8a8272";
+    for (k = n - 1; k >= 0; k--) {
+      var y = 40 + (n - 1 - k) * 0 + k * -0, wy = 150 - k * 46; g.fillStyle = col; g.fillRect(0, wy, 600, 30 - k * 4); g.strokeStyle = "#1a1610"; g.lineWidth = 1.5; g.strokeRect(0, wy, 600, 30 - k * 4);
+      for (i = 0; i < 24; i++) g.fillRect(i * 26 + 3, wy - 8, 14, 8); g.fillStyle = "#1a1208"; g.fillRect(270, wy + 4, 60, 26 - k * 4);
+    }
+    g.fillStyle = "rgba(240,224,180,0.85)"; g.font = "italic 15px Georgia, serif"; g.textAlign = "center"; g.fillText(s.name + " \u00b7 garrison " + Math.max(0, Math.round(s.gar)), 300, 28);
+    g.fillStyle = "#3a2a18"; for (i = 0; i < 6; i++) { var tx = 40 + i * 100, ty = 372; g.beginPath(); g.moveTo(tx - 16, ty); g.lineTo(tx, ty - 22); g.lineTo(tx + 16, ty); g.closePath(); g.fill(); }
+    var slots = { ram: [[70, 300], [150, 300]], twr: [[260, 318], [400, 318]], cat: [[500, 292], [440, 272], [540, 272]] }, drawn = {};
+    ["ram", "twr", "cat"].forEach(function (kk) { for (i = 0; i < e[kk] && i < slots[kk].length; i++) ovEngDraw(g, { eng: kk, x: slots[kk][i][0], y: slots[kk][i][1], hp: 1, hpm: 1, flash: 0, atk: 0 }, t); });
+    for (i = 0; i < Math.min(e.lad, 8); i++) { var lx = 200 + i * 24; g.strokeStyle = "#c49a58"; g.lineWidth = 2; g.beginPath(); g.moveTo(lx, 350); g.lineTo(lx + 8, 396); g.moveTo(lx + 5, 350); g.lineTo(lx + 13, 396); g.stroke(); }
+    if (CAMP.cur) {
+      var c = CAMP.cur, d = SGE[c.k], pr = ((d.d - c.dleft) + CAMP.prog / CAMPDAY) / d.d, px = c.k === "lad" ? 520 : 300, py = 355;
+      g.globalAlpha = 0.25 + 0.7 * pr; if (c.k === "lad") { g.strokeStyle = "#c49a58"; g.lineWidth = 2; g.beginPath(); g.moveTo(px, 330); g.lineTo(px + 10, 396); g.moveTo(px + 6, 330); g.lineTo(px + 16, 396); g.stroke(); } else ovEngDraw(g, { eng: c.k, x: px, y: py, hp: 1, hpm: 1, flash: 0, atk: 0 }, t);
+      g.globalAlpha = 1; g.fillStyle = "rgba(0,0,0,0.6)"; g.fillRect(px - 40, py + 12, 80, 6); g.fillStyle = "#e8b050"; g.fillRect(px - 40, py + 12, 80 * pr, 6);
+      for (i = 0; i < 3; i++) { var a = t / 180 + i * 2.1; g.fillStyle = "#e8c070"; g.fillRect(px + Math.cos(a) * 26 - 1, py - 8 + Math.sin(a * 1.3) * 8, 2, 4); g.fillStyle = "#6a4a28"; g.fillRect(px + Math.cos(a) * 26 - 2, py - 4 + Math.sin(a * 1.3) * 8, 4, 6); }
+    }
+  }
+
   // ---- input ----
   (function () {
     window.addEventListener("keydown", function (e) { if (!AR) return; var k = e.key.length === 1 ? e.key.toLowerCase() : e.key; akeys[k] = true; if (k === " " || k === "Enter" || k === "j") { e.preventDefault(); aPress = true; } if (k === "k") aShootP = true; if (k === "l") aCastP = true; });
@@ -8426,6 +8507,7 @@ window.__vhGame = function () { (function () {
       case "garadd": if (v && v.owner === "player" && T() >= 6) { removeMen(5); v.gar += 5; } break;
       case "garsub": if (v && v.owner === "player" && v.gar >= 11) { v.gar -= 5; S.from.exile = (S.from.exile || 0) + 5; } break;
       case "sgbuild": ovSgBuild(v, y); break;
+      case "sgcamp": ovCampOpen(x); break;
       case "assault":
         if (v && hostileSite(v)) { startBattle({ id: -1, kind: "siege", title: "Assault on " + v.name, n: Math.round(v.gar), q: v.wall * ovDefAdv(v), siegeId: v.id }); return; } break;
       case "starve":
