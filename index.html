@@ -245,7 +245,7 @@ h2, #title h1 { font-family: var(--serif2); color: #d8b868; text-shadow: 0 2px 0
   <div id="area" hidden>
     <canvas id="acv"></canvas>
     <div id="ahud"><div id="ahearts"></div><div id="aobj"></div>
-      <div class="abtns"><button data-act="agear">Gear</button><button data-act="quest">Quest</button><button data-act="askills">Skills</button><button data-act="abuild">Build</button><button data-act="aleave">Map</button></div></div>
+      <div class="abtns"><button data-act="agear">Gear</button><button data-act="quest">Quest</button><button data-act="askills">Skills</button><button data-act="abuild">Build</button><button data-act="await">Wait</button><button data-act="aleave">Map</button></div></div>
     <div id="astick" hidden><div id="aknob"></div></div>
     <button id="aatk">Strike</button>
     <button id="abow" hidden>Shoot</button>
@@ -8428,6 +8428,47 @@ window.__vhGame = function () { (function () {
       });
     });
   }
+  // ---- wait: step out to the map view while time runs, with a warning if enemies close in ----
+  var WAITIN = null, WSEEN = {};
+  function ovWaitStart() {
+    if (!AR) return; var id = AR.id, nm = (typeof getSpec === "function" && getSpec(id)) ? getSpec(id).name : id;
+    WAITIN = { id: id, name: nm }; WSEEN = {};
+    leaveArea(); S.speed = 1; pausedSpeed = 1; ovWaitUi();
+    toast("Waiting at " + nm + ". You will be warned if enemies close in.");
+  }
+  (function () {
+    var el = document.createElement("div"); el.id = "waitbar";
+    el.style.cssText = "position:fixed;left:136px;right:10px;justify-content:space-between;bottom:calc(4.1rem + env(safe-area-inset-bottom,0px) + 8px);z-index:58;display:none;align-items:center;gap:8px;padding:7px 10px;border:1px solid #8a5a2a;background:rgba(14,12,9,.92);color:#f2dfb0;font:600 12px Georgia,serif;border-radius:6px";
+    el.innerHTML = '<span id="wbtxt"></span><button data-w="in" style="padding:6px 10px;background:#2a241a;color:#f0d9a0;border:1px solid #7a6030;border-radius:4px;font:600 12px Georgia,serif">Go inside</button><button data-w="stop" style="padding:6px 10px;background:#1a1610;color:#cdbf9c;border:1px solid #5a4a30;border-radius:4px;font:600 12px Georgia,serif">Done</button>';
+    document.body.appendChild(el);
+    el.addEventListener("click", function (ev) {
+      var w = ev.target && ev.target.getAttribute && ev.target.getAttribute("data-w"); if (!w) return; ev.stopPropagation();
+      if (w === "in" && WAITIN) { var id = WAITIN.id; WAITIN = null; ovWaitUi(); startArea(id); } else { WAITIN = null; ovWaitUi(); }
+    });
+    setInterval(function () { try { ovWaitTick(); } catch (e) {} }, 400);
+  })();
+  function ovWaitUi(alert) {
+    var el = document.getElementById("waitbar"); if (!el) return;
+    if (!WAITIN || AR || sheet || B || !S) { el.style.display = "none"; return; }
+    el.style.display = "flex"; el.style.borderColor = alert ? "#c0503a" : "#8a5a2a";
+    document.getElementById("wbtxt").innerHTML = alert ? "<b style=\"color:#f08a70\">" + alert + "</b>" : "Waiting at " + WAITIN.name + " · day " + Math.floor(S.day);
+  }
+  function ovWaitTick() {
+    if (!WAITIN) return;
+    if (AR) { WAITIN = null; ovWaitUi(); return; }
+    if (sheet || B) { ovWaitUi(); return; }
+    var hit = null, hd = 1e9;
+    S.enemies.forEach(function (e) {
+      if (e.dead || (e.kind === "lord" && !S.pwar[e.fac] && e.fac !== "metal")) return;
+      var d = Math.hypot(e.x - S.px, e.y - S.py);
+      if (d < 150 && d < hd && !(WSEEN[e.id] && S.day - WSEEN[e.id] < 3)) { hit = e; hd = d; }
+    });
+    if (hit) {
+      WSEEN[hit.id] = S.day; S.speed = 0; pausedSpeed = 0; try { sfx("sting"); } catch (er) {}
+      var nm = hit.kind === "bandit" ? "Bandits" : hit.name || "Enemies";
+      WAITIN.al = nm + " approach! Paused."; toast(nm + " are closing in on " + WAITIN.name + "!"); ovWaitUi(WAITIN.al);
+    } else { if (S.speed > 0) WAITIN.al = null; ovWaitUi(WAITIN.al); }
+  }
 
   // ---- input ----
   (function () {
@@ -8647,6 +8688,7 @@ window.__vhGame = function () { (function () {
       case "aenter": { var aid = areaIdFor(x); if (aid) startArea(aid); return; }
       case "abuild": ovBuildBtn(); return;
       case "aleave": leaveArea(); return;
+      case "await": ovWaitStart(); return;
       case "agear": if (AR && !AR.dlg) { invSel = ""; openSheet("inv"); } return;
       case "atroops": if (alertEl) alertEl.style.display = "none"; if (!AR || !AR.dlg) { partyTab = "troops"; openSheet("party"); } return;
       case "askills": if (alertEl) alertEl.style.display = "none"; if (!AR || !AR.dlg) openSheet("skills"); return;
