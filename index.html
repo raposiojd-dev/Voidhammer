@@ -5685,7 +5685,7 @@ window.__vhGame = function () { (function () {
   }
   function walkClock(dt) {
     var a = AR; if (!a || sheet || B || S.ended || !cp().f) return;
-    passDays(dt / WALK_DAY);
+    passDays(dt / WALK_DAY); ovWarRaid(a, dt);
     var k = nightK(), cave = ATH[a.sp.th] && ATH[a.sp.th].cave;
     if (k < 0.2) { a.en.forEach(function (e) { if (e.ns && !e.dead && !e.gone && Math.hypot(e.x - a.p.x, e.y - a.p.y) > 90) e.gone = true; }); }
     if (k < 0.7 || a.sp.safe || cave || a.sp.yard) return;
@@ -7957,6 +7957,35 @@ window.__vhGame = function () { (function () {
     F.raf = requestAnimationFrame(COOP.gFrame);
   };
   setTimeout(COOP.init, 1500);
+  // ---- war raids: linger in a town, village or your own yard while at war and their soldiers trickle in ----
+  function ovWarRaid(a, dt) {
+    if (!a || !a.sp || !(a.sp.safe || a.sp.yard)) return;
+    var fs = Object.keys(S.pwar || {}).filter(function (f) { return S.pwar[f] && f !== "rebel" && FAC[f]; });
+    if (!fs.length) { a.wr = null; return; }
+    var w = a.wr || (a.wr = { t: 0, n: 0, nx: 30 });
+    w.t += dt; if (w.t < w.nx) return;
+    var alive = a.en.filter(function (e) { return e.wrd && !e.dead && !e.gone; }).length, cap = Math.min(16, 5 + tier() * 2);
+    w.nx = w.t + Math.max(3.5, 14 * Math.pow(0.86, w.n));
+    if (alive >= cap) return;
+    var batch = 1 + Math.floor(w.n / 4), j, made = 0;
+    for (j = 0; j < batch && alive + j < cap; j++) if (ovWarSpawn(a, fs[Math.floor(Math.random() * fs.length)], w.n)) made++;
+    if (!made) return;
+    if (w.n === 0) { sfx("sting"); aToast(FAC[fs[0]].name + " soldiers have found you. Do not linger.", FAC[fs[0]].col); }
+    else if (w.n === 6) aToast("They keep coming. Leave, or end the war.", "#ff8a6a");
+    w.n++;
+  }
+  function ovWarSpawn(a, f, n) {
+    var p = a.p, i, ang, r, x, y, rng = Math.random() < 0.3, ty = rng ? "slinger" : "bandit", base = ET[ty];
+    if (f === "metal") { ty = rng ? "wraithgun" : "wraith"; base = ET[ty]; } else if (f === "shadow") { ty = "knife"; base = ET[ty]; }
+    for (i = 0; i < 16; i++) {
+      ang = Math.random() * 6.283; r = 100 + Math.random() * 50; x = p.x + Math.cos(ang) * r; y = p.y + Math.sin(ang) * r;
+      if (x < 8 || y < 8 || !boxFree(a, x, y)) continue;
+      var d = Object.assign({}, base, { name: FAC[f].name + (rng ? " archer" : " soldier"), band: FAC[f].col }), tm = (1 + 0.8 * tier()) * 1.2 * lvScale() * (1 + 0.04 * Math.min(n, 20));
+      a.en.push({ type: ty, d: d, x: x, y: y, hx: x, hy: y, hp: d.hp * tm, hpm: d.hp * tm, cd: 0.5, kx: 0, ky: 0, flash: 0, dead: false, aggro: true, shot: 1, wrd: 1, rp: undefined });
+      return true;
+    }
+    return false;
+  }
 
   // ---- input ----
   (function () {
