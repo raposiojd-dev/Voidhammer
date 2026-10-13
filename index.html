@@ -3397,7 +3397,7 @@ window.__vhGame = function () { (function () {
       }
       if (F.sg) { var rt = ovSgRoute(u, gx, gy); gx = rt[0]; gy = rt[1]; }
       var dx = gx - u.x, dy = gy - u.y, dd = Math.hypot(dx, dy);
-      if (u.hero && F.sg) ovHeroShoot(u, engage, enemies);
+      if (u.hero) ovHeroShoot(u, engage, enemies);
       var reach = 12 + (u.hero ? 3 : 0);
       if (engage && dist(u.x, u.y, engage.x, engage.y) <= reach && !u.rout) {
         if (u.cd <= 0) { fieldHit(u, engage); u.cd = (u.hero || u.friend) ? 0.5 : 0.7; }
@@ -3414,8 +3414,8 @@ window.__vhGame = function () { (function () {
       var arw = F.arrows[i]; arw.t += dt;
       if (arw.t >= arw.dur) {
         F.arrows.splice(i, 1);
-        if (arw.d && !arw.d.dead && !arw.d.gone && dist(arw.d.x, arw.d.y, arw.ex, arw.ey) < 16) {
-          var ad = arw.a.w * 0.3 * rnd(0.75, 1.25) * (onHill(arw.a.x, arw.a.y) ? 1.15 : 1) * (inTrees(arw.d.x, arw.d.y) ? 0.7 : 1) * (arw.s === "p" && F.cry > 0 ? 1.3 : 1);
+        if (arw.d && !arw.d.dead && !arw.d.gone && dist(arw.d.x, arw.d.y, arw.ex, arw.ey) < (arw.rad || 16)) {
+          var ad = arw.a.w * 0.3 * (arw.mul || 1) * rnd(0.75, 1.25) * (onHill(arw.a.x, arw.a.y) ? 1.15 : 1) * (inTrees(arw.d.x, arw.d.y) ? 0.7 : 1) * (arw.s === "p" && F.cry > 0 ? 1.3 : 1);
           if (arw.d.s === "p" && F.cmd === "hold" && !arw.d.hero && !arw.d.kael) ad *= 0.8;
           arw.d.hp -= ad; arw.d.flash = 0.18;
           if (arw.d.hp <= 0 && !arw.d.dead) { arw.d.dead = true; F.corpses.push({ x: arw.d.x, y: arw.d.y, s: arw.d.s, v: arw.d.void }); if (arw.d.hero) fieldMsg("You are down! The line wavers."); if (arw.d.kael && !arw.d.friend) { F.kdead = true; fieldMsg("Kaelren has fallen."); } if (arw.d.friend) fieldMsg("Your friend is down!"); }
@@ -6129,7 +6129,7 @@ window.__vhGame = function () { (function () {
     var gd = disp.getContext("2d"), n = 1.5, tw = Math.round(src.width * n), th = Math.round(src.height * n);
     if (!ATMP) ATMP = document.createElement("canvas"); if (ATMP.width !== tw || ATMP.height !== th) { ATMP.width = tw; ATMP.height = th; }
     var tg = ATMP.getContext("2d"); tg.imageSmoothingEnabled = false; tg.drawImage(src, 0, 0, tw, th);
-    gd.globalCompositeOperation = "source-over"; gd.globalAlpha = 1; gd.imageSmoothingEnabled = true; gd.imageSmoothingQuality = "high"; gd.drawImage(ATMP, 0, 0, W, H);
+    gd.globalCompositeOperation = "source-over"; gd.globalAlpha = 1; gd.imageSmoothingEnabled = true; gd.imageSmoothingQuality = "high"; if (P3) ovP3Draw(disp, ATMP); else gd.drawImage(ATMP, 0, 0, W, H);
     // bloom: blurred small copy blended over the top
     var bw = Math.max(8, W >> 3), bh = Math.max(8, H >> 3);
     if (!ABLM) ABLM = document.createElement("canvas"); if (ABLM.width !== bw || ABLM.height !== bh) { ABLM.width = bw; ABLM.height = bh; }
@@ -7160,7 +7160,7 @@ window.__vhGame = function () { (function () {
     F.arrows.forEach(function (a) { var k = Math.min(1, a.t / a.dur), x = a.sx + (a.ex - a.sx) * k, y = a.sy + (a.ey - a.sy) * k - Math.sin(k * Math.PI) * 26, dx = a.ex - a.sx, dy = a.ey - a.sy, l = Math.hypot(dx, dy) || 1; g.strokeStyle = a.s === "p" ? "#f0d9a0" : "#e8e0d0"; g.lineWidth = 0.9; g.beginPath(); g.moveTo(x, y); g.lineTo(x - dx / l * 6, y - dy / l * 6); g.stroke(); });
     if (F.wave2) { g.strokeStyle = "rgba(240,208,96," + (1 - F.wave2.r / 160) + ")"; g.lineWidth = 3; g.beginPath(); g.ellipse(F.wave2.x, F.wave2.y, F.wave2.r, F.wave2.r * 0.55, 0, 0, 6.283); g.stroke(); }
     if (F.wave) { var al = Math.max(0, 1 - F.wave.r / 520); g.strokeStyle = "rgba(255,244,200," + al + ")"; g.lineWidth = 8; g.beginPath(); g.ellipse(F.wave.x, F.wave.y, F.wave.r, F.wave.r * 0.55, 0, 0, 6.283); g.stroke(); g.fillStyle = "rgba(255,240,190," + al * 0.16 + ")"; g.beginPath(); g.ellipse(F.wave.x, F.wave.y, F.wave.r, F.wave.r * 0.55, 0, 0, 6.283); g.fill(); }
-    // screen-space finish
+    ovP3Field(c);
     g.setTransform(r, 0, 0, r, 0, 0);
     var vg = g.createRadialGradient(cw / 2, ch * 0.5, Math.min(cw, ch) * 0.35, cw / 2, ch * 0.5, Math.max(cw, ch) * 0.8); vg.addColorStop(0, "rgba(0,0,0,0)"); vg.addColorStop(1, "rgba(0,0,0,0.55)"); g.fillStyle = vg; g.fillRect(0, 0, cw, ch);
     if (F.over) {
@@ -7187,7 +7187,7 @@ window.__vhGame = function () { (function () {
   function fieldTap(e) {
     if (!F || F.over || F.hero.dead || F.deploy) return;
     var c = $("bfc"), r = c.getBoundingClientRect(), s = r.width / (F.vw || BFVW);
-    var x = (F.camx || F.hero.x) + (e.clientX - r.left - r.width / 2) / s, y = (F.camy || F.hero.y) + (e.clientY - r.top - r.height * 0.55) / s, best = null, bd = 16;
+    var x = (F.camx || F.hero.x) + (ovTX(e, r) - r.width / 2) / s, y = (F.camy || F.hero.y) + (ovTY(e, r) - r.height * 0.55) / s, best = null, bd = 16;
     F.units.forEach(function (u) { if (u.s === "e" && !u.dead && !u.gone) { var d = dist(x, y - 6, u.x, u.y - 6); if (d < bd) { bd = d; best = u; } } });
     if (best) { F.ht = best; F.hm = null; } else { F.hm = { x: Math.max(14, Math.min(FW - 14, x)), y: Math.max(40, Math.min(FH - 20, y)) }; F.ht = null; }
   }
@@ -7290,7 +7290,7 @@ window.__vhGame = function () { (function () {
     if (y < BFZ0 + 8) { fieldMsg("Deploy behind the line. Rocks are no place to stand."); y = BFZ0 + 8; }
     bfLayout(gr, Math.max(40, Math.min(FW - 40, x)), Math.min(FH - 30, y));
   }
-  function bfWorld(e) { var c = $("bfc"), r = c.getBoundingClientRect(), s = r.width / (F.vw || 560); return { x: (F.camx || 300) + (e.clientX - r.left - r.width / 2) / s, y: (F.camy || 450) + (e.clientY - r.top - r.height * 0.55) / s }; }
+  function bfWorld(e) { var c = $("bfc"), r = c.getBoundingClientRect(), s = r.width / (F.vw || 560); return { x: (F.camx || 300) + (ovTX(e, r) - r.width / 2) / s, y: (F.camy || 450) + (ovTY(e, r) - r.height * 0.55) / s }; }
   function bfDeployUI() {
     var p = $("bfd"); if (!p) {
       var st = document.createElement("style");
@@ -8135,14 +8135,60 @@ window.__vhGame = function () { (function () {
     F.units.forEach(function (u) { if (u.eng === "twr" && !u.dead && u.dock === k) out.push([u.x - 26, u.x + 26, 1]); });
     return out;
   }
+  // ---- 2.5D view: the ground pinches toward a horizon so towns and battles read as looking over the shoulder ----
+  var P3 = (function () { try { return localStorage.getItem("vh3d") !== "0"; } catch (e) { return true; } })(), P3N = 56, P3D = null, P3T = null;
+  function ovP3Tab() {
+    if (P3D) return P3D; var r = [], tot = 0, i, D = [0], m = [];
+    for (i = 0; i < P3N; i++) { r.push(0.66 + 0.9 * (i + 0.5) / P3N); tot += r[i]; }
+    for (i = 0; i < P3N; i++) { D.push(D[i] + r[i] / tot); m.push(r[i] / tot * P3N); }
+    P3D = { D: D, m: m }; return P3D;
+  }
+  function ovP3Draw(dst, src) {
+    var T = ovP3Tab(), W = dst.width, H = dst.height, g = dst.getContext("2d"), i, sh = src.height / P3N, ww = src.width;
+    g.setTransform(1, 0, 0, 1, 0, 0); g.globalAlpha = 1; g.globalCompositeOperation = "source-over"; g.imageSmoothingEnabled = true;
+    g.fillStyle = "#0a0907"; g.fillRect(0, 0, W, H);
+    for (i = 0; i < P3N; i++) {
+      var fr = 1 / T.m[i], sw = ww * fr, sx = (ww - sw) / 2, dy = T.D[i] * H, dh = (T.D[i + 1] - T.D[i]) * H + 1, dx = 0, dw = W;
+      if (sx < 0) { dx = W * (-sx / sw); dw = W * (ww / sw); sx = 0; sw = ww; }
+      g.drawImage(src, sx, i * sh, sw, sh, dx, dy, dw, dh);
+    }
+    var fg = g.createLinearGradient(0, 0, 0, H * 0.35); fg.addColorStop(0, "rgba(10,9,7,0.75)"); fg.addColorStop(1, "rgba(10,9,7,0)"); g.fillStyle = fg; g.fillRect(0, 0, W, H * 0.35);
+  }
+  function ovP3Field(c) {
+    if (!P3) return; if (!P3T) P3T = document.createElement("canvas"); if (P3T.width !== c.width || P3T.height !== c.height) { P3T.width = c.width; P3T.height = c.height; }
+    var tg = P3T.getContext("2d"); tg.setTransform(1, 0, 0, 1, 0, 0); tg.clearRect(0, 0, c.width, c.height); tg.drawImage(c, 0, 0); ovP3Draw(c, P3T);
+  }
+  function ovTInv(e, r) {
+    var px = e.clientX - r.left, py = e.clientY - r.top; if (!P3) return { x: px, y: py };
+    var T = ovP3Tab(), yf = Math.max(0, Math.min(0.9999, py / r.height)), i = 0; while (i < P3N - 1 && T.D[i + 1] <= yf) i++;
+    return { x: r.width / 2 + (px - r.width / 2) / T.m[i], y: (i + (yf - T.D[i]) / (T.D[i + 1] - T.D[i])) / P3N * r.height };
+  }
+  function ovTX(e, r) { return ovTInv(e, r).x; }
+  function ovTY(e, r) { return ovTInv(e, r).y; }
+  (function () {
+    var b = document.createElement("button"); b.id = "p3b"; b.style.cssText = "position:fixed;right:8px;top:92px;z-index:70;padding:5px 9px;font:700 11px Georgia,serif;border-radius:12px;border:1px solid #7a6030;background:rgba(20,16,10,0.75);color:#f0d9a0;display:none";
+    function lab() { b.textContent = P3 ? "3D view" : "Flat view"; }
+    b.addEventListener("click", function (ev) { ev.stopPropagation(); P3 = !P3; try { localStorage.setItem("vh3d", P3 ? "1" : "0"); } catch (e) {} lab(); });
+    document.body.appendChild(b); lab();
+    setInterval(function () { var on = false; try { on = !!(F && $("bfc") && $("bfc").offsetParent) || !!(AR && $("acv") && $("acv").offsetParent); } catch (e) {} b.style.display = on ? "block" : "none"; }, 400);
+  })();
   function ovHeroShoot(u, engage, foes) {
-    if (u.cd > 0 || u.rout) return;
-    var bw = curBow(); if (!bw || (cp().arrows || 0) < 1) return;
+    if (u.cd > 0 || u.rout || u.dead) return;
+    var bw = curBow(); if (!bw) return;
     if (engage && dist(u.x, u.y, engage.x, engage.y) <= 16) return;
     var tg = engage || fieldNearest(u, foes); if (!tg || tg.dead || tg.gone) return;
-    var td = dist(u.x, u.y, tg.x, tg.y); if (td < 18 || td > 175) return;
-    cp().arrows--; u.cd = 1.1; u.atk = 0.2;
-    F.arrows.push({ sx: u.x, sy: u.y - 6, ex: tg.x, ey: tg.y, t: 0, dur: Math.max(0.15, td / 280), a: u, d: tg, s: "p" });
+    var rng = Math.min(260, 175 * (bw.sp * bw.life / 120)), td = dist(u.x, u.y, tg.x, tg.y); if (td < 18 || td > rng) return;
+    if ((cp().arrows || 0) < 1) { if (!F.noarr) { F.noarr = 1; fieldMsg("No arrows left. Buy more from a smith."); } return; }
+    if (Math.random() >= Math.min(0.5, affSum("free"))) cp().arrows--; else fieldMsg("Free shot.");
+    u.cd = bw.cd * (1 - Math.min(0.5, affSum("cdr"))) * (1 - 0.1 * sk("quickdraw")) * 1.5; u.atk = 0.2;
+    var m = (bw.dmg + 0.3 * sk("fletcher") + 0.3 * upLv("r") + (eIt("r") ? eIt("r").bd : 0)) * (0.55 + 0.45 * gearEff()) * (1 + 0.12 * sk("heavydraw")) / 1.6;
+    var rad = 16 + 3 * sk("steadyaim");
+    F.arrows.push({ sx: u.x, sy: u.y - 6, ex: tg.x, ey: tg.y, t: 0, dur: Math.max(0.15, td / 280), a: u, d: tg, s: "p", mul: m, rad: rad });
+    var r = sk("multishot"); if (r < 1) return;
+    var n = [1, 2, 3, 5][r], extra = n - 1, cost = Math.ceil(extra / 2), have = cp().arrows || 0;
+    if (have < cost) { extra = have * 2; cost = have; } if (extra < 1) return; cp().arrows = have - cost;
+    var others = foes.filter(function (e) { return e !== tg && !e.dead && !e.gone && dist(tg.x, tg.y, e.x, e.y) < 70 && dist(u.x, u.y, e.x, e.y) <= rng; }).sort(function (p, q) { return dist(tg.x, tg.y, p.x, p.y) - dist(tg.x, tg.y, q.x, q.y); });
+    for (var i = 0; i < extra; i++) { var o = others[i % Math.max(1, others.length)] || tg, dd = dist(u.x, u.y, o.x, o.y), jx = others.length ? 0 : (i % 2 ? 1 : -1) * 10 * (1 + (i >> 1)); F.arrows.push({ sx: u.x, sy: u.y - 6, ex: o.x + jx, ey: o.y, t: 0, dur: Math.max(0.15, dd / 280), a: u, d: o, s: "p", mul: m * 0.7, rad: rad }); }
   }
   function ovSgPass(k, x) { var b = ovSgBreaches(k), i; for (i = 0; i < b.length; i++) if (x >= b[i][0] && x <= b[i][1]) return b[i][2] ? 2 : 1; return 0; }
   function ovSgRoute(u, gx, gy) {
