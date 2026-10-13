@@ -2712,7 +2712,8 @@ window.__vhGame = function () { (function () {
       { id: "blademaster", grow: 1, name: "Blademaster", per: "+12% your damage in the field", max: 3, req: "ironhide", desc: "Fewer blows, and each one lands." }] },
     { branch: "Archery", blurb: "Win it before they arrive.", items: [
       { id: "fletcher", grow: 1, name: "Fletcher", per: "+10% strength from archers and crossbows", max: 3, desc: "You teach them to pick a target and wait." },
-      { id: "skirmisher", name: "Skirmisher", per: "+8% chance to get away", max: 3, req: "fletcher", desc: "Shoot, step back, shoot again, and be gone." }] },
+      { id: "skirmisher", name: "Skirmisher", per: "+8% chance to get away", max: 3, req: "fletcher", desc: "Shoot, step back, shoot again, and be gone." },
+      { id: "quickdraw", name: "Quick Draw", per: "−10% time between shots", max: 3, req: "fletcher", desc: "Nock, draw, loose. Your hands know it without you." }] },
     { branch: "Trade and Land", blurb: "Coin, grain, and what you carry.", items: [
       { id: "haggler", name: "Haggler", per: "+6% selling, −5% buying", max: 3, desc: "You know what a thing is worth." },
       { id: "forager", name: "Forager", per: "−8% food eaten", max: 3, req: "haggler", desc: "You find food where others see mud." },
@@ -4447,7 +4448,7 @@ window.__vhGame = function () { (function () {
     sfx("shoot");
     var p = AR.p, bw = curBow(); if (!bw || p.cd > 0) return;
     if ((cp().arrows || 0) < 1) { aToast("No arrows left. Buy more from a smith."); return; }
-    if (Math.random() >= Math.min(0.5, affSum("free"))) cp().arrows--; else AR.floats.push({ x: p.x, y: p.y - 16, t: 0.8, s: "free shot", col: "#e8d8a8" }); p.cd = bw.cd * (1 - Math.min(0.5, affSum("cdr"))); p.atk2 = 0.18;
+    if (Math.random() >= Math.min(0.5, affSum("free"))) cp().arrows--; else AR.floats.push({ x: p.x, y: p.y - 16, t: 0.8, s: "free shot", col: "#e8d8a8" }); p.cd = bw.cd * (1 - Math.min(0.5, affSum("cdr"))) * (1 - 0.1 * sk("quickdraw")); p.atk2 = 0.18;
     AR.proj.push({ x: p.x + p.face.x * 6, y: p.y - 6 + p.face.y * 6, vx: p.face.x * bw.sp, vy: p.face.y * bw.sp, life: bw.life, own: 1, dmg: (bw.dmg + 0.3 * sk("fletcher") + 0.3 * upLv("r") + (eIt("r") ? eIt("r").bd : 0)) * (0.55 + 0.45 * gearEff()) });
   }
   function castBolt() {
