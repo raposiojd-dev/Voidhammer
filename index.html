@@ -2528,7 +2528,7 @@ window.__vhGame = function () { (function () {
   }
 
   function partySheet(just) {
-    if (partyTab === "gear") return gearSheet();
+    if (partyTab === "gear") partyTab = "column";
     if (partyTab === "troops") return troopsSheet();
     var t = T(), h = "<h2>Your column</h2>";
     var wage = wageDay(), eat = eatDay(), dc = daysOf(S.crowns, wage), dg = daysOf(S.grain, eat);
@@ -2958,7 +2958,7 @@ window.__vhGame = function () { (function () {
   // equipment and inventory page
   var SLOT = { blades: "Weapons", steel: "Steel weapons", mail: "Armour", plate: "Plate armour", bows: "Ranged", longbows: "Longbows", kit: "Boots & cloaks" };
   function tabsHtml() {
-    return '<div class="tabs"><button data-act="ptab" data-a="column"' + (partyTab === "column" ? ' class="on"' : "") + ">Column</button><button data-act=\"ptab\" data-a=\"gear\"" + (partyTab === "gear" ? ' class="on"' : "") + ">Gear</button><button data-act=\"ptab\" data-a=\"troops\"" + (partyTab === "troops" ? ' class="on"' : "") + ">Troops</button></div>";
+    return '<div class="tabs"><button data-act="ptab" data-a="column"' + (partyTab === "column" ? ' class="on"' : "") + ">Column</button><button data-act=\"ptab\" data-a=\"troops\"" + (partyTab === "troops" ? ' class="on"' : "") + ">Troops</button></div>";
   }
   function troopsSheet() {
     normVets();
