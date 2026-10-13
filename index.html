@@ -3366,7 +3366,7 @@ window.__vhGame = function () { (function () {
         else if (F.hm) { gx = F.hm.x; gy = F.hm.y; if (dist(u.x, u.y, gx, gy) < 6) F.hm = null; var nn = fieldNearest(u, enemies); if (nn && dist(u.x, u.y, nn.x, nn.y) < 16) engage = nn; }
         else if (tg && dist(u.x, u.y, tg.x, tg.y) < 70) { engage = tg; gx = tg.x; gy = tg.y; }
       } else if (u.friend) {
-        var fc = COOP.fc || {}, ft = fc.t >= 0 ? F.units[fc.t] : null; if (ft && (ft.dead || ft.gone || ft.s !== "e")) ft = null;
+        var fc = u.fcmd || {}, ft = fc.t >= 0 ? F.units[fc.t] : null; if (ft && (ft.dead || ft.gone || ft.s !== "e")) ft = null;
         var fnn = fieldNearest(u, enemies);
         if (ft) { engage = ft; gx = ft.x; gy = ft.y; }
         else if (fc.mx !== undefined && fc.mx !== null && dist(u.x, u.y, fc.mx, fc.my) > 6) { gx = fc.mx; gy = fc.my; if (fnn && dist(u.x, u.y, fnn.x, fnn.y) < 16) engage = fnn; }
@@ -4434,7 +4434,7 @@ window.__vhGame = function () { (function () {
     if (e.hp <= 0) killEn(e); return true;
   }
   function aAttack() {
-    var p = AR.p; if (p.cd > 0) return; sfx("swing"); p.atk = 0.2; p.cd = 0.36 * (1 - Math.min(0.5, affSum("cdr"))) * (1 - 0.08 * sk("tempo")); var dmg = atkDmg(), hits = [];
+    var p = AR.p; if (p.cd > 0) return; sfx("swing"); p.atk = 0.2; p.cd = 0.36 * (1 - Math.min(0.5, affSum("cdr"))) * (1 - 0.08 * sk("tempo")); var dmg = atkDmg(), hits = []; COOP.pvSwing();
     AR.en.forEach(function (e) {
       if (e.dead || e.gone) return; var dx = e.x - p.x, dy = e.y - 5 - (p.y - 5), d = Math.hypot(dx, dy);
       if (d < 24 && (d < 9 || (dx * p.face.x + dy * p.face.y) / (d || 1) > 0.25)) { if (e.yield) { campRusk("killed"); return; } dmgEn(e, dmg, dx, dy, 130); hits.push(e); }
@@ -4537,7 +4537,7 @@ window.__vhGame = function () { (function () {
         e.shot -= dt; if (e.shot <= 0 && d < 120) { e.shot = e.type === "wraithgun" ? 1.3 : 1.6; a.proj.push({ x: e.x, y: e.y - 6, vx: dx / d * 88, vy: dy / d * 88, life: 2 }); }
       } else if (d > (e.d.boss ? 19 : 15)) {
         var sx = dx / d * spd * dt, sy = dy / d * spd * dt; if (boxFree(a, e.x + sx, e.y)) e.x += sx; else if (boxFree(a, e.x, e.y + (dy > 0 ? 1 : -1) * spd * dt)) e.y += (dy > 0 ? 1 : -1) * spd * dt; if (boxFree(a, e.x, e.y + sy)) e.y += sy; else if (boxFree(a, e.x + (dx > 0 ? 1 : -1) * spd * dt, e.y)) e.x += (dx > 0 ? 1 : -1) * spd * dt;
-      } else if (e.cd <= 0) { e.cd = e.d.boss ? 0.65 : 0.85; (tg.r ? COOP.hurtR : hurtP)(e.d.dmg + Math.floor((lvl() - 1) / 5) + (e.d.boss ? 1 + Math.floor((lvl() - 1) / 8) : 0) + (e.d.boss && tier() > 0 ? 1 : 0)); }
+      } else if (e.cd <= 0) { e.cd = e.d.boss ? 0.65 : 0.85; (tg.r ? COOP.hurtRf(tg.r) : hurtP)(e.d.dmg + Math.floor((lvl() - 1) / 5) + (e.d.boss ? 1 + Math.floor((lvl() - 1) / 8) : 0) + (e.d.boss && tier() > 0 ? 1 : 0)); }
     });
     if (!COOP.guest()) bossPass(a, dt);
     a.proj = a.proj.filter(function (q) {
@@ -7507,66 +7507,129 @@ window.__vhGame = function () { (function () {
       }
     });
   }
-  // ---- v97: two-player co-op in walk-view areas (host runs the enemies) ----
+  // ---- v98: up to 4 players (host + 3 guests), shared worlds, battles, chat, and war ----
   var COOP = {
-    room: null, code: "", host: false, on: false, seq: 0, hits: [], hurt: [], hseen: 0, useen: 0, pe: null, gotSnap: 0, hitIds: {}, status: "", chat: [], cseen: 0, clog: [],
+    on: false, host: false, code: "", seq: 0, links: {}, pe: null, peAt: 0, conn: null, pr: null, myid: "", status: "",
+    hits: [], pv: [], hitIds: {}, war: 0, chat: [], cs: {}, clog: [], sm: {}, pvf: 0, name: "", synced: 0, useen: 0, pseenH: 0, MAXP: 4,
+    now: function () { return Date.now(); },
+    // everyone else I can currently see: [{id, nm, pe}]
+    others: function () {
+      var t = COOP.now(), r = [];
+      if (COOP.host) { Object.keys(COOP.links).forEach(function (id) { var l = COOP.links[id]; if (l.pe && l.pe.vh && t - l.at < 5000) r.push({ id: id, nm: l.pe.nm || "Player", pe: l.pe, link: l }); }); }
+      else if (COOP.pe && t - COOP.peAt < 5000) {
+        r.push({ id: "h", nm: COOP.pe.nm || "Host", pe: COOP.pe });
+        (COOP.pe.rs || []).forEach(function (q) { r.push({ id: q.id, nm: q.nm || "Player", pe: q }); });
+      }
+      return r;
+    },
+    near: function () { return !AR ? [] : COOP.others().filter(function (o) { return o.pe.ar && o.pe.ar === AR.id; }); },
+    over: function () { return !!(AR && AR.sp && AR.sp.over); },
+    hostSame: function () { return !!(AR && COOP.pe && COOP.pe.ar === AR.id && COOP.now() - COOP.peAt < 5000); },
+    sync: function () { if (!COOP.on || !AR || COOP.over()) return false; return COOP.host ? COOP.near().length > 0 : COOP.hostSame(); },
+    count: function () { return COOP.sync() ? 1 + COOP.near().length : 1; },
     guest: function () { return !!(COOP.on && !COOP.host && COOP.sync() && COOP.pe && COOP.pe.sn); },
-    sync: function () { return COOP.shared() && !(AR && AR.sp && AR.sp.over); },
-    dm: function () { return COOP.on && (COOP.sync() || (F && F.fr && !F.fr.gone)) ? 2 : 1; },
-    peer: function () {
-      if (!COOP.room) return null; var ps = COOP.room.peers(), i, o = null;
-      for (i = 0; i < ps.length; i++) if (!ps[i].sameTab && ps[i].kind === "viewer" && ps[i].presence && ps[i].presence.vh) { o = ps[i]; break; }
-      return o;
+    dm: function () {
+      if (COOP.pvf || !COOP.on) return 1; var m = 1;
+      if (COOP.host) m = (F && !F.gst && F.dblm > 1) ? F.dblm : COOP.count(); else if (COOP.sync()) m = COOP.pe.mm || 1;
+      return Math.min(2, Math.max(1, m));
     },
-    shared: function () { var p = COOP.pe; return !!(AR && p && p.ar && p.ar === AR.id && (Date.now() - COOP.peAt) < 5000); },
     target: function (e, p) {
-      if (!COOP.on || !COOP.host || !COOP.sync() || !COOP.rp) return { x: p.x, y: p.y, r: 0 };
-      var dl = Math.hypot(p.x - e.x, p.y - e.y), dr = Math.hypot(COOP.rp.x - e.x, COOP.rp.y - e.y);
-      return dr < dl ? { x: COOP.rp.x, y: COOP.rp.y, r: 1 } : { x: p.x, y: p.y, r: 0 };
+      if (!COOP.on || !COOP.host || !COOP.sync()) return { x: p.x, y: p.y, r: 0 };
+      var best = { x: p.x, y: p.y, r: 0 }, bd = Math.hypot(p.x - e.x, p.y - e.y);
+      COOP.near().forEach(function (o) { var d = Math.hypot(o.pe.x - e.x, o.pe.y - e.y); if (d < bd) { bd = d; best = { x: o.pe.x, y: o.pe.y, r: o.id }; } });
+      return best;
     },
-    hurtR: function (n) { COOP.hurt.push({ s: ++COOP.seq, n: Math.round(n * 100) / 100 }); if (COOP.hurt.length > 6) COOP.hurt.shift(); },
-    hit: function (e, dmg, dx, dy) {
+    hurtRf: function (id) { return function (n) { COOP.give(id, Math.round(n * 100) / 100, 0); }; },
+    give: function (id, n, pvp) { var l = COOP.links[id]; if (!l) return; l.hurt.push(pvp ? { s: ++COOP.seq, n: n, p: 1 } : { s: ++COOP.seq, n: n }); if (l.hurt.length > 8) l.hurt.shift(); },
+    hit: function (e, dmg) {
       var i = AR.en.indexOf(e); if (i < 0) return false;
       COOP.hits.push({ s: ++COOP.seq, i: i, d: Math.round(dmg * 100) / 100 }); if (COOP.hits.length > 8) COOP.hits.shift();
       e.hp = Math.max(0.01, e.hp - dmg); e.flash = 0.2; AR.fx.push({ x: e.x, y: e.y - 8, t: 0.2 });
       AR.floats.push({ x: e.x, y: e.y - 16, t: 0.7, s: String(Math.round(dmg * 10) / 10) });
       COOP.push(); return true;
     },
-    applyHit: function (h) {
-      var e = AR.en[h.i]; if (!e || e.dead || e.gone) return;
-      var rp = COOP.rp || { x: e.x, y: e.y }, dx = e.x - rp.x, dy = e.y - rp.y, d = Math.hypot(dx, dy) || 1;
+    applyHit: function (h, l) {
+      var e = AR && AR.en[h.i]; if (!e || e.dead || e.gone) return;
+      var rp = l.pe || { x: e.x, y: e.y }, dx = e.x - rp.x, dy = e.y - rp.y, d = Math.hypot(dx, dy) || 1;
       sfx("hit"); e.hp -= h.d; e.flash = 0.2; e.kx = dx / d * 130 * (e.d.boss ? 0.12 : 0.5); e.ky = dy / d * 130 * (e.d.boss ? 0.12 : 0.5);
       AR.fx.push({ x: e.x, y: e.y - 8, t: 0.2 }); AR.floats.push({ x: e.x, y: e.y - 16, t: 0.7, s: String(Math.round(h.d * 10) / 10) });
       if (e.d.yieldAt && e.hp <= e.d.yieldAt && e.hp > 0 && !cp().f.rusk) { e.yield = true; e.hp = Math.max(1, e.hp); }
       if (e.hp <= 0) killEn(e);
     },
-    // what I tell the other player
-    mine: function () {
-      var o = { vh: 1, ch: COOP.chat, ar: AR ? AR.id : "", nm: (ORIGINS[ovWho()] || { name: "Friend" }).name, sn: null };
+    // ---- war between players (both must declare it) ----
+    setWar: function (v) {
+      COOP.war = v ? 1 : 0; COOP.say(v ? "* has declared WAR. Turn on war to fight back." : "* has made peace."); COOP.ui();
+    },
+    atWar: function (o) { return !!(COOP.war && o.pe.war); },
+    pvSwing: function () {
+      if (!COOP.on || !COOP.war || !AR) return; var p = AR.p, dmg = 1 + Math.floor((lvl() - 1) / 5);
+      COOP.near().forEach(function (o) {
+        if (!COOP.atWar(o)) return; var dx = o.pe.x - p.x, dy = o.pe.y - p.y, d = Math.hypot(dx, dy);
+        if (d < 24 && (d < 9 || (dx * p.face.x + dy * p.face.y) / (d || 1) > 0.25)) {
+          AR.fx.push({ x: o.pe.x, y: o.pe.y - 8, t: 0.2 });
+          if (COOP.host) COOP.give(o.id, dmg, 1); else { COOP.pv.push({ s: ++COOP.seq, to: o.id, d: dmg }); if (COOP.pv.length > 6) COOP.pv.shift(); }
+        }
+      });
+      COOP.push();
+    },
+    pvHurt: function (n) {
+      if (!AR) return; var c = S.crowns; COOP.pvf = 1; try { hurtP(n); } finally { COOP.pvf = 0; } if (S.crowns < c) S.crowns = c;
+    },
+    route: function (v, fromId) {
+      var from = COOP.links[fromId]; if (!from || !from.pe || !from.pe.war) return; var d = Math.max(0, Math.min(4, +v.d || 0)); if (!d) return;
+      if (v.to === "h") { if (COOP.war) COOP.pvHurt(d); return; }
+      var t = COOP.links[v.to]; if (t && t.pe && t.pe.war) COOP.give(v.to, d, 1);
+    },
+    // ---- what I tell the others ----
+    base: function () {
+      var o = { vh: 1, ch: COOP.chat, nm: COOP.name || "Player", war: COOP.war, ar: AR ? AR.id : "" };
       if (AR) {
         var p = AR.p; o.x = Math.round(p.x * 2) / 2; o.y = Math.round(p.y * 2) / 2; o.fx = p.face.x; o.fy = p.face.y; o.hp = Math.round(p.hp * 10) / 10; o.mx = p.max;
         o.at = p.atk > 0 ? 1 : 0; o.an = Math.round(p.anim * 10) / 10; o.lk = pLook();
-        if (COOP.host && COOP.sync()) o.sn = COOP.snap();
-        else o.sn = null;
       }
-      o.hi = COOP.hits; o.hu = COOP.hurt;
-      o.bt = (COOP.host && F && !F.gst && F.bid) ? COOP.bsnap() : null;
-      if (COOP.gB && F && F.gst) { o.bj = F.bid; o.bm = COOP.bmine(); o.bc = COOP.fcmd || null; o.bk = F.gotTr ? F.bid : 0; } else { o.bj = null; o.bm = null; o.bc = null; o.bk = 0; }
       return o;
     },
     snap: function () {
-      var types = [], en = [], i, e, f;
+      var types = [], en = [];
       AR.en.slice(0, 70).forEach(function (e) {
         var ti = types.indexOf(e.type); if (ti < 0) { types.push(e.type); ti = types.length - 1; }
-        f = (e.dead ? 1 : 0) | (e.aggro ? 2 : 0) | (e.yield ? 4 : 0) | (e.gone ? 8 : 0) | (e.flash > 0 ? 16 : 0) | (e.rp ? 32 : 0);
+        var f = (e.dead ? 1 : 0) | (e.aggro ? 2 : 0) | (e.yield ? 4 : 0) | (e.gone ? 8 : 0) | (e.flash > 0 ? 16 : 0) | (e.rp ? 32 : 0);
         en.push([ti, Math.round(e.x * 2) / 2, Math.round(e.y * 2) / 2, Math.round(e.hp * 10) / 10, Math.round(e.hpm * 10) / 10, f]);
       });
       var pr = [];
       AR.proj.forEach(function (q) { if (q.own || pr.length >= 24) return; if (!q.pid) q.pid = ++COOP.seq; pr.push([q.pid, Math.round(q.x), Math.round(q.y), Math.round(q.vx), Math.round(q.vy)]); });
       return { t: types, e: en, p: pr };
     },
-    push: function () { if (COOP.room) COOP.room.presence(COOP.mine()).catch(function () {}); },
-    // guest: take the host's world
+    roster: function (skip) {
+      var r = [];
+      Object.keys(COOP.links).forEach(function (id) {
+        var l = COOP.links[id]; if (id === skip || !l.pe || !l.pe.vh || COOP.now() - l.at > 5000) return; var q = l.pe;
+        r.push({ id: id, nm: q.nm, ar: q.ar, x: q.x, y: q.y, fx: q.fx, fy: q.fy, hp: q.hp, mx: q.mx, at: q.at, lk: q.lk, war: q.war, ch: q.ch });
+      });
+      return r;
+    },
+    push: function () {
+      if (!COOP.on) return; var b = COOP.base(), i, t = COOP.now();
+      if (COOP.host) {
+        var sn = null, bs = null, ids = Object.keys(COOP.links);
+        if (AR && COOP.sync()) sn = COOP.snap();
+        if (F && !F.gst && F.bid && ids.length) bs = COOP.bsnap();
+        var m = COOP.count();
+        ids.forEach(function (id) {
+          var l = COOP.links[id]; if (!l.conn || !l.conn.open) return; var o = {}, k;
+          for (k in b) o[k] = b[k];
+          o.id = id; o.hu = l.hurt; o.mm = m; o.rs = COOP.roster(id);
+          o.sn = (sn && l.pe && l.pe.ar === (AR && AR.id)) ? sn : null;
+          if (bs) { var q = {}; for (k in bs) q[k] = bs[k]; q.fi = l.fu ? F.units.indexOf(l.fu) : -1; if (l.pe && l.pe.bk === F.bid) q.tr = null; else q.tr = COOP.trSnap(); o.bt = q; } else o.bt = null;
+          try { l.conn.send(o); } catch (e) {}
+        });
+      } else if (COOP.conn && COOP.conn.open) {
+        b.hi = COOP.hits; b.pv = COOP.pv;
+        if (COOP.gB && F && F.gst) { b.bj = F.bid; b.bm = COOP.bmine(); b.bc = COOP.fcmd || null; b.bk = F.gotTr ? F.bid : 0; } else { b.bj = null; b.bm = null; b.bc = null; b.bk = 0; }
+        try { COOP.conn.send(b); } catch (e) {}
+      }
+    },
+    // guest: take the host world
     adopt: function (sn) {
       var a = AR;
       sn.e.forEach(function (r, i) {
@@ -7581,65 +7644,72 @@ window.__vhGame = function () { (function () {
       sn.p.forEach(function (r) { if (COOP.hitIds[r[0]]) return; var ex = a.proj.filter(function (q) { return q.pid === r[0]; })[0]; if (ex) { ex.x = r[1]; ex.y = r[2]; keep.push(ex); } else keep.push({ x: r[1], y: r[2], vx: r[3], vy: r[4], life: 1.2, pid: r[0] }); });
       a.proj = keep;
     },
-    // per frame: smooth guest enemies, remember the other player's position
     tick: function (dt) {
       if (!COOP.on) return;
       if (COOP.guest() && AR) AR.en.forEach(function (e) { if (e.tx === undefined || e.dead) return; var k = Math.min(1, dt * 14); e.x += (e.tx - e.x) * k; e.y += (e.ty - e.y) * k; });
-      if (COOP.rp && COOP.shared() && COOP.dx !== undefined) { var k2 = Math.min(1, dt * 14); COOP.dx += (COOP.rp.x - COOP.dx) * k2; COOP.dy += (COOP.rp.y - COOP.dy) * k2; }
+      var k2 = Math.min(1, dt * 14);
+      COOP.near().forEach(function (o) { var s = COOP.sm[o.id]; if (!s || Math.hypot(s.x - o.pe.x, s.y - o.pe.y) > 60) { COOP.sm[o.id] = { x: o.pe.x, y: o.pe.y }; } else { s.x += (o.pe.x - s.x) * k2; s.y += (o.pe.y - s.y) * k2; } });
     },
     draw: function (a, list, g) {
-      if (!COOP.on || !COOP.shared() || !COOP.rp) return; var pe = COOP.pe, l = pe.lk || {};
-      if (COOP.dx === undefined || Math.hypot(COOP.dx - COOP.rp.x, COOP.dy - COOP.rp.y) > 60) { COOP.dx = COOP.rp.x; COOP.dy = COOP.rp.y; }
-      list.push({ y: COOP.dy, f: function () {
-        drawChar(g, COOP.dx, COOP.dy, { col: l.cloak || "#7a8aa8", hair: l.hair, skin: l.skin, hat: l.hat, hatc: l.hatc, band: l.band, face: { x: pe.fx || 0, y: pe.fy || 1 }, walk: Math.hypot(COOP.dx - COOP.rp.x, COOP.dy - COOP.rp.y) > 0.6, anim: a.t * 9, flash: false });
-        g.font = "bold 6px monospace"; g.fillStyle = "#9be0ff"; var t = (COOP.host ? "Host " : "Friend ") + (pe.nm || ""); g.fillText(t, Math.round(COOP.dx) - t.length * 1.8, Math.round(COOP.dy) - 19);
-        var w = 14, hp = Math.max(0, Math.min(1, (pe.hp || 0) / (pe.mx || 1))); g.fillStyle = "#00000099"; g.fillRect(Math.round(COOP.dx) - 7, Math.round(COOP.dy) - 17, w, 2); g.fillStyle = "#6ad06a"; g.fillRect(Math.round(COOP.dx) - 7, Math.round(COOP.dy) - 17, Math.round(w * hp), 2);
-        if (pe.at) { g.fillStyle = "#f2f2ff"; g.fillRect(Math.round(COOP.dx + (pe.fx || 0) * 9) - 2, Math.round(COOP.dy - 6 + (pe.fy || 0) * 9) - 2, 4, 4); }
-      } });
+      if (!COOP.on) return;
+      COOP.near().forEach(function (o) {
+        var pe = o.pe, l = pe.lk || {}, s = COOP.sm[o.id]; if (!s || pe.x === undefined) return;
+        list.push({ y: s.y, f: function () {
+          drawChar(g, s.x, s.y, { col: l.cloak || "#7a8aa8", hair: l.hair, skin: l.skin, hat: l.hat, hatc: l.hatc, band: l.band, face: { x: pe.fx || 0, y: pe.fy || 1 }, walk: Math.hypot(s.x - pe.x, s.y - pe.y) > 0.6, anim: a.t * 9, flash: false });
+          var war = COOP.atWar(o), t = String(o.nm || "") + (pe.war ? " [war]" : "");
+          g.font = "bold 6px monospace"; g.fillStyle = war ? "#ff6a5a" : "#9be0ff"; g.fillText(t, Math.round(s.x) - t.length * 1.8, Math.round(s.y) - 19);
+          var w = 14, hp = Math.max(0, Math.min(1, (pe.hp || 0) / (pe.mx || 1))); g.fillStyle = "#00000099"; g.fillRect(Math.round(s.x) - 7, Math.round(s.y) - 17, w, 2); g.fillStyle = war ? "#e05a4a" : "#6ad06a"; g.fillRect(Math.round(s.x) - 7, Math.round(s.y) - 17, Math.round(w * hp), 2);
+          if (pe.at) { g.fillStyle = "#f2f2ff"; g.fillRect(Math.round(s.x + (pe.fx || 0) * 9) - 2, Math.round(s.y - 6 + (pe.fy || 0) * 9) - 2, 4, 4); }
+        } });
+      });
     },
+    // ---- 10 times a second ----
     pump: function () {
-      if (!COOP.on || !COOP.room) return;
-      var pr = COOP.peer(), now = Date.now();
-      if (pr) { var pe = pr.presence; if (pe !== COOP.pe) { COOP.pe = pe; COOP.peAt = now; } else if (pr.updatedAt) COOP.peAt = Math.max(COOP.peAt || 0, Math.min(now, pr.updatedAt + 3000)); COOP.rp = (pe.ar && pe.x !== undefined) ? { x: pe.x, y: pe.y } : null; }
-      else { COOP.pe = null; COOP.rp = null; }
-      var sh = COOP.sync();
-      if (pr && !COOP.synced) { COOP.synced = 1; (COOP.pe.hi || []).forEach(function (h) { COOP.hseen = Math.max(COOP.hseen, h.s); }); (COOP.pe.hu || []).forEach(function (h) { COOP.useen = Math.max(COOP.useen, h.s); }); }
-      if (!pr) COOP.synced = 0;
-      if (pr && COOP.pe && COOP.pe.ch) {
-        if (!COOP.cinit) { COOP.cinit = 1; COOP.pe.ch.forEach(function (m) { COOP.cseen = Math.max(COOP.cseen, m.s); }); }
-        COOP.pe.ch.forEach(function (m) { if (m.s > COOP.cseen) { COOP.cseen = m.s; COOP.addLog(COOP.pe.nm || "Friend", m.t, false); } });
-      }
-      if (!pr) COOP.cinit = 0;
-      if (sh && pr) {
+      if (!COOP.on) return; var t = COOP.now();
+      if (COOP.host) {
+        Object.keys(COOP.links).forEach(function (id) {
+          var l = COOP.links[id]; if (t - l.at > 15000 && l.at) { try { l.conn.close(); } catch (e) {} delete COOP.links[id]; return; }
+          var pe = l.pe; if (!pe) return;
+          if (!l.synced) { l.synced = 1; (pe.hi || []).forEach(function (h) { l.hseen = Math.max(l.hseen, h.s); }); (pe.pv || []).forEach(function (h) { l.pseen = Math.max(l.pseen, h.s); }); }
+          if (AR && COOP.sync() && pe.ar === AR.id) (pe.hi || []).forEach(function (h) { if (h.s > l.hseen) { l.hseen = h.s; COOP.applyHit(h, l); } });
+          (pe.pv || []).forEach(function (v) { if (v.s > l.pseen) { l.pseen = v.s; COOP.route(v, id); } });
+        });
+      } else {
         var pe2 = COOP.pe;
-        if (COOP.host) (pe2.hi || []).forEach(function (h) { if (h.s > COOP.hseen) { COOP.hseen = h.s; COOP.applyHit(h); } });
-        else {
-          (pe2.hu || []).forEach(function (h) { if (h.s > COOP.useen) { COOP.useen = h.s; hurtP(h.n); } });
-          if (pe2.sn) COOP.adopt(pe2.sn);
-        }
+        if (pe2 && t - COOP.peAt < 5000) {
+          if (!COOP.synced) { COOP.synced = 1; (pe2.hu || []).forEach(function (h) { COOP.useen = Math.max(COOP.useen, h.s); }); }
+          (pe2.hu || []).forEach(function (h) { if (h.s > COOP.useen) { COOP.useen = h.s; if (!AR) return; if (h.p) COOP.pvHurt(h.n); else hurtP(h.n); } });
+          if (COOP.guest()) COOP.adopt(pe2.sn);
+        } else COOP.synced = 0;
       }
+      // chat from everyone
+      var ids = {};
+      COOP.others().forEach(function (o) {
+        ids[o.id] = 1; var ch = o.pe.ch; if (!ch) return; var cs = COOP.cs[o.id];
+        if (cs === undefined) { cs = 0; ch.forEach(function (m) { cs = Math.max(cs, m.s); }); COOP.cs[o.id] = cs; return; }
+        ch.forEach(function (m) { if (m.s > cs) { cs = m.s; COOP.addLog(o.nm, String(m.t || "").slice(0, 140), false); } }); COOP.cs[o.id] = cs;
+      });
+      Object.keys(COOP.cs).forEach(function (k) { if (!ids[k]) delete COOP.cs[k]; });
       COOP.hostDouble(); COOP.battle(); COOP.push(); COOP.ui();
     },
     // ---- chat ----
     say: function (t) {
       t = String(t || "").replace(/\s+/g, " ").trim().slice(0, 140); if (!t || !COOP.on) return;
       COOP.chat.push({ s: ++COOP.seq, t: t }); if (COOP.chat.length > 6) COOP.chat.shift();
-      COOP.addLog("You", t, true); COOP.push();
+      COOP.addLog(t.charAt(0) === "*" ? "You" : "You", t.charAt(0) === "*" ? t.replace("*", "").trim() : t, true); COOP.push();
     },
     addLog: function (who, t, me) {
-      COOP.clog.push({ w: who, t: t, me: me, at: Date.now() }); if (COOP.clog.length > 40) COOP.clog.shift();
+      COOP.clog.push({ w: who, t: t, me: me, at: COOP.now() }); if (COOP.clog.length > 40) COOP.clog.shift();
       try { sfx("click"); } catch (e) {}
       COOP.drawLog();
     },
     drawLog: function () {
-      var now = Date.now(), box = document.getElementById("mplog"), ov = document.getElementById("mpover");
+      var now = COOP.now(), box = document.getElementById("mplog"), ov = document.getElementById("mpover");
       if (box) { box.textContent = ""; COOP.clog.slice(-12).forEach(function (m) { var d = document.createElement("div"); d.style.color = m.me ? "#f6e3ae" : "#9be0ff"; d.textContent = m.w + ": " + m.t; box.appendChild(d); }); box.scrollTop = box.scrollHeight; }
       if (ov) { ov.textContent = ""; COOP.clog.filter(function (m) { return now - m.at < 9000; }).slice(-4).forEach(function (m) { var d = document.createElement("div"); d.style.cssText = "background:#000000a8;padding:2px 6px;margin-top:2px;border-radius:3px;color:" + (m.me ? "#f6e3ae" : "#9be0ff"); d.textContent = m.w + ": " + m.t; ov.appendChild(d); }); }
     },
-    // ---- panel ----
-    // transport: PeerJS (WebRTC, no account) first, claude.ai room as a fallback
+    // ---- connection (PeerJS / WebRTC, no account) ----
     loadPeer: function (cb) {
-      if (window.__noPeer) return cb(false);
       if (window.Peer) return cb(true);
       var urls = ["peerjs.min.js", "https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js", "https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js"], i = 0;
       (function next() {
@@ -7648,25 +7718,16 @@ window.__vhGame = function () { (function () {
         document.head.appendChild(sc);
       })();
     },
-    shim: function (conn) {
-      var r = { _p: null, _at: 0, peers: function () { return r._p ? [{ sameTab: false, kind: "viewer", presence: r._p, updatedAt: r._at }] : []; },
-        presence: function (o) { try { if (conn.open) conn.send(o); } catch (e) {} return Promise.resolve(); },
-        leave: function () { try { conn.close(); } catch (e) {} if (r.pr) { try { r.pr.destroy(); } catch (e) {} } } };
-      conn.on("data", function (d) { if (d && typeof d === "object") { r._p = d; r._at = Date.now(); } });
-      conn.on("close", function () { r._p = null; if (COOP.room === r) COOP.setStatus(COOP.host ? "Your friend left. Waiting…" : "The host closed the game."); });
-      conn.on("error", function () { r._p = null; });
-      return r;
-    },
-    begin: function (r, code, host) {
-      COOP.room = r; COOP.code = code; COOP.host = host; COOP.on = true; COOP.hseen = 0; COOP.useen = 0; COOP.seq = Date.now() % 100000; COOP.synced = 0;
-      COOP.setStatus(host ? "Waiting for your friend. Share the code or link." : "Joined. Waiting for the host…");
+    begin: function (host, code) {
+      COOP.code = code; COOP.host = host; COOP.on = true; COOP.seq = COOP.now() % 100000; COOP.synced = 0; COOP.useen = 0; COOP.links = {}; COOP.cs = {}; COOP.pe = null; COOP.chat = []; COOP.war = 0;
+      COOP.setStatus(host ? "Waiting for friends. Share the code or link." : "Joined. Waiting for the host…");
       if (!COOP.timer) COOP.timer = setInterval(COOP.pump, 100);
       COOP.ui();
     },
     startPeer: function (code, host) {
-      var opts = window.__peerOpts || {}, id = "vhammer-" + code.toLowerCase(), pr, done = false, t;
-      pr = host ? new Peer(id, opts) : new Peer(undefined, opts);
-      var fail = function (m) { if (done) return; done = true; try { pr.destroy(); } catch (e) {} COOP.setStatus(m); };
+      var opts = window.__peerOpts || {}, id = "vhammer-" + code.toLowerCase(), pr = host ? new Peer(id, opts) : new Peer(undefined, opts), done = false, t;
+      COOP.pr = pr;
+      var fail = function (m) { if (done) return; done = true; try { pr.destroy(); } catch (e) {} COOP.pr = null; COOP.setStatus(m); };
       pr.on("error", function (e) {
         var ty = (e && e.type) || "";
         if (ty === "unavailable-id") fail("That code is in use. Tap Host again.");
@@ -7676,74 +7737,93 @@ window.__vhGame = function () { (function () {
       });
       if (host) {
         pr.on("open", function () {
-          if (done) return; done = true; var cur = null;
-          COOP.begin({ peers: function () { return cur ? cur.peers() : []; }, presence: function (o) { return cur ? cur.presence(o) : Promise.resolve(); }, leave: function () { try { if (cur) cur.leave(); } catch (e) {} try { pr.destroy(); } catch (e) {} } }, code, true);
-          var me = COOP.room;
+          if (done) return; done = true; COOP.begin(true, code);
           pr.on("connection", function (c) {
-            if (cur) { try { c.close(); } catch (e) {} return; }
-            c.on("open", function () { var sh = COOP.shim(c); sh.pr = null; cur = sh; c.on("close", function () { if (cur === sh) cur = null; }); COOP.setStatus("Friend connected."); });
+            c.on("open", function () {
+              var free = null, n; for (n = 1; n < COOP.MAXP; n++) if (!COOP.links["p" + n]) { free = "p" + n; break; }
+              if (!free) { try { c.send({ full: 1 }); } catch (e) {} setTimeout(function () { try { c.close(); } catch (e) {} }, 600); return; }
+              var l = { id: free, conn: c, pe: null, at: 0, hurt: [], hseen: 0, pseen: 0, synced: 0, fu: null, cn: -1 };
+              COOP.links[free] = l;
+              c.on("data", function (d) { if (d && typeof d === "object" && d.vh) { l.pe = d; l.at = COOP.now(); if (!l.joined) { l.joined = 1; COOP.addLog("System", (d.nm || "A player") + " joined.", false); } } });
+              c.on("close", function () { if (COOP.links[free] === l) { delete COOP.links[free]; COOP.addLog("System", ((l.pe && l.pe.nm) || "A player") + " left.", false); } });
+              c.on("error", function () {});
+            });
           });
         });
       } else {
         pr.on("open", function () {
-          var c = pr.connect(id, { reliable: true});
-          t = setTimeout(function () { if (!COOP.on) { fail("Could not reach the host. Check the code, or try a different network."); } }, 15000);
-          c.on("open", function () { clearTimeout(t); if (done) return; done = true; var sh = COOP.shim(c); sh.pr = pr; COOP.begin(sh, code, false); });
+          var c = pr.connect(id, { reliable: true });
+          t = setTimeout(function () { if (!COOP.on) fail("Could not reach the host. Check the code, or try a different network."); }, 15000);
+          c.on("open", function () { clearTimeout(t); if (done) return; done = true; COOP.conn = c; COOP.begin(false, code); });
+          c.on("data", function (d) {
+            if (d && d.full) { COOP.stop(); COOP.setStatus("That game is full (4 players)."); return; }
+            if (d && typeof d === "object" && d.vh) { COOP.pe = d; COOP.peAt = COOP.now(); if (d.id) COOP.myid = d.id; }
+          });
+          c.on("close", function () { COOP.pe = null; if (COOP.on) COOP.setStatus("The host closed the game."); });
           c.on("error", function () { fail("Could not reach the host."); });
         });
       }
     },
     start: function (code, host) {
+      try { COOP.name = (document.getElementById("mpname").value || "").replace(/[^\w \-]/g, "").trim().slice(0, 14) || "Player"; localStorage.setItem("vh_pname", COOP.name); } catch (e) { COOP.name = COOP.name || "Player"; }
       COOP.setStatus("Connecting…");
-      COOP.loadPeer(function (ok) {
-        if (ok) return COOP.startPeer(code, host);
-        var cl = window.claude; if (!cl || !cl.use) { COOP.setStatus("Co-op could not load. Check your internet and try again."); return; }
-        cl.use("room").then(function (r) {
-          if (!r) { COOP.setStatus("Co-op could not load. Check your internet and try again."); return null; }
-          return r.join("vh-" + code.toLowerCase());
-        }).then(function (nr) { if (nr) COOP.begin(nr, code, host); }).catch(function (e) { COOP.setStatus("Could not connect: " + ((e && e.message) || "try again")); });
-      });
+      COOP.loadPeer(function (ok) { if (ok) COOP.startPeer(code, host); else COOP.setStatus("Co-op could not load. Check your internet and try again."); });
     },
-    stop: function () { if (COOP.room) { try { COOP.room.leave(); } catch (e) {} } COOP.room = null; COOP.on = false; COOP.pe = null; COOP.rp = null; COOP.chat = []; COOP.cinit = 0; if (COOP.timer) { clearInterval(COOP.timer); COOP.timer = 0; } COOP.setStatus(""); COOP.ui(); },
+    stop: function () {
+      try { Object.keys(COOP.links).forEach(function (k) { try { COOP.links[k].conn.close(); } catch (e) {} }); if (COOP.conn) COOP.conn.close(); if (COOP.pr) COOP.pr.destroy(); } catch (e) {}
+      COOP.links = {}; COOP.conn = null; COOP.pr = null; COOP.on = false; COOP.pe = null; COOP.chat = []; COOP.cs = {}; COOP.war = 0; COOP.synced = 0;
+      if (COOP.gB) COOP.bLeave("You left the game.");
+      if (COOP.timer) { clearInterval(COOP.timer); COOP.timer = 0; } COOP.setStatus(""); COOP.ui();
+    },
     setStatus: function (t) { COOP.status = t; COOP.ui(); },
     link: function () {
       var base = "https://raposiojd-dev.github.io/Voidhammer/";
-      try { if (/^https?:$/.test(location.protocol) && !/claude/i.test(location.hostname) && !/usercontent|claudeusercontent/i.test(location.hostname)) base = location.href.split("#")[0]; } catch (e) {}
+      try { if (/^https?:$/.test(location.protocol) && !/claude/i.test(location.hostname)) base = location.href.split("#")[0]; } catch (e) {}
       return base + "#join-" + COOP.code;
     },
     ui: function () {
       var box = document.getElementById("mppanel"); if (!box) return;
-      var pr = COOP.pe, line = COOP.status;
+      var os = COOP.others(), line = COOP.status;
       if (COOP.on) {
-        if (!pr) line = COOP.host ? "Waiting for your friend…" : "Waiting for the host…";
-        else line = "Connected: " + (pr.nm || "player") + (COOP.shared() ? " (with you)" : " (in another place)");
+        var total = 1 + os.length;
+        line = os.length ? "Players: " + total + "/4" : (COOP.host ? "Waiting for friends…" : "Waiting for the host…");
       }
       document.getElementById("mpstat").textContent = line;
-      var cb = document.getElementById("mpchatbox"); if (cb) cb.hidden = !COOP.on;
       document.getElementById("mpidle").hidden = COOP.on; document.getElementById("mpon").hidden = !COOP.on;
-      if (COOP.on) { document.getElementById("mpcode").textContent = COOP.code; }
+      var cb = document.getElementById("mpchatbox"); if (cb) cb.hidden = !COOP.on;
+      if (COOP.on) {
+        document.getElementById("mpcode").textContent = COOP.code;
+        var pl = document.getElementById("mpplayers"); pl.textContent = "";
+        os.forEach(function (o) { var d = document.createElement("div"); var here = AR && o.pe.ar === AR.id; d.textContent = o.nm + (here ? " (here)" : " (elsewhere)") + (o.pe.war ? " [war]" : ""); d.style.color = COOP.atWar(o) ? "#ff6a5a" : "#9be0ff"; pl.appendChild(d); });
+        var wb = document.getElementById("mpwar"); wb.textContent = COOP.war ? "Make peace" : "Declare war"; wb.style.background = COOP.war ? "#4a1414" : "#3a2a14";
+      }
       var jb2 = document.getElementById("mpjoinb"); if (jb2) jb2.hidden = !COOP.canJoin();
-      var t = document.getElementById("mptab"); t.style.background = COOP.on && pr ? "#1d4a2ae8" : "#1a1610e8";
+      var t = document.getElementById("mptab"); t.style.background = COOP.on && os.length ? "#1d4a2ae8" : "#1a1610e8";
     },
     init: function () {
       if (document.getElementById("mptab")) return;
       var tab = document.createElement("button"); tab.id = "mptab"; tab.textContent = "Co-op";
       tab.setAttribute("style", "position:fixed;right:0;top:46%;z-index:99997;padding:10px 3px;writing-mode:vertical-rl;font:600 10px monospace;background:#1a1610e8;color:#f2dfb0;border:1px solid #8a5a2a;border-radius:3px;opacity:.9");
       var box = document.createElement("div"); box.id = "mppanel"; box.hidden = true;
-      box.setAttribute("style", "position:fixed;right:30px;top:30%;z-index:99997;width:min(300px,76vw);background:#14100cf2;color:#f2dfb0;border:2px solid #8a5a2a;padding:12px;font:12px/1.4 monospace");
-      box.innerHTML = '<b>Play together</b><div id="mpstat" style="margin:6px 0;min-height:1.4em;color:#9be0ff"></div>' +
-        '<div id="mpidle"><button id="mphost" style="width:100%;padding:9px;margin-bottom:8px;background:#3a2a14;color:#f6e3ae;border:1px solid #d8a030;font:600 12px monospace">Host a game</button>' +
+      box.setAttribute("style", "position:fixed;right:30px;top:20%;z-index:99997;width:min(310px,78vw);max-height:76vh;overflow:auto;background:#14100cf2;color:#f2dfb0;border:2px solid #8a5a2a;padding:12px;font:12px/1.4 monospace");
+      var sv = ""; try { sv = localStorage.getItem("vh_pname") || ""; } catch (e) {}
+      box.innerHTML = '<b>Play together (up to 4)</b><div id="mpstat" style="margin:6px 0;min-height:1.4em;color:#9be0ff"></div>' +
+        '<div id="mpidle"><input id="mpname" maxlength="14" placeholder="Your name" value="' + sv.replace(/[^\w \-]/g, "") + '" style="width:100%;box-sizing:border-box;padding:8px;margin-bottom:8px;background:#0c0a08;color:#f6e3ae;border:1px solid #8a5a2a;font:13px monospace">' +
+        '<button id="mphost" style="width:100%;padding:9px;margin-bottom:8px;background:#3a2a14;color:#f6e3ae;border:1px solid #d8a030;font:600 12px monospace">Host a game</button>' +
         '<div style="display:flex;gap:6px"><input id="mpin" maxlength="6" placeholder="CODE" style="flex:1;min-width:0;padding:8px;background:#0c0a08;color:#f6e3ae;border:1px solid #8a5a2a;font:600 13px monospace;text-transform:uppercase"><button id="mpjoin" style="padding:8px 12px;background:#3a2a14;color:#f6e3ae;border:1px solid #d8a030;font:600 12px monospace">Join</button></div></div>' +
-        '<div id="mpon" hidden>Code <b id="mpcode" style="font-size:16px;letter-spacing:.15em"></b><div style="display:flex;gap:6px;margin-top:8px"><button id="mpcopy" style="flex:1;padding:8px;background:#3a2a14;color:#f6e3ae;border:1px solid #d8a030;font:600 11px monospace">Copy invite link</button><button id="mpleave" style="padding:8px;background:#3a1414;color:#f6e3ae;border:1px solid #b24a3a;font:600 11px monospace">Leave</button></div></div>' +
+        '<div id="mpon" hidden>Code <b id="mpcode" style="font-size:16px;letter-spacing:.15em"></b><div id="mpplayers" style="margin:6px 0;font-size:11px"></div><div style="display:flex;gap:6px;margin-top:8px"><button id="mpcopy" style="flex:1;padding:8px;background:#3a2a14;color:#f6e3ae;border:1px solid #d8a030;font:600 11px monospace">Copy invite link</button><button id="mpleave" style="padding:8px;background:#3a1414;color:#f6e3ae;border:1px solid #b24a3a;font:600 11px monospace">Leave</button></div>' +
+        '<button id="mpwar" style="width:100%;margin-top:8px;padding:8px;background:#3a2a14;color:#ffd0c0;border:1px solid #b24a3a;font:600 11px monospace">Declare war</button></div>' +
         '<div id="mpchatbox" hidden style="margin-top:8px"><div id="mplog" style="height:84px;overflow:auto;background:#0c0a08;border:1px solid #5a3a1a;padding:4px;font-size:11px"></div><div style="display:flex;gap:6px;margin-top:6px"><input id="mpmsg" maxlength="140" placeholder="Say something…" style="flex:1;min-width:0;padding:8px;background:#0c0a08;color:#f6e3ae;border:1px solid #8a5a2a;font:13px monospace"><button id="mpsend" style="padding:8px 12px;background:#3a2a14;color:#f6e3ae;border:1px solid #d8a030;font:600 12px monospace">Send</button></div></div>' +
-        '<div style="margin-top:8px;opacity:.7;font-size:10px">Walk the world map together, clear towns, caves and gates, and join map battles the host starts. Foes are twice as strong while you play together. You both keep your own gear, loot and save. The host runs the enemies.</div>';
+        '<div style="margin-top:8px;opacity:.7;font-size:10px">Up to 4 players. Walk the world together or split up, join map battles the host starts, and chat. Each extra player in the host area adds foe health. War: you can only hurt a player if you both declared it, and falling costs no crowns.</div>';
       document.body.appendChild(box); document.body.appendChild(tab);
       var ov = document.createElement("div"); ov.id = "mpover"; ov.setAttribute("style", "position:fixed;left:8px;top:calc(4.2rem + env(safe-area-inset-top,0px));z-index:99996;max-width:70vw;font:11px/1.3 monospace;pointer-events:none"); document.body.appendChild(ov);
       setInterval(function () { if (COOP.clog.length) COOP.drawLog(); }, 2000);
       var mi = box.querySelector("#mpmsg"), send = function () { var v = mi.value; mi.value = ""; COOP.say(v); };
       box.querySelector("#mpsend").addEventListener("click", send);
       ["keydown", "keyup", "keypress"].forEach(function (n) { mi.addEventListener(n, function (e) { e.stopPropagation(); if (n === "keydown" && e.key === "Enter") send(); }); });
-      var jb = document.createElement("button"); jb.id = "mpjoinb"; jb.hidden = true; jb.textContent = "Join your friend's battle";
+      ["keydown", "keyup", "keypress"].forEach(function (n) { box.querySelector("#mpname").addEventListener(n, function (e) { e.stopPropagation(); }); });
+      box.querySelector("#mpwar").addEventListener("click", function () { COOP.setWar(!COOP.war); });
+      var jb = document.createElement("button"); jb.id = "mpjoinb"; jb.hidden = true; jb.textContent = "Join the battle";
       jb.setAttribute("style", "position:fixed;left:50%;transform:translateX(-50%);bottom:calc(6.5rem + env(safe-area-inset-bottom,0px));z-index:99998;padding:.8rem 1.3rem;background:#3a1a0e;color:#ffe9b0;border:2px solid #e0a030;font:700 .95rem monospace;letter-spacing:.05em");
       jb.addEventListener("click", function (e) { e.stopPropagation(); COOP.bJoin(); COOP.ui(); });
       var lb = document.createElement("button"); lb.id = "mpleaveb"; lb.hidden = true; lb.textContent = "Leave battle";
@@ -7754,14 +7834,20 @@ window.__vhGame = function () { (function () {
       ["pointerdown", "touchstart"].forEach(function (n) { box.addEventListener(n, function (e) { e.stopPropagation(); }); });
       function code() { var s = "", c = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789", i; for (i = 0; i < 5; i++) s += c.charAt(Math.floor(Math.random() * c.length)); return s; }
       box.querySelector("#mphost").addEventListener("click", function () { COOP.start(code(), true); });
-      box.querySelector("#mpjoin").addEventListener("click", function () { var v = box.querySelector("#mpin").value.trim().toUpperCase().replace(/[^A-Z0-9]/g, ""); if (v.length >= 4) COOP.start(v, false); else COOP.setStatus("Enter the host's code."); });
+      box.querySelector("#mpjoin").addEventListener("click", function () { var v = box.querySelector("#mpin").value.trim().toUpperCase().replace(/[^A-Z0-9]/g, ""); if (v.length >= 4) COOP.start(v, false); else COOP.setStatus("Enter the host code."); });
       box.querySelector("#mpleave").addEventListener("click", function () { COOP.stop(); });
       box.querySelector("#mpcopy").addEventListener("click", function () {
-        var t = COOP.link(), done = function () { COOP.setStatus("Link copied. Send it to your friend."); };
+        var t = COOP.link(), done = function () { COOP.setStatus("Link copied. Send it to your friends."); };
         try { navigator.clipboard.writeText(t).then(done, function () { COOP.setStatus(t); }); } catch (e) { COOP.setStatus(t); }
       });
-      try { var m = /^#join-([A-Za-z0-9]{4,6})$/.exec(location.hash || ""); if (m) { box.querySelector("#mpin").value = m[1].toUpperCase(); box.hidden = false; COOP.setStatus("Tap Join to play with your friend."); } } catch (e) {}
+      try { var m = /^#join-([A-Za-z0-9]{4,6})$/.exec(location.hash || ""); if (m) { box.querySelector("#mpin").value = m[1].toUpperCase(); box.hidden = false; COOP.setStatus("Tap Join to play with your friends."); } } catch (e) {}
     }
+  };
+
+  // ---- foes grow with the number of players in the host area ----
+  COOP.hostDouble = function () {
+    if (!COOP.on || !COOP.host || !AR) return; var m = COOP.count();
+    AR.en.forEach(function (e) { var c = e.cm || 1; if (c !== m) { var r = m / c; e.hp = Math.max(0.01, e.hp * r); e.hpm *= r; e.cm = m; } });
   };
 
   // ---------- shared map battles ----------
@@ -7771,49 +7857,43 @@ window.__vhGame = function () { (function () {
   COOP.fmult = function () { return (1 + 0.12 * sk("blademaster")) * gearBattle().hero / Math.max(0.5, 1 - setAgg().cdr); };
   COOP.hpmult = function () { return gearBattle().hp * (1 + 0.15 * sk("ironhide")) * Math.max(1, (maxHp() - sk("ironhide")) / 5); };
   COOP.bmine = function () { return { fm: Math.round(COOP.fmult() * 100) / 100, fh: Math.round(COOP.hpmult() * 100) / 100 }; };
-  COOP.bStart = function () { if (F) { F.bid = Math.floor(Math.random() * 1e6) + 1; F.fr = null; F.dbl = 0; } COOP.fc = null; COOP.cn = 0; };
+  COOP.bStart = function () { if (F) { F.bid = Math.floor(Math.random() * 1e6) + 1; F.dblm = 1; } COOP.fcmd = null; COOP.cn = 0; Object.keys(COOP.links).forEach(function (k) { COOP.links[k].fu = null; }); };
+  COOP.trSnap = function () {
+    if (F._tr) return F._tr;
+    var q = function (a, ks) { return a.map(function (r) { return ks.map(function (k) { return Math.round(r[k]); }); }); };
+    return (F._tr = { r: q(F.rocks, ["x", "y", "r"]), t: q(F.trees, ["x", "y", "r"]), h: q(F.hills, ["x", "y", "rx", "ry"]) });
+  };
   COOP.bsnap = function () {
-    var us = "", i, u, f, fi = -1, hi = -1;
+    var us = "", hi = -1;
     F.units.forEach(function (u, i) {
-      if (u.friend) fi = i; if (u === F.hero) hi = i;
-      f = (u.dead ? 1 : 0) | (u.gone ? 2 : 0) | (u.rout ? 4 : 0) | (u.ranged ? 8 : 0) | (u === F.hero ? 16 : 0) | (u.kael ? 32 : 0) | (u.friend ? 64 : 0) | (u.ally ? 128 : 0) | (u.void ? 256 : 0) | (u.spk ? 512 : 0) | (u.atk > 0 ? 1024 : 0) | (u.flash > 0 ? 2048 : 0) | (Math.min(7, u.tier || 1) << 12) | (u.s === "e" ? 32768 : 0);
+      if (u === F.hero) hi = i;
+      var f = (u.dead ? 1 : 0) | (u.gone ? 2 : 0) | (u.rout ? 4 : 0) | (u.ranged ? 8 : 0) | (u === F.hero ? 16 : 0) | (u.kael ? 32 : 0) | (u.friend ? 64 : 0) | (u.ally ? 128 : 0) | (u.void ? 256 : 0) | (u.spk ? 512 : 0) | (u.atk > 0 ? 1024 : 0) | (u.flash > 0 ? 2048 : 0) | (Math.min(7, u.tier || 1) << 12) | (u.s === "e" ? 32768 : 0);
       var hf = Math.max(0, Math.min(31, Math.round(31 * u.hp / Math.max(0.0001, u.hpm))));
       us += cEnc(Math.round(u.x * 2) + Math.round(u.y * 2) * 2048 + hf * 4194304, 5) + cEnc(f, 3);
     });
     var pf = Math.max(0, Math.min(1, F.pw / Math.max(0.0001, F.p0))), ef = Math.max(0, Math.min(1, F.ew / Math.max(0.0001, F.e0)));
-    var o = { id: F.bid, u: us, fi: fi, hi: hi, pf: Math.round(pf * 100), ef: Math.round(ef * 100), t: Math.floor(F.t), ov: F.over === "win" ? 1 : F.over === "flee" ? 2 : F.over === "lose" ? 3 : 0, ms: F.msgT > 0 ? String(F.msg).slice(0, 70) : "", k: B.kind || "", sg: B.siegeId ? 1 : 0, th: F.bth || "", ec: F.ecol || "", en: Math.round(B.en0 || 10), ti: String(F.title || "").slice(0, 40), dp: F.deploy ? 1 : 0 };
-    var pe = COOP.pe;
-    if (!pe || pe.bk !== F.bid) {
-      var q = function (a, ks) { return a.map(function (r) { return ks.map(function (k) { return Math.round(r[k]); }); }); };
-      o.tr = { r: q(F.rocks, ["x", "y", "r"]), t: q(F.trees, ["x", "y", "r"]), h: q(F.hills, ["x", "y", "rx", "ry"]) };
-    }
-    return o;
+    return { id: F.bid, u: us, fi: -1, hi: hi, pf: Math.round(pf * 100), ef: Math.round(ef * 100), t: Math.floor(F.t), ov: F.over === "win" ? 1 : F.over === "flee" ? 2 : F.over === "lose" ? 3 : 0, ms: F.msgT > 0 ? String(F.msg).slice(0, 70) : "", k: B.kind || "", sg: B.siegeId ? 1 : 0, th: F.bth || "", ec: F.ecol || "", en: Math.round(B.en0 || 10), ti: String(F.title || "").slice(0, 40), dp: F.deploy ? 1 : 0 };
   };
-  // host: add or remove the friend's hero, double or halve the foes
+  // host: add or remove each friend hero, scale the foes
   COOP.battle = function () {
     if (!COOP.on || !COOP.host || !F || F.gst || !F.bid) return;
-    var pe = COOP.pe, want = !!(pe && pe.bj === F.bid && !F.over);
-    if (pe && pe.bc && (!COOP.fc || pe.bc.n !== COOP.cn)) { COOP.fc = pe.bc; COOP.cn = pe.bc.n; }
-    if (want && !F.fr) {
-      var m = pe.bm || {}, hh = F.hero, fm = Math.max(0.4, Math.min(3, m.fm || 1)), fh = Math.max(0.4, Math.min(3, m.fh || 1)) / Math.max(0.4, COOP.hpmult());
-      var fr = { s: "p", kael: true, friend: true, x: hh.x + 22, y: hh.y + 6, w: hh.w * fm, hp: hh.hpm * fh, hpm: hh.hpm * fh, cd: 0, atk: 0, flash: 0, dead: false, rout: false, gone: false, tc: 0, t: null, slot: 999 };
-      F.units.push(fr); F.fr = fr; COOP.fc = null;
-      if (!F.dbl) { F.dbl = 1; F.units.forEach(function (u) { if (u.s === "e") { u.w *= 2; u.hp *= 2; u.hpm *= 2; } }); F.e0 *= 2; }
-      fieldMsg("Your friend joins the battle. The foes grow stronger.");
-    } else if (!want && F.fr && !F.fr.gone) {
-      F.fr.gone = true;
-      if (F.dbl) { F.dbl = 0; F.units.forEach(function (u) { if (u.s === "e") { u.w /= 2; u.hp = Math.max(0.01, u.hp / 2); u.hpm /= 2; } }); F.e0 /= 2; }
-      F.fr = null; if (!F.over) fieldMsg("Your friend has left. The foes weaken.");
-    }
-  };
-  // walk areas: double and halve the foes
-  COOP.hostDouble = function () {
-    if (!COOP.on || !COOP.host || !AR) return;
-    var on = COOP.sync();
-    AR.en.forEach(function (e) {
-      if (on && !e.cm) { e.cm = 1; e.hp *= 2; e.hpm *= 2; }
-      else if (!on && e.cm) { e.cm = 0; e.hp = Math.max(0.01, e.hp / 2); e.hpm /= 2; }
+    var hh = F.hero, joined = 0, left = 0, nm = "";
+    Object.keys(COOP.links).forEach(function (id) {
+      var l = COOP.links[id], pe = l.pe, want = !!(pe && pe.bj === F.bid && !F.over && COOP.now() - l.at < 5000);
+      if (l.fu && F.units.indexOf(l.fu) < 0) l.fu = null;
+      if (pe && pe.bc && l.fu && pe.bc.n !== l.cn) { l.fu.fcmd = pe.bc; l.cn = pe.bc.n; }
+      if (want && !l.fu) {
+        var m = pe.bm || {}, fm = Math.max(0.4, Math.min(3, m.fm || 1)), fh = Math.max(0.4, Math.min(3, m.fh || 1)) / Math.max(0.4, COOP.hpmult());
+        var k = Object.keys(COOP.links).indexOf(id);
+        var fr = { s: "p", kael: true, friend: true, x: hh.x + 22, y: hh.y + 6 + k * 14, w: hh.w * fm, hp: hh.hpm * fh, hpm: hh.hpm * fh, cd: 0, atk: 0, flash: 0, dead: false, rout: false, gone: false, tc: 0, t: null, slot: 999 };
+        F.units.push(fr); l.fu = fr; l.cn = -1; joined++; nm = pe.nm || "A friend";
+      } else if (!want && l.fu && !l.fu.gone) { l.fu.gone = true; l.fu = null; left++; }
     });
+    var n = 0; Object.keys(COOP.links).forEach(function (id) { if (COOP.links[id].fu) n++; });
+    var m2 = 1 + n, cur = F.dblm || 1;
+    if (m2 !== cur) { var r = m2 / cur; F.units.forEach(function (u) { if (u.s === "e") { u.w *= r; u.hp = Math.max(0.01, u.hp * r); u.hpm *= r; } }); F.e0 *= r; F.dblm = m2; }
+    if (joined) fieldMsg(nm + (joined > 1 ? " and others join" : " joins") + " the battle. The foes grow stronger.");
+    else if (left && !F.over) fieldMsg("A friend has left. The foes weaken.");
   };
   // guest: join, mirror, leave
   COOP.canJoin = function () { return !!(COOP.on && !COOP.host && COOP.pe && COOP.pe.bt && !COOP.gB && !F && !B && !sheet); };
@@ -7835,7 +7915,7 @@ window.__vhGame = function () { (function () {
   };
   COOP.gApply = function (sn) {
     if (sn.tr && !F.gotTr) { F.rocks = sn.tr.r.map(function (r) { return { x: r[0], y: r[1], r: r[2] }; }); F.trees = sn.tr.t.map(function (r) { return { x: r[0], y: r[1], r: r[2] }; }); F.hills = sn.tr.h.map(function (r) { return { x: r[0], y: r[1], rx: r[2], ry: r[3] }; }); F.gotTr = 1; }
-    var n = sn.u.length / 8, i, o, me = null;
+    var n = sn.u.length / 8, i, me = null;
     for (i = 0; i < n; i++) {
       var a = cDec(sn.u, i * 8, 5), f = cDec(sn.u, i * 8 + 5, 3), x = (a % 2048) / 2, y = (Math.floor(a / 2048) % 2048) / 2, hp = Math.floor(a / 4194304), u = F.units[i];
       if (!u) {
@@ -7848,7 +7928,7 @@ window.__vhGame = function () { (function () {
       else if (f & 32) { u.kael = true; }
       if ((f & 1) && !u.dead) { u.dead = true; F.corpses.push({ x: u.x, y: u.y, s: u.s, v: u.void }); if (F.corpses.length > 200) F.corpses.shift(); }
     }
-    if (me) F.hero = me; else if (!F.hero.units) { /* keep camera */ }
+    if (me) F.hero = me;
     F.pw = sn.pf; F.p0 = 100; F.ew = sn.ef; F.e0 = 100; F.t = sn.t; if (sn.ms && sn.ms !== F.msg) { F.msg = sn.ms; F.msgT = 3; }
     if (sn.dp) { F.msg = "Your friend is setting the line…"; F.msgT = 1; }
     if (sn.ov && !F.over) { F.over = sn.ov === 1 ? "win" : sn.ov === 2 ? "flee" : "lose"; F.overT = 0; COOP.reward(sn); }
