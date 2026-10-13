@@ -209,6 +209,8 @@ h2, #title h1 { font-family: var(--serif2); color: #d8b868; text-shadow: 0 2px 0
 #ahearts { margin-top: 2.7rem; }
 #aatk { background: radial-gradient(circle at 35% 30%, #a83a2c, #4a100c 70%); border: 3px solid #b8923a; color: #f4dc98; text-shadow: 0 1px 2px #000; box-shadow: 0 0 0 2px #120d06, 0 4px 10px #000, inset 0 0 14px rgba(0,0,0,0.6); font-family: var(--serif2); }
 #acast { background: radial-gradient(circle at 35% 30%, #4a3a9a, #1a1040 75%); border: 3px solid #8a7ad0; font-family: var(--serif2); box-shadow: 0 0 0 2px #0c0818, 0 4px 10px #000, inset 0 0 14px rgba(0,0,0,0.6); }
+html, body { position: fixed; inset: 0; width: 100%; height: 100%; overflow: hidden; overscroll-behavior: none; }
+button, [data-act], [data-sg], [data-w] { touch-action: manipulation; -webkit-touch-callout: none; }
 </style>
 
 <div class="app" id="app">
@@ -8866,6 +8868,7 @@ window.__vhGame = function () { (function () {
   document.addEventListener("visibilitychange", function () { if (document.hidden) save(); });
   ["gesturestart", "gesturechange", "gestureend"].forEach(function (g) { document.addEventListener(g, function (ev) { ev.preventDefault(); }); });
   document.addEventListener("contextmenu", function (ev) { ev.preventDefault(); });
+  (function fixTouch() { function snap() { try { if (window.scrollX || window.scrollY) window.scrollTo(0, 0); var v = window.visualViewport; if (v && (v.offsetTop || v.offsetLeft) && v.scale <= 1.01) window.scrollTo(0, 0); } catch (e) {} } ["resize", "orientationchange", "scroll", "focusin", "focusout", "touchend"].forEach(function (n) { window.addEventListener(n, snap, { passive: true }); }); if (window.visualViewport) { window.visualViewport.addEventListener("resize", snap); window.visualViewport.addEventListener("scroll", snap); } setInterval(snap, 1500); })();
   (function phoneReady() {
     try {
       var hd = document.head, add = function (n, c) { if (document.querySelector('meta[name="' + n + '"]')) return; var m = document.createElement("meta"); m.name = n; m.content = c; hd.appendChild(m); };
