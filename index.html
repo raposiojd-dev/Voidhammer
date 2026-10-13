@@ -2974,7 +2974,7 @@ window.__vhGame = function () { (function () {
         h += row("Promote 1 " + fr2.name.toLowerCase() + " to " + T2.name.toLowerCase(), T2.cr + " crowns, " + need.join(" and ") + ", " + T2.vxp + " experience" + (T2.burn ? ", and a memory" : "") + (why ? "<br>" + why : ""), "Promote", "promote", String(id), "1", !!why);
       });
     });
-    return h;
+    return h + ovPack();
   }
   function gearSheet() {
     var t = T(), h = "<h2>Gear</h2><p class=\"sub\">" + t + " men · strength +" + Math.round((gearMult() - 1) * 100) + "% from gear</p>" + tabsHtml();
@@ -8492,6 +8492,15 @@ window.__vhGame = function () { (function () {
     var mv = Math.min(S.loot[k] || 0, slotRoom(k)); if (mv > 0) { S.loot[k] -= mv; S.gear[k] = (S.gear[k] || 0) + mv; }
     S.salvage = lootCount();
   }
+  // backpack gear: kept for promotions (men-at-arms, crossbowmen...) or worn from the Troops tab
+  function ovPack() {
+    var h = '<div class="sec">Backpack gear</div>', any = false;
+    Object.keys(GEARB).forEach(function (k) {
+      var c = S.loot[k] || 0, w = S.gear[k] || 0; if (c < 1 && w < 1) return; any = true;
+      h += '<div class="row"><div class="ico">' + ic(k) + '</div><div class="rd">' + LOOT[k].name + "<small>" + c + " in the pack · " + w + " of " + T() + " men wearing it. " + GEARFX[k] + '</small></div><div class="sbtn"><button data-act="equip" data-a="' + k + '" data-b=""' + (c < 1 || slotRoom(k) < 1 ? " disabled" : "") + ">Wear +" + Math.min(5, c, slotRoom(k)) + '</button><button data-act="gunequip" data-a="' + k + '" data-b=""' + (w < 1 ? " disabled" : "") + ">Pack</button></div></div>";
+    });
+    return any ? h + '<p class="dim-t">Promotions use gear from the pack, so keep a spare set there.</p>' : "";
+  }
 
   // ---- input ----
   (function () {
@@ -8589,12 +8598,12 @@ window.__vhGame = function () { (function () {
       case "farmgive":
         if (v && v.farm >= 10) { v.farm -= 10; v.stock = Math.min(capOf(v), v.stock + 10); v.credit += 0.8; bump(v, 8); log("Fed " + v.name + " from my own farm.", "e"); } break;
       case "gbuy":
-        if (v && GEARB[y]) { var sh = shopOf(v), pr = buyPrice(y, v); if (sh[y] >= 1 && S.crowns >= pr) { sh[y] -= 1; S.crowns -= pr; S.loot[y] = (S.loot[y] || 0) + 1; ovAutoEquip(y); toast("Bought, and your men are wearing it."); } } break;
+        if (v && GEARB[y]) { var sh = shopOf(v), pr = buyPrice(y, v); if (sh[y] >= 1 && S.crowns >= pr) { sh[y] -= 1; S.crowns -= pr; S.loot[y] = (S.loot[y] || 0) + 1; S.salvage = lootCount(); toast("Bought. It is in your backpack: promote troops with it, or wear it from Party, Troops."); } } break;
       case "equip":
         if (GEARB[x]) { var room2 = slotRoom(x), mv = Math.min(5, S.loot[x] || 0, room2); if (mv > 0) { S.loot[x] -= mv; S.gear[x] = (S.gear[x] || 0) + mv; S.salvage = lootCount(); } } break;
       case "ptab": partyTab = x; break;
       case "forge":
-        if (v && v.type === "town" && FORGE[y]) { var fg = FORGE[y]; if ((S.loot[fg.from] || 0) >= fg.n && S.crowns >= fg.cr) { S.loot[fg.from] -= fg.n; S.crowns -= fg.cr; S.loot[y] = (S.loot[y] || 0) + 1; ovAutoEquip(y); toast("Forged: " + LOOT[y].name.toLowerCase() + ". " + (S.gear[y] ? "Your men are wearing it." : "No room: every man already has one.")); } } break;
+        if (v && v.type === "town" && FORGE[y]) { var fg = FORGE[y]; if ((S.loot[fg.from] || 0) >= fg.n && S.crowns >= fg.cr) { S.loot[fg.from] -= fg.n; S.crowns -= fg.cr; S.loot[y] = (S.loot[y] || 0) + 1; S.salvage = lootCount(); toast("Forged: " + LOOT[y].name.toLowerCase() + ". It is in your backpack: promote troops with it, or wear it from Party, Troops."); } } break;
       case "promote": { var ptd = TROOPT[(+x) - 1]; if (!ptd || promoteCheck(+x)) break; if (ptd.burn) { sparkPick = +x; break; } doPromote(+x); break; }
       case "sparkburn": if (sparkPick && S.held.indexOf(x) >= 0) { doPromote(sparkPick, x); } sparkPick = 0; break;
       case "sparkno": sparkPick = 0; break;
