@@ -4449,7 +4449,8 @@ window.__vhGame = function () { (function () {
     var p = AR.p, bw = curBow(); if (!bw || p.cd > 0) return;
     if ((cp().arrows || 0) < 1) { aToast("No arrows left. Buy more from a smith."); return; }
     if (Math.random() >= Math.min(0.5, affSum("free"))) cp().arrows--; else AR.floats.push({ x: p.x, y: p.y - 16, t: 0.8, s: "free shot", col: "#e8d8a8" }); p.cd = bw.cd * (1 - Math.min(0.5, affSum("cdr"))) * (1 - 0.1 * sk("quickdraw")); p.atk2 = 0.18;
-    AR.proj.push({ x: p.x + p.face.x * 6, y: p.y - 6 + p.face.y * 6, vx: p.face.x * bw.sp, vy: p.face.y * bw.sp, life: bw.life, own: 1, dmg: (bw.dmg + 0.3 * sk("fletcher") + 0.3 * upLv("r") + (eIt("r") ? eIt("r").bd : 0)) * (0.55 + 0.45 * gearEff()) });
+    var aim = ovAim(p, bw);
+    AR.proj.push({ x: p.x + aim.x * 6, y: p.y - 6 + aim.y * 6, vx: aim.x * bw.sp, vy: aim.y * bw.sp, life: bw.life, own: 1, dmg: (bw.dmg + 0.3 * sk("fletcher") + 0.3 * upLv("r") + (eIt("r") ? eIt("r").bd : 0)) * (0.55 + 0.45 * gearEff()) });
   }
   function castBolt() {
     var p = AR.p; if ((S.loot.shards || 0) < 1) return; S.loot.shards--; S.salvage = lootCount(); p.atk2 = 0.2;
@@ -8500,6 +8501,18 @@ window.__vhGame = function () { (function () {
       h += '<div class="row"><div class="ico">' + ic(k) + '</div><div class="rd">' + LOOT[k].name + "<small>" + c + " in the pack · " + w + " of " + T() + " men wearing it. " + GEARFX[k] + '</small></div><div class="sbtn"><button data-act="equip" data-a="' + k + '" data-b=""' + (c < 1 || slotRoom(k) < 1 ? " disabled" : "") + ">Wear +" + Math.min(5, c, slotRoom(k)) + '</button><button data-act="gunequip" data-a="' + k + '" data-b=""' + (w < 1 ? " disabled" : "") + ">Pack</button></div></div>";
     });
     return any ? h + '<p class="dim-t">Promotions use gear from the pack, so keep a spare set there.</p>' : "";
+  }
+  // archery aim assist: the arrow bends toward the enemy nearest your line of fire (player shots only)
+  function ovAim(p, bw) {
+    var fx = p.face.x, fy = p.face.y, fl = Math.hypot(fx, fy) || 1; fx /= fl; fy /= fl;
+    var rng = bw.sp * bw.life * 0.95, best = null, bs = 1e9;
+    AR.en.forEach(function (e) {
+      if (e.dead || e.gone) return;
+      var dx = e.x - p.x, dy = e.y - 6 - p.y, d = Math.hypot(dx, dy); if (d < 8 || d > rng) return;
+      var cos = (dx * fx + dy * fy) / d; if (cos < 0.74) return; // within about 42 degrees
+      var sc = (1 - cos) * 120 + d * 0.15; if (sc < bs) { bs = sc; best = { x: dx / d, y: dy / d }; }
+    });
+    return best || { x: fx, y: fy };
   }
 
   // ---- input ----
