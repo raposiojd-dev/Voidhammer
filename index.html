@@ -2710,7 +2710,9 @@ window.__vhGame = function () { (function () {
       { id: "fletcher", grow: 1, name: "Fletcher", per: "+10% strength from archers and crossbows", max: 3, desc: "You teach them to pick a target and wait." },
       { id: "skirmisher", name: "Skirmisher", per: "+8% chance to get away", max: 3, req: "fletcher", desc: "Shoot, step back, shoot again, and be gone." },
       { id: "quickdraw", name: "Quick Draw", per: "−10% time between shots", max: 3, req: "fletcher", desc: "Nock, draw, loose. Your hands know it without you." },
-      { id: "steadyaim", name: "Steady Aim", per: "arrows bend toward enemies near your aim, and land more often", max: 5, req: "fletcher", desc: "The first arrows go where you point. The last ones go where the enemy is going." }] },
+      { id: "steadyaim", name: "Steady Aim", per: "arrows bend toward enemies near your aim, and land more often", max: 5, req: "fletcher", desc: "The first arrows go where you point. The last ones go where the enemy is going." },
+      { id: "multishot", name: "Multishot", per: "rank 1: 2 arrows, 2: 3 arrows, 3: 5 arrows in a fan. The extra arrows cost extra arrows and hit for 70%", max: 3, req: "fletcher", desc: "One draw, a handful of arrows. Your quiver notices." },
+      { id: "heavydraw", name: "Heavy Draw", per: "+12% arrow damage", max: 5, req: "fletcher", desc: "A stiffer bow, a longer pull, a harder landing." }] },
     { branch: "Trade and Land", blurb: "Coin, grain, and what you carry.", items: [
       { id: "haggler", name: "Haggler", per: "+6% selling, −5% buying", max: 3, desc: "You know what a thing is worth." },
       { id: "forager", name: "Forager", per: "−8% food eaten", max: 3, req: "haggler", desc: "You find food where others see mud." },
@@ -4374,14 +4376,15 @@ window.__vhGame = function () { (function () {
     if (!getSpec(id)) return; sfx("door");
     if (sheet) closeSheet(true);
     S.speed = 0; S.target = null; pausedSpeed = 0;
+    ovHpSave();
     AR = buildArea(id, sx, sy);
-    if (getSpec(id).safe) AR.p.hp = AR.p.max;
+    ovHpLoad();
     var el = $("area"); el.hidden = false; aLast = 0; akeys = {}; astick.on = false;
     aToast(getSpec(id).name); AR.hint = !cp().f.hinted; if (AR.hint) { cp().f.hinted = 1; setTimeout(function () { aToast("Drag on the left to move. A strikes or talks. Gear, shoot and cast are on the buttons."); }, 1800); }
     if (!aRun) { aRun = true; requestAnimationFrame(areaFrame); }
   }
   function leaveArea() {
-    if (!AR) return; checkClear(true);
+    if (!AR) return; ovHpSave(); checkClear(true);
     if (OVR.on) { if (AR.sp.over) { S.px = Math.max(12, Math.min(WORLD - 12, AR.p.x)); S.py = Math.max(12, Math.min(WORLD - 12, AR.p.y)); } else if (OVR.ret) { S.px = OVR.ret.x * OT + 8; S.py = OVR.ret.y * OT + 8; } OVR.on = false; }
     AR = null; $("area").hidden = true; $("adlg").hidden = true; S.speed = 0; save(); lastHud = "";
   }
@@ -4452,6 +4455,7 @@ window.__vhGame = function () { (function () {
     if (Math.random() >= Math.min(0.5, affSum("free"))) cp().arrows--; else AR.floats.push({ x: p.x, y: p.y - 16, t: 0.8, s: "free shot", col: "#e8d8a8" }); p.cd = bw.cd * (1 - Math.min(0.5, affSum("cdr"))) * (1 - 0.1 * sk("quickdraw")); p.atk2 = 0.18;
     var aim = ovAim(p, bw);
     AR.proj.push({ x: p.x + aim.x * 6, y: p.y - 6 + aim.y * 6, vx: aim.x * bw.sp, vy: aim.y * bw.sp, life: bw.life, own: 1, dmg: (bw.dmg + 0.3 * sk("fletcher") + 0.3 * upLv("r") + (eIt("r") ? eIt("r").bd : 0)) * (0.55 + 0.45 * gearEff()) });
+    ovVolley(aim);
   }
   function castBolt() {
     var p = AR.p; if ((S.loot.shards || 0) < 1) return; S.loot.shards--; S.salvage = lootCount(); p.atk2 = 0.2;
@@ -8517,6 +8521,29 @@ window.__vhGame = function () { (function () {
     });
     return best || { x: fx, y: fy };
   }
+  // ---- archery: multishot fan and heavy draw ----
+  function ovVolley(aim) {
+    var base = AR.proj[AR.proj.length - 1]; if (!base || !base.own) return;
+    base.dmg *= 1 + 0.12 * sk("heavydraw");
+    var r = sk("multishot"); if (r < 1) return;
+    var n = [1, 2, 3, 5][r], cost = Math.ceil((n - 1) / 2), have = cp().arrows || 0;
+    if (have < cost) { n = 1 + have * 2; cost = have; if (n <= 1) return; n = Math.min(n, [1, 2, 3, 5][r]); }
+    cp().arrows = have - cost;
+    var sp = 0.13, k, off = []; // fan spacing in radians
+    if (n === 2) off = [-sp / 2]; else if (n === 3) off = [-sp, sp]; else off = [-2 * sp, -sp, sp, 2 * sp];
+    if (n === 2) off = [sp]; // two arrows: the aimed one and one beside it
+    off.slice(0, n - 1).forEach(function (a) {
+      var c = Math.cos(a), s = Math.sin(a), vx = base.vx * c - base.vy * s, vy = base.vx * s + base.vy * c;
+      var q = Object.assign({}, base); q.vx = vx; q.vy = vy; q.dmg = base.dmg * 0.7; AR.proj.push(q);
+    });
+  }
+  // ---- health stays as it is when you change places ----
+  function ovHpSave() { try { if (AR && AR.p && cp()) cp().hpS = AR.p.hp; } catch (e) {} }
+  function ovHpLoad() {
+    var c = cp(); if (!AR || !c) return;
+    if (typeof c.hpS === "number") AR.p.hp = Math.max(0.5, Math.min(AR.p.max, c.hpS)); else c.hpS = AR.p.hp;
+  }
+  setInterval(function () { ovHpSave(); }, 250);
 
   // ---- input ----
   (function () {
