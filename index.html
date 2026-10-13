@@ -7960,8 +7960,11 @@ window.__vhGame = function () { (function () {
   // ---- war raids: linger in a town, village or your own yard while at war and their soldiers trickle in ----
   function ovWarRaid(a, dt) {
     if (!a || !a.sp || !(a.sp.safe || a.sp.yard)) return;
-    var fs = Object.keys(S.pwar || {}).filter(function (f) { return S.pwar[f] && f !== "rebel" && FAC[f]; });
-    if (!fs.length) { a.wr = null; return; }
+    var sid = null, k, st, f;
+    if (a.id.indexOf("yard:") === 0) sid = a.id.slice(5); else for (k in SITEAREA) if (SITEAREA[k] === a.id) sid = k;
+    st = sid && site(sid); f = st && st.owner;
+    if (!f || f === "player" || f === "rebel" || !S.pwar[f] || !FAC[f]) { a.wr = null; return; }
+    var fs = [f];
     var w = a.wr || (a.wr = { t: 0, n: 0, nx: 30 });
     w.t += dt; if (w.t < w.nx) return;
     var alive = a.en.filter(function (e) { return e.wrd && !e.dead && !e.gone; }).length, cap = Math.min(16, 5 + tier() * 2);
