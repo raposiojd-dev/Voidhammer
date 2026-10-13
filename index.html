@@ -4616,7 +4616,7 @@ window.__vhGame = function () { (function () {
     var tk = nearTalk(), lab = tk ? "Talk" : "Strike", ob = objective().text, hasB = !!curBow();
     var key = h + "|" + lab + "|" + ob + "|" + a.sp.name + "|" + S.crowns + "|" + hasB + "|" + (cp().arrows || 0);
     if (key === aHud) return; aHud = key;
-    $("ahearts").innerHTML = orbHtml(p); $("aatk").textContent = lab; $("abow").hidden = !hasB; $("abow").innerHTML = "Shoot<small>" + (cp().arrows || 0) + "</small>";
+    $("ahearts").innerHTML = h; $("aatk").textContent = lab; $("abow").hidden = !hasB; $("abow").innerHTML = "Shoot<small>" + (cp().arrows || 0) + "</small>";
     $("aobj").innerHTML = "<b>" + a.sp.name + "</b> · " + ob + " · " + S.crowns + " crowns · " + clockTxt();
   }
   function areaFrame(t) {
