@@ -8112,10 +8112,10 @@ window.__vhGame = function () { (function () {
     if (ps.length) { hb = 0; ps.forEach(function (u) { hb += u.hpm; }); hb /= ps.length; }
     function mk(kind, x, y, hpk) { var u = { s: "p", eng: kind, x: x, y: y, w: Math.max(0.05, hb * 0.2), hp: hb * hpk, hpm: hb * hpk, cd: 0, atk: 0, flash: 0, tc: 0, dead: false, rout: false, gone: false, slot: 500 + F.units.length, tier: 1, ranged: false }; F.units.push(u); return u; }
     F.sg.hb = hb;
-    for (i = 0; i < F.sg.eng.ram; i++) mk("ram", 240 + i * 120, 610, 14);
+    for (i = 0; i < F.sg.eng.ram; i++) mk("ram", 240 + i * 120, 565, 14);
     for (i = 0; i < F.sg.eng.twr; i++) { var t = mk("twr", i % 2 ? 450 : 150, 640, 18); t.ax = t.x; }
     for (i = 0; i < F.sg.eng.cat; i++) { var c = mk("cat", 110 + i * 190, 650, 5); c.cd = 2 + i * 1.3; }
-    if (F.units.some(function (u) { return u.eng; })) fieldMsg("Your siege engines roll forward.");
+    var nm = []; if (F.sg.eng.ram) nm.push(F.sg.eng.ram + " ram"); if (F.sg.eng.twr) nm.push(F.sg.eng.twr + " tower"); if (F.sg.eng.cat) nm.push(F.sg.eng.cat + " catapult"); if (nm.length) fieldMsg("Your siege engines roll forward: " + nm.join(", ") + ".");
   }
   function ovSgBreaches(k) {
     var L = F.sg.L[k], out = [];
@@ -8211,7 +8211,7 @@ window.__vhGame = function () { (function () {
       for (k = 0; k < sg.n; k++) if (sg.L[k].gate.hp > 0) break;
       if (k >= sg.n) return; L = sg.L[k]; tx = 300; ty = L.y + L.th + 10;
       dx = tx - u.x; dy = ty - u.y; d = Math.hypot(dx, dy);
-      if (d > 4) { mv = Math.min(d, 16 * dt); u.x += dx / d * mv; u.y += dy / d * mv; }
+      if (d > 4) { mv = Math.min(d, 24 * dt); u.x += dx / d * mv; u.y += dy / d * mv; }
       else { L.gate.hp -= 9 * dt; u.atk = 0.2; if (!sg.said.rm) { sg.said.rm = 1; fieldMsg("The ram hits the gate."); } }
     } else if (u.eng === "twr") {
       if (u.dock !== undefined && ovLayerClear(u.dock)) { u.dock = undefined; }
@@ -8269,7 +8269,8 @@ window.__vhGame = function () { (function () {
     });
   }
   function ovEngDraw(g, u, t) {
-    var x = u.x, y = u.y, fl = u.flash > 0;
+    var x = u.x, y = u.y, fl = u.flash > 0, sc = u.eng === "ram" ? 1.5 : 1.25;
+    g.save(); g.translate(x, y); g.scale(sc, sc); g.translate(-x, -y);
     g.fillStyle = "rgba(0,0,0,0.3)"; g.beginPath(); g.ellipse(x, y + 2, 20, 6, 0, 0, 6.283); g.fill();
     if (u.eng === "ram") {
       g.fillStyle = fl ? "#e8c8a0" : "#6a4a28"; g.fillRect(x - 15, y - 14, 30, 14); g.fillStyle = "#3a2a14"; g.fillRect(x - 15, y - 16, 30, 3);
@@ -8283,6 +8284,7 @@ window.__vhGame = function () { (function () {
       var arm = u.atk > 0 ? 0.6 : -0.7; g.strokeStyle = "#8a6a3a"; g.lineWidth = 3; g.beginPath(); g.moveTo(x, y - 14); g.lineTo(x + Math.sin(arm) * 18, y - 14 - Math.cos(arm) * 18); g.stroke();
     }
     if (u.hp < u.hpm) { g.fillStyle = "rgba(0,0,0,0.6)"; g.fillRect(x - 14, y - (u.eng === "twr" ? 66 : 28), 28, 3); g.fillStyle = "#c0503a"; g.fillRect(x - 14, y - (u.eng === "twr" ? 66 : 28), 28 * Math.max(0, u.hp / u.hpm), 3); }
+    g.restore(); g.fillStyle = "#f0d9a0"; g.font = "700 9px Georgia,serif"; g.textAlign = "center"; g.fillText(u.eng === "ram" ? "RAM" : u.eng === "twr" ? "TOWER" : "CATAPULT", x, y + 14); g.textAlign = "left";
   }
 
   // ---- the siege camp: pick what to build, watch it go up, then assault ----
@@ -8325,16 +8327,18 @@ window.__vhGame = function () { (function () {
   }
   function ovCampStatus() {
     if (!CAMP) return; var s = site(CAMP.id), c = CAMP.cur, msg = c ? "Building " + SGE[c.k].n.toLowerCase() + " \u00b7 day " + (SGE[c.k].d - c.dleft + 1) + " of " + SGE[c.k].d : CAMP.q.length ? "Next: " + SGE[CAMP.q[0]].n.toLowerCase() : CAMP.wait ? "Waiting. The garrison is eating its stores." : "Choose what to build, starve them out, or assault.";
-    $("sgc_st").innerHTML = "<b>" + msg + "</b><br>Day " + Math.floor(S.day) + " \u00b7 your column " + T() + " men \u00b7 grain " + Math.floor(S.grain) + " \u00b7 crowns " + Math.floor(S.crowns) + " \u00b7 garrison about " + Math.max(0, Math.round(s.gar)) + "<br><span style=\"color:#8a7e62\">Your army eats and is paid every day you camp. Engines you build are used up in the assault.</span>";
+    $("sgc_st").innerHTML = "<b>" + msg + "</b><br>Day " + Math.floor(S.day) + " \u00b7 your column " + T() + " men \u00b7 grain " + Math.floor(S.grain) + " \u00b7 crowns " + Math.floor(S.crowns) + " \u00b7 garrison about " + Math.max(0, Math.round(s.gar)) + "<br><span style=\"color:#8a7e62\">Your army eats and is paid every day you camp. Engines you build are used up in the assault.</span>" + (CAMP.cur || CAMP.q.length ? "<br><b style=\"color:#e0644a\">Engines still being built are lost if you assault now.</b>" : "");
   }
   function ovCampDay() {
     var s = site(CAMP.id); S.sieging = CAMP.id; S.px = s.x; S.py = s.y; passDays(1); S.sieging = null;
     if (sheet || B) { ovCampClose(); return false; }
     if (!hostileSite(s)) { ovCampClose(); return false; }
     if (T() < 1) { toast("Your column has melted away."); ovCampClose(); return false; }
-    if (Math.random() < 0.025 && S.enemies.filter(function (q) { return q.kind === "lord" && q.fac === s.owner; }).length < 4) {
-      S.enemies.push({ id: S.eid++, kind: "lord", fac: s.owner, name: "A relief army", x: s.x + 60, y: s.y + 40, n: Math.round(s.gmax * 0.5), q: 1.1, cool: 0, dest: null });
-      log("A relief army marched out of " + s.name + ".", "e"); toast("A relief army marches from " + s.name + "!"); CAMP.wait = false; ovCampUi();
+    CAMP.dn = (CAMP.dn || 0) + 1;
+    if (CAMP.dn === 1) toast("Riders leave " + s.name + ". The realm will hear of the siege.");
+    if (CAMP.dn >= 2 && Math.random() < 0.2 + 0.05 * CAMP.dn && S.enemies.filter(function (q) { return q.kind === "lord" && q.fac === s.owner && q.name === "A relief army"; }).length < 3) {
+      S.enemies.push({ id: S.eid++, kind: "lord", fac: s.owner, name: "A relief army", x: s.x + 70, y: s.y + 50, n: Math.round(s.gmax * (0.6 + 0.1 * Math.min(4, CAMP.dn / 3))), q: 1.15, cool: 0, dest: { x: s.x, y: s.y } });
+      log("A relief army marched out to break the siege of " + s.name + ".", "e"); toast("A relief army is coming to break the siege of " + s.name + "!"); S.speed = 0; try { sfx("sting"); } catch (er) {} CAMP.wait = false; ovCampUi();
     }
     return true;
   }
