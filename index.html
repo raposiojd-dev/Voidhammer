@@ -718,7 +718,7 @@ window.__vhGame = function () { (function () {
   function gflow(s) {
     var i, o;
     if (s.type === "village") { i = prod(s); o = cons(s); if (s.has && s.has.farm && (s.mode || "sell") === "village") i += 2.2; }
-    else { i = S.sites.filter(function (v) { return v.seat === s.id && v.owner === s.owner; }).length * 0.9 + (s.owner !== "player" && s.owner !== "rebel" ? 0.8 : 0); o = s.type === "town" ? 2.5 : 1.5; }
+    else { i = ovSupply(s) + (s.owner !== "player" && s.owner !== "rebel" ? 0.8 : 0); o = s.type === "town" ? 2.5 : 1.5; }
     return { i: i, o: o, n: i - o };
   }
   function gfmt(n) { return (n >= 0.05 ? "+" : n <= -0.05 ? "−" : "±") + Math.abs(n).toFixed(1); }
@@ -1115,7 +1115,7 @@ window.__vhGame = function () { (function () {
   function aiDay() {
     S.sites.forEach(function (s) {
       if (s.type === "village") return;
-      var sup = S.sites.filter(function (v) { return v.seat === s.id && v.owner === s.owner; }).length * 0.9 + (s.owner !== "player" && s.owner !== "rebel" ? 0.8 : 0);
+      var sup = ovSupply(s) + (s.owner !== "player" && s.owner !== "rebel" ? 0.8 : 0);
       s.stock = Math.max(0, Math.min(s.cap, s.stock + sup - (s.type === "town" ? 2.5 : 1.5)));
       if (s.stock > s.cap * 0.4) bump(s, 0.15);
       else if (s.stock < s.cap * 0.1) { bump(s, -0.4); s.gar = Math.max(5, s.gar - 0.3); if (s.stock <= 0 && !s.starved) { s.starved = true; if (s.owner === "player") toast(s.name + " is out of grain."); } }
@@ -2475,6 +2475,7 @@ window.__vhGame = function () { (function () {
     h += '<div class="sec">Market</div>';
     var gf = gflow(t);
     h += '<div class="row"><div class="rd">Grain per day<small>Villages send ' + gf.i.toFixed(1) + ", the town uses " + gf.o.toFixed(1) + (gf.n < -0.05 ? ". Stores run out in about " + Math.floor(t.stock / -gf.n) + " days." : gf.n > 0.05 ? ". Stores are filling." : ".") + '</small></div><b style="color:' + (gf.n < -0.05 ? "#e0644a" : "#9bc27a") + '">' + gfmt(gf.n) + "</b></div>";
+    h += ovVillList(t);
     h += '<p class="dim-t">Grain stores: ' + Math.floor(t.stock) + " of " + t.cap + ". " + (t.stock < t.cap * 0.1 ? "Nearly empty. The garrison and the market are suffering." : t.stock > t.cap * 0.5 ? "Well stocked. The town is thriving and its garrison is fed." : "Enough for now.") + " Grain you sell or send here fills the stores.</p>";
     h += row("Buy 10 grain", Math.ceil(buy * 10) + " crowns" + (t.stock < 10 ? ". Their stores are empty." : ""), "Buy", "tbuy", t.id, "", S.crowns < buy * 10 || t.stock < 10);
     h += row("Sell 10 grain", "About " + Math.floor(sell * 10) + " crowns. Selling lowers the price.", "Sell", "tsell", t.id, "", S.grain < 10);
@@ -2489,7 +2490,7 @@ window.__vhGame = function () { (function () {
     return h;
   }
   function castleBody(k) {
-    if (k.id !== "keep") return "<p class=\"dim-t\">" + (k.owner === "player" ? "The banner of " + FAC.player.name + " flies here." : FAC[k.owner].name + " soldiers watch the road. They keep to themselves.") + "</p>";
+    if (k.id !== "keep") return ovVillList(k) + "<p class=\"dim-t\">" + (k.owner === "player" ? "The banner of " + FAC.player.name + " flies here." : FAC[k.owner].name + " soldiers watch the road. They keep to themselves.") + "</p>";
     var h = "<p class=\"dim-t\">Lord Vashen keeps the road east. He pays for results.</p>";
     if (S.contract) {
       var e = enemyById(S.contract.eid);
@@ -8373,6 +8374,29 @@ window.__vhGame = function () { (function () {
       for (i = 0; i < 3; i++) { var a = t / 180 + i * 2.1; g.fillStyle = "#e8c070"; g.fillRect(px + Math.cos(a) * 26 - 1, py - 8 + Math.sin(a * 1.3) * 8, 2, 4); g.fillStyle = "#6a4a28"; g.fillRect(px + Math.cos(a) * 26 - 2, py - 4 + Math.sin(a * 1.3) * 8, 4, 6); }
     }
   }
+  // ---- grain supply: what each attached village actually sends to its town or castle ----
+  function ovSend(v, s) {
+    var w = v.owner === s.owner ? 1 : 0, why = "", n;
+    if (!w) return { n: 0, why: "held by " + (v.owner === "player" ? "you" : v.owner === "rebel" ? "rebels" : FAC[v.owner] ? FAC[v.owner].name : "another lord") + ", sends nothing" };
+    n = 0.9;
+    if (v.W < v.W0 * 0.4) { n *= 0.5; why = "ruined, half output"; }
+    if (v.has && v.has.farm) { n += 1.2; why = (why ? why + ", " : "") + "farm adds 1.2"; }
+    return { n: n, why: why };
+  }
+  function ovSupply(s) {
+    var t = 0;
+    S.sites.forEach(function (v) { if (v.type === "village" && v.seat === s.id) t += ovSend(v, s).n; });
+    return t;
+  }
+  function ovVillList(s) {
+    var vs = S.sites.filter(function (v) { return v.type === "village" && v.seat === s.id; }), h = '<div class="sec">Villages feeding ' + s.name + "</div>", sent = 0;
+    if (!vs.length) return h + '<p class="dim-t">No villages are attached. This place gets no grain from the fields. Its stores only drain.</p>';
+    vs.forEach(function (v) {
+      var r = ovSend(v, s); sent += r.n;
+      h += '<div class="row"><div class="rd">' + v.name + "<small>" + (r.n > 0 ? "Sends +" + r.n.toFixed(1) + "/day" + (r.why ? " (" + r.why + ")" : "") : r.why) + (v.has && v.has.farm ? "" : r.n > 0 ? " · no farm yet" : "") + '</small></div><button data-act="ovvil" data-a="' + v.id + '" data-b="">Open</button></div>';
+    });
+    return h + '<p class="dim-t">' + vs.filter(function (v) { return ovSend(v, s).n > 0; }).length + " of " + vs.length + " send grain: +" + sent.toFixed(1) + "/day. Build a farm in a village (open it) to send more.</p>";
+  }
 
   // ---- input ----
   (function () {
@@ -8508,6 +8532,7 @@ window.__vhGame = function () { (function () {
       case "garsub": if (v && v.owner === "player" && v.gar >= 11) { v.gar -= 5; S.from.exile = (S.from.exile || 0) + 5; } break;
       case "sgbuild": ovSgBuild(v, y); break;
       case "sgcamp": ovCampOpen(x); break;
+      case "ovvil": openSheet("site", x); break;
       case "assault":
         if (v && hostileSite(v)) { startBattle({ id: -1, kind: "siege", title: "Assault on " + v.name, n: Math.round(v.gar), q: v.wall * ovDefAdv(v), siegeId: v.id }); return; } break;
       case "starve":
