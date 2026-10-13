@@ -4548,7 +4548,7 @@ window.__vhGame = function () { (function () {
       q.x += q.vx * dt; q.y += q.vy * dt; q.life -= dt; if (solidAt(a, q.x, q.y)) return false;
       if (q.own) {
         var dead = false;
-        a.en.forEach(function (e, i) { if (dead || e.dead || e.gone || e.yield) return; if (q.pierce && q.hit[i]) return; if (Math.hypot(q.x - e.x, q.y - 6 - (e.y - 6)) < 8) { dmgEn(e, q.dmg, q.vx, q.vy, 100); if (q.pierce) q.hit[i] = 1; else dead = true; } });
+        a.en.forEach(function (e, i) { if (dead || e.dead || e.gone || e.yield) return; if (q.pierce && q.hit[i]) return; if (Math.hypot(q.x - e.x, q.y - e.y) < (q.bolt ? 8 : 10)) { dmgEn(e, q.dmg, q.vx, q.vy, 100); if (q.pierce) q.hit[i] = 1; else dead = true; } });
         return !dead && q.life > 0;
       }
       if (Math.hypot(q.x - p.x, q.y - 6 - (p.y - 6)) < 6) { if (q.pid) COOP.hitIds[q.pid] = 1; hurtP(1 + Math.floor((lvl() - 1) / 6)); return false; } return q.life > 0; });
@@ -8508,7 +8508,7 @@ window.__vhGame = function () { (function () {
     var rng = bw.sp * bw.life * 0.95, best = null, bs = 1e9;
     AR.en.forEach(function (e) {
       if (e.dead || e.gone) return;
-      var dx = e.x - p.x, dy = e.y - 6 - p.y, d = Math.hypot(dx, dy); if (d < 8 || d > rng) return;
+      var dx = e.x - p.x, dy = e.y - (p.y - 6), d = Math.hypot(dx, dy); if (d < 8 || d > rng) return;
       var cos = (dx * fx + dy * fy) / d; if (cos < 0.74) return; // within about 42 degrees
       var sc = (1 - cos) * 120 + d * 0.15; if (sc < bs) { bs = sc; best = { x: dx / d, y: dy / d }; }
     });
