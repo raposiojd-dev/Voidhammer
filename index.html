@@ -86,8 +86,8 @@ button.cast { color: #e6dcff; border-color: #9a7cd0; background: rgba(154,124,20
 #ahud { position: absolute; left: 0; right: 0; top: 0; padding: calc(0.6rem + env(safe-area-inset-top, 0px)) 0.8rem 0; pointer-events: none; }
 #ahearts { margin-top: 2.9rem; color: #e84a5a; font-size: 1.5rem; letter-spacing: 0.1em; text-shadow: 0 2px 0 #000; }
 #aobj { margin-top: 0.2rem; max-width: 70%; font-size: 0.78rem; line-height: 1.35; color: #f2e6c8; text-shadow: 0 1px 2px #000, 0 0 6px #000; }
-#ahud .abtns { position: absolute; right: 0.8rem; top: calc(0.6rem + env(safe-area-inset-top, 0px)); display: flex; gap: 0.4rem; pointer-events: auto; }
-#ahud .abtns button { background: rgba(14,12,9,0.8); color: #f2dfb0; border: 2px solid #8a5a2a; border-radius: 0; padding: 0.45rem 0.7rem; font-family: inherit; font-size: 0.8rem; }
+#ahud .abtns { position: absolute; left: 0.5rem; right: 0.5rem; justify-content: space-between; gap: 0.25rem !important; top: calc(0.6rem + env(safe-area-inset-top, 0px)); display: flex; gap: 0.4rem; pointer-events: auto; }
+#ahud .abtns button { background: rgba(14,12,9,0.8); color: #f2dfb0; border: 2px solid #8a5a2a; border-radius: 0; padding: 0.45rem 0.35rem; flex: 1 1 auto; min-width: 0; font-family: inherit; font-size: 0.74rem; }
 #astick { position: fixed; width: 104px; height: 104px; margin: -52px 0 0 -52px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.35); background: rgba(255,255,255,0.08); pointer-events: none; z-index: 16; }
 #aknob { position: absolute; left: 34px; top: 34px; width: 36px; height: 36px; border-radius: 50%; background: rgba(255,255,255,0.5); }
 #aatk { position: absolute; right: 1.2rem; bottom: calc(2.2rem + env(safe-area-inset-bottom, 0px)); width: 5.2rem; height: 5.2rem; border-radius: 50%; border: 3px solid #f2c37a; background: rgba(200,135,58,0.85); color: #1a1209; font-weight: 700; font-family: inherit; font-size: 0.85rem; box-shadow: 0 4px 0 #6a3a12; touch-action: none; }
