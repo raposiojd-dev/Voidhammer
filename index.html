@@ -3037,7 +3037,7 @@ window.__vhGame = function () { (function () {
   });
   setInterval(function () { if (!document.hidden) save(); }, 30000);
   var svBtn = document.createElement("button"); svBtn.id = "savebtn"; svBtn.textContent = "Save"; svBtn.setAttribute("aria-label", "Save game");
-  svBtn.style.cssText = "position:fixed;right:8px;top:98px;z-index:60;width:34px;height:34px;min-height:0;padding:0;border-radius:50%;background:rgba(12,11,9,.7);border:1px solid #8f8672;color:#e8d8a8;font-size:9px;letter-spacing:0;line-height:1;text-transform:uppercase";
+  svBtn.style.cssText = "position:fixed;right:8px;top:calc(46% - 50px);z-index:60;width:34px;height:34px;min-height:0;padding:0;border-radius:50%;background:rgba(12,11,9,.7);border:1px solid #8f8672;color:#e8d8a8;font-size:9px;letter-spacing:0;line-height:1;text-transform:uppercase";
   svBtn.addEventListener("click", function (e) { e.stopPropagation(); bkMsg = ""; if (AR) { save(); } openSheet("saves"); });
   document.body.appendChild(svBtn);
   // ================= Visual inventory =================
@@ -6100,7 +6100,7 @@ window.__vhGame = function () { (function () {
   // visible hint until the browser lets sound play
   (function () {
     var hint = document.createElement("div"); hint.id = "sndhint"; hint.textContent = "Tap for sound";
-    hint.style.cssText = "position:fixed;left:50%;bottom:4.2rem;transform:translateX(-50%);z-index:90;background:rgba(12,11,9,.88);border:1px solid #c8873a;color:#f2c37a;font:0.72rem monospace;letter-spacing:.12em;text-transform:uppercase;padding:.45rem .8rem;display:none;pointer-events:none";
+    hint.style.cssText = "position:fixed;left:50%;top:22%;transform:translateX(-50%);z-index:90;background:rgba(12,11,9,.88);border:1px solid #c8873a;color:#f2c37a;font:0.72rem monospace;letter-spacing:.12em;text-transform:uppercase;padding:.45rem .8rem;display:none;pointer-events:none";
     document.body.appendChild(hint);
     setInterval(function () { var need = mOn && (!mac || mac.state !== "running"); if ((hint.style.display === "block") !== need) hint.style.display = need ? "block" : "none"; }, 700);
   })();
@@ -7816,7 +7816,7 @@ window.__vhGame = function () { (function () {
         '<div id="mpchatbox" hidden style="margin-top:8px"><div id="mplog" style="height:84px;overflow:auto;background:#0c0a08;border:1px solid #5a3a1a;padding:4px;font-size:11px"></div><div style="display:flex;gap:6px;margin-top:6px"><input id="mpmsg" maxlength="140" placeholder="Say something…" style="flex:1;min-width:0;padding:8px;background:#0c0a08;color:#f6e3ae;border:1px solid #8a5a2a;font:13px monospace"><button id="mpsend" style="padding:8px 12px;background:#3a2a14;color:#f6e3ae;border:1px solid #d8a030;font:600 12px monospace">Send</button></div></div>' +
         '<div style="margin-top:8px;opacity:.7;font-size:10px">Up to 4 players. Walk the world together or split up, join map battles the host starts, and chat. Each extra player in the host area adds foe health. War: you can only hurt a player if you both declared it, and falling costs no crowns.</div>';
       document.body.appendChild(box); document.body.appendChild(tab);
-      var ov = document.createElement("div"); ov.id = "mpover"; ov.setAttribute("style", "position:fixed;left:8px;top:calc(4.2rem + env(safe-area-inset-top,0px));z-index:99996;max-width:70vw;font:11px/1.3 monospace;pointer-events:none"); document.body.appendChild(ov);
+      var ov = document.createElement("div"); ov.id = "mpover"; ov.setAttribute("style", "position:fixed;left:8px;top:calc(8rem + env(safe-area-inset-top,0px));z-index:99996;max-width:70vw;font:11px/1.3 monospace;pointer-events:none"); document.body.appendChild(ov);
       setInterval(function () { if (COOP.clog.length) COOP.drawLog(); }, 2000);
       var mi = box.querySelector("#mpmsg"), send = function () { var v = mi.value; mi.value = ""; COOP.say(v); };
       box.querySelector("#mpsend").addEventListener("click", send);
@@ -8322,7 +8322,7 @@ window.__vhGame = function () { (function () {
   function mApply() { if (mac && mst) mst.gain.setTargetAtTime(mOn ? 0.55 : 0, mac.currentTime, 0.3); if (mBtn) { mBtn.textContent = mOn ? "♪" : "×"; mBtn.style.opacity = mOn ? "1" : "0.55"; mBtn.setAttribute("aria-label", mOn ? "Music on" : "Music off"); } }
   function mFirst() { if (mOn) mInit(); }
   ["pointerdown", "touchstart", "keydown"].forEach(function (ev) { document.addEventListener(ev, mFirst, { passive: true }); });
-  mBtn = document.createElement("button"); mBtn.id = "musbtn"; mBtn.style.cssText = "position:fixed;right:8px;top:58px;z-index:60;width:34px;height:34px;min-height:0;padding:0;border-radius:50%;background:rgba(12,11,9,.7);border:1px solid #8f8672;color:#e8d8a8;font-size:16px;letter-spacing:0;line-height:1;text-transform:none";
+  mBtn = document.createElement("button"); mBtn.id = "musbtn"; mBtn.style.cssText = "position:fixed;right:8px;top:calc(46% - 90px);z-index:60;width:34px;height:34px;min-height:0;padding:0;border-radius:50%;background:rgba(12,11,9,.7);border:1px solid #8f8672;color:#e8d8a8;font-size:16px;letter-spacing:0;line-height:1;text-transform:none";
   mBtn.addEventListener("click", function (e) { e.stopPropagation(); mOn = !mOn; try { localStorage.setItem(MUSK, mOn ? "on" : "off"); } catch (er) {} if (mOn) mInit(); mApply(); });
   document.body.appendChild(mBtn); mApply();
   document.addEventListener("visibilitychange", function () { if (!mac) return; if (document.hidden) mac.suspend(); else if (mOn) mac.resume(); });
