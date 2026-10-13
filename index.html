@@ -7158,7 +7158,7 @@ window.__vhGame = function () { (function () {
       else if (it.tr) { var k = it.tr.r / 9; g.save(); g.translate(it.tr.x - 8 * k, it.tr.y - 14 * k); g.scale(k, k); d2Tree(g, 0, 0, (it.ti * 0.137) % 0.7, G.th); g.restore(); }
       else { var rk = it.rk, q = rk.r / 8; g.save(); g.translate(rk.x - 8 * q, rk.y - 10 * q); g.scale(q, q); g.fillStyle = "rgba(0,0,0,0.3)"; g.fillRect(2, 12, 12, 3); g.fillStyle = G.th.rock; g.fillRect(2, 5, 12, 8); g.fillRect(4, 3, 8, 3); g.fillStyle = "rgba(255,255,255,0.22)"; g.fillRect(5, 5, 4, 2); g.fillStyle = "rgba(0,0,0,0.25)"; g.fillRect(9, 9, 5, 4); g.restore(); }
     });
-    F.arrows.forEach(function (a) { var k = Math.min(1, a.t / a.dur), x = a.sx + (a.ex - a.sx) * k, y = a.sy + (a.ey - a.sy) * k - Math.sin(k * Math.PI) * 26, dx = a.ex - a.sx, dy = a.ey - a.sy, l = Math.hypot(dx, dy) || 1; g.strokeStyle = a.s === "p" ? "#f0d9a0" : "#e8e0d0"; g.lineWidth = 0.9; g.beginPath(); g.moveTo(x, y); g.lineTo(x - dx / l * 6, y - dy / l * 6); g.stroke(); });
+    F.arrows.forEach(function (a) { var k = Math.min(1, a.t / a.dur), x = a.sx + (a.ex - a.sx) * k, y = a.sy + (a.ey - a.sy) * k - Math.sin(k * Math.PI) * 26, dx = a.ex - a.sx, dy = a.ey - a.sy, l = Math.hypot(dx, dy) || 1; g.strokeStyle = a.col || (a.s === "p" ? "#f0d9a0" : "#e8e0d0"); g.lineWidth = a.col ? 2.4 : 0.9; g.beginPath(); g.moveTo(x, y); g.lineTo(x - dx / l * 6, y - dy / l * 6); g.stroke(); });
     if (F.wave2) { g.strokeStyle = "rgba(240,208,96," + (1 - F.wave2.r / 160) + ")"; g.lineWidth = 3; g.beginPath(); g.ellipse(F.wave2.x, F.wave2.y, F.wave2.r, F.wave2.r * 0.55, 0, 0, 6.283); g.stroke(); }
     if (F.wave) { var al = Math.max(0, 1 - F.wave.r / 520); g.strokeStyle = "rgba(255,244,200," + al + ")"; g.lineWidth = 8; g.beginPath(); g.ellipse(F.wave.x, F.wave.y, F.wave.r, F.wave.r * 0.55, 0, 0, 6.283); g.stroke(); g.fillStyle = "rgba(255,240,190," + al * 0.16 + ")"; g.beginPath(); g.ellipse(F.wave.x, F.wave.y, F.wave.r, F.wave.r * 0.55, 0, 0, 6.283); g.fill(); }
     ovP3Field(c);
@@ -8257,12 +8257,50 @@ window.__vhGame = function () { (function () {
       R("#6a4a2a", px + pw - 18, py + ph - 20, 3, 14); R("#6a4a2a", px + pw - 8, py + ph - 20, 3, 14); for (i = 0; i < 3; i++) R("#cfcfd8", px + pw - 15 + i * 3, py + ph - 26, 1, 10);
     }
   }
-  function ovHeroShoot(u, engage, foes) {
-    if (u.cd > 0 || u.rout || u.dead) return;
+  // ---- battle buttons: strike, shoot, cast, the same three as walking in a town ----
+  function ovFoeNear(u) {
+    var t = F.ht && !F.ht.dead && !F.ht.gone ? F.ht : null, foes = F.units.filter(function (e) { return e.s === "e" && !e.dead && !e.gone && !e.eng; });
+    if (!t) { var bd = 1e9; foes.forEach(function (e) { var d = dist(u.x, u.y, e.x, e.y); if (d < bd) { bd = d; t = e; } }); }
+    return { t: t, foes: foes };
+  }
+  function ovFAct(k) {
+    if (!F || F.over || F.deploy || !F.hero || F.hero.dead) return; F.bt = F.bt || {}; var nowT = F.t; if (F.bt[k] > nowT) return; F.bt[k] = nowT + (k === "shoot" ? 0.6 : k === "cast" ? 0.8 : 0.4); var u = F.hero, o = ovFoeNear(u), t = o.t;
+    if (!t) { fieldMsg("No foe to hit."); return; }
+    if (k === "strike") {
+      var d = dist(u.x, u.y, t.x, t.y);
+      if (d <= 24) { fieldHit(u, t, 1.25); u.cd = 0.45; try { sfx("hit"); } catch (e) {} } else { F.ht = t; F.hm = null; fieldMsg("You run at them."); }
+    } else if (k === "shoot") {
+      if (!curBow()) { fieldMsg("You carry no bow."); return; } ovHeroShoot(u, t, o.foes, true);
+    } else if (k === "cast") {
+      if ((S.loot.shards || 0) < 1) { fieldMsg("No memory-glass to cast with."); return; }
+      var td = dist(u.x, u.y, t.x, t.y); if (td > 230) { fieldMsg("Out of range."); return; }
+      S.loot.shards--; S.salvage = lootCount(); u.cd = 0.7; u.atk = 0.3;
+      F.arrows.push({ sx: u.x, sy: u.y - 8, ex: t.x, ey: t.y, t: 0, dur: Math.max(0.18, td / 320), a: u, d: t, s: "p", mul: 3.2, rad: 24, col: "#b69cff" });
+      try { sfx("shoot"); } catch (e) {}
+    }
+  }
+  (function () {
+    var c = document.createElement("div"); c.id = "fbtns"; c.style.cssText = "position:fixed;right:10px;z-index:200;display:none;gap:8px;flex-direction:row;align-items:flex-end";
+    var defs = [["shoot", "SHOOT", "radial-gradient(circle at 35% 30%,#8a6a3a,#3a2814 75%)", "#d8b878"], ["cast", "CAST", "radial-gradient(circle at 35% 30%,#4a3a9a,#1a1040 75%)", "#8a7ad0"], ["strike", "STRIKE", "radial-gradient(circle at 35% 30%,#c8402e,#5a1208 75%)", "#f0b0a0"]];
+    defs.forEach(function (d) {
+      var b = document.createElement("button"); b.textContent = d[1]; b.setAttribute("data-fa", d[0]);
+      b.style.cssText = "width:60px;height:60px;border-radius:50%;border:3px solid " + d[3] + ";background:" + d[2] + ";color:#fff;font:700 9px Georgia,serif;letter-spacing:0;padding:0;box-shadow:0 4px 8px #000;touch-action:manipulation";
+      b.addEventListener("pointerdown", function (ev) { ev.preventDefault(); ev.stopPropagation(); ovFAct(d[0]); });
+      c.appendChild(b);
+    });
+    document.body.appendChild(c);
+    setInterval(function () {
+      var on = false; try { on = !!(F && !F.over && !F.deploy && $("bfc") && $("bfc").offsetParent && F.hero && !F.hero.dead); } catch (e) {}
+      if (on) { var par = $("bfc").parentNode; if (c.parentNode !== par) par.appendChild(c); var bb = $("bfb").getBoundingClientRect(); c.style.top = Math.max(120, bb.top - 76) + "px"; }
+      c.style.display = on ? "flex" : "none";
+    }, 250);
+  })();
+  function ovHeroShoot(u, engage, foes, force) {
+    if ((u.cd > 0 && !force) || u.rout || u.dead) return;
     var bw = curBow(); if (!bw) return;
-    if (engage && dist(u.x, u.y, engage.x, engage.y) <= 16) return;
+    if (!force && engage && dist(u.x, u.y, engage.x, engage.y) <= 16) return;
     var tg = engage || fieldNearest(u, foes); if (!tg || tg.dead || tg.gone) return;
-    var rng = Math.min(260, 175 * (bw.sp * bw.life / 120)), td = dist(u.x, u.y, tg.x, tg.y); if (td < 18 || td > rng) return;
+    var rng = Math.min(260, 175 * (bw.sp * bw.life / 120)), td = dist(u.x, u.y, tg.x, tg.y); if ((!force && td < 18) || td > rng) { if (force) fieldMsg("Out of range."); return; }
     if ((cp().arrows || 0) < 1) { if (!F.noarr) { F.noarr = 1; fieldMsg("No arrows left. Buy more from a smith."); } return; }
     if (Math.random() >= Math.min(0.5, affSum("free"))) cp().arrows--; else fieldMsg("Free shot.");
     u.cd = bw.cd * (1 - Math.min(0.5, affSum("cdr"))) * (1 - 0.1 * sk("quickdraw")) * 1.5; u.atk = 0.2;
