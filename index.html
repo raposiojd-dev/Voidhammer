@@ -8388,8 +8388,19 @@ window.__vhGame = function () { (function () {
     S.sites.forEach(function (v) { if (v.type === "village" && v.seat === s.id) t += ovSend(v, s).n; });
     return t;
   }
+  function ovGarRate(s) {
+    var pl = s.owner === "player", r = pl ? 0.15 + 0.08 * sk("garrisoner") : 0.6, p = [pl ? "recruits" : "levies"];
+    if (s.stock > s.cap * 0.5) { r += 0.3; p.push("well fed +0.3"); } else if (s.stock < s.cap * 0.1) { r -= 0.3; p.push("hungry -0.3"); }
+    if (s.has && s.has.barracks) { r += 0.5; p.push("barracks +0.5"); }
+    var cap = Math.round(s.gmax * (pl || (s.has && s.has.barracks) ? 1.5 : 1));
+    return { r: r, cap: cap, full: s.gar >= cap - 0.05 };
+  }
+  function ovGarLine(s) {
+    var g = ovGarRate(s);
+    return '<div class="row"><div class="rd">Garrison<small>' + Math.round(s.gar) + " of " + g.cap + " men. " + (g.full ? "Full, no more arrive." : g.r > 0 ? "About " + (g.r * 7).toFixed(1) + " a week arrive (+" + g.r.toFixed(2) + "/day)." : "Losing men: " + g.r.toFixed(2) + "/day.") + '</small></div><b style="color:' + (g.r < 0 ? "#e0644a" : "#9bc27a") + '">' + (g.full ? "full" : (g.r >= 0 ? "+" : "") + g.r.toFixed(2) + "/d") + "</b></div>";
+  }
   function ovVillList(s) {
-    var vs = S.sites.filter(function (v) { return v.type === "village" && v.seat === s.id; }), h = '<div class="sec">Villages feeding ' + s.name + "</div>", sent = 0;
+    var vs = S.sites.filter(function (v) { return v.type === "village" && v.seat === s.id; }), h = ovGarLine(s) + '<div class="sec">Villages feeding ' + s.name + "</div>", sent = 0;
     if (!vs.length) return h + '<p class="dim-t">No villages are attached. This place gets no grain from the fields. Its stores only drain.</p>';
     vs.forEach(function (v) {
       var r = ovSend(v, s); sent += r.n;
