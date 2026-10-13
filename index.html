@@ -1125,6 +1125,7 @@ window.__vhGame = function () { (function () {
       if (s.owner !== "rebel" && (s.unrest || 0) >= 12) rebelTown(s);
       if (s.stock > s.cap * 0.5) s.gar = Math.min(s.gmax * (s.owner === "player" ? 1.5 : 1), s.gar + 0.3);
     });
+    ovShare();
     S.sites.forEach(function (s) { if (s.type !== "village") s.gar = Math.min(s.gmax * (s.owner === "player" ? 1.5 : 1), s.gar + (s.owner === "player" ? 0.15 + 0.08 * sk("garrisoner") : 0.6)); });
     var lords = S.enemies.filter(function (e) { return e.kind === "lord"; });
     lords.forEach(function (e) {
@@ -8406,7 +8407,22 @@ window.__vhGame = function () { (function () {
       var r = ovSend(v, s); sent += r.n;
       h += '<div class="row"><div class="rd">' + v.name + "<small>" + (r.n > 0 ? "Sends +" + r.n.toFixed(1) + "/day" + (r.why ? " (" + r.why + ")" : "") : r.why) + (v.has && v.has.farm ? "" : r.n > 0 ? " · no farm yet" : "") + '</small></div><button data-act="ovvil" data-a="' + v.id + '" data-b="">Open</button></div>';
     });
+    if (s.shr) h += '<div class="row"><div class="rd">Shared between settlements<small>' + (s.shr > 0 ? "Spare grain from better stocked places of the same realm arrives here." : "Spare grain goes to hungrier places of the same realm.") + '</small></div><b style="color:' + (s.shr > 0 ? "#9bc27a" : "#cdbf9c") + '">' + (s.shr > 0 ? "+" : "") + s.shr.toFixed(1) + "/d</b></div>";
     return h + '<p class="dim-t">' + vs.filter(function (v) { return ovSend(v, s).n > 0; }).length + " of " + vs.length + " send grain: +" + sent.toFixed(1) + "/day. Build a farm in a village (open it) to send more.</p>";
+  }
+  // ---- community pool: well-stocked places of one realm share spare grain with hungry ones ----
+  function ovShare() {
+    var by = {};
+    S.sites.forEach(function (s) { if (s.type !== "village") { s.shr = 0; if (s.owner !== "rebel") (by[s.owner] = by[s.owner] || []).push(s); } });
+    Object.keys(by).forEach(function (o) {
+      var L = by[o], need = L.filter(function (s) { return s.stock < s.cap * 0.4; }).sort(function (a, b) { return a.stock / a.cap - b.stock / b.cap; });
+      need.forEach(function (r) {
+        var want = Math.min(3, r.cap * 0.4 - r.stock), d = L.filter(function (s) { return s !== r && s.stock > s.cap * 0.6; }).sort(function (a, b) { return b.stock / b.cap - a.stock / a.cap; })[0];
+        if (!d || want <= 0) return;
+        var g = Math.min(want, d.stock - d.cap * 0.55); if (g <= 0) return;
+        d.stock -= g; r.stock += g; d.shr -= g; r.shr += g;
+      });
+    });
   }
 
   // ---- input ----
