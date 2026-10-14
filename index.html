@@ -1864,7 +1864,7 @@ window.__vhGame = function () { (function () {
   var cv = $("map"), ctx = cv.getContext("2d"), W = 0, H = 0, DPR = 1, TERR = null, CLOUD = null, STATIC = [];
   var GFXKEY = "voidhammer-gfx-v1", PIX = true, PLQ = [], TXC = null, TXG = null;
   try { PIX = false; } catch (e) {}
-  function gdpr() { return PIX ? 0.5 : Math.min(window.devicePixelRatio || 1, 2); }
+  function gdpr() { return PIX ? 0.5 : Math.min(window.devicePixelRatio || 1, 2.5); }
   function txInit() {
     if (TXC) return;
     TXC = document.createElement("canvas"); TXC.id = "maptxt"; TXC.style.cssText = "position:absolute;inset:0;width:100%;height:100%;pointer-events:none;display:block";
@@ -1881,7 +1881,7 @@ window.__vhGame = function () { (function () {
     DPR = gdpr();
     W = cv.clientWidth; H = cv.clientHeight;
     cv.width = Math.round(W * DPR); cv.height = Math.round(H * DPR);
-    txInit(); var r = Math.min(window.devicePixelRatio || 1, 2); TXC.width = Math.round(W * r); TXC.height = Math.round(H * r); TXC._r = r;
+    txInit(); var r = Math.min(window.devicePixelRatio || 1, 2.5); TXC.width = Math.round(W * r); TXC.height = Math.round(H * r); TXC._r = r;
     gfxClasses();
   }
   function questMark(g) {
@@ -6215,9 +6215,9 @@ window.__vhGame = function () { (function () {
   }
   function aPresent(src) {
     var a = AR, disp = $("acv"); if (!disp || !a) return;
-    var dpr = Math.min(window.devicePixelRatio || 1, 1.75), W = Math.max(2, Math.round(disp.clientWidth * dpr)), H = Math.max(2, Math.round(disp.clientHeight * dpr));
+    var dpr = Math.min(window.devicePixelRatio || 1, 2.5), W = Math.max(2, Math.round(disp.clientWidth * dpr)), H = Math.max(2, Math.round(disp.clientHeight * dpr));
     if (disp.width !== W || disp.height !== H) { disp.width = W; disp.height = H; }
-    var gd = disp.getContext("2d"), n = P3 ? 4 : 1.5, tw = Math.round(src.width * n), th = Math.round(src.height * n);
+    var gd = disp.getContext("2d"), n = P3 ? 4 : 3, tw = Math.round(src.width * n), th = Math.round(src.height * n);
     if (!ATMP) ATMP = document.createElement("canvas"); if (ATMP.width !== tw || ATMP.height !== th) { ATMP.width = tw; ATMP.height = th; }
     var tg = ATMP.getContext("2d"); tg.imageSmoothingEnabled = false; tg.drawImage(src, 0, 0, tw, th);
     gd.globalCompositeOperation = "source-over"; gd.globalAlpha = 1; gd.imageSmoothingEnabled = true; gd.imageSmoothingQuality = "high"; if (P3) ovP3Draw(disp, ATMP); else gd.drawImage(ATMP, 0, 0, W, H);
@@ -8244,7 +8244,7 @@ window.__vhGame = function () { (function () {
   function ovP3Src(c, r) { if (!P3S) P3S = document.createElement("canvas"); var w = Math.round(c.clientWidth * r), h = Math.round(c.clientHeight * P3K * r); if (P3S.width !== w || P3S.height !== h) { P3S.width = w; P3S.height = h; } return P3S; }
   function ovP3Draw(dst, src) {
     var T = ovP3Tab(), W = dst.width, H = dst.height, g = dst.getContext("2d"), i, sh = src.height * P3C / P3N, ww = src.width, sk = P3SKY * H;
-    g.setTransform(1, 0, 0, 1, 0, 0); g.globalAlpha = 1; g.globalCompositeOperation = "source-over"; g.imageSmoothingEnabled = true;
+    g.setTransform(1, 0, 0, 1, 0, 0); g.globalAlpha = 1; g.globalCompositeOperation = "source-over"; g.imageSmoothingEnabled = true; g.imageSmoothingQuality = "high";
     var sg = g.createLinearGradient(0, 0, 0, sk + 2); sg.addColorStop(0, "#0c1020"); sg.addColorStop(0.6, "#2a3350"); sg.addColorStop(1, "#6a6a78"); g.fillStyle = sg; g.fillRect(0, 0, W, sk + 2);
     for (i = 0; i < P3N; i++) {
       var sw = ww / T.m[i], sx = (ww - sw) / 2, dy = sk + T.D[i] * (H - sk), dh = (T.D[i + 1] - T.D[i]) * (H - sk) + 1;
@@ -9218,6 +9218,13 @@ window.__vhGame = function () { (function () {
     dipMsg = "Trade route opened with " + dnm(f) + ". Their regard of you improves."; dipMsgAt = Date.now();
   }
   function tradeEnd(f) { var d = trD(); if (!d.tr[f]) return; delete d.tr[f]; d.op[f] = (d.op[f] || 0) - 3; dipMsg = "Trade with " + dnm(f) + " ended. They noticed."; dipMsgAt = Date.now(); }
+  // ---- world map: towns, castles and villages are just their names ----
+  function drawSite(s, t) {
+    var sxp = W / 2 + (s.x - cam.x) * cam.z, syp = H * 0.45 + (s.y - cam.y) * cam.z;
+    if (sxp < -200 * cam.z || sxp > W + 200 * cam.z || syp < -80 * cam.z || syp > H + 80 * cam.z) return;
+    var vl = s.type === "village", col = vl ? "#efe6cf" : (s.owner && FAC[s.owner] ? ownerCol(s) : "#f4e6bf");
+    plate(s.name, s.x, s.y, (vl ? "italic 600 14px" : "italic 600 18px") + " 'IM Fell English', Georgia, serif", col);
+  }
 
   // ---- input ----
   (function () {
