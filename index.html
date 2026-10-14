@@ -4708,7 +4708,7 @@ window.__vhGame = function () { (function () {
   }
   function areaFrame(t) {
     if (!AR) { aRun = false; return; } var dt = Math.min(0.05, (t - aLast) / 1000 || 0); aLast = t;
-    aUpdate(dt); if (!AR) return; aDraw(); aUpdateHud(); requestAnimationFrame(areaFrame);
+    aUpdate(dt); if (!AR) { aRun = false; return; } aDraw(); aUpdateHud(); requestAnimationFrame(areaFrame);
   }
 
   // ---- quest log ----
