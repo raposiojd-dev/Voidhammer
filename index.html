@@ -166,6 +166,14 @@ p { margin: 0 0 0.8rem; }
 .pips { display: flex; gap: 0.35rem; margin: 0.3rem 0 0.4rem; }
 .pip { width: 0.8rem; height: 0.8rem; border: 1px solid var(--muted); border-radius: 50%; }
 .pip.on { background: var(--amber); border-color: var(--amber); }
+.story-s { font-size: 0.98rem; line-height: 1.6; margin: 0.4rem 0 0.8rem; }
+.bk { border: 1px solid #3a3022; border-radius: 8px; padding: 0.55rem 0.8rem; margin: 0.5rem 0; background: rgba(0,0,0,0.22); }
+.bk-h { display: flex; justify-content: space-between; align-items: baseline; gap: 0.6rem; padding-bottom: 0.35rem; border-bottom: 1px solid #3a3022; margin-bottom: 0.3rem; font-family: var(--mono); font-size: 0.78rem; letter-spacing: 0.04em; }
+.bk-h b { font-weight: 600; }
+.bk-net { font-size: 1rem; }
+.bk-l { display: flex; justify-content: space-between; font-size: 0.92rem; padding: 0.12rem 0; }
+.bk-p { color: #8fcf8a; } .bk-n { color: #e07a6a; }
+.bk-w { margin-top: 0.4rem; font-size: 0.86rem; font-style: italic; }
 .story { font-size: 1.15rem; line-height: 1.75; }
 .speech { font-size: 1.3rem; line-height: 1.5; margin: 0 0 0.4rem; }
 .reply { padding-left: 1rem; border-left: 1px solid var(--muted); margin-top: 1rem; }
@@ -2573,9 +2581,49 @@ window.__vhGame = function () { (function () {
     } else if (S.kael === "dead") h += '<p class="dim-t">Windrunner follows the column. Nobody rides him.</p>';
     return h;
   }
+  function booksCalc() {
+    var cin = [], cout = [], gin = [], gout = [], f1 = function (n) { return (Math.round(n * 10) / 10).toFixed(1); };
+    var hold = 0, hn = 0; S.sites.forEach(function (x) { if (x.owner === "player" && x.type !== "village") { hold += incomeOf(x); hn++; } });
+    if (hn) cin.push(["Towns and castles (net of upkeep)", hold]);
+    if (S.skills.counting) cin.push(["Counting skill", S.skills.counting * (2 + T() / 12)]);
+    var tav = 0, smi = 0, fsell = 0, farm = 0, fgrain = 0;
+    villages().forEach(function (v) {
+      if (v.has && v.has.tavern) tav += 3; if (v.has && v.has.smithy) smi += 2;
+      if (v.has && v.has.farm) { var m = v.mode || (v.autosell === false ? "off" : "sell"), mt = farmMarket(v); farm++;
+        if (m === "sell" && mt) fsell += 2.2 * mt.gs * (1 - Math.min(0.7, mt.sat)) * (1 + 0.06 * (S.skills.haggler || 0)) * 0.85;
+        if (m === "army") fgrain += 2.2 * 0.9; }
+    });
+    if (tav) cin.push(["Taverns", tav]); if (smi) cin.push(["Smithies", smi]);
+    if (fsell) cin.push(["Farms selling grain", fsell]);
+    cout.push(["Wages", wageDay()]);
+    var al = 0; (S.allies || []).forEach(function (h) { var d = hdef(h); if (!h.away) al += h.n * (h.mode === "follow" ? 0.2 : 0.1) * (d.price === 0 ? 0 : 1); });
+    if (al) cout.push(["Allied lords' men", al]);
+    if (S.skills.harvest) gin.push(["Harvest skill", S.skills.harvest * (1 + T() / 15)]);
+    if (fgrain) gin.push(["Farms sending grain to you", fgrain]);
+    gout.push(["The men eat", eatDay()]);
+    var sum = function (a) { return a.reduce(function (t, r) { return t + r[1]; }, 0); };
+    return { cin: cin, cout: cout, gin: gin, gout: gout, c: sum(cin) - sum(cout), g: sum(gin) - sum(gout), f1: f1 };
+  }
+  function booksCard(name, ins, outs, net, have, f1, tip) {
+    var line = function (r, sign) { return '<div class="bk-l"><span>' + r[0] + '</span><b class="' + (sign > 0 ? "bk-p" : "bk-n") + '">' + (sign > 0 ? "+" : "−") + f1(r[1]) + "</b></div>"; };
+    var cls = net >= 0 ? "bk-p" : "bk-n", left = net < 0 ? Math.floor(have / -net) : 0;
+    var h = '<div class="bk"><div class="bk-h"><span>' + name + ' · you hold <b>' + Math.floor(have) + '</b></span><b class="bk-net ' + cls + '">' + (net >= 0 ? "+" : "−") + f1(Math.abs(net)) + " a day</b></div>";
+    h += ins.map(function (r) { return line(r, 1); }).join("") + outs.map(function (r) { return line(r, -1); }).join("");
+    if (net < 0) h += '<div class="bk-w ' + (left <= 5 ? "bk-n" : "") + '">Losing ' + f1(-net) + " a day. Lasts about " + left + " days. " + tip + "</div>";
+    else h += '<div class="bk-w bk-p">' + (net > 0.05 ? "Growing. You are covered." : "Even. Nothing is draining.") + "</div>";
+    return h + "</div>";
+  }
+  function booksBlock() {
+    var b = booksCalc();
+    return '<div class="sec">Daily books</div>' +
+      booksCard("Crowns", b.cin, b.cout, b.c, S.crowns, b.f1, "Earn more: take towns, sell salvage, or farm and sell grain.") +
+      booksCard("Grain", b.gin, b.gout, b.g, S.grain, b.f1, "Earn more: build farms (send to army) or buy grain in town.") +
+      '<p class="dim-t" style="margin-top:0.4rem">Estimates for an ordinary day. Battles, loot and contracts come on top.</p>';
+  }
   function ledgerSheet(just) {
     return "<h2>The Ledger</h2><p class=\"sub\">What you are, held</p>" + hollowBlock() +
-      '<p class="story">' + R(story(), just) + "</p>" +
+      booksBlock() +
+      '<div class="sec">Your story so far</div><p class="story-s">' + R(story(), just) + "</p>" +
       '<div class="btns"><button class="cast" data-act="magic">✦ How magic works</button></div><p class="dim-t">You do not burn from here. When you cast, the Ledger opens, and you choose what to spend.</p>' +
       '<div class="sec">Memory Fragments · ' + S.held.length + " held</div>" + fragRows(false);
   }
