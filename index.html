@@ -597,6 +597,7 @@ window.__vhGame = function () { (function () {
     longbows: { name: "Longbows", base: 32, note: "Yew and horn. Reaches past the shield wall" },
     shards: { name: "Void-glass", base: 14, note: "Cold to hold. Alchemists pay well" }
   };
+  Object.assign(LOOT, ovLootNew());
   if (!S.loot) S.loot = {};
   if (!S.gear) S.gear = {};
   if (!S.skills) S.skills = {};
@@ -610,22 +611,48 @@ window.__vhGame = function () { (function () {
   var FORGE = { steel: { from: "blades", n: 2, cr: 20 }, plate: { from: "mail", n: 2, cr: 40 }, longbows: { from: "bows", n: 2, cr: 12 } };
   var TROOPT = [
     { id: 1, name: "Levy", mult: 1, wage: 0.25 },
-    { id: 2, name: "Swordsmen", mult: 1.35, wage: 0.40, cr: 30, gear: { blades: 1 }, vxp: 8, from: 1, cls: "sword", desc: "Hold the line with a sword and shield." },
-    { id: 3, name: "Men-at-arms", mult: 1.8, wage: 0.70, cr: 70, gear: { steel: 1, mail: 1 }, vxp: 20, from: 2, cls: "sword", desc: "Mailed and steady. The spine of a column." },
+    { id: 2, name: "Swordsmen", mult: 1.35, wage: 0.40, cr: 30, gear: { blades: 1, shields: 1 }, vxp: 8, from: 1, cls: "sword", desc: "Hold the line with a sword and shield." },
+    { id: 3, name: "Men-at-arms", mult: 1.8, wage: 0.70, cr: 70, gear: { steel: 1, mail: 1 }, vxp: 20, from: 2, froms: [2, 9, 14], cls: "sword", desc: "Mailed and steady. The spine of a column." },
     { id: 4, name: "Champions", mult: 2.5, wage: 1.2, cr: 160, gear: { steel: 1, plate: 1 }, vxp: 45, from: 3, cls: "sword", desc: "Plate and skill. They win fights on their own." },
     { id: 5, name: "Archers", mult: 1.3, wage: 0.38, cr: 25, gear: { bows: 1 }, vxp: 6, from: 1, ranged: true, cls: "ranged", desc: "Shoot from behind the line. Weak up close." },
     { id: 6, name: "Crossbowmen", mult: 1.8, wage: 0.65, cr: 60, gear: { longbows: 1, kit: 1 }, vxp: 18, from: 5, ranged: true, cls: "ranged", desc: "Slow to load, hard to stop. Punch through mail." },
     { id: 7, name: "Half Sparks", mult: 1.6, wage: 0.75, cr: 70, gear: { shards: 1 }, vxp: 12, from: 1, spark: true, cls: "spark", fade: 0.04, desc: "A fragment of inherited magic. Strong, but each fight burns a few out." },
     { id: 8, name: "Full Sparks", mult: 2.7, wage: 1.4, cr: 180, gear: { shards: 2 }, vxp: 40, from: 7, spark: true, cls: "spark", fade: 0.08, burn: 1, desc: "A whole spark. It costs a memory to wake one, and they burn out faster." },
-    { id: 9, name: "Spearmen", mult: 1.25, wage: 0.35, cr: 24, gear: { kit: 1 }, vxp: 6, from: 1, cls: "spear", desc: "A long spear and a small shield. They stop horses cold. Weak to swords." },
-    { id: 10, name: "Pikemen", mult: 1.8, wage: 0.6, cr: 55, gear: { kit: 1, mail: 1 }, vxp: 16, from: 9, cls: "spear", desc: "Mailed, with the longest spears. A wall no rider wants to meet." },
-    { id: 11, name: "Javelineers", mult: 1.25, wage: 0.36, cr: 26, gear: { bows: 1 }, vxp: 6, from: 1, ranged: true, jav: true, cls: "ranged", desc: "Throw javelins at short range. Hurt riders as well as foot. Weak to cavalry." },
-    { id: 12, name: "Horsemen", mult: 1.7, wage: 0.6, cr: 70, gear: { kit: 1, blades: 1 }, vxp: 14, from: 1, cls: "horse", horse: true, desc: "Fast riders. They run down archers and javelins. Spearmen kill them." },
-    { id: 13, name: "Lancers", mult: 2.7, wage: 1.1, cr: 150, gear: { steel: 1, mail: 1 }, vxp: 36, from: 12, cls: "horse", horse: true, desc: "Armoured heavy cavalry. A charge breaks most lines, but not a wall of spears." },
-    { id: 14, name: "Axemen", mult: 1.45, wage: 0.42, cr: 30, gear: { blades: 1 }, vxp: 8, from: 1, cls: "axe", desc: "No shield, a heavy axe. They split shield walls. Archers cut them down." },
-    { id: 15, name: "Shieldbreakers", mult: 2.2, wage: 0.85, cr: 90, gear: { steel: 1 }, vxp: 24, from: 14, cls: "axe", desc: "Big men with big axes. Sword lines fold. Keep them off the archers’ line." }
+    { id: 9, name: "Spearmen", mult: 1.25, wage: 0.35, cr: 24, gear: { spears: 1 }, vxp: 6, from: 1, cls: "spear", desc: "A long spear and a small shield. They stop horses cold." },
+    { id: 10, name: "Pikemen", mult: 1.8, wage: 0.6, cr: 55, gear: { pikes: 1, mail: 1 }, vxp: 16, from: 9, froms: [9, 2, 14], cls: "spear", desc: "Mailed, with the longest spears. A wall no rider wants to meet." },
+    { id: 11, name: "Javelineers", mult: 1.25, wage: 0.36, cr: 26, gear: { javelins: 2 }, vxp: 6, from: 1, cls: "ranged", ranged: true, jav: true, desc: "Throw javelins at short range. They hurt riders as well as foot." },
+    { id: 12, name: "Horsemen", mult: 1.7, wage: 0.6, cr: 70, gear: { horses: 1 }, vxp: 14, from: 1, cls: "horse", horse: true, desc: "Fast riders. They run down archers and javelin throwers." },
+    { id: 13, name: "Lancers", mult: 2.7, wage: 1.1, cr: 150, gear: { horses: 1, lances: 1, mail: 1 }, vxp: 36, from: 12, cls: "horse", horse: true, desc: "Armoured cavalry with couched lances. A charge breaks most lines." },
+    { id: 14, name: "Axemen", mult: 1.45, wage: 0.42, cr: 30, gear: { axes: 1 }, vxp: 8, from: 1, cls: "axe", desc: "No shield, a heavy axe. They split shield walls." },
+    { id: 15, name: "Shieldbreakers", mult: 2.2, wage: 0.85, cr: 90, gear: { greataxes: 1 }, vxp: 24, from: 14, froms: [14, 2, 9], cls: "axe", desc: "Big men with great axes. Sword lines fold before them." },
+    { id: 16, name: "Phalanx Guard", mult: 2.7, wage: 1.1, cr: 170, gear: { pikes: 2, plate: 1 }, vxp: 45, from: 10, cls: "spear", desc: "A bristling wall of mailed pikes. Nothing on four legs gets through." },
+    { id: 17, name: "Warbringers", mult: 2.8, wage: 1.15, cr: 175, gear: { greataxes: 2, mail: 1 }, vxp: 45, from: 15, cls: "axe", desc: "Veteran axe-lords. They carve the heart out of a shield wall." },
+    { id: 18, name: "Knights", mult: 3.0, wage: 1.3, cr: 190, gear: { destriers: 1, lances: 1, plate: 1 }, vxp: 50, from: 13, cls: "horse", horse: true, desc: "Plate and destrier. The hammer of any column." },
+    { id: 19, name: "Marksmen", mult: 2.6, wage: 1.0, cr: 160, gear: { longbows: 2, mail: 1 }, vxp: 40, from: 6, froms: [6, 20], cls: "ranged", ranged: true, desc: "Long-range killers. They pick off officers and punch through mail." },
+    { id: 20, name: "Skirmishers", mult: 1.9, wage: 0.6, cr: 60, gear: { javelins: 2, shields: 1 }, vxp: 16, from: 11, cls: "ranged", ranged: true, jav: true, desc: "Javelin and shield. Dart in, throw, dart out." },
+    { id: 21, name: "Warlords", mult: 3.7, wage: 2.0, cr: 420, gear: { steel: 2, plate: 1, shields: 1 }, vxp: 90, from: 4, cls: "sword", desc: "The best fighters in the world. Each is worth a company." },
+    { id: 22, name: "Aegis Guard", mult: 3.6, wage: 2.0, cr: 400, gear: { pikes: 2, plate: 2 }, vxp: 90, from: 16, cls: "spear", desc: "An unbreakable hedgehog of plate and pike." },
+    { id: 23, name: "Royal Lancers", mult: 3.9, wage: 2.1, cr: 430, gear: { destriers: 2, lances: 2, plate: 1 }, vxp: 95, from: 18, cls: "horse", horse: true, desc: "The finest heavy cavalry money can raise." },
+    { id: 24, name: "Doomaxes", mult: 3.8, wage: 2.0, cr: 420, gear: { greataxes: 3, plate: 1 }, vxp: 90, from: 17, cls: "axe", desc: "Giants in plate with axes that end sieges." },
+    { id: 25, name: "Deadeyes", mult: 3.4, wage: 1.8, cr: 400, gear: { longbows: 3, plate: 1 }, vxp: 90, from: 19, cls: "ranged", ranged: true, desc: "They do not miss. Officers learn to stay behind cover." },
+    { id: 26, name: "Cinderblades", mult: 1.9, wage: 0.7, cr: 80, gear: { greataxes: 1, kit: 1 }, vxp: 22, from: 14, cls: "axe", realm: "ember", fade: 0.02, desc: "Flameborne rebels who fight on rage. They hit like a forge hammer." },
+    { id: 27, name: "Pyre Berserkers", mult: 2.9, wage: 1.2, cr: 190, gear: { greataxes: 2, mail: 1 }, vxp: 48, from: 26, cls: "axe", realm: "ember", fade: 0.03, desc: "Passion made flesh. Brilliant in attack. Each fight burns a few of them out." },
+    { id: 28, name: "Granite Wardens", mult: 2.0, wage: 0.8, cr: 90, gear: { pikes: 1, shields: 1, mail: 1 }, vxp: 24, from: 9, cls: "spear", realm: "stone", desc: "Stonehold duty-soldiers. The slowest line in the world, and the hardest to move." },
+    { id: 29, name: "Golem-Sworn", mult: 3.1, wage: 1.3, cr: 200, gear: { steel: 1, plate: 2 }, vxp: 50, from: 28, cls: "sword", realm: "stone", fade: 0.025, desc: "Sworn to the mountain. Slow as stone, heavy as stone. Their limbs slowly turn to it." },
+    { id: 30, name: "Stormriders", mult: 2.0, wage: 0.8, cr: 95, gear: { horses: 1, javelins: 1, kit: 1 }, vxp: 24, from: 12, cls: "horse", realm: "storm", horse: true, desc: "Stormreach riders who race the weather. Fastest horse in the realms." },
+    { id: 31, name: "Thunder Lancers", mult: 3.0, wage: 1.3, cr: 200, gear: { destriers: 1, lances: 1, mail: 1 }, vxp: 50, from: 30, cls: "horse", realm: "storm", fade: 0.03, horse: true, desc: "Each charge rolls like thunder. Each charge ages the rider." },
+    { id: 32, name: "Radiance Archers", mult: 2.0, wage: 0.8, cr: 90, gear: { longbows: 1, kit: 1 }, vxp: 24, from: 5, cls: "ranged", realm: "light", fade: 0.025, ranged: true, desc: "Lightforge archers whose arrows burn bright. Long use costs them their past." },
+    { id: 33, name: "Lightforged Paladins", mult: 3.1, wage: 1.3, cr: 200, gear: { steel: 1, plate: 1, shields: 1 }, vxp: 50, from: 3, cls: "sword", realm: "light", fade: 0.03, desc: "Law in radiant armour. The Council forgets them, one by one." },
+    { id: 34, name: "Frost Marksmen", mult: 2.1, wage: 0.85, cr: 100, gear: { longbows: 1, mail: 1 }, vxp: 26, from: 5, cls: "ranged", realm: "frost", fade: 0.02, ranged: true, desc: "Frostgrave ambushers who strike from the still air. They feel nothing." },
+    { id: 35, name: "Winter Riders", mult: 2.2, wage: 0.9, cr: 105, gear: { horses: 1, lances: 1 }, vxp: 28, from: 12, cls: "horse", realm: "frost", horse: true, desc: "Pale cavalry out of the snow. They ride to where the prophets saw you." },
+    { id: 36, name: "Echo Guard", mult: 2.0, wage: 0.8, cr: 90, gear: { blades: 1, shields: 1, kit: 1 }, vxp: 24, from: 2, cls: "sword", realm: "spirit", fade: 0.03, desc: "Spiritveil ghost infantry: memories given a shield. The line between past and present blurs." },
+    { id: 37, name: "Lantern Riders", mult: 2.3, wage: 0.95, cr: 110, gear: { horses: 1, lances: 1, kit: 1 }, vxp: 30, from: 12, cls: "horse", realm: "spirit", fade: 0.025, horse: true, desc: "Lantern cavalry that ride through the dark. Their lights are older than the riders." },
+    { id: 38, name: "Shadow Knives", mult: 2.0, wage: 0.8, cr: 90, gear: { blades: 2, kit: 1 }, vxp: 24, from: 2, froms: [2, 14], cls: "sword", realm: "shadow", fade: 0.03, desc: "Shadowdeep assassins. Quick, quiet, and hard to remember." },
+    { id: 39, name: "Faceless Blades", mult: 3.0, wage: 1.25, cr: 200, gear: { steel: 2, kit: 1 }, vxp: 50, from: 38, cls: "axe", realm: "shadow", fade: 0.04, desc: "They have no names. The enemy never sees them come." },
+    { id: 40, name: "Dominion Legionaries", mult: 2.1, wage: 0.85, cr: 95, gear: { steel: 1, mail: 1, shields: 1 }, vxp: 26, from: 2, froms: [2, 9], cls: "sword", realm: "metal", desc: "Metalcrown armoured infantry. Efficient. Loyal only to fear." },
+    { id: 41, name: "Iron Cavalry", mult: 3.0, wage: 1.3, cr: 200, gear: { destriers: 1, lances: 1, plate: 1 }, vxp: 50, from: 13, cls: "horse", realm: "metal", fade: 0.02, horse: true, desc: "Synthetic riders in black iron. They do not tire, and soon they do not think." }
   ];
-  var VKEYS = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
+  var VKEYS = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41];
   if (!S.vets) S.vets = { 2: 0, 3: 0, 4: 0 };
   if (!S.vxp) S.vxp = 0;
   function vetTotal() { var n = 0; VKEYS.forEach(function (k) { n += S.vets[k] || 0; }); return n; }
@@ -1088,7 +1115,7 @@ window.__vhGame = function () { (function () {
   }
   function captureSite(s, f) {
     if (f === "player" && S.dip && S.dip.vas) { vassalCapture(s); return; }
-    var old = s.owner; s.owner = f;
+    var old = s.owner; s.owner = f; if (f === "player" && FAC[old]) { S.realmU = S.realmU || {}; S.realmU[old] = 1; }
     S.sites.forEach(function (v) { if (v.seat === s.id) v.owner = f; });
     TERRDIRTY = true;
     dominionCaptured(s, old, f);
@@ -1746,12 +1773,12 @@ window.__vhGame = function () { (function () {
   }
   function fadeSparks() {
     var gone = 0;
-    [7, 8].forEach(function (q) {
+    ovFadeIds().forEach(function (q) {
       var d = TROOPT[q - 1], c = S.vets[q] || 0, f = d.fade * (1 - 0.25 * sk("sparkward")) * (1 - 0.2 * sk("coldmind")), n = 0;
       for (var i = 0; i < c; i++) if (Math.random() < f) n++;
       if (n) { S.vets[q] -= n; gone += n; }
     });
-    if (gone) { removeMen(gone); toast(gone + " spark-bearer" + (gone > 1 ? "s" : "") + " burned out."); log(gone + " of your spark-bearers burned out after the fight. The magic took what it was owed.", "e"); }
+    if (gone) { removeMen(gone); toast(gone + " magic-bound soldier" + (gone > 1 ? "s" : "") + " burned out."); log(gone + " of your spark-bearers burned out after the fight. The magic took what it was owed.", "e"); }
   }
 
   // ---------- title screen and full tutorial ----------
@@ -2840,6 +2867,7 @@ window.__vhGame = function () { (function () {
     });
     var eqs = Object.keys(GEARB).filter(function (k) { return S.gear[k]; }).map(function (k) { return S.gear[k] + " " + LOOT[k].name.toLowerCase(); });
     h += '<p class="dim-t">Your men carry: ' + (eqs.length ? eqs.join(", ") : "nothing yet") + '. Gear you buy or forge goes straight onto your men.</p>';
+    h += ovKitShop(s);
     return h;
   }
   function skillsSheet() {
@@ -3281,14 +3309,14 @@ window.__vhGame = function () { (function () {
     injectField();
     var PN = Math.max(1, Math.min(40, T())), EN = Math.max(3, Math.min(44, Math.round(B.en0)));
     var tt = Math.max(1, T()), mult = [], kinds = [];
-    [8, 15, 13, 4, 10, 3, 7, 6, 11, 2, 14, 12, 9, 5].forEach(function (q) { var cnt = Math.round((S.vets[q] || 0) * PN / tt); for (var i = 0; i < cnt; i++) { mult.push(TROOPT[q - 1].mult); kinds.push(TROOPT[q - 1]); } });
+    ovKindOrder().forEach(function (q) { var cnt = Math.round((S.vets[q] || 0) * PN / tt); for (var i = 0; i < cnt; i++) { mult.push(TROOPT[q - 1].mult); kinds.push(TROOPT[q - 1]); } });
     while (mult.length < PN) { mult.push(1); kinds.push(null); } mult.length = PN; kinds.length = PN;
     var sm = 0; mult.forEach(function (m) { sm += m; });
     var base = (B.p0 - (B.allyS || 0)) / sm, ebase = B.e0 / EN, units = [], tierOf = function (m) { return m >= 2.5 ? 4 : m >= 1.8 ? 3 : m >= 1.35 ? 2 : 1; };
     var nb = Math.min(Math.round(((S.gear.bows || 0) + (S.gear.longbows || 0)) * PN / tt), Math.floor(PN * 0.4));
     mult.forEach(function (m, i) {
       var col = i % 10, row = Math.floor(i / 10), w = base * m;
-      units.push({ s: "p", x: 300 + (col - 4.5) * 15 + rnd(-2, 2), y: 560 + row * 16, w: w, hp: w * 3.2, hpm: w * 3.2, cd: rnd(0, 0.6), tier: tierOf(m), cls: ovKindCls(kinds[i], i >= PN - nb), horse: !!(kinds[i] && kinds[i].horse), jav: !!(kinds[i] && kinds[i].jav), slot: i, spk: !!(kinds[i] && kinds[i].spark), ranged: i >= PN - nb || !!(kinds[i] && kinds[i].ranged), dead: false, rout: false, gone: false, atk: 0, flash: 0, tc: 0, t: null, ax: 0, ay: 0 });
+      units.push({ s: "p", x: 300 + (col - 4.5) * 15 + rnd(-2, 2), y: 560 + row * 16, w: w, hp: w * 3.2, hpm: w * 3.2, cd: rnd(0, 0.6), tier: tierOf(m), cls: ovKindCls(kinds[i], i >= PN - nb), horse: !!(kinds[i] && kinds[i].horse), jav: !!(kinds[i] && kinds[i].jav), acol: (kinds[i] && kinds[i].realm) ? FAC[kinds[i].realm].col : undefined, slot: i, spk: !!(kinds[i] && kinds[i].spark), ranged: i >= PN - nb || !!(kinds[i] && kinds[i].ranged), dead: false, rout: false, gone: false, atk: 0, flash: 0, tc: 0, t: null, ax: 0, ay: 0 });
     });
     var ecol = fcol(), ea = B.kind === "void" || B.kind === "rift" ? 0 : B.kind === "lord" || B.siegeId ? 0.3 : 0.25, na = Math.round(EN * ea);
     for (var j = 0; j < EN; j++) {
@@ -5719,7 +5747,7 @@ window.__vhGame = function () { (function () {
     else if (L > lastLv) { showAlert("LEVEL " + L, pts > 0 ? pts + " skill point" + (pts === 1 ? "" : "s") + " to spend. Tap here." : "Well earned."); lastLv = L; lastPts = pts; }
     else if (pts > lastPts) { showAlert("SKILL POINT", pts + " to spend. Tap here."); lastPts = pts; }
     else lastPts = pts;
-    var av = [], id2; for (id2 = 2; id2 <= 8; id2++) { try { if (!promoteCheck(id2)) av.push(id2); } catch (e) {} }
+    var av = [], id2; for (id2 = 2; id2 <= TROOPT.length; id2++) { try { if (!promoteCheck(id2)) av.push(id2); } catch (e) {} }
     if (lastPromo === null || L < 1) lastPromo = av.slice();
     else {
       var fresh = av.filter(function (q) { return lastPromo.indexOf(q) < 0 && Date.now() - (promoAt[q] || 0) > 120000; });
@@ -8993,8 +9021,71 @@ window.__vhGame = function () { (function () {
     g.fillStyle = "rgba(0,0,0,0.55)"; g.beginPath(); g.arc(4.5, -15.5, 2.6, 0, 6.283); g.fill(); g.fillStyle = C.c; g.beginPath(); g.arc(4.5, -15.5, 1.9, 0, 6.283); g.fill();
   }
   // ---- Troops roster ----
-  var troopOpen = 0;
-  var TPATHS = [["Sword & shield", "sword", [2, 3, 4]], ["Spearmen", "spear", [9, 10]], ["Axemen", "axe", [14, 15]], ["Cavalry", "horse", [12, 13]], ["Archers & javelins", "ranged", [5, 6, 11]], ["Spark path", "spark", [7, 8]]];
+  var troopOpen = 0, TIER1 = [2, 5, 9, 11, 12, 14];
+  function retrainCheck(f, to) {
+    var q = TROOPT[to - 1]; if (!(S.vets[f] > 0)) return "None to retrain.";
+    if ((S.vxp || 0) < q.vxp) return "Needs " + q.vxp + " battle experience.";
+    if (S.crowns < q.cr) return "Needs " + q.cr + " crowns.";
+    var miss = []; Object.keys(q.gear).forEach(function (k) { if ((S.loot[k] || 0) < q.gear[k]) miss.push(q.gear[k] + " " + LOOT[k].name.toLowerCase()); });
+    return miss.length ? "Needs " + miss.join(" and ") + " in your backpack." : "";
+  }
+  function doRetrain(f, to) {
+    if (retrainCheck(f, to)) return false; var q = TROOPT[to - 1];
+    Object.keys(q.gear).forEach(function (k) { S.loot[k] -= q.gear[k]; }); S.crowns -= q.cr; S.vxp -= q.vxp; S.vets[f]--; S.vets[to] = (S.vets[to] || 0) + 1; S.salvage = lootCount();
+    toast("A " + TROOPT[f - 1].name.toLowerCase().replace(/men$/, "man") + " is now a " + q.name.toLowerCase().replace(/men$/, "man") + "."); return true;
+  }
+  var TPATHS = [["Sword & shield", "sword", [2, 3, 4, 21]], ["Spearmen", "spear", [9, 10, 16, 22]], ["Axemen", "axe", [14, 15, 17, 24]], ["Cavalry", "horse", [12, 13, 18, 23]], ["Archers & javelins", "ranged", [5, 6, 11, 20, 19, 25]], ["Spark path", "spark", [7, 8]]];
+  var sparkFrom = 0;
+  function ovLootNew() {
+    return { spears: { name: "Spears", base: 7, note: "Ash shafts, iron heads" }, shields: { name: "Round shields", base: 9, note: "Lime wood and a boss" }, axes: { name: "Hand axes", base: 9, note: "Wood axes ground for war" }, javelins: { name: "Javelins", base: 6, note: "Light throwing spears" }, pikes: { name: "Long pikes", base: 22, note: "Three metres of ash and steel" }, horses: { name: "Warhorses", base: 55, note: "Broken to the charge" }, lances: { name: "Lances", base: 28, note: "Couched for the charge" }, greataxes: { name: "Great axes", base: 36, note: "Two hands, one swing" }, destriers: { name: "Destriers", base: 120, note: "Armoured chargers. Fit for knights" } };
+  }
+  var KITK = ["spears", "shields", "axes", "javelins", "pikes", "horses", "lances", "greataxes", "destriers"];
+  function ovKitStock(s) { var sh = shopOf(s), tw = s.type === "town"; if (sh.spears === undefined) { var d = tw ? { spears: 5, shields: 4, axes: 4, javelins: 4, pikes: 3, horses: 2, lances: 2, greataxes: 2, destriers: 1 } : { spears: 3, shields: 2, axes: 2, javelins: 2, pikes: 0, horses: 1, lances: 0, greataxes: 0, destriers: 0 }; Object.keys(d).forEach(function (k) { sh[k] = d[k]; }); } return sh; }
+  function ovKitShop(s) {
+    var sh = ovKitStock(s), h = '<div class="sec">Troop kit: for sale</div><p class="dim-t">Spears, shields, axes, horses and more. Soldiers need them to be promoted.</p>';
+    KITK.forEach(function (k) { if (!(sh[k] > 0) && s.type !== "town") return; var n = Math.floor(sh[k]), pr = buyPrice(k, s); h += row(LOOT[k].name, n + " in stock · " + pr + " crowns · " + LOOT[k].note, "Buy 1", "kbuy", s.id, k, n < 1 || S.crowns < pr); });
+    return h;
+  }
+  function addLoot(n, kind) {
+    var got = {}, i, tbl = [["blades", 0.16], ["mail", 0.11], ["bows", 0.11], ["kit", 0.11], ["spears", 0.10], ["shields", 0.08], ["axes", 0.08], ["javelins", 0.08], ["horses", 0.05], ["pikes", 0.04], ["greataxes", 0.04], ["lances", 0.04]];
+    if (kind === "lord") tbl = tbl.concat([["destriers", 0.05], ["steel", 0.06], ["plate", 0.04]]);
+    var tot = 0; tbl.forEach(function (r) { tot += r[1]; });
+    for (i = 0; i < n; i++) {
+      var r = Math.random(), k;
+      if (kind === "void") k = r < 0.6 ? "shards" : "kit"; else { var x = Math.random() * tot, acc = 0; k = "kit"; for (var j = 0; j < tbl.length; j++) { acc += tbl[j][1]; if (x < acc) { k = tbl[j][0]; break; } } }
+      S.loot[k] = (S.loot[k] || 0) + 1; got[k] = (got[k] || 0) + 1;
+    }
+    S.salvage = lootCount();
+    return Object.keys(got).map(function (k) { return got[k] + " " + LOOT[k].name.toLowerCase(); }).join(", ");
+  }
+  function ovFadeIds() { var o = []; TROOPT.forEach(function (q) { if (q.fade) o.push(q.id); }); return o; }
+  function ovKindOrder() { return TROOPT.filter(function (q) { return q.id > 1; }).sort(function (a, b) { return b.mult - a.mult; }).map(function (q) { return q.id; }); }
+  function tFroms(q) { return q.froms || (q.from ? [q.from] : []); }
+  function tTier(id) { return id === 1 ? 1 : 1 + tTier(TROOPT[id - 1].from); }
+  function realmOpen(f) { return !!((S.realmU && S.realmU[f]) || (S.allies || []).some(function (h) { try { return hdef(h).fac === f; } catch (e) { return false; } })); }
+  function tAvail(f) { return f === 1 ? T() - vetTotal() : (S.vets[f] || 0); }
+  function promoteCheck(id, from) {
+    var T2 = TROOPT[id - 1]; normVets();
+    if (T2.realm && !realmOpen(T2.realm)) return "Take a " + FAC[T2.realm].name + " town or ally with their lords first.";
+    var fs = tFroms(T2), f = from; if (!f) { fs.forEach(function (q) { if (!f && tAvail(q) > 0) f = q; }); if (!f) f = fs[0]; }
+    if (fs.indexOf(f) < 0) return "Cannot promote that unit.";
+    if (tAvail(f) < 1) return "No " + TROOPT[f - 1].name.toLowerCase() + " to promote.";
+    if ((S.vxp || 0) < T2.vxp) return "Needs " + T2.vxp + " battle experience.";
+    if (S.crowns < T2.cr) return "Needs " + T2.cr + " crowns.";
+    var miss = []; Object.keys(T2.gear).forEach(function (k) { if ((S.loot[k] || 0) < T2.gear[k]) miss.push(T2.gear[k] + " " + LOOT[k].name.toLowerCase()); });
+    if (miss.length) return "Needs " + miss.join(" and ") + " in your backpack.";
+    if (T2.burn && S.held.length < T2.burn) return "Needs a memory to burn.";
+    return "";
+  }
+  function doPromote(id, burnId, from) {
+    var T2 = TROOPT[id - 1], fs = tFroms(T2), f = from; if (!f) { fs.forEach(function (q) { if (!f && tAvail(q) > 0) f = q; }); } if (!f) f = sparkFrom || fs[0];
+    if (promoteCheck(id, f)) return false;
+    Object.keys(T2.gear).forEach(function (k) { S.loot[k] -= T2.gear[k]; });
+    S.crowns -= T2.cr; S.vxp -= T2.vxp; if (f > 1) S.vets[f]--; S.vets[id] = (S.vets[id] || 0) + 1; S.salvage = lootCount();
+    if (T2.burn && burnId) burnFragment(burnId);
+    toast("A " + TROOPT[f - 1].name.toLowerCase().replace(/men$/, "man").replace(/s$/, "") + " is now a " + T2.name.replace(/men$/, "man").replace(/s$/, "").toLowerCase() + ".");
+    return true;
+  }
   var TICO = {
     1: '<circle cx="24" cy="15" r="6" fill="#fff"/><path d="M12 40q0-13 12-13t12 13z" fill="#fff"/><path d="M33 12v28" stroke="#d8c8a0" stroke-width="2"/>',
     2: '<path d="M27 6l5 5-14 21-6-1 1-6z" fill="#fff"/><path d="M12 33l7 7M9 41l5-5" stroke="#fff" stroke-width="3"/><path d="M29 22h11v9q0 8-5.5 11-5.500-3-5.500-11z" fill="#fff" opacity=".85"/>',
@@ -9013,8 +9104,10 @@ window.__vhGame = function () { (function () {
     15: '<path d="M24 4v40" stroke="#d8c8a0" stroke-width="3"/><path d="M23 8q-16 2-16 12t16 10z" fill="#fff"/><path d="M25 8q16 2 16 12t-16 10z" fill="#fff"/>'
   };
   function tIcon(id, sz) {
-    var T2 = TROOPT[id - 1], C = TCLS[id === 1 ? "levy" : T2.cls] || TCLS.levy;
-    return '<svg viewBox="0 0 48 48" width="' + (sz || 40) + '" height="' + (sz || 40) + '"><circle cx="24" cy="24" r="22" fill="' + C.c + '" opacity=".92"/><circle cx="24" cy="24" r="22" fill="none" stroke="#1a1610" stroke-width="2"/><g transform="translate(5.5 5.5) scale(.77)" stroke="none">' + (TICO[id] || TICO[1]) + "</g></svg>";
+    var T2 = TROOPT[id - 1], C = TCLS[id === 1 ? "levy" : T2.cls] || TCLS.levy, bg = T2.realm ? FAC[T2.realm].col : C.c, ti = tTier(id), base = TICO[id] || TICO[{ sword: 3, spear: 10, axe: 15, ranged: 6, horse: 13 }[T2.cls] || 1], pips = "";
+    for (var q = 4; q <= ti; q++) pips += '<circle cx="' + (20 + (q - 4) * 5) + '" cy="45" r="2" fill="#f0d060" stroke="#1a1610" stroke-width=".6"/>';
+    if (T2.realm) pips += '<circle cx="38" cy="10" r="4" fill="#fff" stroke="#1a1610" stroke-width="1"/>';
+    return '<svg viewBox="0 0 48 48" width="' + (sz || 40) + '" height="' + (sz || 40) + '"><circle cx="24" cy="24" r="22" fill="' + bg + '" opacity=".92"/><circle cx="24" cy="24" r="22" fill="none" stroke="#1a1610" stroke-width="2"/><g transform="translate(5.5 5.5) scale(.77)" stroke="none">' + base + "</g>" + pips + "</svg>";
   }
   function tCounters(cls) {
     var st = [], wk = [], k; Object.keys(TBEAT).forEach(function (a) { if (a === cls) st = TBEAT[a].slice(); if (TBEAT[a].indexOf(cls) >= 0) wk.push(a); });
@@ -9023,14 +9116,19 @@ window.__vhGame = function () { (function () {
   function tChips(arr, good) { return arr.length ? arr.map(function (c) { return '<span class="xchip" style="border-color:' + TCLS[c].c + ";color:" + TCLS[c].c + '">' + (good ? "▲ " : "▼ ") + TCLS[c].n + "</span>"; }).join("") : '<span class="xchip xdim">none</span>'; }
   function tCard(id, cnt) {
     var T2 = TROOPT[id - 1], cls = id === 1 ? "levy" : T2.cls, C = TCLS[cls], cn = tCounters(cls), open = troopOpen === id;
-    var h = '<div class="xcard' + (open ? " open" : "") + (cnt ? "" : " none") + '" data-act="troopinfo" data-a="' + id + '"><div class="xic">' + tIcon(id, 42) + '</div><div class="xmid"><div class="xn">' + T2.name + ' <span class="xcls" style="color:' + C.c + '">' + C.n + "</span></div>" +
-      '<div class="xsub">Strength ' + T2.mult + " · wage " + T2.wage.toFixed(2) + "/day" + (T2.horse ? " · fast" : "") + (T2.jav ? " · short range" : "") + '</div></div><div class="xct">' + cnt + "</div></div>";
+    var ready = cnt > 0 && TROOPT.some(function (q) { return tFroms(q).indexOf(id) >= 0 && !promoteCheck(q.id, id); });
+    var h = '<div class="xcard' + (open ? " open" : "") + (ready ? " ready" : "") + '" data-act="troopinfo" data-a="' + id + '"><div class="xic">' + tIcon(id, 42) + '</div><div class="xmid"><div class="xn">' + T2.name + ' <span class="xcls" style="color:' + C.c + '">' + C.n + " · T" + tTier(id) + "</span></div>" +
+      '<div class="xsub">Strength ' + T2.mult + " · wage " + T2.wage.toFixed(2) + "/day" + (T2.horse ? " · fast" : "") + (T2.jav ? " · short range" : "") + (ready ? '<div class="xrdy">Ready to promote</div>' : "") + '</div></div><div class="xct">' + cnt + "</div></div>";
     if (open) {
       h += '<div class="xdet"><p>' + (id === 1 ? "Farmers with spears. Fights as 1 man. Every other soldier starts as one." : T2.desc) + "</p>";
-      var ups = TROOPT.filter(function (q) { return q.from === id; });
+      var ups = TROOPT.filter(function (q) { return tFroms(q).indexOf(id) >= 0 && (!q.realm || realmOpen(q.realm)); });
       if (T2.from && id !== 1) h += '<p class="dim-t">Promoted from ' + TROOPT[T2.from - 1].name.toLowerCase() + ". Needs " + Object.keys(T2.gear).map(function (k) { return T2.gear[k] + " " + LOOT[k].name.toLowerCase(); }).join(" and ") + ", " + T2.cr + " crowns, " + T2.vxp + " experience.</p>";
-      if (ups.length) { h += '<div class="sec">Promote a ' + T2.name.toLowerCase().replace(/men$/, "man") + "</div>"; ups.forEach(function (q) { var why = promoteCheck(q.id), need = Object.keys(q.gear).map(function (k) { return q.gear[k] + " " + LOOT[k].name.toLowerCase(); }); h += row("Promote 1 " + T2.name.toLowerCase() + " to " + q.name.toLowerCase(), q.cr + " crowns, " + need.join(" and ") + ", " + q.vxp + " experience" + (q.burn ? ", and a memory" : "") + (why ? "<br>" + why : ""), "Promote", "promote", String(q.id), "1", !!why); }); }
-      else h += '<p class="dim-t">The top of this line.</p>';
+      if (ups.length) { h += '<div class="sec">Promote a ' + T2.name.toLowerCase().replace(/men$/, "man") + "</div>"; ups.forEach(function (q) { var why = promoteCheck(q.id, id), need = Object.keys(q.gear).map(function (k) { return q.gear[k] + " " + LOOT[k].name.toLowerCase(); }); h += row("Promote 1 " + T2.name.toLowerCase() + " to " + q.name.toLowerCase(), q.cr + " crowns, " + need.join(" and ") + ", " + q.vxp + " experience" + (q.burn ? ", and a memory" : "") + (why ? "<br>" + why : ""), "Promote", "promote2", String(q.id), String(id), !!why); }); }
+      else h += '<p class="dim-t">The top of this line. Higher ranks only grow stronger along their own path.</p>';
+      if (TIER1.indexOf(id) >= 0 && cnt > 0) {
+        h += '<div class="sec">Retrain as another type</div><p class="dim-t">Basic soldiers can still change trade. Pay the full cost of the new type.</p>';
+        TIER1.forEach(function (to) { if (to === id) return; var q = TROOPT[to - 1], why = retrainCheck(id, to), need = Object.keys(q.gear).map(function (k) { return q.gear[k] + " " + LOOT[k].name.toLowerCase(); }); h += row("Retrain 1 " + T2.name.toLowerCase() + " as " + q.name.toLowerCase(), q.cr + " crowns, " + need.join(" and ") + ", " + q.vxp + " experience" + (why ? "<br>" + why : ""), "Retrain", "retrain", id + "-" + to, "1", !!why); });
+      }
       h += "</div>";
     }
     return h;
@@ -9038,22 +9136,31 @@ window.__vhGame = function () { (function () {
   function troopsSheet() {
     normVets();
     var t = T(), levy = t - vetTotal(), h = "<h2>Troops</h2><p class=\"sub\">" + t + " men · battle experience " + Math.floor(S.vxp || 0) + "</p>" + tabsHtml();
-    h += '<div class="dim-t" style="margin-top:.4rem">Tap a unit to see it and promote it. Learn what each is good and bad against by fighting.</div>';
+    h += '<div class="dim-t" style="margin-top:.4rem">Only the soldiers you have are shown. A gold card is ready to promote. Tap a unit to see it and promote it.</div>';
     if (sparkPick) {
       h += '<div class="warn" style="border-color:#9a7cd0"><b>Waking a Full Spark costs a memory.</b> Choose one to burn. It is gone for good.</div>' + S.held.map(function (id) { return '<div class="entry"><div>' + FRAGS[id].title + '</div><div class="btns"><button class="cast" data-act="sparkburn" data-a="' + id + '">Burn it</button></div></div>'; }).join("") + '<div class="btns"><button data-act="sparkno">Never mind</button></div>';
     }
-    h += '<div class="sec">Levy</div>' + tCard(1, levy);
+    if (levy > 0) h += '<div class="sec">Levy</div>' + tCard(1, levy);
     TPATHS.forEach(function (P) {
+      var own = P[2].filter(function (id) { return (S.vets[id] || 0) > 0; }); if (!own.length) return;
       h += '<div class="sec" style="color:' + TCLS[P[1]].c + '">' + P[0] + "</div>";
-      P[2].forEach(function (id) { h += tCard(id, S.vets[id] || 0); });
+      own.forEach(function (id) { h += tCard(id, S.vets[id] || 0); });
     });
+    Object.keys(FAC).forEach(function (f) {
+      var ids = TROOPT.filter(function (q) { return q.realm === f; }).map(function (q) { return q.id; }), own = ids.filter(function (id) { return (S.vets[id] || 0) > 0; }), ready = ids.some(function (id) { return !!TROOPT[id - 1] && tFroms(TROOPT[id - 1]).some(function (fr) { return tAvail(fr) > 0 && !promoteCheck(id, fr); }); });
+      if (!ids.length) return;
+      if (own.length) { h += '<div class="sec" style="color:' + FAC[f].col + '">' + FAC[f].name + " specialists</div>"; own.forEach(function (id) { h += tCard(id, S.vets[id] || 0); }); }
+    });
+    var locked = Object.keys(FAC).filter(function (f) { return TROOPT.some(function (q) { return q.realm === f; }) && !realmOpen(f); });
+    if (locked.length) h += '<p class="dim-t" style="margin-top:1rem">Realm specialists: take a town or castle from a realm, or ally with its lords, and its soldiers will train under your banner. Still unknown: ' + locked.map(function (f) { return FAC[f].name; }).join(", ") + ".</p>";
+    else h += '<p class="dim-t" style="margin-top:1rem">Every realm will train soldiers for you.</p>';
     return h;
   }
 
   (function () {
     var st = document.createElement("style");
     st.textContent = ".xcard{display:flex;align-items:center;gap:.7rem;padding:.55rem .6rem;margin:.4rem 0;border:1px solid #3a3022;border-radius:8px;background:rgba(0,0,0,.22);cursor:pointer}.xcard.open{border-color:#c8873a;background:rgba(200,135,58,.08)}.xcard.none{opacity:.55}.xic{flex:none;display:flex}.xmid{flex:1;min-width:0}.xn{font-size:1rem}.xcls{font:600 .66rem monospace;letter-spacing:.08em;text-transform:uppercase;margin-left:.3rem}.xsub{font-size:.76rem;color:var(--muted);margin:.1rem 0}.xchips{display:flex;flex-wrap:wrap;gap:.25rem}.xchip{font:600 .62rem monospace;letter-spacing:.04em;border:1px solid #555;border-radius:10px;padding:.08rem .4rem}.xchip.xdim{color:#777;border-color:#444}.xct{font:600 1.4rem Georgia,serif;color:#f0d9a0;min-width:2rem;text-align:right}.xdet{margin:-.2rem 0 .6rem;padding:.4rem .7rem .6rem;border:1px solid #3a3022;border-top:0;border-radius:0 0 8px 8px;background:rgba(0,0,0,.18)}.xri{border:1px solid #3a3022;border-radius:8px;padding:.5rem .7rem;margin:.6rem 0}.xrr{display:flex;flex-wrap:wrap;align-items:center;gap:.25rem;margin:.4rem 0}.xrr i{color:#a8822e;font-style:normal;font-size:.8rem}";
-    document.head.appendChild(st);
+    st.textContent += '.xcard.ready{border-color:#f0d060;background:rgba(240,208,96,.14);box-shadow:0 0 12px rgba(240,208,96,.35)}.xrdy{font:700 .64rem monospace;letter-spacing:.08em;text-transform:uppercase;color:#f0d060;margin-top:.15rem}'; document.head.appendChild(st);
   })();
 
   // ---- input ----
@@ -9156,7 +9263,10 @@ window.__vhGame = function () { (function () {
       case "equip":
         if (GEARB[x]) { var room2 = slotRoom(x), mv = Math.min(5, S.loot[x] || 0, room2); if (mv > 0) { S.loot[x] -= mv; S.gear[x] = (S.gear[x] || 0) + mv; S.salvage = lootCount(); } } break;
       case "ptab": partyTab = x; break;
+      case "kbuy": { var kv = site(x); if (kv && LOOT[y] && ovKitStock(kv)[y] >= 1) { var kp = buyPrice(y, kv); if (S.crowns >= kp) { ovKitStock(kv)[y] -= 1; S.crowns -= kp; S.loot[y] = (S.loot[y] || 0) + 1; S.salvage = lootCount(); toast("Bought " + LOOT[y].name.toLowerCase() + "."); } } break; }
+      case "promote2": { var pt2 = TROOPT[(+x) - 1]; if (!pt2 || promoteCheck(+x, +y)) break; if (pt2.burn) { sparkPick = +x; sparkFrom = +y; break; } doPromote(+x, undefined, +y); break; }
       case "troopinfo": troopOpen = troopOpen === +x ? 0 : +x; break;
+      case "retrain": { var rt = String(x).split("-"); doRetrain(+rt[0], +rt[1]); break; }
       case "forge":
         if (v && v.type === "town" && FORGE[y]) { var fg = FORGE[y]; if ((S.loot[fg.from] || 0) >= fg.n && S.crowns >= fg.cr) { S.loot[fg.from] -= fg.n; S.crowns -= fg.cr; S.loot[y] = (S.loot[y] || 0) + 1; S.salvage = lootCount(); toast("Forged: " + LOOT[y].name.toLowerCase() + ". It is in your backpack: promote troops with it, or wear it from Party, Troops."); } } break;
       case "promote": { var ptd = TROOPT[(+x) - 1]; if (!ptd || promoteCheck(+x)) break; if (ptd.burn) { sparkPick = +x; break; } doPromote(+x); break; }
