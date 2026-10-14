@@ -2767,7 +2767,7 @@ window.__vhGame = function () { (function () {
   var GEARFX = { steel: "+30% strength", plate: "+40% strength", longbows: "+16% strength", blades: "+15% strength, +8% loot", mail: "+20% strength, fewer deaths in battle", bows: "+8% strength, +10% experience", kit: "+5% strength, men eat 6% less" };
   var SKILLS = [
     { branch: "Command", blurb: "Bigger columns, harder men.", items: [
-      { id: "giantslayer", name: "Giant-Slayer", per: "+8% damage to bosses", max: 3, desc: "You watch how the big ones move, then hit where it hurts." },
+      { id: "giantslayer", name: "Giant-Slayer", per: "+15% damage to bosses", max: 3, desc: "You watch how the big ones move, then hit where it hurts." },
       { id: "drill", grow: 1, name: "Drill", per: "+7% strength, +10 column", max: 3, desc: "Hard days in the yard. Your men hit harder." },
       { id: "discipline", name: "Discipline", per: "−8% wages", max: 3, req: "drill", desc: "Men who know their place cost less to keep." },
       { id: "rally", name: "Rally", per: "−10% battle deaths", max: 3, req: "discipline", desc: "A voice that gets men off the ground." },
@@ -2809,7 +2809,7 @@ window.__vhGame = function () { (function () {
       { id: "fortune", need: 1, name: "Dark Fortune", per: "+5% better loot rarity", max: 3, desc: "Luck follows those it cannot kill." }] },
     { branch: "Hell Arts", need: 2, blurb: "Learned only by those who beat Nightmare.", items: [
       { id: "deathward", need: 2, name: "Death-ward", per: "survive one killing blow per area", max: 2, desc: "Something that is not you stands in the way." },
-      { id: "bossbane", need: 2, name: "Bossbane", per: "+20% damage to bosses", max: 3, desc: "You have learned how the big ones fall." },
+      { id: "bossbane", need: 2, name: "Bossbane", per: "+35% damage to bosses", max: 3, desc: "You have learned how the big ones fall." },
       { id: "tempo", need: 2, name: "Tempo", per: "−8% time between strikes", max: 3, desc: "Faster than they can remember being hit." }] }
   ];
   var skOpen = {};
@@ -3697,7 +3697,7 @@ window.__vhGame = function () { (function () {
   var LEGN = { w: ["Cinderbrand", "The Quiet Hours", "Lanternblade", "Valek’s Regret"], a: ["Mantle of the First Forge", "Ashfall Harness", "The Unbroken Coat"], r: ["Stormreach Wail", "Kaelren’s Last Arrow"], k: ["Elyndra’s Remembrance Cloak", "Boots of the Long Road"] };
   var AFFP = { w: ["cdr", "gold", "life", "vig"], a: ["vig", "spd", "gold", "life"], r: ["free", "cdr", "gold", "spd"], k: ["spd", "vig", "gold"] };
   function pick(a) { return a[Math.floor(Math.random() * a.length)]; }
-  function affVal(a, r) { return a === "cdr" ? 0.05 + 0.04 * r : a === "gold" ? 0.1 * r : a === "life" ? 0.12 * r : a === "vig" ? (r >= 3 ? 2 : 1) : a === "spd" ? 0.03 * r : a === "boss" ? 0.08 * r : 0.07 * r; }
+  function affVal(a, r) { return a === "cdr" ? 0.05 + 0.04 * r : a === "gold" ? 0.1 * r : a === "life" ? 0.12 * r : a === "vig" ? (r >= 3 ? 2 : 1) : a === "spd" ? 0.03 * r : a === "boss" ? 0.18 * r : 0.07 * r; }
   function affTxt(a, v) { return a === "cdr" ? "−" + Math.round(v * 100) + "% attack time" : a === "gold" ? "+" + Math.round(v * 100) + "% crowns" : a === "life" ? "heal " + v.toFixed(2) + " on a kill" : a === "vig" ? "+" + v + " heart" + (v > 1 ? "s" : "") : a === "spd" ? "+" + Math.round(v * 100) + "% speed" : a === "boss" ? "+" + Math.round(v * 100) + "% damage to bosses" : Math.round(v * 100) + "% free arrows"; }
   var WT = {
     w: [{ n: "Rusted Blade", t: 1, v: 0.4 }, { n: "Cudgel", t: 1, v: 0.45 }, { n: "Shortsword", t: 1, v: 0.6 }, { n: "Hand Axe", t: 1, v: 0.7 }, { n: "Spiked Mace", t: 2, v: 0.9 }, { n: "Longsword", t: 2, v: 1.0 }, { n: "Cavalry Sabre", t: 2, v: 1.1 }, { n: "Falchion", t: 2, v: 1.2 }, { n: "War Axe", t: 2, v: 1.25 }, { n: "Bastard Sword", t: 3, v: 1.4 }, { n: "Flanged Mace", t: 3, v: 1.4 }, { n: "Flamberge", t: 3, v: 1.55 }, { n: "Claymore", t: 4, v: 1.7 }, { n: "Battle Axe", t: 4, v: 1.75 }, { n: "Warhammer", t: 4, v: 1.8 }, { n: "Greatsword", t: 4, v: 1.9 }, { n: "Runeblade", t: 5, v: 2.1 }],
@@ -3719,7 +3719,7 @@ window.__vhGame = function () { (function () {
     if (slot === "w") it.wb = bt.v * [1, 1.5, 2.6, 4.6, 3.1, 11][rar]; else if (slot === "a") it.ar = Math.min(0.6, bt.v * m); else if (slot === "k") it.ar = bt.v * m; else it.bw = { dmg: bt.d * (1 + (m - 1) * 0.6), sp: bt.sp, cd: bt.cd, life: bt.life };
     var pool2 = AFFP[slot].slice(), first = "";
     for (var i = 0; i < AFN[rar]; i++) { var a = pool2.splice(Math.floor(Math.random() * pool2.length), 1)[0]; if (!a) break; it.aff[a] = affVal(a, AFV[rar]); if (!first) first = a; }
-    if (slot === "w" && rar >= 2 && !it.aff.boss && Math.random() < 0.4) it.aff.boss = affVal("boss", AFV[rar]);
+    if (slot === "w" && rar >= 2 && !it.aff.boss && Math.random() < 0.7) it.aff.boss = affVal("boss", AFV[rar]);
     it.name = rar === 0 ? bt.n : rar === 1 ? (PRE[first] || "Fine") + " " + bt.n : rar === 2 ? pick(RN1) + " " + bt.n : pick(LEGN[slot]);
     if (rar === 4) { var sk0 = pickSet(slot); it.set = sk0; it.name = SETS[sk0].p[slot]; }
     if (rar === 5) { it.name = pick(MYTH[slot]); it.who = pick(Object.keys(ORIGINS)); }
@@ -3737,7 +3737,7 @@ window.__vhGame = function () { (function () {
   function findItem(u) { return (cp().items || []).filter(function (i) { return i.uid === u; })[0] || null; }
   function eIt(sl) { var v = eqq()[sl]; return v && v.charAt(0) === "#" ? findItem(v.slice(1)) : null; }
   function eKey(sl) { var v = eqq()[sl]; if (!v) return ""; var it = eIt(sl); return it ? it.base : (v.charAt(0) === "#" ? "" : v); }
-  function affSum(a) { var t = 0; ["w", "a", "r", "k"].forEach(function (sl) { var it = eIt(sl); if (it && it.aff[a]) t += it.aff[a] * ovMf(it); }); return t + (setAgg()[a] || 0); }
+  function affSum(a) { var t = 0; ["w", "a", "r", "k"].forEach(function (sl) { var it = eIt(sl); if (it && it.aff[a]) { if (a === "boss") it.aff.boss = Math.max(it.aff.boss, affVal("boss", AFV[it.rar])); t += it.aff[a] * ovMf(it); } }); return t + (setAgg()[a] || 0); }
   function maxHp() { return 5 + (cp().hearts || 0) + (cp().qhp || 0) + sk("ironhide") + Math.round(affSum("vig")) + setAgg().hp + sk("hardened"); }
   function rcol(it) { return RAR[it.rar].c; }
   function rname(it) { return '<span style="color:' + rcol(it) + '">' + it.name + "</span>"; }
@@ -4438,7 +4438,7 @@ window.__vhGame = function () { (function () {
     (sp.chests || []).forEach(function (ch, ci) { var key = "chest:" + id + ":" + ci; A.npcs.push({ id: "chest" + ci, name: "Chest", x: ch[0], y: ch[1], px: ch[0] * ATS + 8, py: ch[1] * ATS + 14, col: "#a07030", chest: 1, d: function () { return cp().f[key] ? "chest_empty" : "chestloot:" + id + ":" + ci; } }); });
     var cl = cp().cleared[id];
     (sp.npcs || []).forEach(function (n) { A.npcs.push(Object.assign({}, n, { px: n.x * ATS + 8, py: n.y * ATS + 14 })); });
-    var rcl = cl && ovReentry(id, sp); if (!cl || rcl) (sp.enemies || []).forEach(function (q, i) { var d = q[7] ? Object.assign({}, ET[q[0]], q[7]) : ET[q[0]]; var tm = (1 + 0.8 * tier()) * lvScale() * (d.boss ? 3.4 : 1.8) * (1 + 0.4 * (((q[3] || sp.lv) || 1) - 1)) * (q[6] || 1) * 1.2; A.en.push({ type: q[0], d: d, x: q[1] * ATS + 8, y: q[2] * ATS + 14, hx: q[1] * ATS + 8, hy: q[2] * ATS + 14, hp: d.hp * tm, hpm: d.hp * tm, cd: 0.5, kx: 0, ky: 0, flash: 0, dead: false, aggro: false, shot: 1 + i * 0.2, ok: q[4], wq: q[5], rp: rcl ? 1 : 0 }); });
+    var rcl = cl && ovReentry(id, sp); if (!cl || rcl) (sp.enemies || []).forEach(function (q, i) { var d = q[7] ? Object.assign({}, ET[q[0]], q[7]) : ET[q[0]]; var tm = (1 + 0.8 * tier()) * lvScale() * (d.boss ? 3.0 : 1.8) * (1 + 0.4 * (((q[3] || sp.lv) || 1) - 1)) * (q[6] || 1) * 1.2; A.en.push({ type: q[0], d: d, x: q[1] * ATS + 8, y: q[2] * ATS + 14, hx: q[1] * ATS + 8, hy: q[2] * ATS + 14, hp: d.hp * tm, hpm: d.hp * tm, cd: 0.5, kx: 0, ky: 0, flash: 0, dead: false, aggro: false, shot: 1 + i * 0.2, ok: q[4], wq: q[5], rp: rcl ? 1 : 0 }); });
     if (!cl || rcl) ovPopulate(A, sp, rcl);
     var ssx = sx !== undefined ? sx : sp.spawn[0], ssy = sy !== undefined ? sy : sp.spawn[1];
     var mx = maxHp();
@@ -4515,7 +4515,7 @@ window.__vhGame = function () { (function () {
   function dmgEn(e, dmg, dx, dy, kn) {
     sfx("hit");
     if (e.dead || e.gone || e.yield) return false; var d = Math.hypot(dx, dy) || 1;
-    if (e.d.boss && sk("giantslayer")) dmg *= 1 + 0.08 * sk("giantslayer"); if (e.d.boss) dmg *= 1 + affSum("boss"); if (e.d.boss && sk("bossbane")) dmg *= 1 + 0.2 * sk("bossbane"); if (COOP.guest() && COOP.hit(e, dmg, dx, dy)) return true; e.hp -= dmg; e.flash = 0.2; e.kx = dx / d * (kn || 130) * (e.d.boss ? 0.12 : 0.5); e.ky = dy / d * (kn || 130) * (e.d.boss ? 0.12 : 0.5); AR.fx.push({ x: e.x, y: e.y - 8, t: 0.2 });
+    if (e.d.boss && sk("giantslayer")) dmg *= 1 + 0.15 * sk("giantslayer"); if (e.d.boss) dmg *= 1 + affSum("boss"); if (e.d.boss && sk("bossbane")) dmg *= 1 + 0.35 * sk("bossbane"); if (COOP.guest() && COOP.hit(e, dmg, dx, dy)) return true; e.hp -= dmg; e.flash = 0.2; e.kx = dx / d * (kn || 130) * (e.d.boss ? 0.12 : 0.5); e.ky = dy / d * (kn || 130) * (e.d.boss ? 0.12 : 0.5); AR.fx.push({ x: e.x, y: e.y - 8, t: 0.2 });
     AR.floats.push({ x: e.x, y: e.y - 16, t: 0.7, s: String(Math.round(dmg * 10) / 10) });
     if (e.d.yieldAt && e.hp <= e.d.yieldAt && e.hp > 0 && !cp().f.rusk) { e.yield = true; e.hp = Math.max(1, e.hp); }
     if (e.hp <= 0) killEn(e); return true;
