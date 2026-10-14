@@ -4591,7 +4591,7 @@ window.__vhGame = function () { (function () {
     g.setTransform(2, 0, 0, 2, 0, 0); g.imageSmoothingEnabled = false;
     var cx = Math.round(p.x - VW / 2), cy = Math.round(p.y - 8 - VH * (P3 ? 0.56 : 0.5)), mw = a.W * ATS, mh = a.H * ATS;
     if (!P3) { cx = mw <= VW ? Math.round((mw - VW) / 2) : Math.max(0, Math.min(mw - VW, cx)); cy = mh <= VH ? Math.round((mh - VH) / 2) : Math.max(0, Math.min(mh - VH, cy)); }
-    g.fillStyle = "#0b0912"; g.fillRect(0, 0, VW, VH); if (P3 && a.th && a.th.g) { g.fillStyle = a.th.g[0]; g.fillRect(0, 0, VW, VH); g.fillStyle = "rgba(0,0,0,0.5)"; g.fillRect(0, 0, VW, VH); }
+    g.fillStyle = "#0b0912"; g.fillRect(0, 0, VW, VH); if (P3 && a.th && a.th.g) ovOutside(g, a, cx, cy, VW, VH);
     if (mw > 1200 || mh > 1200) g.drawImage(a.mc, cx, cy, VW, VH, 0, 0, VW, VH); else g.drawImage(a.mc, -cx, -cy);
     g.save(); g.translate(-cx, -cy); waterAnim(g, a, cx, cy, VW, VH);
     (a.sp.exits || []).forEach(function (e) { if (e.lock && e.lock()) return; g.fillStyle = "rgba(255,240,170," + (0.12 + 0.08 * Math.sin(a.t * 3)) + ")"; g.fillRect(e.x * ATS, e.y * ATS, e.w * ATS, e.h * ATS); if (a.sp.th === "cave") { for (var sk2 = 1; sk2 <= 3; sk2++) { g.fillStyle = "rgba(255,240,170," + (0.3 - 0.07 * sk2 + 0.05 * Math.sin(a.t * 3)) + ")"; g.fillRect(e.x * ATS, (e.y - sk2) * ATS, e.w * ATS, ATS); } g.fillStyle = "rgba(255,255,255,0.7)"; g.fillRect(e.x * ATS + 1, e.y * ATS + 1, e.w * ATS - 2, 2); } });
@@ -8294,6 +8294,16 @@ window.__vhGame = function () { (function () {
       c.style.display = on ? "flex" : "none";
     }, 250);
   })();
+  // beyond the map edge the 3D camera shows a wall of forest, so the edge of the town is plain to see
+  function ovOutside(g, a, cx, cy, VW, VH) {
+    var th = a.th;
+    if (!a.op) {
+      var pc = document.createElement("canvas"); pc.width = pc.height = 64; var pg = pc.getContext("2d"), tx, ty;
+      for (ty = 0; ty < 4; ty++) for (tx = 0; tx < 4; tx++) { pg.fillStyle = th.g[(tx + ty) & 1]; pg.fillRect(tx * 16, ty * 16, 16, 16); if (th.cave) { pg.fillStyle = th.tree; pg.fillRect(tx * 16, ty * 16, 16, 16); pg.fillStyle = th.tree2; pg.fillRect(tx * 16 + 2, ty * 16 + 2, 8, 7); pg.fillRect(tx * 16 + 8, ty * 16 + 8, 7, 7); } else d2Tree(pg, tx * 16, ty * 16, ((tx * 7 + ty * 3) % 10) / 10, th); }
+      pg.fillStyle = "rgba(0,0,0,0.38)"; pg.fillRect(0, 0, 64, 64); a.op = g.createPattern(pc, "repeat");
+    }
+    g.save(); g.translate(-cx, -cy); g.fillStyle = a.op; g.fillRect(cx, cy, VW, VH); g.restore();
+  }
   function ovHeroShoot(u, engage, foes, force) {
     if ((u.cd > 0 && !force) || u.rout || u.dead) return;
     var bw = curBow(); if (!bw) return;
