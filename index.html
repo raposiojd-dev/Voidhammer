@@ -6176,7 +6176,7 @@ window.__vhGame = function () { (function () {
     var a = AR, disp = $("acv"); if (!disp || !a) return;
     var dpr = Math.min(window.devicePixelRatio || 1, 1.75), W = Math.max(2, Math.round(disp.clientWidth * dpr)), H = Math.max(2, Math.round(disp.clientHeight * dpr));
     if (disp.width !== W || disp.height !== H) { disp.width = W; disp.height = H; }
-    var gd = disp.getContext("2d"), n = 1.5, tw = Math.round(src.width * n), th = Math.round(src.height * n);
+    var gd = disp.getContext("2d"), n = P3 ? 4 : 1.5, tw = Math.round(src.width * n), th = Math.round(src.height * n);
     if (!ATMP) ATMP = document.createElement("canvas"); if (ATMP.width !== tw || ATMP.height !== th) { ATMP.width = tw; ATMP.height = th; }
     var tg = ATMP.getContext("2d"); tg.imageSmoothingEnabled = false; tg.drawImage(src, 0, 0, tw, th);
     gd.globalCompositeOperation = "source-over"; gd.globalAlpha = 1; gd.imageSmoothingEnabled = true; gd.imageSmoothingQuality = "high"; if (P3) ovP3Draw(disp, ATMP); else gd.drawImage(ATMP, 0, 0, W, H);
@@ -7170,7 +7170,7 @@ window.__vhGame = function () { (function () {
   }
   function fieldDraw(now) {
     var c = $("bfc"); if (!c || !F) return;
-    var cR = c, cH = c.clientHeight, r = gdpr(), SRC = P3 ? ovP3Src(c, r) : null, g = (SRC || c).getContext("2d"), cw = c.clientWidth, ch = SRC ? Math.round(cH * P3K) : cH, t = now || performance.now();
+    var cR = c, cH = c.clientHeight, r = gdpr() * (P3 ? ovP3Q(c) : 1), SRC = P3 ? ovP3Src(c, r) : null, g = (SRC || c).getContext("2d"), cw = c.clientWidth, ch = SRC ? Math.round(cH * P3K) : cH, t = now || performance.now();
     var dt = Math.min(0.1, (t - (F.dl || t)) / 1000); F.dl = t;
     var vd = B.kind === "void" || B.kind === "rift", G = bfGround(vd, F.bth); if (F.vw === undefined) F.vw = 560; F.vw += ((F.deploy ? 560 : BFVW * (P3 ? P3Z : 1)) - F.vw) * Math.min(1, dt * 4); var s = cw / F.vw;
     // camera follows the commander (or the middle of the line once he is down)
@@ -7211,7 +7211,7 @@ window.__vhGame = function () { (function () {
     F.arrows.forEach(function (a) { var k = Math.min(1, a.t / a.dur), x = a.sx + (a.ex - a.sx) * k, y = a.sy + (a.ey - a.sy) * k - Math.sin(k * Math.PI) * 26, dx = a.ex - a.sx, dy = a.ey - a.sy, l = Math.hypot(dx, dy) || 1; g.strokeStyle = a.col || (a.s === "p" ? "#f0d9a0" : "#e8e0d0"); g.lineWidth = a.col ? 2.4 : 0.9; g.beginPath(); g.moveTo(x, y); g.lineTo(x - dx / l * 6, y - dy / l * 6); g.stroke(); });
     if (F.wave2) { g.strokeStyle = "rgba(240,208,96," + (1 - F.wave2.r / 160) + ")"; g.lineWidth = 3; g.beginPath(); g.ellipse(F.wave2.x, F.wave2.y, F.wave2.r, F.wave2.r * 0.55, 0, 0, 6.283); g.stroke(); }
     if (F.wave) { var al = Math.max(0, 1 - F.wave.r / 520); g.strokeStyle = "rgba(255,244,200," + al + ")"; g.lineWidth = 8; g.beginPath(); g.ellipse(F.wave.x, F.wave.y, F.wave.r, F.wave.r * 0.55, 0, 0, 6.283); g.stroke(); g.fillStyle = "rgba(255,240,190," + al * 0.16 + ")"; g.beginPath(); g.ellipse(F.wave.x, F.wave.y, F.wave.r, F.wave.r * 0.55, 0, 0, 6.283); g.fill(); }
-    if (SRC) { ovP3Draw(cR, SRC); g = cR.getContext("2d"); ch = cH; }
+    if (SRC) { ovP3Draw(cR, SRC); g = cR.getContext("2d"); ch = cH; r = gdpr(); }
     g.setTransform(r, 0, 0, r, 0, 0);
     var vg = g.createRadialGradient(cw / 2, ch * 0.5, Math.min(cw, ch) * 0.35, cw / 2, ch * 0.5, Math.max(cw, ch) * 0.8); vg.addColorStop(0, "rgba(0,0,0,0)"); vg.addColorStop(1, "rgba(0,0,0,0.55)"); g.fillStyle = vg; g.fillRect(0, 0, cw, ch);
     if (F.over) {
@@ -8199,7 +8199,8 @@ window.__vhGame = function () { (function () {
     P3D = { D: D, m: m }; return P3D;
   }
   ovP3Tab();
-  function ovP3Src(c, r) { if (!P3S) P3S = document.createElement("canvas"); var w = c.width, h = Math.round(c.clientHeight * P3K * r); if (P3S.width !== w || P3S.height !== h) { P3S.width = w; P3S.height = h; } return P3S; }
+  function ovP3Q(c) { return Math.max(1, Math.min(2, 2200 / Math.max(1, c.width))); }
+  function ovP3Src(c, r) { if (!P3S) P3S = document.createElement("canvas"); var w = Math.round(c.clientWidth * r), h = Math.round(c.clientHeight * P3K * r); if (P3S.width !== w || P3S.height !== h) { P3S.width = w; P3S.height = h; } return P3S; }
   function ovP3Draw(dst, src) {
     var T = ovP3Tab(), W = dst.width, H = dst.height, g = dst.getContext("2d"), i, sh = src.height * P3C / P3N, ww = src.width, sk = P3SKY * H;
     g.setTransform(1, 0, 0, 1, 0, 0); g.globalAlpha = 1; g.globalCompositeOperation = "source-over"; g.imageSmoothingEnabled = true;
