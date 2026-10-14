@@ -4438,7 +4438,7 @@ window.__vhGame = function () { (function () {
     (sp.chests || []).forEach(function (ch, ci) { var key = "chest:" + id + ":" + ci; A.npcs.push({ id: "chest" + ci, name: "Chest", x: ch[0], y: ch[1], px: ch[0] * ATS + 8, py: ch[1] * ATS + 14, col: "#a07030", chest: 1, d: function () { return cp().f[key] ? "chest_empty" : "chestloot:" + id + ":" + ci; } }); });
     var cl = cp().cleared[id];
     (sp.npcs || []).forEach(function (n) { A.npcs.push(Object.assign({}, n, { px: n.x * ATS + 8, py: n.y * ATS + 14 })); });
-    var rcl = cl && ovReentry(id, sp); if (!cl || rcl) (sp.enemies || []).forEach(function (q, i) { var d = q[7] ? Object.assign({}, ET[q[0]], q[7]) : ET[q[0]]; var tm = (1 + 0.8 * tier()) * lvScale() * (d.boss ? 3.0 : 1.8) * (1 + 0.4 * (((q[3] || sp.lv) || 1) - 1)) * (q[6] || 1) * 1.2; A.en.push({ type: q[0], d: d, x: q[1] * ATS + 8, y: q[2] * ATS + 14, hx: q[1] * ATS + 8, hy: q[2] * ATS + 14, hp: d.hp * tm, hpm: d.hp * tm, cd: 0.5, kx: 0, ky: 0, flash: 0, dead: false, aggro: false, shot: 1 + i * 0.2, ok: q[4], wq: q[5], rp: rcl ? 1 : 0 }); });
+    var rcl = cl && ovReentry(id, sp); if (!cl || rcl) (sp.enemies || []).forEach(function (q, i) { var d = q[7] ? Object.assign({}, ET[q[0]], q[7]) : ET[q[0]]; var tm = (1 + 0.8 * tier()) * (d.boss ? 1 + 0.55 * (lvScale() - 1) : lvScale()) * (d.boss ? 3.0 : 1.8) * (1 + 0.4 * (((q[3] || sp.lv) || 1) - 1)) * (q[6] || 1) * 1.2; A.en.push({ type: q[0], d: d, x: q[1] * ATS + 8, y: q[2] * ATS + 14, hx: q[1] * ATS + 8, hy: q[2] * ATS + 14, hp: d.hp * tm, hpm: d.hp * tm, cd: 0.5, kx: 0, ky: 0, flash: 0, dead: false, aggro: false, shot: 1 + i * 0.2, ok: q[4], wq: q[5], rp: rcl ? 1 : 0 }); });
     if (!cl || rcl) ovPopulate(A, sp, rcl);
     var ssx = sx !== undefined ? sx : sp.spawn[0], ssy = sy !== undefined ? sy : sp.spawn[1];
     var mx = maxHp();
@@ -4626,7 +4626,7 @@ window.__vhGame = function () { (function () {
         e.shot -= dt; if (e.shot <= 0 && d < 120) { e.shot = e.type === "wraithgun" ? 1.3 : 1.6; a.proj.push({ x: e.x, y: e.y - 6, vx: dx / d * 88, vy: dy / d * 88, life: 2 }); }
       } else if (d > (e.d.boss ? 19 : 15)) {
         var sx = dx / d * spd * dt, sy = dy / d * spd * dt; if (boxFree(a, e.x + sx, e.y)) e.x += sx; else if (boxFree(a, e.x, e.y + (dy > 0 ? 1 : -1) * spd * dt)) e.y += (dy > 0 ? 1 : -1) * spd * dt; if (boxFree(a, e.x, e.y + sy)) e.y += sy; else if (boxFree(a, e.x + (dx > 0 ? 1 : -1) * spd * dt, e.y)) e.x += (dx > 0 ? 1 : -1) * spd * dt;
-      } else if (e.cd <= 0) { e.cd = e.d.boss ? 0.65 : 0.85; (tg.r ? COOP.hurtRf(tg.r) : hurtP)(e.d.dmg + Math.floor((lvl() - 1) / 5) + (e.d.boss ? 1 + Math.floor((lvl() - 1) / 8) : 0) + (e.d.boss && tier() > 0 ? 1 : 0)); }
+      } else if (e.cd <= 0) { e.cd = e.d.boss ? 0.65 : 0.85; (tg.r ? COOP.hurtRf(tg.r) : hurtP)(Math.min(e.d.dmg + Math.min(3, Math.floor((lvl() - 1) / 5)) + (e.d.boss ? 1 + Math.min(2, Math.floor((lvl() - 1) / 8)) : 0) + (e.d.boss && tier() > 0 ? 1 : 0), Math.max(1, AR.p.max * (e.d.boss ? 0.3 : 0.2)))); }
     });
     if (!COOP.guest()) bossPass(a, dt);
     a.proj = a.proj.filter(function (q) {
@@ -4636,7 +4636,7 @@ window.__vhGame = function () { (function () {
         a.en.forEach(function (e, i) { if (dead || e.dead || e.gone || e.yield) return; if (q.pierce && q.hit[i]) return; if (Math.hypot(q.x - e.x, q.y - e.y) < (q.bolt ? 8 : 8 + 0.4 * sk("steadyaim"))) { dmgEn(e, q.dmg, q.vx, q.vy, 100); if (q.pierce) q.hit[i] = 1; else dead = true; } });
         return !dead && q.life > 0;
       }
-      if (Math.hypot(q.x - p.x, q.y - 6 - (p.y - 6)) < 6) { if (q.pid) COOP.hitIds[q.pid] = 1; hurtP(1 + Math.floor((lvl() - 1) / 6)); return false; } return q.life > 0; });
+      if (Math.hypot(q.x - p.x, q.y - 6 - (p.y - 6)) < 6) { if (q.pid) COOP.hitIds[q.pid] = 1; hurtP(Math.min(1 + Math.min(2, Math.floor((lvl() - 1) / 6)), Math.max(1, p.max * 0.2))); return false; } return q.life > 0; });
     if (a.wave) { a.wave.t -= dt; if (a.wave.t <= 0) a.wave = null; }
   }
 
