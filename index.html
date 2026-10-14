@@ -6342,7 +6342,7 @@ window.__vhGame = function () { (function () {
     return "rgb(" + f(r) + "," + f(gg) + "," + f(b) + ")";
   }
   function rrect(g, x, y, w, h, r) { g.beginPath(); g.moveTo(x + r, y); g.lineTo(x + w - r, y); g.quadraticCurveTo(x + w, y, x + w, y + r); g.lineTo(x + w, y + h - r); g.quadraticCurveTo(x + w, y + h, x + w - r, y + h); g.lineTo(x + r, y + h); g.quadraticCurveTo(x, y + h, x, y + h - r); g.lineTo(x, y + r); g.quadraticCurveTo(x, y, x + r, y); g.closePath(); }
-  function drawChar(g, x, y, o) {
+  function drawChar0(g, x, y, o) {
     x = Math.round(x); y = Math.round(y);
     var big = !!o.big, sc = big ? 1.2 : o.small ? 0.82 : 1, walk = !!o.walk, an = o.anim || 0, sw = walk ? Math.sin(an) : 0, bob = walk ? -Math.abs(Math.sin(an)) * 0.7 : 0;
     var fx = o.face ? o.face.x : 0, fy = o.face ? o.face.y : 1, away = fy < 0 && fx === 0, side = fx !== 0 && !(fy > 0 && fx === 0);
@@ -8188,6 +8188,30 @@ window.__vhGame = function () { (function () {
     sp.houses.forEach(function (h, i) { ovBld(m, ks[i], h[0] * ATS, h[1] * ATS, h[2] * ATS, h[3] * ATS, th); });
   }
   function ovBld(m, kind, px, py, pw, ph, th) {
+    ovBldDepthPre(m, kind, px, py, pw, ph);
+    ovBld0(m, kind, px, py, pw, ph, th);
+    ovBldDepthPost(m, kind, px, py, pw, ph);
+  }
+  function ovBldDepthPre(m, kind, px, py, pw, ph) {
+    // long cast shadow on the ground to the right and below, so the building stands up from the grass
+    m.fillStyle = "rgba(0,0,0,0.30)"; m.beginPath(); m.moveTo(px + 2, py + ph); m.lineTo(px + pw + 2, py + ph); m.lineTo(px + pw + 16, py + ph - 6); m.lineTo(px + pw + 16, py + 4); m.lineTo(px + pw + 8, py + 2); m.closePath(); m.fill();
+    // the right side wall, seen at an angle: a dark face leaning away from the viewer
+    var d = 9, rh = ph - 16; m.fillStyle = "rgba(30,22,16,0.92)"; m.beginPath(); m.moveTo(px + pw, py + 3); m.lineTo(px + pw + d, py - 3); m.lineTo(px + pw + d, py + ph - 8); m.lineTo(px + pw, py + ph); m.closePath(); m.fill();
+    m.fillStyle = "rgba(255,255,255,0.07)"; m.beginPath(); m.moveTo(px + pw, py + rh + 3); m.lineTo(px + pw + d, py + rh - 3); m.lineTo(px + pw + d, py + ph - 8); m.lineTo(px + pw, py + ph); m.closePath(); m.fill();
+    m.fillStyle = "rgba(0,0,0,0.35)"; m.beginPath(); m.moveTo(px + pw, py + 3); m.lineTo(px + pw + d, py - 3); m.lineTo(px + pw + d, py + rh - 3); m.lineTo(px + pw, py + rh + 3); m.closePath(); m.fill();
+  }
+  function ovBldDepthPost(m, kind, px, py, pw, ph) {
+    var rh = ph - 16, g1;
+    // light from the upper left: lit left, shaded right
+    g1 = m.createLinearGradient(px, 0, px + pw, 0); g1.addColorStop(0, "rgba(255,244,210,0.16)"); g1.addColorStop(0.55, "rgba(0,0,0,0)"); g1.addColorStop(1, "rgba(0,0,0,0.22)"); m.fillStyle = g1; m.fillRect(px, py, pw, ph);
+    // roof catches the sun at the ridge and falls into shade at the eave
+    g1 = m.createLinearGradient(0, py, 0, py + rh); g1.addColorStop(0, "rgba(255,244,210,0.18)"); g1.addColorStop(1, "rgba(0,0,0,0.26)"); m.fillStyle = g1; m.fillRect(px, py, pw, rh);
+    m.fillStyle = "rgba(0,0,0,0.38)"; m.fillRect(px, py + rh, pw, 3); m.fillStyle = "rgba(0,0,0,0.16)"; m.fillRect(px, py + rh + 3, pw, 3);
+    // stone footing and corner posts
+    m.fillStyle = "rgba(60,56,52,0.85)"; m.fillRect(px - 1, py + ph - 3, pw + 2, 3); m.fillStyle = "rgba(255,255,255,0.12)"; m.fillRect(px - 1, py + ph - 3, pw + 2, 1);
+    m.fillStyle = "rgba(40,28,18,0.55)"; m.fillRect(px - 1, py + rh, 2, ph - rh); m.fillRect(px + pw - 1, py + rh, 2, ph - rh);
+  }
+  function ovBld0(m, kind, px, py, pw, ph, th) {
     function R(c, x, y, w, h) { m.fillStyle = c; m.fillRect(Math.round(x), Math.round(y), Math.round(w), Math.round(h)); }
     var rh = ph - ATS, wy = py + rh, dc = px + (Math.floor(pw / ATS) >> 1) * ATS, i, cx = px + pw / 2;
     var roof = kind === "home" ? th.roof : null, wall = kind === "home" ? th.wall : null;
@@ -8303,6 +8327,17 @@ window.__vhGame = function () { (function () {
       pg.fillStyle = "rgba(0,0,0,0.38)"; pg.fillRect(0, 0, 64, 64); a.op = g.createPattern(pc, "repeat");
     }
     g.save(); g.translate(-cx, -cy); g.fillStyle = a.op; g.fillRect(cx, cy, VW, VH); g.restore();
+  }
+  var OVSH = null, OVSN = { b: -1, n: 0 };
+  function drawChar(g, x, y, o) {
+    var b = Math.floor(performance.now() / 16); if (b !== OVSN.b) { OVSN.b = b; OVSN.n = 0; }
+    if (OVSN.n++ < 28) {
+      if (!OVSH) { OVSH = document.createElement("canvas"); OVSH.width = OVSH.height = 56; }
+      var og = OVSH.getContext("2d"); og.setTransform(1, 0, 0, 1, 0, 0); og.globalCompositeOperation = "source-over"; og.clearRect(0, 0, 56, 56);
+      drawChar0(og, 28, 46, o); og.globalCompositeOperation = "source-in"; og.fillStyle = "rgba(0,0,0,0.42)"; og.fillRect(0, 0, 56, 56); og.globalCompositeOperation = "source-over";
+      g.save(); g.translate(Math.round(x), Math.round(y)); g.transform(1, 0, -0.75, -0.3, 0, 0); g.imageSmoothingEnabled = false; g.drawImage(OVSH, -28, -46); g.restore();
+    }
+    drawChar0(g, x, y, o);
   }
   function ovHeroShoot(u, engage, foes, force) {
     if ((u.cd > 0 && !force) || u.rout || u.dead) return;
