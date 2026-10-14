@@ -2066,18 +2066,6 @@ window.__vhGame = function () { (function () {
     ctx.arc(0, 0, 27, -Math.PI / 2, -Math.PI / 2 + 6.283 * Math.max(0.02, s.m / 100)); ctx.stroke();
     ctx.restore();
     plate(s.name, x, y + (s.type === "village" ? 46 : 62), (s.type === "village" ? "italic 13px" : "italic 15px") + " 'IM Fell English', Georgia, serif", "#efe6cf");
-    if (cam.z >= 0.5) {
-      var st, sc2 = "#cdbf9c", vl = s.type === "village";
-      if (vl) {
-        var dd = Math.floor(vDays(s)); st = moodWord(s.m) + " · grain " + (dd >= 30 ? "30d+" : dd + "d") + " " + gfmt(gflow(s).n) + "/d" + (s.has && s.has.farm ? " · farm" : "") + (s.build ? " · building" : "");
-        if (vHungry(s)) sc2 = "#e0644a";
-      } else {
-        var gp = Math.round(100 * s.stock / s.cap);
-        st = (FAC[s.owner] ? FAC[s.owner].name : "") + " · " + moodWord(s.m) + " · grain " + gp + "% " + gfmt(gflow(s).n) + "/d" + ((s.unrest || 0) > 2 ? " · unrest" : "") + (s.build ? " · building" : "");
-        sc2 = (s.unrest || 0) > 2 || gp < 8 ? "#e0644a" : ownerCol(s);
-      }
-      plate(st, x, y + (vl ? 46 : 62) + 20, "500 10px 'IBM Plex Mono', ui-monospace, monospace", sc2);
-    }
   }
   function label(txt, x, y, col) {
     plate(txt, x, y, "500 10px 'IBM Plex Mono', ui-monospace, monospace", col);
@@ -9223,12 +9211,6 @@ window.__vhGame = function () { (function () {
   }
   function tradeEnd(f) { var d = trD(); if (!d.tr[f]) return; delete d.tr[f]; d.op[f] = (d.op[f] || 0) - 3; dipMsg = "Trade with " + dnm(f) + " ended. They noticed."; dipMsgAt = Date.now(); }
   // ---- world map: towns, castles and villages are just their names ----
-  function drawSite(s, t) {
-    var sxp = W / 2 + (s.x - cam.x) * cam.z, syp = H * 0.45 + (s.y - cam.y) * cam.z;
-    if (sxp < -200 * cam.z || sxp > W + 200 * cam.z || syp < -80 * cam.z || syp > H + 80 * cam.z) return;
-    var vl = s.type === "village", col = vl ? "#efe6cf" : (s.owner && FAC[s.owner] ? ownerCol(s) : "#f4e6bf");
-    plate(s.name, s.x, s.y, (vl ? "italic 600 14px" : "italic 600 18px") + " 'IM Fell English', Georgia, serif", col);
-  }
   // ---- realm-themed town/village walk-arounds: tint + ambient particles by owner ----
   var RFX = {
     ember: { tint: "255,90,30", ta: 0.1, mode: "overlay", n: 46, kind: "ember", cols: ["255,150,50", "255,200,90", "255,90,40"] },
