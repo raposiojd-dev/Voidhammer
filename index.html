@@ -4450,7 +4450,7 @@ window.__vhGame = function () { (function () {
 
   // ---- enter / leave ----
   function areaUnlocked(id) { var f = cp().f; if (id === "ashford") return true; if (id === "windspire") return !!f.q4done; if (id === "granitekeep") return !!f.q5done; if (id === "luminantc") return !!f.q4; if (id === "ironyard") return !!f.cell; if (id === "foundry") return !!f.q7; if (id === "millroad") return !!f.q1; if (id === "emberfall") return !!f.q1done; if (id === "hollow") return !!f.q2; if (id === "highmarch") return !!f.q2done; if (id === "pass") return !!f.q3; return false; }
-  function startArea(id, sx, sy) { YAWV = 0;
+  function startArea(id, sx, sy) { YAWV = YAWS = 0;
     if (!getSpec(id)) return; sfx("door");
     if (sheet) closeSheet(true);
     S.speed = 0; S.target = null; pausedSpeed = 0;
@@ -7409,7 +7409,7 @@ window.__vhGame = function () { (function () {
       (gr && !gr.cmd ? '<button data-f="1">Formation: ' + BFFORM[gr.form] + "</button>" : "") + '</div><button class="go" data-go="1">Begin the charge</button>';
   }
   function bfDeployStart(terr) {
-    YAWV = 0; F.deploy = true; F.vw = 560; var tl = Math.random(); F.bth = B.kind === 'lord' && B.fac === 'flameborne' ? 'ember' : tl < 0.5 ? 'grass' : tl < 0.7 ? 'stone' : tl < 0.85 ? 'pass' : 'ember'; F.pw = F.p0; F.ew = F.e0; F.sel = 0; F.gaps = terr.gaps; F.layoutName = terr.name; F.groups = bfGroups();
+    YAWV = YAWS = 0; F.deploy = true; F.vw = 560; var tl = Math.random(); F.bth = B.kind === 'lord' && B.fac === 'flameborne' ? 'ember' : tl < 0.5 ? 'grass' : tl < 0.7 ? 'stone' : tl < 0.85 ? 'pass' : 'ember'; F.pw = F.p0; F.ew = F.e0; F.sel = 0; F.gaps = terr.gaps; F.layoutName = terr.name; F.groups = bfGroups();
     $("bfb").style.display = "none"; fieldMsg(terr.name); F.msgT = 99;
     bfDeployUI();
   }
@@ -8224,11 +8224,11 @@ window.__vhGame = function () { (function () {
   function ovK() { return P3 ? P3K : 1; }
   function ovP3Tab() {
     if (P3D) return P3D; var r = [], tot = 0, i, D = [0], m = [];
-    for (i = 0; i < P3N; i++) { r.push(0.3 + 1.4 * (i + 0.5) / P3N); tot += r[i]; }
+    for (i = 0; i < P3N; i++) { r.push(1 + 0.55 * (i + 0.5) / P3N); tot += r[i]; }
     for (i = 0; i < P3N; i++) { D.push(D[i] + r[i] / tot); m.push(r[i] / tot * P3N); }
     var m0 = m[0]; for (i = 0; i < P3N; i++) m[i] /= m0;
     P3K = (r[0] / tot * P3N) / P3C;
-    var uh = 0.56 / P3C, mh = (0.3 + 1.4 * uh) / (0.3 + 1.4 * 0.5 / P3N); P3Z = 1.65 * mh / 2.3;
+    var uh = 0.56 / P3C, mh = (1 + 0.55 * uh) / (1 + 0.55 * 0.5 / P3N); P3Z = 1.65 * mh / 2.3;
     P3D = { D: D, m: m }; return P3D;
   }
   ovP3Tab();
@@ -9310,8 +9310,8 @@ window.__vhGame = function () { (function () {
   }
 
   // ---- third-person camera: right side of the screen pans (yaw), left side walks relative to the camera ----
-  var YAWV = 0, PAN = { on: false, id: -1, x: 0, moved: 0, ev: null, tap: null, el: null };
-  function ovYaw() { return (P3 && !ovDep()) ? YAWV : 0; }
+  var YAWV = 0, YAWS = 0, YAWT = 0, PAN = { on: false, id: -1, x: 0, moved: 0, ev: null, tap: null, el: null };
+  function ovYaw() { if (!P3 || ovDep()) return 0; var n = performance.now(); if (n - YAWT > 10) { var dt = Math.min(0.05, (n - YAWT) / 1000); YAWT = n; YAWS += (YAWV - YAWS) * (1 - Math.exp(-dt * 8)); if (Math.abs(YAWV - YAWS) < 0.0005) YAWS = YAWV; } return YAWS; }
   function ovUnrot(x, y) { var yw = ovYaw(); if (!yw) return [x, y]; var c = Math.cos(yw), s = Math.sin(yw); return [c * x + s * y, -s * x + c * y]; }
   function ovFldXf(g, r, s, cw, ch, cx, cy) {
     var yw = ovYaw(); if (!yw) { g.setTransform(r * s, 0, 0, r * s, r * (cw / 2 - cx * s), r * (ch * 0.55 - cy * s)); return; }
@@ -9334,13 +9334,13 @@ window.__vhGame = function () { (function () {
   }
   function ovPanMove(e) {
     if (!PAN.on || e.pointerId !== PAN.id) return false;
-    var dx = e.clientX - PAN.x; PAN.x = e.clientX; PAN.moved += Math.abs(dx); YAWV -= dx * 0.009; if (YAWV > 6.2832) YAWV -= 6.2832; if (YAWV < -6.2832) YAWV += 6.2832; return true;
+    var dx = e.clientX - PAN.x; PAN.x = e.clientX; PAN.moved += Math.abs(dx); YAWV = Math.max(-0.9, Math.min(0.9, YAWV - dx * 0.0045)); return true;
   }
   function ovPanEnd(e, onTap) {
     if (!PAN.on || e.pointerId !== PAN.id) return false;
     PAN.on = false; if (onTap && PAN.moved < 8 && PAN.ev) onTap(PAN.ev); PAN.ev = null; return true;
   }
-  window.addEventListener("keydown", function (e) { if (e.key === "q") YAWV += 0.12; else if (e.key === "e") YAWV -= 0.12; });
+  window.addEventListener("keydown", function (e) { if (e.key === "q") YAWV = Math.min(0.9, YAWV + 0.12); else if (e.key === "e") YAWV = Math.max(-0.9, YAWV - 0.12); });
   function stickBind(el, mode, onTap) {
     el.addEventListener("pointerdown", function (e) {
       if (mode === "field" && F && !F.over && !F.deploy && ovPanOn(e) && !PAN.on) { PAN.ev = e; ovPanStart(e, el); return; }
