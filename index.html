@@ -8220,7 +8220,7 @@ window.__vhGame = function () { (function () {
     return out;
   }
   // ---- 2.5D view: the ground pinches toward a horizon so towns and battles read as looking over the shoulder ----
-  var P3 = (function () { try { return localStorage.getItem("vh3d") !== "0"; } catch (e) { return true; } })(), P3N = 64, P3C = 0.8, P3K = 0.4, P3Z = 3, P3SKY = 0.1, P3D = null, P3T = null, P3S = null;
+  var P3 = false, P3N = 64, P3C = 0.8, P3K = 0.4, P3Z = 3, P3SKY = 0.1, P3D = null, P3T = null, P3S = null;
   function ovK() { return P3 ? P3K : 1; }
   function ovP3Tab() {
     if (P3D) return P3D; var r = [], tot = 0, i, D = [0], m = [];
@@ -8255,8 +8255,8 @@ window.__vhGame = function () { (function () {
     var b = document.createElement("button"); b.id = "p3b"; b.style.cssText = "position:fixed;right:8px;top:92px;z-index:70;padding:5px 9px;font:700 11px Georgia,serif;border-radius:12px;border:1px solid #7a6030;background:rgba(20,16,10,0.75);color:#f0d9a0;display:none";
     function lab() { b.textContent = P3 ? "3D view" : "Flat view"; }
     b.addEventListener("click", function (ev) { ev.stopPropagation(); P3 = !P3; try { localStorage.setItem("vh3d", P3 ? "1" : "0"); } catch (e) {} lab(); });
-    document.body.appendChild(b); lab();
-    setInterval(function () { var on = false; try { on = !!(F && $("bfc") && $("bfc").offsetParent) || !!(AR && $("acv") && $("acv").offsetParent); } catch (e) {} b.style.display = on ? "block" : "none"; }, 400);
+    lab();
+    setInterval(function () { var on = false; try { on = !!(F && $("bfc") && $("bfc").offsetParent) || !!(AR && $("acv") && $("acv").offsetParent); } catch (e) {} b.style.display = "none"; }, 400);
   })();
   // ---- buildings: one look per kind, the same in every town and village ----
   function ovHKinds(sp) {
@@ -9019,14 +9019,14 @@ window.__vhGame = function () { (function () {
   var troopOpen = 0, TIER1 = [2, 5, 9, 11, 12, 14];
   function retrainCheck(f, to) {
     var q = TROOPT[to - 1]; if (!(S.vets[f] > 0)) return "None to retrain.";
-    if ((S.vxp || 0) < q.vxp) return "Needs " + q.vxp + " battle experience.";
+    if (ovTx(f) < q.vxp) return "Needs " + q.vxp + " experience. These soldiers have " + Math.floor(ovTx(f)) + ". Send them into battle.";
     if (S.crowns < q.cr) return "Needs " + q.cr + " crowns.";
     var miss = []; Object.keys(q.gear).forEach(function (k) { if ((S.loot[k] || 0) < q.gear[k]) miss.push(q.gear[k] + " " + LOOT[k].name.toLowerCase()); });
     return miss.length ? "Needs " + miss.join(" and ") + " in your backpack." : "";
   }
   function doRetrain(f, to) {
     if (retrainCheck(f, to)) return false; var q = TROOPT[to - 1];
-    Object.keys(q.gear).forEach(function (k) { S.loot[k] -= q.gear[k]; }); S.crowns -= q.cr; S.vxp -= q.vxp; S.vets[f]--; S.vets[to] = (S.vets[to] || 0) + 1; S.salvage = lootCount();
+    Object.keys(q.gear).forEach(function (k) { S.loot[k] -= q.gear[k]; }); S.crowns -= q.cr; S.txp[f] = ovTx(f) - q.vxp; S.vets[f]--; S.vets[to] = (S.vets[to] || 0) + 1; S.salvage = lootCount();
     toast("A " + TROOPT[f - 1].name.toLowerCase().replace(/men$/, "man") + " is now a " + q.name.toLowerCase().replace(/men$/, "man") + "."); return true;
   }
   var TPATHS = [["Sword & shield", "sword", [2, 3, 4, 21]], ["Spearmen", "spear", [9, 10, 16, 22]], ["Axemen", "axe", [14, 15, 17, 24]], ["Cavalry", "horse", [12, 13, 18, 23]], ["Archers & javelins", "ranged", [5, 6, 11, 20, 19, 25]], ["Spark path", "spark", [7, 8]]];
@@ -9065,7 +9065,7 @@ window.__vhGame = function () { (function () {
     var fs = tFroms(T2), f = from; if (!f) { fs.forEach(function (q) { if (!f && tAvail(q) > 0) f = q; }); if (!f) f = fs[0]; }
     if (fs.indexOf(f) < 0) return "Cannot promote that unit.";
     if (tAvail(f) < 1) return "No " + TROOPT[f - 1].name.toLowerCase() + " to promote.";
-    if ((S.vxp || 0) < T2.vxp) return "Needs " + T2.vxp + " battle experience.";
+    if (ovTx(f) < T2.vxp) return "Needs " + T2.vxp + " experience. These soldiers have " + Math.floor(ovTx(f)) + ". Send them into battle.";
     if (S.crowns < T2.cr) return "Needs " + T2.cr + " crowns.";
     var miss = []; Object.keys(T2.gear).forEach(function (k) { if ((S.loot[k] || 0) < T2.gear[k]) miss.push(T2.gear[k] + " " + LOOT[k].name.toLowerCase()); });
     if (miss.length) return "Needs " + miss.join(" and ") + " in your backpack.";
@@ -9076,7 +9076,7 @@ window.__vhGame = function () { (function () {
     var T2 = TROOPT[id - 1], fs = tFroms(T2), f = from; if (!f) { fs.forEach(function (q) { if (!f && tAvail(q) > 0) f = q; }); } if (!f) f = sparkFrom || fs[0];
     if (promoteCheck(id, f)) return false;
     Object.keys(T2.gear).forEach(function (k) { S.loot[k] -= T2.gear[k]; });
-    S.crowns -= T2.cr; S.vxp -= T2.vxp; if (f > 1) S.vets[f]--; S.vets[id] = (S.vets[id] || 0) + 1; S.salvage = lootCount();
+    S.crowns -= T2.cr; S.txp[f] = ovTx(f) - T2.vxp; if (f > 1) S.vets[f]--; S.vets[id] = (S.vets[id] || 0) + 1; S.salvage = lootCount();
     if (T2.burn && burnId) burnFragment(burnId);
     toast("A " + TROOPT[f - 1].name.toLowerCase().replace(/men$/, "man").replace(/s$/, "") + " is now a " + T2.name.replace(/men$/, "man").replace(/s$/, "").toLowerCase() + ".");
     return true;
@@ -9113,7 +9113,7 @@ window.__vhGame = function () { (function () {
     var T2 = TROOPT[id - 1], cls = id === 1 ? "levy" : T2.cls, C = TCLS[cls], cn = tCounters(cls), open = troopOpen === id;
     var ready = cnt > 0 && TROOPT.some(function (q) { return tFroms(q).indexOf(id) >= 0 && !promoteCheck(q.id, id); });
     var h = '<div class="xcard' + (open ? " open" : "") + (ready ? " ready" : "") + '" data-act="troopinfo" data-a="' + id + '"><div class="xic">' + tIcon(id, 42) + '</div><div class="xmid"><div class="xn">' + T2.name + ' <span class="xcls" style="color:' + C.c + '">' + C.n + " · T" + tTier(id) + "</span></div>" +
-      '<div class="xsub">Strength ' + T2.mult + " · wage " + T2.wage.toFixed(2) + "/day" + (T2.horse ? " · fast" : "") + (T2.jav ? " · short range" : "") + (ready ? '<div class="xrdy">Ready to promote</div>' : "") + '</div></div><div class="xct">' + cnt + "</div></div>";
+      '<div class="xsub">Strength ' + T2.mult + " · wage " + T2.wage.toFixed(2) + "/day" + (T2.horse ? " · fast" : "") + (T2.jav ? " · short range" : "") + (cnt > 0 ? " · exp " + Math.floor(ovTx(id)) : "") + (ready ? '<div class="xrdy">Ready to promote</div>' : "") + '</div></div><div class="xct">' + cnt + "</div></div>";
     if (open) {
       h += '<div class="xdet"><p>' + (id === 1 ? "Farmers with spears. Fights as 1 man. Every other soldier starts as one." : T2.desc) + "</p>";
       var ups = TROOPT.filter(function (q) { return tFroms(q).indexOf(id) >= 0 && (!q.realm || realmOpen(q.realm)); });
@@ -9130,7 +9130,7 @@ window.__vhGame = function () { (function () {
   }
   function troopsSheet() {
     normVets();
-    var t = T(), levy = t - vetTotal(), h = "<h2>Troops</h2><p class=\"sub\">" + t + " men · battle experience " + Math.floor(S.vxp || 0) + "</p>" + tabsHtml();
+    var t = T(), levy = t - vetTotal(), h = "<h2>Troops</h2><p class=\"sub\">" + t + " men · each type earns experience by fighting</p>" + tabsHtml();
     h += '<div class="dim-t" style="margin-top:.4rem">Only the soldiers you have are shown. A gold card is ready to promote. Tap a unit to see it and promote it.</div>';
     if (sparkPick) {
       h += '<div class="warn" style="border-color:#9a7cd0"><b>Waking a Full Spark costs a memory.</b> Choose one to burn. It is gone for good.</div>' + S.held.map(function (id) { return '<div class="entry"><div>' + FRAGS[id].title + '</div><div class="btns"><button class="cast" data-act="sparkburn" data-a="' + id + '">Burn it</button></div></div>'; }).join("") + '<div class="btns"><button data-act="sparkno">Never mind</button></div>';
@@ -9368,6 +9368,16 @@ window.__vhGame = function () { (function () {
     }
     el.addEventListener("pointerup", up); el.addEventListener("pointercancel", up);
   }
+
+  // ---- experience belongs to each troop type: it is earned by those who fight, and spent on their promotion ----
+  function ovVxpSync() {
+    if (!S.txp) S.txp = {}; var cur = S.vxp || 0, d = cur - (S.vxpSeen || 0); S.vxpSeen = cur; if (d <= 0) return;
+    var tot = T(); if (tot <= 0) return; var levy = Math.max(0, tot - vetTotal());
+    S.txp[1] = (S.txp[1] || 0) + d * levy / tot;
+    VKEYS.forEach(function (k) { var n = S.vets[k] || 0; if (n > 0) S.txp[k] = (S.txp[k] || 0) + d * n / tot; });
+  }
+  function ovTx(f) { ovVxpSync(); return (S.txp && S.txp[f]) || 0; }
+  setInterval(function () { try { if (S && S.vets) ovVxpSync(); } catch (e) {} }, 400);
 
   // ---- input ----
   (function () {
