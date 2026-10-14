@@ -5955,6 +5955,7 @@ window.__vhGame = function () { (function () {
     });
   }
   function dipDay() {
+    tradeDay();
     var d = dip(), R = realmList(), i, j;
     for (i = 0; i < R.length; i++) for (j = i + 1; j < R.length; j++) {
       var a = R[i], b = R[j];
@@ -6068,6 +6069,7 @@ window.__vhGame = function () { (function () {
   function diploSheet() {
     var d = dip(), R = realmList(), h = "<h2>Diplomacy</h2><p class=\"sub\">" + (d.vas ? "Sworn to " + dnm(d.vas) : holdsOwn() ? "Ruler of your own holdings" : "Free blade") + "</p>" + dipMsgHtml();
     h += "<p class=\"dim-t\">Realms make war and peace on their own. Allies never fight each other. They remember who helped them, who hurt them, and old wars do not end when the treaty is signed.</p>";
+    h += tradeSummary();
     R.forEach(function (f) {
       h += '<div class="sec" style="color:' + FAC[f].col + '">' + dnm(f) + "</div><p>" + realmTags(f) + "</p>";
       var al = alliesOf(f).map(dnm), wr = warsOf(f).map(dnm); h += '<p class="dim-t">' + (al.length ? "Allied with " + al.join(", ") + ". " : "") + (wr.length ? "At war with " + wr.join(", ") + ". " : "") + (!al.length && !wr.length ? "Standing alone. " : "") + "</p>";
@@ -6078,6 +6080,7 @@ window.__vhGame = function () { (function () {
         if (!isAlly("player", f) && !S.pwar[f]) { var ar = allyReason(f); h += row("Propose an alliance", ar || "200 crowns for the envoys. About " + Math.round((0.5 + opOf(f) / 200) * 100) + "%. They will join your wars.", "Propose", "dipally", f, "", !!ar); }
         h += row("Send a gift (100 crowns)", "Improves their regard. Old grudges fade slowly.", "Gift", "dipgift", f, "", S.crowns < 100 || !!S.pwar[f]);
       }
+      h += tradeRow(f);
       if (!holdsOwn() || d.vas === f) h += joinRow(f);
     });
     h += '<div class="sec">Between the realms</div>';
@@ -9162,6 +9165,59 @@ window.__vhGame = function () { (function () {
     st.textContent = ".xcard{display:flex;align-items:center;gap:.7rem;padding:.55rem .6rem;margin:.4rem 0;border:1px solid #3a3022;border-radius:8px;background:rgba(0,0,0,.22);cursor:pointer}.xcard.open{border-color:#c8873a;background:rgba(200,135,58,.08)}.xcard.none{opacity:.55}.xic{flex:none;display:flex}.xmid{flex:1;min-width:0}.xn{font-size:1rem}.xcls{font:600 .66rem monospace;letter-spacing:.08em;text-transform:uppercase;margin-left:.3rem}.xsub{font-size:.76rem;color:var(--muted);margin:.1rem 0}.xchips{display:flex;flex-wrap:wrap;gap:.25rem}.xchip{font:600 .62rem monospace;letter-spacing:.04em;border:1px solid #555;border-radius:10px;padding:.08rem .4rem}.xchip.xdim{color:#777;border-color:#444}.xct{font:600 1.4rem Georgia,serif;color:#f0d9a0;min-width:2rem;text-align:right}.xdet{margin:-.2rem 0 .6rem;padding:.4rem .7rem .6rem;border:1px solid #3a3022;border-top:0;border-radius:0 0 8px 8px;background:rgba(0,0,0,.18)}.xri{border:1px solid #3a3022;border-radius:8px;padding:.5rem .7rem;margin:.6rem 0}.xrr{display:flex;flex-wrap:wrap;align-items:center;gap:.25rem;margin:.4rem 0}.xrr i{color:#a8822e;font-style:normal;font-size:.8rem}";
     st.textContent += '.xcard.ready{border-color:#f0d060;background:rgba(240,208,96,.14);box-shadow:0 0 12px rgba(240,208,96,.35)}.xrdy{font:700 .64rem monospace;letter-spacing:.08em;text-transform:uppercase;color:#f0d060;margin-top:.15rem}'; document.head.appendChild(st);
   })();
+  // ---- trade routes between realms (needs a city of your own) ----
+  var TRW = { light: 1.4, shadow: 1.3, storm: 1.5, metal: 1.2, stone: 1.1, ember: 1.2, spirit: 1.1, frost: 1.0 };
+  var TRGOOD = { light: "memory-glass", shadow: "secrets", storm: "fast cargo", metal: "iron goods", stone: "ore and stone", ember: "ember-steel", spirit: "records", frost: "oracle services" };
+  function trD() { var d = dip(); if (!d.tr) d.tr = {}; return d; }
+  function trHold() { return S.sites.filter(function (s) { return s.owner === "player" && s.type !== "village"; }).length; }
+  function trPartners() { var d = trD(); return Object.keys(d.tr).filter(function (f) { return d.tr[f] && FAC[f]; }); }
+  function trPairs(P) { var n = 0, i, j; for (i = 0; i < P.length; i++) for (j = i + 1; j < P.length; j++) if (!S.fwar[fkey(P[i], P[j])]) n++; return n; }
+  function trOne(f) {
+    var d = trD(), r = d.tr[f]; if (!r) return 0;
+    var base = (2.5 + 1.3 * Math.min(6, trHold())) * (TRW[f] || 1), age = Math.min(0.3, (dayN() - (r.since || 0)) / 100), P = trPartners();
+    var net = 1 + 0.15 * Math.min(4, trPairs(P)) * (P.indexOf(f) >= 0 ? 1 : 0) / Math.max(1, 1), ally = isAlly("player", f) ? 1.1 : 1;
+    return base * (1 + age) * net * ally;
+  }
+  function trTotal() { var t = 0; trPartners().forEach(function (f) { t += trOne(f); }); return t; }
+  function tradeDay() {
+    if (!S.dip || !S.dip.tr) return;
+    var d = trD(), P = trPartners(), i, j;
+    if (!holdsOwn()) { if (P.length) { d.tr = {}; news("With no city left, your trade routes have dried up."); } return; }
+    P.forEach(function (f) {
+      if (!realmList().some(function (g) { return g === f; })) { delete d.tr[f]; news("Your trade route with " + dnm(f) + " ended. The realm is gone."); return; }
+      if (S.pwar[f]) { delete d.tr[f]; news("War with " + dnm(f) + " closed your trade route."); toast("Your trade route with " + dnm(f) + " closed. War."); return; }
+      var inc = trOne(f), fr = (d.tr[f].frac || 0) + inc, whole = Math.floor(fr); d.tr[f].frac = fr - whole; S.crowns += whole; d.tr[f].earned = (d.tr[f].earned || 0) + inc; d.tr[f].acc = (d.tr[f].acc || 0) + inc;
+      if (d.tr[f].acc >= 60) { toast("Trade with " + dnm(f) + " brought in " + Math.round(d.tr[f].acc) + " crowns."); d.tr[f].acc = 0; }
+      d.op[f] = Math.min(100, (d.op[f] || 0) + 0.3);
+      realmList().forEach(function (g) { if (g !== f && S.fwar[fkey(f, g)] && !d.tr[g]) d.op[g] = Math.max(-45, (d.op[g] || 0) - 0.05); });
+      if (Math.random() < 1 / 32) { var loss = Math.round(15 + Math.random() * 35); if (Math.random() < 0.5) { S.crowns = Math.max(0, S.crowns - loss); news("A caravan to " + dnm(f) + " was raided. You lost " + loss + " crowns of goods."); toast("Raiders hit your " + dnm(f) + " caravan. -" + loss + " crowns."); } else { var gain = Math.round(20 + Math.random() * 40); S.crowns += gain; toast("A rich " + dnm(f) + " caravan came in. +" + gain + " crowns."); } }
+    });
+    for (i = 0; i < P.length; i++) for (j = i + 1; j < P.length; j++) { if (!d.tr[P[i]] || !d.tr[P[j]]) continue; if (!S.fwar[fkey(P[i], P[j])]) { grAdd(P[i], P[j], -0.2); grAdd(P[j], P[i], -0.2); } }
+  }
+  function tradeRow(f) {
+    var d = trD();
+    if (!holdsOwn()) return "";
+    if (S.pwar[f]) return "";
+    if (d.tr[f]) {
+      var r = d.tr[f], goods = TRGOOD[f];
+      return row("Trade route with " + dnm(f) + " · +" + trOne(f).toFixed(1) + " crowns a day", "Sending your goods, bringing back " + goods + ". Earned so far " + Math.round(r.earned || 0) + ". Improves their regard of you every day. Their enemies resent it.", "End route", "tradeend", f, "", false);
+    }
+    var cost = 120 + 20 * trPartners().length, why = S.crowns < cost ? "Needs " + cost + " crowns." : "";
+    return row("Open a trade route with " + dnm(f), cost + " crowns for charters and wagons. About +" + ((2.5 + 1.3 * Math.min(6, trHold())) * (TRW[f] || 1)).toFixed(1) + " crowns a day. They deal in " + TRGOOD[f] + (why ? "<br>" + why : ""), "Open", "tradeopen", f, "", !!why);
+  }
+  function tradeSummary() {
+    var d = trD(), P = trPartners(), h = '<div class="sec">Trade</div>';
+    if (!holdsOwn()) return h + '<p class="dim-t">You need a city of your own before you can trade. Take a town or castle first.</p>';
+    if (!P.length) return h + '<p class="dim-t">Open trade routes with realms below for crowns every day. Trade improves how a realm sees you, makes them readier to ally, and eases old grudges between your partners. Raiders sometimes hit caravans, and their enemies resent you.</p>';
+    return h + '<p>' + P.length + ' route' + (P.length > 1 ? "s" : "") + ' · <b>+' + trTotal().toFixed(1) + ' crowns a day</b></p><p class="dim-t">' + (trPairs(P) ? trPairs(P) + " pair" + (trPairs(P) > 1 ? "s" : "") + " of your partners trade in peace: each adds a bonus and their old grudges fade." : "Trade with more realms at peace with each other for a network bonus.") + "</p>";
+  }
+  function tradeOpen(f) {
+    var d = trD(), cost = 120 + 20 * trPartners().length;
+    if (!holdsOwn() || S.pwar[f] || d.tr[f] || S.crowns < cost) return;
+    S.crowns -= cost; d.tr[f] = { since: dayN(), earned: 0 }; d.op[f] = Math.min(100, (d.op[f] || 0) + 6); news("You opened a trade route with " + dnm(f) + ".");
+    dipMsg = "Trade route opened with " + dnm(f) + ". Their regard of you improves."; dipMsgAt = Date.now();
+  }
+  function tradeEnd(f) { var d = trD(); if (!d.tr[f]) return; delete d.tr[f]; d.op[f] = (d.op[f] || 0) - 3; dipMsg = "Trade with " + dnm(f) + " ended. They noticed."; dipMsgAt = Date.now(); }
 
   // ---- input ----
   (function () {
@@ -9285,6 +9341,8 @@ window.__vhGame = function () { (function () {
       case "dipally": dipAlly(x); break;
       case "dipbreak": dipBreak(x); break;
       case "dipgift": dipGift(x); break;
+      case "tradeopen": tradeOpen(x); break;
+      case "tradeend": tradeEnd(x); break;
       case "askwar": confirming = "war:" + x; break;
       case "war":
         if (FAC[x] && !S.pwar[x] && dipCanWar(x)) {
