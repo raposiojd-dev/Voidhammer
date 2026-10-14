@@ -7200,12 +7200,12 @@ window.__vhGame = function () { (function () {
     if (u.hp < u.hpm && !u.rout) { var bw = (hero || kael ? 14 : 10); g.fillStyle = "rgba(0,0,0,0.65)"; g.fillRect(x - bw / 2, y - (hero || kael ? 24 : 20), bw, 1.6); g.fillStyle = p ? "#7ab87a" : "#d4562c"; g.fillRect(x - bw / 2, y - (hero || kael ? 24 : 20), bw * Math.max(0, u.hp / u.hpm), 1.6); }
     if (u.rout && !u.dead) { g.fillStyle = "#fff"; g.fillRect(x - 4, y - 21, 1, 1); g.fillRect(x + 3, y - 21, 1, 1); }
   }
-  function fieldDraw(now) { var p3s = P3; if (F && F.deploy && !F.over) P3 = false; try { ovFieldDraw0(now); } finally { P3 = p3s; } }
+  function fieldDraw(now) { var p3s = P3; if (F) P3 = false; try { ovFieldDraw0(now); } finally { P3 = p3s; } }
   function ovFieldDraw0(now) {
     var c = $("bfc"); if (!c || !F) return;
     var cR = c, cH = c.clientHeight, r = gdpr() * (P3 ? ovP3Q(c) : 1), SRC = P3 ? ovP3Src(c, r) : null, g = (SRC || c).getContext("2d"), cw = c.clientWidth, ch = SRC ? Math.round(cH * P3K) : cH, t = now || performance.now();
     var dt = Math.min(0.1, (t - (F.dl || t)) / 1000); F.dl = t;
-    var vd = B.kind === "void" || B.kind === "rift", G = bfGround(vd, F.bth); if (F.vw === undefined) F.vw = 560; F.vw += ((F.deploy ? 560 : BFVW * (P3 ? P3Z : 1)) - F.vw) * Math.min(1, dt * 4); var s = cw / F.vw;
+    var vd = B.kind === "void" || B.kind === "rift", G = bfGround(vd, F.bth); if (F.vw === undefined) F.vw = 560; F.vw += ((F.deploy ? 560 : (P3 ? BFVW * P3Z : 270)) - F.vw) * Math.min(1, dt * 4); var s = cw / F.vw;
     // camera follows the commander (or the middle of the line once he is down)
     var tx = F.hero.x, ty = F.hero.y; if (F.deploy) { tx = 300; ty = 520; }
     if (F.hero.dead) { var sx = 0, sy = 0, sn = 0; F.units.forEach(function (u) { if (u.s === "p" && !u.dead && !u.gone) { sx += u.x; sy += u.y; sn++; } }); if (sn) { tx = sx / sn; ty = sy / sn; } }
@@ -9291,7 +9291,7 @@ window.__vhGame = function () { (function () {
   }
 
   // ---- battle: top-down planning view, tilt behind the commander on go; hard map border ----
-  function ovDep() { return !!(F && F.deploy && !F.over && B); }
+  function ovDep() { var c = F && document.getElementById("bfc"); return !!(c && c.offsetParent); }
   function ovK() { return P3 && !ovDep() ? P3K : 1; }
   function ovBfBound(u) {
     if (u.rout || u.dead || u.gone) return;
