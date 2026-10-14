@@ -610,15 +610,22 @@ window.__vhGame = function () { (function () {
   var FORGE = { steel: { from: "blades", n: 2, cr: 20 }, plate: { from: "mail", n: 2, cr: 40 }, longbows: { from: "bows", n: 2, cr: 12 } };
   var TROOPT = [
     { id: 1, name: "Levy", mult: 1, wage: 0.25 },
-    { id: 2, name: "Swordsmen", mult: 1.35, wage: 0.40, cr: 30, gear: { blades: 1 }, vxp: 8, from: 1, desc: "Hold the line with a sword and shield." },
-    { id: 3, name: "Men-at-arms", mult: 1.8, wage: 0.70, cr: 70, gear: { steel: 1, mail: 1 }, vxp: 20, from: 2, desc: "Mailed and steady. The spine of a column." },
-    { id: 4, name: "Champions", mult: 2.5, wage: 1.2, cr: 160, gear: { steel: 1, plate: 1 }, vxp: 45, from: 3, desc: "Plate and skill. They win fights on their own." },
-    { id: 5, name: "Archers", mult: 1.3, wage: 0.38, cr: 25, gear: { bows: 1 }, vxp: 6, from: 1, ranged: true, desc: "Shoot from behind the line. Weak up close." },
-    { id: 6, name: "Crossbowmen", mult: 1.8, wage: 0.65, cr: 60, gear: { longbows: 1, kit: 1 }, vxp: 18, from: 5, ranged: true, desc: "Slow to load, hard to stop. Punch through mail." },
-    { id: 7, name: "Half Sparks", mult: 1.6, wage: 0.75, cr: 70, gear: { shards: 1 }, vxp: 12, from: 1, spark: true, fade: 0.04, desc: "A fragment of inherited magic. Strong, but each fight burns a few out." },
-    { id: 8, name: "Full Sparks", mult: 2.7, wage: 1.4, cr: 180, gear: { shards: 2 }, vxp: 40, from: 7, spark: true, fade: 0.08, burn: 1, desc: "A whole spark. It costs a memory to wake one, and they burn out faster." }
+    { id: 2, name: "Swordsmen", mult: 1.35, wage: 0.40, cr: 30, gear: { blades: 1 }, vxp: 8, from: 1, cls: "sword", desc: "Hold the line with a sword and shield." },
+    { id: 3, name: "Men-at-arms", mult: 1.8, wage: 0.70, cr: 70, gear: { steel: 1, mail: 1 }, vxp: 20, from: 2, cls: "sword", desc: "Mailed and steady. The spine of a column." },
+    { id: 4, name: "Champions", mult: 2.5, wage: 1.2, cr: 160, gear: { steel: 1, plate: 1 }, vxp: 45, from: 3, cls: "sword", desc: "Plate and skill. They win fights on their own." },
+    { id: 5, name: "Archers", mult: 1.3, wage: 0.38, cr: 25, gear: { bows: 1 }, vxp: 6, from: 1, ranged: true, cls: "ranged", desc: "Shoot from behind the line. Weak up close." },
+    { id: 6, name: "Crossbowmen", mult: 1.8, wage: 0.65, cr: 60, gear: { longbows: 1, kit: 1 }, vxp: 18, from: 5, ranged: true, cls: "ranged", desc: "Slow to load, hard to stop. Punch through mail." },
+    { id: 7, name: "Half Sparks", mult: 1.6, wage: 0.75, cr: 70, gear: { shards: 1 }, vxp: 12, from: 1, spark: true, cls: "spark", fade: 0.04, desc: "A fragment of inherited magic. Strong, but each fight burns a few out." },
+    { id: 8, name: "Full Sparks", mult: 2.7, wage: 1.4, cr: 180, gear: { shards: 2 }, vxp: 40, from: 7, spark: true, cls: "spark", fade: 0.08, burn: 1, desc: "A whole spark. It costs a memory to wake one, and they burn out faster." },
+    { id: 9, name: "Spearmen", mult: 1.25, wage: 0.35, cr: 24, gear: { kit: 1 }, vxp: 6, from: 1, cls: "spear", desc: "A long spear and a small shield. They stop horses cold. Weak to swords." },
+    { id: 10, name: "Pikemen", mult: 1.8, wage: 0.6, cr: 55, gear: { kit: 1, mail: 1 }, vxp: 16, from: 9, cls: "spear", desc: "Mailed, with the longest spears. A wall no rider wants to meet." },
+    { id: 11, name: "Javelineers", mult: 1.25, wage: 0.36, cr: 26, gear: { bows: 1 }, vxp: 6, from: 1, ranged: true, jav: true, cls: "ranged", desc: "Throw javelins at short range. Hurt riders as well as foot. Weak to cavalry." },
+    { id: 12, name: "Horsemen", mult: 1.7, wage: 0.6, cr: 70, gear: { kit: 1, blades: 1 }, vxp: 14, from: 1, cls: "horse", horse: true, desc: "Fast riders. They run down archers and javelins. Spearmen kill them." },
+    { id: 13, name: "Lancers", mult: 2.7, wage: 1.1, cr: 150, gear: { steel: 1, mail: 1 }, vxp: 36, from: 12, cls: "horse", horse: true, desc: "Armoured heavy cavalry. A charge breaks most lines, but not a wall of spears." },
+    { id: 14, name: "Axemen", mult: 1.45, wage: 0.42, cr: 30, gear: { blades: 1 }, vxp: 8, from: 1, cls: "axe", desc: "No shield, a heavy axe. They split shield walls. Archers cut them down." },
+    { id: 15, name: "Shieldbreakers", mult: 2.2, wage: 0.85, cr: 90, gear: { steel: 1 }, vxp: 24, from: 14, cls: "axe", desc: "Big men with big axes. Sword lines fold. Keep them off the archers’ line." }
   ];
-  var VKEYS = [2, 3, 4, 5, 6, 7, 8];
+  var VKEYS = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
   if (!S.vets) S.vets = { 2: 0, 3: 0, 4: 0 };
   if (!S.vxp) S.vxp = 0;
   function vetTotal() { var n = 0; VKEYS.forEach(function (k) { n += S.vets[k] || 0; }); return n; }
@@ -685,7 +692,7 @@ window.__vhGame = function () { (function () {
     if (has("name")) m += 0.10;
     if (hollow() >= 6 && t <= 8) m *= 1.5;
     m *= 1 + 0.06 * sk("hiredsteel") + 0.05 * sk("nothing");
-    normVets(); VKEYS.forEach(function (q) { base += (S.vets[q] || 0) * (TROOPT[q - 1].mult - 1) * (1 + ((q === 5 || q === 6) ? 0.1 * sk("fletcher") : 0) + (q >= 7 ? 0.1 * sk("sparkcaller") : 0)); });
+    normVets(); VKEYS.forEach(function (q) { base += (S.vets[q] || 0) * (TROOPT[q - 1].mult - 1) * (1 + ((q === 5 || q === 6) ? 0.1 * sk("fletcher") : 0) + ((q === 7 || q === 8) ? 0.1 * sk("sparkcaller") : 0)); });
     return base * m * gearMult() * gearBattle().atk * (1 + 0.07 * (S.skills.drill || 0));
   }
   function loseTroops(n) {
@@ -3274,14 +3281,14 @@ window.__vhGame = function () { (function () {
     injectField();
     var PN = Math.max(1, Math.min(40, T())), EN = Math.max(3, Math.min(44, Math.round(B.en0)));
     var tt = Math.max(1, T()), mult = [], kinds = [];
-    [8, 4, 3, 7, 6, 2, 5].forEach(function (q) { var cnt = Math.round((S.vets[q] || 0) * PN / tt); for (var i = 0; i < cnt; i++) { mult.push(TROOPT[q - 1].mult); kinds.push(TROOPT[q - 1]); } });
+    [8, 15, 13, 4, 10, 3, 7, 6, 11, 2, 14, 12, 9, 5].forEach(function (q) { var cnt = Math.round((S.vets[q] || 0) * PN / tt); for (var i = 0; i < cnt; i++) { mult.push(TROOPT[q - 1].mult); kinds.push(TROOPT[q - 1]); } });
     while (mult.length < PN) { mult.push(1); kinds.push(null); } mult.length = PN; kinds.length = PN;
     var sm = 0; mult.forEach(function (m) { sm += m; });
     var base = (B.p0 - (B.allyS || 0)) / sm, ebase = B.e0 / EN, units = [], tierOf = function (m) { return m >= 2.5 ? 4 : m >= 1.8 ? 3 : m >= 1.35 ? 2 : 1; };
     var nb = Math.min(Math.round(((S.gear.bows || 0) + (S.gear.longbows || 0)) * PN / tt), Math.floor(PN * 0.4));
     mult.forEach(function (m, i) {
       var col = i % 10, row = Math.floor(i / 10), w = base * m;
-      units.push({ s: "p", x: 300 + (col - 4.5) * 15 + rnd(-2, 2), y: 560 + row * 16, w: w, hp: w * 3.2, hpm: w * 3.2, cd: rnd(0, 0.6), tier: tierOf(m), slot: i, spk: !!(kinds[i] && kinds[i].spark), ranged: i >= PN - nb || !!(kinds[i] && kinds[i].ranged), dead: false, rout: false, gone: false, atk: 0, flash: 0, tc: 0, t: null, ax: 0, ay: 0 });
+      units.push({ s: "p", x: 300 + (col - 4.5) * 15 + rnd(-2, 2), y: 560 + row * 16, w: w, hp: w * 3.2, hpm: w * 3.2, cd: rnd(0, 0.6), tier: tierOf(m), cls: ovKindCls(kinds[i], i >= PN - nb), horse: !!(kinds[i] && kinds[i].horse), jav: !!(kinds[i] && kinds[i].jav), slot: i, spk: !!(kinds[i] && kinds[i].spark), ranged: i >= PN - nb || !!(kinds[i] && kinds[i].ranged), dead: false, rout: false, gone: false, atk: 0, flash: 0, tc: 0, t: null, ax: 0, ay: 0 });
     });
     var ecol = fcol(), ea = B.kind === "void" || B.kind === "rift" ? 0 : B.kind === "lord" || B.siegeId ? 0.3 : 0.25, na = Math.round(EN * ea);
     for (var j = 0; j < EN; j++) {
@@ -3297,6 +3304,7 @@ window.__vhGame = function () { (function () {
     });
     var hb = (B.p0 - (B.allyS || 0)) / sm;
     var hero = { s: "p", hero: true, x: 300, y: 505, w: hb * 2.5, hp: hb * 2.5 * 3.2 * 2.2 * (1 + 0.15 * sk("ironhide")) * gearBattle().hp * Math.max(1, (maxHp() - sk("ironhide")) / 5), hpm: hb * 2.5 * 3.2 * 2.2 * (1 + 0.15 * sk("ironhide")) * gearBattle().hp * Math.max(1, (maxHp() - sk("ironhide")) / 5), cd: 0, atk: 0, flash: 0, dead: false, rout: false, gone: false, tc: 0, t: null };
+    ovTagUnits(units);
     units.push(hero);
     var kael = null;
     if (S.kael === "alive") { kael = { s: "p", kael: true, x: 255, y: 530, w: hb * 3, hp: hb * 3 * 3.2 * 1.6, hpm: hb * 3 * 3.2 * 1.6, cd: 0, atk: 0, flash: 0, dead: false, rout: false, gone: false, tc: 0, t: null }; units.push(kael); }
@@ -3330,7 +3338,7 @@ window.__vhGame = function () { (function () {
     return null;
   }
   function fieldArcher(u, td, hx, hy, adv) {
-    var tgt = u.t, range = 170 * (onHill(u.x, u.y) ? 1.25 : 1), gx = hx, gy = hy;
+    var tgt = u.t, range = ovRng(u) * (onHill(u.x, u.y) ? 1.25 : 1), gx = hx, gy = hy;
     if (tgt) {
       if (td < 14 && u.cd <= 0) { fieldHit(u, tgt, 0.5); u.cd = 0.9; }
       if (td < 46) { var ax = u.x - tgt.x, ay = u.y - tgt.y, al = Math.hypot(ax, ay) || 1; gx = u.x + ax / al * 50; gy = u.y + ay / al * 50; }
@@ -3373,7 +3381,7 @@ window.__vhGame = function () { (function () {
   function fieldNearest(u, list) { var b = null, bd = 1e9; for (var i = 0; i < list.length; i++) { var o = list[i]; if (o.rout && list.length > 1) continue; var d = dist(u.x, u.y, o.x, o.y); if (d < bd) { bd = d; b = o; } } return b; }
   function fieldHit(a, d, mult) {
     if (d.dead) return;
-    var dmg = a.w * (a.hero || a.kael ? 0.3 : 0.21) * (a.hero ? (1 + 0.12 * sk("blademaster")) * gearBattle().hero / Math.max(0.5, 1 - setAgg().cdr) : 1) * (d.s === "p" && !d.hero && !d.kael ? gearBattle().def : 1) * (mult || 1) * rnd(0.8, 1.2);
+    var dmg = ovCounter(a, d) * (a.horse && a.t === d && !a.chg ? (a.chg = 1, 1.5) : 1) * a.w * (a.hero || a.kael ? 0.3 : 0.21) * (a.hero ? (1 + 0.12 * sk("blademaster")) * gearBattle().hero / Math.max(0.5, 1 - setAgg().cdr) : 1) * (d.s === "p" && !d.hero && !d.kael ? gearBattle().def : 1) * (mult || 1) * rnd(0.8, 1.2);
     if (a.s === "p" && F.cry > 0) dmg *= 1.3;
     if (onHill(a.x, a.y)) dmg *= 1.2;
     if (inTrees(d.x, d.y)) dmg *= 0.8;
@@ -3408,7 +3416,7 @@ window.__vhGame = function () { (function () {
       u = U[i]; if (u.dead || u.gone) continue;
       u.cd -= dt; u.atk = Math.max(0, u.atk - dt); u.flash = Math.max(0, u.flash - dt); u.tc -= dt;
       if (u.eng) { ovEngStep(u, dt); continue; }
-      var spd = u.hero ? 78 * (1 + setAgg().spd) : u.friend ? 78 : u.kael ? 105 : (u.s === "p" ? 40 : 38) * (u.void ? 1.1 : 1);
+      var spd = u.hero ? 78 * (1 + setAgg().spd) : u.friend ? 78 : u.kael ? 105 : (u.s === "p" ? 40 : 38) * (u.void ? 1.1 : 1) * (u.horse ? 2 : 1);
       if (!u.rout) { if (inTrees(u.x, u.y)) spd *= 0.65; else if (onHill(u.x, u.y)) spd *= 0.92; }
       var gx = u.x, gy = u.y, engage = null; if (F.sg) { u.pxx = u.x; u.pyy = u.y; if (u._sgs) spd *= u._sgs; }
       if (u.rout) { gy += (u.s === "p" ? 1 : -1) * 100; spd = 52; if (u.y < -30 || u.y > FH + 30) { u.gone = true; continue; } }
@@ -3447,7 +3455,7 @@ window.__vhGame = function () { (function () {
       if (F.sg) { var rt = ovSgRoute(u, gx, gy); gx = rt[0]; gy = rt[1]; }
       var dx = gx - u.x, dy = gy - u.y, dd = Math.hypot(dx, dy);
       if (u.hero) ovHeroShoot(u, engage, enemies);
-      var reach = 12 + (u.hero ? 3 : 0);
+      var reach = 12 + (u.hero ? 3 : 0) + (u.cls === "spear" ? 7 : 0);
       if (engage && dist(u.x, u.y, engage.x, engage.y) <= reach && !u.rout) {
         if (u.cd <= 0) { fieldHit(u, engage); u.cd = (u.hero || u.friend) ? 0.5 : 0.7; }
       } else if (dd > 2) {
@@ -3464,7 +3472,7 @@ window.__vhGame = function () { (function () {
       if (arw.t >= arw.dur) {
         F.arrows.splice(i, 1);
         if (arw.d && !arw.d.dead && !arw.d.gone && dist(arw.d.x, arw.d.y, arw.ex, arw.ey) < (arw.rad || 16)) {
-          var ad = arw.a.w * 0.3 * (arw.mul || 1) * rnd(0.75, 1.25) * (onHill(arw.a.x, arw.a.y) ? 1.15 : 1) * (inTrees(arw.d.x, arw.d.y) ? 0.7 : 1) * (arw.s === "p" && F.cry > 0 ? 1.3 : 1);
+          var ad = ovCounter(arw.a, arw.d) * (arw.a.jav ? 1.25 : 1) * arw.a.w * 0.3 * (arw.mul || 1) * rnd(0.75, 1.25) * (onHill(arw.a.x, arw.a.y) ? 1.15 : 1) * (inTrees(arw.d.x, arw.d.y) ? 0.7 : 1) * (arw.s === "p" && F.cry > 0 ? 1.3 : 1);
           if (arw.d.s === "p" && F.cmd === "hold" && !arw.d.hero && !arw.d.kael) ad *= 0.8;
           arw.d.hp -= ad; arw.d.flash = 0.18;
           if (arw.d.hp <= 0 && !arw.d.dead) { arw.d.dead = true; F.corpses.push({ x: arw.d.x, y: arw.d.y, s: arw.d.s, v: arw.d.void }); if (arw.d.hero) fieldMsg("You are down! The line wavers."); if (arw.d.kael && !arw.d.friend) { F.kdead = true; fieldMsg("Kaelren has fallen."); } if (arw.d.friend) fieldMsg("Your friend is down!"); }
@@ -3513,15 +3521,17 @@ window.__vhGame = function () { (function () {
     if (u.spk && !u.dead) { g.fillStyle = "rgba(154,124,208,0.38)"; g.beginPath(); g.arc(x, y + 2, 11, 0, 6.283); g.fill(); }
     g.save(); g.translate(x, y); g.scale(sc, sc);
     if (u.void) g.globalAlpha = 0.75 + 0.25 * Math.sin(t / 120 + u.slot);
-    g.fillStyle = "rgba(0,0,0,0.35)"; g.beginPath(); g.ellipse(0, 6, 6, 2.4, 0, 0, 6.283); g.fill();
+    g.fillStyle = "rgba(0,0,0,0.35)"; g.beginPath(); g.ellipse(0, 6, u.horse ? 8 : 6, 2.4, 0, 0, 6.283); g.fill();
+    if (u.horse) ovHorse(g, u, up);
     if (hero || kael) { g.fillStyle = kael ? "#e8e0d0" : "#4a3626"; g.beginPath(); g.ellipse(0, 1, 5, 7.5, 0, 0, 6.283); g.fill(); g.fillStyle = kael ? "#cfc6b4" : "#3a2a1c"; g.beginPath(); g.ellipse(0, -6.5, 2.6, 3.4, 0, 0, 6.283); g.fill(); }
     var sw = u.atk > 0 ? up * 4 : 0;
-    if (u.ranged) { g.strokeStyle = "#8b6b3e"; g.lineWidth = 1.6; g.beginPath(); g.arc(6, -2, 7, up < 0 ? -1.9 : 1.2, up < 0 ? -1.2 : 1.9 + 0.3); g.stroke(); g.strokeStyle = "#e0d4b4"; g.lineWidth = 0.6; g.beginPath(); g.moveTo(6 + 7 * Math.cos(up < 0 ? -1.9 : 1.2), -2 + 7 * Math.sin(up < 0 ? -1.9 : 1.2)); g.lineTo(6 + 7 * Math.cos(up < 0 ? -1.2 : 2.2), -2 + 7 * Math.sin(up < 0 ? -1.2 : 2.2)); g.stroke(); }
-    else { g.strokeStyle = "#cfd5d8"; g.lineWidth = 1.2; g.beginPath(); g.moveTo(5, 2); g.lineTo(5, up * 14 + sw); g.stroke(); }
+    if (u.jav) ovJav(g, u, up, sw); else if (u.ranged) { g.strokeStyle = "#8b6b3e"; g.lineWidth = 1.6; g.beginPath(); g.arc(6, -2, 7, up < 0 ? -1.9 : 1.2, up < 0 ? -1.2 : 1.9 + 0.3); g.stroke(); g.strokeStyle = "#e0d4b4"; g.lineWidth = 0.6; g.beginPath(); g.moveTo(6 + 7 * Math.cos(up < 0 ? -1.9 : 1.2), -2 + 7 * Math.sin(up < 0 ? -1.9 : 1.2)); g.lineTo(6 + 7 * Math.cos(up < 0 ? -1.2 : 2.2), -2 + 7 * Math.sin(up < 0 ? -1.2 : 2.2)); g.stroke(); }
+    else ovWeap(g, u, up, sw);
     g.fillStyle = u.flash > 0 ? "#fff" : col; g.fillRect(-3.5, -6, 7, 9);
     g.fillStyle = "#e0b894"; g.beginPath(); g.arc(0, -9, 3, 0, 6.283); g.fill();
     g.fillStyle = u.flash > 0 ? "#fff" : (u.s === "p" ? "#8a929a" : "#4a4e54"); g.beginPath(); g.arc(0, -9.6, 3.2, Math.PI, 0); g.fill();
-    g.fillStyle = col; g.strokeStyle = "#1a1610"; g.lineWidth = 0.8; g.beginPath(); g.arc(-5.5, -1, 3.4, 0, 6.283); g.fill(); g.stroke();
+    ovShield(g, u, col);
+    ovBadge(g, u);
     if (u.tier > 1) { g.fillStyle = "#f0d060"; for (var q = 0; q < u.tier - 1; q++) g.fillRect(-3 + q * 3, -15, 2, 2); }
     if (hero) { g.strokeStyle = "#f0d060"; g.lineWidth = 1.5; g.beginPath(); g.arc(0, 0, 11, 0, 6.283); g.stroke(); g.strokeStyle = "#d8cdb0"; g.beginPath(); g.moveTo(-8, 5); g.lineTo(-8, -18); g.stroke(); g.fillStyle = "#c8873a"; g.beginPath(); g.moveTo(-8, -18); g.lineTo(2, -15); g.lineTo(-8, -12); g.fill(); }
     if (kael) { g.strokeStyle = "#6ab4e0"; g.lineWidth = 1.5; g.beginPath(); g.arc(0, 0, 11, 0, 6.283); g.stroke(); }
@@ -8466,9 +8476,14 @@ window.__vhGame = function () { (function () {
       var y0 = L[k].y, y1 = y0 + L[k].th, pre = u.pyy === undefined ? u.y : u.pyy, cur = u.y;
       var entering = (pre > y1 && cur < y1) || (pre < y0 && cur > y0), inside = cur >= y0 && cur <= y1;
       if (u.hero && u.wl === k) {
-        if (inside) { u.y = Math.min(y1 - 3, Math.max(y0 + 3, u.y)); continue; }
+        if (inside) {
+          if (cur < y0 + 3 && ovStairAt(u.x)) { u.y = y0 - 9; u.wl = undefined; ovSay("sd" + k, "You walk down the steps."); continue; }
+          if (cur > y1 - 3 && ovLadAt(k, u.x)) { u.y = y1 + 9; u.wl = undefined; ovSay("ld" + k, "You climb down the ladder."); continue; }
+          u.y = Math.min(y1 - 3, Math.max(y0 + 3, u.y)); continue;
+        }
         u.wl = undefined; continue;
       }
+      if (u.hero && pre < y0 && cur > y0 + 1 && ovStairAt(u.x)) { u.wl = k; u.y = y0 + 6; ovSay("su" + k, "You climb the steps onto the wall. Walk along it. Step back to the stairs to go down."); continue; }
       if (!entering && !inside) continue;
       var ps = ovSgPass(k, u.x); if (u.s === "e" && ps === 2) ps = 0;
       if (!ps) {
@@ -8576,6 +8591,23 @@ window.__vhGame = function () { (function () {
     var mw = 8, gap = 6, nm = Math.floor((w + gap) / (mw + gap)); if (nm < 1) nm = 1; var mx0 = x + (w - (nm * (mw + gap) - gap)) / 2;
     for (i = 0; i < nm; i++) { var bx = mx0 + i * (mw + gap); g.fillStyle = ovHex(col, 14); g.fillRect(bx, y - 8, mw, 8); g.fillStyle = ovHex(col, 40); g.fillRect(bx, y - 9, mw, 2.5); g.fillStyle = "rgba(0,0,0,0.3)"; g.fillRect(bx + mw - 2, y - 8, 2, 8); g.strokeStyle = "#1a1610"; g.lineWidth = 1; g.strokeRect(bx, y - 9, mw, 9); }
   }
+  var SGSTAIR = [[24, 50], [FW - 50, FW - 24]];
+  function ovStairAt(x) { return (x >= SGSTAIR[0][0] && x <= SGSTAIR[0][1]) || (x >= SGSTAIR[1][0] && x <= SGSTAIR[1][1]); }
+  function ovLadAt(k, x) { return F.sg.lad.some(function (l) { return l.k === k && l.hp > 0 && Math.abs(l.x - x) < 14; }); }
+  function ovStairs(g, y, th, col) {
+    SGSTAIR.forEach(function (z) {
+      var w = z[1] - z[0], n = 6, i, sh = 5;
+      g.fillStyle = "rgba(0,0,0,0.3)"; g.fillRect(z[0] + 2, y - n * sh + 3, w + 3, n * sh + 4);
+      g.fillStyle = ovHex(col, -22); g.fillRect(z[0] - 3, y - n * sh, 3, n * sh + th * 0.4); g.fillRect(z[1], y - n * sh, 3, n * sh + th * 0.4);
+      for (i = 0; i < n; i++) {
+        var sy = y - (n - i) * sh + 2;
+        g.fillStyle = ovHex(col, 8 + i * 7); g.fillRect(z[0], sy, w, sh - 1.5);
+        g.fillStyle = "rgba(255,255,255,0.22)"; g.fillRect(z[0], sy, w, 1);
+        g.fillStyle = "rgba(0,0,0,0.3)"; g.fillRect(z[0], sy + sh - 1.5, w, 1.5);
+      }
+      g.strokeStyle = "#1a1610"; g.lineWidth = 1; g.strokeRect(z[0] - 3, y - n * sh, w + 6, n * sh + th * 0.4);
+    });
+  }
   function ovSgDraw(g, t, G) {
     var sg = F.sg, n = sg.n, k, y0 = SGLY[n - 1] - 120, y1 = SGLY[0] + SGTH + 4, col = sg.col, own = sg.owner;
     g.fillStyle = "rgba(70,60,48,0.30)"; g.fillRect(0, y0, FW, y1 - y0);
@@ -8604,7 +8636,7 @@ window.__vhGame = function () { (function () {
         g.fillStyle = "#5a4020"; for (var db = 0; db < 9; db++) g.fillRect(gt.x0 + 12 + ((db * 37) % (gw - 26)), y + th + 1 + (db % 3) * 3, 9 + (db % 4), 3);
         g.fillStyle = "#a8382a"; g.beginPath(); g.moveTo(gt.x0 + gw / 2 - 5, y + th + 16); g.lineTo(gt.x0 + gw / 2 + 5, y + th + 16); g.lineTo(gt.x0 + gw / 2, y + th + 8); g.fill();
       }
-      ovStoneWall(g, 0, y - 14, 22, th + 14, col, k + 5, 1); ovStoneWall(g, FW - 22, y - 14, 22, th + 14, col, k + 9, 1);
+      ovStairs(g, y, th, col); ovStoneWall(g, 0, y - 14, 22, th + 14, col, k + 5, 1); ovStoneWall(g, FW - 22, y - 14, 22, th + 14, col, k + 9, 1);
       if (own === "light") { var gl = g.createLinearGradient(0, y - 20, 0, y + th); gl.addColorStop(0, "rgba(255,244,190,0.38)"); gl.addColorStop(1, "rgba(255,244,190,0)"); g.fillStyle = gl; g.fillRect(0, y - 20, FW, th + 20); }
       if (own === "ember") { g.fillStyle = "rgba(255,120,40,0.75)"; for (var e2 = 0; e2 < 14; e2++) g.fillRect(((e2 * 47 + Math.floor(t / 90) * 13) % 590), y - 9 - ((e2 * 5 + t / 60) % 7), 2, 3); }
       g.fillStyle = "rgba(240,224,180,0.55)"; g.font = "italic 10px Georgia, serif"; g.textAlign = "left"; g.fillText(SGNAMES[k], 28, y + 15);
@@ -8910,6 +8942,119 @@ window.__vhGame = function () { (function () {
     if (typeof c.hpS === "number") AR.p.hp = Math.max(0.5, Math.min(AR.p.max, c.hpS)); else c.hpS = AR.p.hp;
   }
   setInterval(function () { ovHpSave(); }, 250);
+  // ---- troop classes: horse > ranged > axe > sword > spear > horse ----
+  var TCLS = { levy: { n: "Levy", c: "#9a9a8a", g: "L" }, sword: { n: "Sword & shield", c: "#d8a040", g: "S" }, spear: { n: "Spear", c: "#6ab870", g: "P" }, axe: { n: "Axe", c: "#d4562c", g: "A" }, ranged: { n: "Ranged", c: "#6aa8e0", g: "R" }, horse: { n: "Cavalry", c: "#e0d8f0", g: "H" }, spark: { n: "Spark", c: "#9a7cd0", g: "M" }, void: { n: "Void", c: "#7a6aa0", g: "V" } };
+  var TBEAT = { horse: ["ranged"], ranged: ["axe"], axe: ["sword"], sword: ["spear"], spear: ["horse"] };
+  function ovCounter(a, d) {
+    var ca = a && a.cls, cd = d && d.cls; if (!ca || !cd || a.hero || a.kael || d.hero || d.kael) return 1;
+    if (TBEAT[ca] && TBEAT[ca].indexOf(cd) >= 0) return 1.4;
+    if (TBEAT[cd] && TBEAT[cd].indexOf(ca) >= 0) return (ca === "ranged" && a.jav && cd === "horse") ? 1 : 0.7;
+    if (ca === "horse" && cd === "sword") return 1.1; if (ca === "spear" && cd === "ranged") return 1.15; if (ca === "sword" && cd === "ranged") return 1.15;
+    return 1;
+  }
+  function ovTagUnits(units) {
+    var pool = ["sword", "sword", "spear", "spear", "axe", "axe", "horse", "levy"];
+    units.forEach(function (u) {
+      if (u.cls || u.hero || u.kael || u.eng) return;
+      if (u.void) { u.cls = "void"; return; }
+      if (u.ranged) { u.cls = "ranged"; u.jav = Math.random() < 0.4; return; }
+      var c = pool[Math.floor(Math.random() * pool.length)]; if (u.s === "e" && B && B.kind === "bandit" && c === "horse") c = "axe";
+      u.cls = c; if (c === "horse") u.horse = true;
+    });
+  }
+  function ovKindCls(k, rg) { return k ? (k.cls || "levy") : (rg ? "ranged" : "levy"); }
+  function ovRng(u) { return u.jav ? 105 : 170; }
+  function ovWeap(g, u, up, sw) {
+    var c = u.cls;
+    if (c === "spear") { g.strokeStyle = "#8a6a3a"; g.lineWidth = 1.3; g.beginPath(); g.moveTo(5, 6); g.lineTo(5, up * 22 + sw); g.stroke(); g.fillStyle = "#dfe4e8"; g.beginPath(); g.moveTo(5, up * 26 + sw); g.lineTo(3.2, up * 21 + sw); g.lineTo(6.8, up * 21 + sw); g.fill(); }
+    else if (c === "axe") { g.strokeStyle = "#7a5a30"; g.lineWidth = 1.4; g.beginPath(); g.moveTo(5, 3); g.lineTo(5, up * 11 + sw); g.stroke(); g.fillStyle = "#cfd5d8"; g.beginPath(); g.moveTo(5, up * 12 + sw); g.lineTo(10, up * 9 + sw); g.lineTo(10, up * 14 + sw); g.lineTo(5, up * 11 + sw); g.fill(); g.strokeStyle = "#1a1610"; g.lineWidth = 0.5; g.stroke(); }
+    else { g.strokeStyle = "#cfd5d8"; g.lineWidth = c === "horse" ? 1.4 : 1.2; g.beginPath(); g.moveTo(5, 2); g.lineTo(5, up * (c === "horse" ? 17 : 14) + sw); g.stroke(); }
+  }
+  function ovJav(g, u, up, sw) {
+    g.strokeStyle = "#8a6a3a"; g.lineWidth = 1.1; g.beginPath(); g.moveTo(4, 4); g.lineTo(6, up * 15 + (u.atk > 0 ? up * 5 : 0)); g.stroke(); g.fillStyle = "#dfe4e8"; g.beginPath(); g.moveTo(6, up * 19 + (u.atk > 0 ? up * 5 : 0)); g.lineTo(4.6, up * 14 + (u.atk > 0 ? up * 5 : 0)); g.lineTo(7.4, up * 14 + (u.atk > 0 ? up * 5 : 0)); g.fill();
+    g.strokeStyle = "#8a6a3a"; g.beginPath(); g.moveTo(-7, 2); g.lineTo(-7, up * 12); g.stroke();
+  }
+  function ovShield(g, u, col) {
+    var c = u.cls; g.strokeStyle = "#1a1610"; g.lineWidth = 0.8;
+    if (c === "axe") return;
+    if (c === "sword") { g.fillStyle = col; g.beginPath(); g.moveTo(-9, -5); g.lineTo(-3, -5); g.lineTo(-3, 1); g.lineTo(-6, 5); g.lineTo(-9, 1); g.closePath(); g.fill(); g.stroke(); g.fillStyle = "rgba(255,255,255,0.35)"; g.fillRect(-6.4, -4, 1, 7); return; }
+    g.fillStyle = col; g.beginPath(); g.arc(-5.5, -1, c === "spear" ? 2.6 : 3.4, 0, 6.283); g.fill(); g.stroke();
+  }
+  function ovHorse(g, u, up) {
+    var gl = u.flash > 0 ? "#fff" : (u.s === "p" ? "#6a4a30" : "#4a3a2c");
+    g.fillStyle = gl; g.beginPath(); g.ellipse(0, 3, 4.6, 8, 0, 0, 6.283); g.fill();
+    g.beginPath(); g.ellipse(0, up * -9, 2.4, 3.6, 0, 0, 6.283); g.fill();
+    g.strokeStyle = gl; g.lineWidth = 1.4; var lg = Math.sin((u.x + u.y) * 0.4) * 1.5; g.beginPath(); g.moveTo(-3, -1); g.lineTo(-4 + lg, -5); g.moveTo(3, -1); g.lineTo(4 - lg, -5); g.moveTo(-3, 7); g.lineTo(-4 - lg, 11); g.moveTo(3, 7); g.lineTo(4 + lg, 11); g.stroke();
+    g.fillStyle = "rgba(0,0,0,0.25)"; g.fillRect(-4.6, 0, 9.2, 1.4);
+    g.translate(0, -5);
+  }
+  function ovBadge(g, u) {
+    var C = TCLS[u.cls]; if (!C || u.cls === "levy" || u.hero || u.kael) return;
+    g.fillStyle = "rgba(0,0,0,0.55)"; g.beginPath(); g.arc(4.5, -15.5, 2.6, 0, 6.283); g.fill(); g.fillStyle = C.c; g.beginPath(); g.arc(4.5, -15.5, 1.9, 0, 6.283); g.fill();
+  }
+  // ---- Troops roster ----
+  var troopOpen = 0;
+  var TPATHS = [["Sword & shield", "sword", [2, 3, 4]], ["Spearmen", "spear", [9, 10]], ["Axemen", "axe", [14, 15]], ["Cavalry", "horse", [12, 13]], ["Archers & javelins", "ranged", [5, 6, 11]], ["Spark path", "spark", [7, 8]]];
+  var TICO = {
+    1: '<circle cx="24" cy="15" r="6" fill="#fff"/><path d="M12 40q0-13 12-13t12 13z" fill="#fff"/><path d="M33 12v28" stroke="#d8c8a0" stroke-width="2"/>',
+    2: '<path d="M27 6l5 5-14 21-6-1 1-6z" fill="#fff"/><path d="M12 33l7 7M9 41l5-5" stroke="#fff" stroke-width="3"/><path d="M29 22h11v9q0 8-5.5 11-5.500-3-5.500-11z" fill="#fff" opacity=".85"/>',
+    3: '<path d="M24 6q-11 0-11 13v8h6v-5h10v5h6v-8q0-13-11-13z" fill="#fff"/><path d="M19 22h10v4H19z" fill="#222" opacity=".6"/><path d="M13 30l-2 10h26l-2-10z" fill="#fff" opacity=".7"/><path d="M24 6v8" stroke="#222" stroke-width="1.5" opacity=".5"/>',
+    4: '<path d="M24 4q-12 0-12 14v10h24V18q0-14-12-14z" fill="#fff"/><path d="M15 20h18v4H15z" fill="#222" opacity=".65"/><path d="M24 2c4 0 7 3 5 7M24 2c-4 0-7 3-5 7" stroke="#fff" stroke-width="2.4" fill="none"/><path d="M12 30h24l-3 12H15z" fill="#fff" opacity=".75"/>',
+    5: '<path d="M14 6q18 18 0 36" stroke="#fff" stroke-width="3" fill="none"/><path d="M14 6v36" stroke="#fff" stroke-width="1.2"/><path d="M14 24h24" stroke="#fff" stroke-width="2"/><path d="M40 24l-8-5v10z" fill="#fff"/>',
+    6: '<path d="M8 22h30v5H8z" fill="#fff"/><path d="M9 14q15 8 0 22" stroke="#fff" stroke-width="3" fill="none"/><path d="M36 24l6-3v6z" fill="#fff"/><path d="M20 27v12h5V27z" fill="#fff" opacity=".8"/>',
+    7: '<path d="M24 6l4 12 12 4-12 4-4 12-4-12-12-4 12-4z" fill="#fff"/>',
+    8: '<path d="M24 3l5 13 13 5-13 5-5 13-5-13-13-5 13-5z" fill="#fff"/><circle cx="24" cy="21" r="5" fill="#9a7cd0"/><circle cx="24" cy="21" r="2" fill="#fff"/>',
+    9: '<path d="M8 42L36 10" stroke="#d8c8a0" stroke-width="2.8"/><path d="M42 3l-3 14-9-5z" fill="#fff"/><circle cx="15" cy="33" r="7" fill="#fff" opacity=".8"/>',
+    10: '<path d="M6 42L40 4" stroke="#d8c8a0" stroke-width="2.6"/><path d="M42 2l-2 10-7-3z" fill="#fff"/><path d="M12 42L44 12" stroke="#d8c8a0" stroke-width="2.2"/><path d="M20 22q-6 6-2 14l8-2q4-8-6-12z" fill="#fff" opacity=".85"/>',
+    11: '<path d="M8 38L36 10" stroke="#d8c8a0" stroke-width="2.4"/><path d="M40 6l-8 1 4 8z" fill="#fff"/><path d="M12 44L30 26" stroke="#d8c8a0" stroke-width="2" opacity=".7"/><path d="M34 22l-6 1 3 6z" fill="#fff" opacity=".7"/>',
+    12: '<path d="M12 38v-9q0-8 8-11l7-8 2 5 6 2-4 6q2 8 0 15h-4v-8h-9v8z" fill="#fff"/><path d="M34 12l6-4" stroke="#d8c8a0" stroke-width="2"/>',
+    13: '<path d="M10 38v-9q0-8 8-11l7-8 2 5 6 2-4 6q2 8 0 15h-4v-8h-9v8z" fill="#fff"/><path d="M4 30L42 6" stroke="#d8c8a0" stroke-width="2.6"/><path d="M44 4l-9 1 3 8z" fill="#fff"/>',
+    14: '<path d="M16 6v38" stroke="#d8c8a0" stroke-width="3"/><path d="M17 7c14-3 22 3 20 12-2 7-11 10-20 9 7-5 7-13 0-21z" fill="#fff"/>',
+    15: '<path d="M24 4v40" stroke="#d8c8a0" stroke-width="3"/><path d="M23 8q-16 2-16 12t16 10z" fill="#fff"/><path d="M25 8q16 2 16 12t-16 10z" fill="#fff"/>'
+  };
+  function tIcon(id, sz) {
+    var T2 = TROOPT[id - 1], C = TCLS[id === 1 ? "levy" : T2.cls] || TCLS.levy;
+    return '<svg viewBox="0 0 48 48" width="' + (sz || 40) + '" height="' + (sz || 40) + '"><circle cx="24" cy="24" r="22" fill="' + C.c + '" opacity=".92"/><circle cx="24" cy="24" r="22" fill="none" stroke="#1a1610" stroke-width="2"/><g transform="translate(5.5 5.5) scale(.77)" stroke="none">' + (TICO[id] || TICO[1]) + "</g></svg>";
+  }
+  function tCounters(cls) {
+    var st = [], wk = [], k; Object.keys(TBEAT).forEach(function (a) { if (a === cls) st = TBEAT[a].slice(); if (TBEAT[a].indexOf(cls) >= 0) wk.push(a); });
+    return { st: st, wk: wk };
+  }
+  function tChips(arr, good) { return arr.length ? arr.map(function (c) { return '<span class="xchip" style="border-color:' + TCLS[c].c + ";color:" + TCLS[c].c + '">' + (good ? "▲ " : "▼ ") + TCLS[c].n + "</span>"; }).join("") : '<span class="xchip xdim">none</span>'; }
+  function tCard(id, cnt) {
+    var T2 = TROOPT[id - 1], cls = id === 1 ? "levy" : T2.cls, C = TCLS[cls], cn = tCounters(cls), open = troopOpen === id;
+    var h = '<div class="xcard' + (open ? " open" : "") + (cnt ? "" : " none") + '" data-act="troopinfo" data-a="' + id + '"><div class="xic">' + tIcon(id, 42) + '</div><div class="xmid"><div class="xn">' + T2.name + ' <span class="xcls" style="color:' + C.c + '">' + C.n + "</span></div>" +
+      '<div class="xsub">Strength ' + T2.mult + " · wage " + T2.wage.toFixed(2) + "/day" + (T2.horse ? " · fast" : "") + (T2.jav ? " · short range" : "") + '</div></div><div class="xct">' + cnt + "</div></div>";
+    if (open) {
+      h += '<div class="xdet"><p>' + (id === 1 ? "Farmers with spears. Fights as 1 man. Every other soldier starts as one." : T2.desc) + "</p>";
+      var ups = TROOPT.filter(function (q) { return q.from === id; });
+      if (T2.from && id !== 1) h += '<p class="dim-t">Promoted from ' + TROOPT[T2.from - 1].name.toLowerCase() + ". Needs " + Object.keys(T2.gear).map(function (k) { return T2.gear[k] + " " + LOOT[k].name.toLowerCase(); }).join(" and ") + ", " + T2.cr + " crowns, " + T2.vxp + " experience.</p>";
+      if (ups.length) { h += '<div class="sec">Promote a ' + T2.name.toLowerCase().replace(/men$/, "man") + "</div>"; ups.forEach(function (q) { var why = promoteCheck(q.id), need = Object.keys(q.gear).map(function (k) { return q.gear[k] + " " + LOOT[k].name.toLowerCase(); }); h += row("Promote 1 " + T2.name.toLowerCase() + " to " + q.name.toLowerCase(), q.cr + " crowns, " + need.join(" and ") + ", " + q.vxp + " experience" + (q.burn ? ", and a memory" : "") + (why ? "<br>" + why : ""), "Promote", "promote", String(q.id), "1", !!why); }); }
+      else h += '<p class="dim-t">The top of this line.</p>';
+      h += "</div>";
+    }
+    return h;
+  }
+  function troopsSheet() {
+    normVets();
+    var t = T(), levy = t - vetTotal(), h = "<h2>Troops</h2><p class=\"sub\">" + t + " men · battle experience " + Math.floor(S.vxp || 0) + "</p>" + tabsHtml();
+    h += '<div class="dim-t" style="margin-top:.4rem">Tap a unit to see it and promote it. Learn what each is good and bad against by fighting.</div>';
+    if (sparkPick) {
+      h += '<div class="warn" style="border-color:#9a7cd0"><b>Waking a Full Spark costs a memory.</b> Choose one to burn. It is gone for good.</div>' + S.held.map(function (id) { return '<div class="entry"><div>' + FRAGS[id].title + '</div><div class="btns"><button class="cast" data-act="sparkburn" data-a="' + id + '">Burn it</button></div></div>'; }).join("") + '<div class="btns"><button data-act="sparkno">Never mind</button></div>';
+    }
+    h += '<div class="sec">Levy</div>' + tCard(1, levy);
+    TPATHS.forEach(function (P) {
+      h += '<div class="sec" style="color:' + TCLS[P[1]].c + '">' + P[0] + "</div>";
+      P[2].forEach(function (id) { h += tCard(id, S.vets[id] || 0); });
+    });
+    return h;
+  }
+
+  (function () {
+    var st = document.createElement("style");
+    st.textContent = ".xcard{display:flex;align-items:center;gap:.7rem;padding:.55rem .6rem;margin:.4rem 0;border:1px solid #3a3022;border-radius:8px;background:rgba(0,0,0,.22);cursor:pointer}.xcard.open{border-color:#c8873a;background:rgba(200,135,58,.08)}.xcard.none{opacity:.55}.xic{flex:none;display:flex}.xmid{flex:1;min-width:0}.xn{font-size:1rem}.xcls{font:600 .66rem monospace;letter-spacing:.08em;text-transform:uppercase;margin-left:.3rem}.xsub{font-size:.76rem;color:var(--muted);margin:.1rem 0}.xchips{display:flex;flex-wrap:wrap;gap:.25rem}.xchip{font:600 .62rem monospace;letter-spacing:.04em;border:1px solid #555;border-radius:10px;padding:.08rem .4rem}.xchip.xdim{color:#777;border-color:#444}.xct{font:600 1.4rem Georgia,serif;color:#f0d9a0;min-width:2rem;text-align:right}.xdet{margin:-.2rem 0 .6rem;padding:.4rem .7rem .6rem;border:1px solid #3a3022;border-top:0;border-radius:0 0 8px 8px;background:rgba(0,0,0,.18)}.xri{border:1px solid #3a3022;border-radius:8px;padding:.5rem .7rem;margin:.6rem 0}.xrr{display:flex;flex-wrap:wrap;align-items:center;gap:.25rem;margin:.4rem 0}.xrr i{color:#a8822e;font-style:normal;font-size:.8rem}";
+    document.head.appendChild(st);
+  })();
 
   // ---- input ----
   (function () {
@@ -9011,6 +9156,7 @@ window.__vhGame = function () { (function () {
       case "equip":
         if (GEARB[x]) { var room2 = slotRoom(x), mv = Math.min(5, S.loot[x] || 0, room2); if (mv > 0) { S.loot[x] -= mv; S.gear[x] = (S.gear[x] || 0) + mv; S.salvage = lootCount(); } } break;
       case "ptab": partyTab = x; break;
+      case "troopinfo": troopOpen = troopOpen === +x ? 0 : +x; break;
       case "forge":
         if (v && v.type === "town" && FORGE[y]) { var fg = FORGE[y]; if ((S.loot[fg.from] || 0) >= fg.n && S.crowns >= fg.cr) { S.loot[fg.from] -= fg.n; S.crowns -= fg.cr; S.loot[y] = (S.loot[y] || 0) + 1; S.salvage = lootCount(); toast("Forged: " + LOOT[y].name.toLowerCase() + ". It is in your backpack: promote troops with it, or wear it from Party, Troops."); } } break;
       case "promote": { var ptd = TROOPT[(+x) - 1]; if (!ptd || promoteCheck(+x)) break; if (ptd.burn) { sparkPick = +x; break; } doPromote(+x); break; }
