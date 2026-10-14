@@ -199,7 +199,7 @@ html, body { margin: 0; overscroll-behavior: none; -webkit-text-size-adjust: 100
 #d2v { position: absolute; inset: 0; pointer-events: none; background: radial-gradient(ellipse at 50% 46%, rgba(0,0,0,0) 34%, rgba(0,0,0,0.5) 78%, rgba(0,0,0,0.82) 100%), radial-gradient(ellipse at 50% 110%, rgba(110,20,10,0.22), rgba(0,0,0,0) 55%); mix-blend-mode: multiply; }
 /* ---- Diablo II skin: gritty, desaturated, iron and gold ---- */
 :root { --amber: #b8923a; --ink: #d6cbb0; --muted: #8a806a; --line: #3a3022; --blood: #a8322a; --panel: #12100c; --serif2: "Cinzel", "IM Fell English", Georgia, serif; }
-#acv, #map { filter: saturate(0.66) contrast(1.14) brightness(0.92) sepia(0.14); }
+#map { filter: saturate(0.66) contrast(1.14) brightness(0.92) sepia(0.14); } #acv { filter: saturate(0.98) contrast(1.16) brightness(1.0) sepia(0.05); }
 button { background: linear-gradient(#302a22, #14110d); border: 1px solid #5c4a2a; border-radius: 2px; color: #d8c48a; text-shadow: 0 1px 0 #000; box-shadow: inset 0 1px 0 rgba(255,225,160,0.16), inset 0 -2px 0 rgba(0,0,0,0.55), 0 2px 4px rgba(0,0,0,0.7); }
 button:active:not(:disabled) { background: linear-gradient(#14110d, #28221a); box-shadow: inset 0 2px 4px #000; }
 .solid, button.amber, .row button.amber { background: linear-gradient(#8e2c22, #4a120e); color: #f4dc98; border-color: #c8a050; }
@@ -3626,7 +3626,7 @@ window.__vhGame = function () { (function () {
 
   // ---------- campaign: explorable areas (Zelda-style) ----------
   var aRun = false, aShootP = false, aCastP = false, AR = null, SITEAREA = { ashford: "ashford", millbrook: "millroad", emberfall: "emberfall", redbank: "hollow", highmarch: "highmarch", greywater: "pass", luminant: "luminantc", ironwatch: "ironyard", steelgate: "foundry", windspire: "windspire", granite: "granitekeep" };
-  var AVW = 176, ATS = 16, akeys = {}, astick = { on: false, id: -1, ox: 0, oy: 0, dx: 0, dy: 0 }, aPress = false, aLast = 0, aToastT = 0;
+  var AVW = 150, ATS = 16, akeys = {}, astick = { on: false, id: -1, ox: 0, oy: 0, dx: 0, dy: 0 }, aPress = false, aLast = 0, aToastT = 0;
   function cp() { if (!S.camp) S.camp = { on: false, f: {}, cleared: {}, kills: 0 }; if (!S.camp.f) S.camp.f = {}; if (!S.camp.cleared) S.camp.cleared = {}; return S.camp; }
   function cfl(k) { return cp().f[k]; }
   function domOpen() { return !cp().on || !!cp().f.domRule || !!(S.mc && S.mc.began); }
@@ -4432,6 +4432,7 @@ window.__vhGame = function () { (function () {
     ovTownPaint(m, sp, th);
     terrainEnhance(m, g, W, H, th, sp);
     d2Decor(m, g, W, H, th, sp);
+    ovGround(mc, th);
     var A = { id: id, sp: sp, W: W, H: H, g: g, mc: mc, th: th, npcs: [], en: [], items: [], proj: [], fx: [], floats: [], t: 0, dlg: null, dch: [] };
     (sp.chests || []).forEach(function (ch, ci) { var key = "chest:" + id + ":" + ci; A.npcs.push({ id: "chest" + ci, name: "Chest", x: ch[0], y: ch[1], px: ch[0] * ATS + 8, py: ch[1] * ATS + 14, col: "#a07030", chest: 1, d: function () { return cp().f[key] ? "chest_empty" : "chestloot:" + id + ":" + ci; } }); });
     var cl = cp().cleared[id];
@@ -4663,8 +4664,8 @@ window.__vhGame = function () { (function () {
     alertTick();
     var a = AR, cvs = aLowC(), g = cvs.getContext("2d"), p = a.p;
     var VW = P3 ? Math.round(AVW * P3Z) : AVW, VH = Math.max(120, Math.round(VW * innerHeight / Math.max(1, innerWidth) * ovK()));
-    if (cvs.width !== VW * 2 || cvs.height !== VH * 2) { cvs.width = VW * 2; cvs.height = VH * 2; }
-    g.setTransform(2, 0, 0, 2, 0, 0); g.imageSmoothingEnabled = false; ovTxHook(g);
+    if (cvs.width !== VW * 3 || cvs.height !== VH * 3) { cvs.width = VW * 3; cvs.height = VH * 3; }
+    g.setTransform(3, 0, 0, 3, 0, 0); g.imageSmoothingEnabled = false; ovTxHook(g);
     var cx = Math.round(p.x - VW / 2), cy = Math.round(p.y - 8 - VH * (P3 ? 0.56 : 0.5)), mw = a.W * ATS, mh = a.H * ATS;
     if (!P3) { cx = mw <= VW ? Math.round((mw - VW) / 2) : Math.max(0, Math.min(mw - VW, cx)); cy = mh <= VH ? Math.round((mh - VH) / 2) : Math.max(0, Math.min(mh - VH, cy)); }
     g.fillStyle = "#0b0912"; g.fillRect(0, 0, VW, VH); var YW = ovYaw(); if (YW) { g.save(); g.translate(p.x - cx, p.y - cy); g.rotate(YW); g.translate(cx - p.x, cy - p.y); } if (P3 && a.th && a.th.g) ovOutside(g, a, cx, cy, VW, VH);
@@ -6206,7 +6207,7 @@ window.__vhGame = function () { (function () {
     var a = AR, disp = $("acv"); if (!disp || !a) return;
     var dpr = Math.min(window.devicePixelRatio || 1, 2.5), W = Math.max(2, Math.round(disp.clientWidth * dpr)), H = Math.max(2, Math.round(disp.clientHeight * dpr));
     if (disp.width !== W || disp.height !== H) { disp.width = W; disp.height = H; }
-    var gd = disp.getContext("2d"), n = P3 ? 4 : 3, tw = Math.round(src.width * n), th = Math.round(src.height * n);
+    var gd = disp.getContext("2d"), n = 2, tw = Math.round(src.width * n), th = Math.round(src.height * n);
     if (!ATMP) ATMP = document.createElement("canvas"); if (ATMP.width !== tw || ATMP.height !== th) { ATMP.width = tw; ATMP.height = th; }
     var tg = ATMP.getContext("2d"); tg.imageSmoothingEnabled = false; tg.drawImage(src, 0, 0, tw, th);
     gd.globalCompositeOperation = "source-over"; gd.globalAlpha = 1; gd.imageSmoothingEnabled = true; gd.imageSmoothingQuality = "high"; if (P3) ovP3Draw(disp, ATMP); else gd.drawImage(ATMP, 0, 0, W, H);
@@ -8434,8 +8435,9 @@ window.__vhGame = function () { (function () {
     if (OVSN.n++ < 28) {
       if (!OVSH) { OVSH = document.createElement("canvas"); OVSH.width = OVSH.height = 56; }
       var og = OVSH.getContext("2d"); og.setTransform(1, 0, 0, 1, 0, 0); og.globalCompositeOperation = "source-over"; og.clearRect(0, 0, 56, 56);
-      drawChar0(og, 28, 46, o); og.globalCompositeOperation = "source-in"; og.fillStyle = "rgba(0,0,0,0.42)"; og.fillRect(0, 0, 56, 56); og.globalCompositeOperation = "source-over";
-      g.save(); g.translate(Math.round(x), Math.round(y)); g.transform(1, 0, -0.75, -0.3, 0, 0); g.imageSmoothingEnabled = false; g.drawImage(OVSH, -28, -46); g.restore();
+      drawChar0(og, 28, 46, o); og.globalCompositeOperation = "source-in"; og.fillStyle = "rgba(8,5,3,0.5)"; og.fillRect(0, 0, 56, 56); og.globalCompositeOperation = "source-over";
+      g.save(); g.translate(x, y); g.transform(1, 0, -0.85, -0.34, 0, 0); g.imageSmoothingEnabled = true; g.globalAlpha = 0.85; g.drawImage(OVSH, -28, -46); g.restore();
+      g.save(); g.translate(x, y); g.imageSmoothingEnabled = true; g.globalAlpha = 0.9; var oo = [[0.55, 0], [-0.55, 0], [0, 0.55], [0, -0.55]]; for (var oi = 0; oi < 4; oi++) g.drawImage(OVSH, -28 + oo[oi][0], -46 + oo[oi][1] - 0.0); g.restore();
     }
     drawChar0(g, x, y, o);
   }
@@ -9378,6 +9380,30 @@ window.__vhGame = function () { (function () {
   }
   function ovTx(f) { ovVxpSync(); return (S.txp && S.txp[f]) || 0; }
   setInterval(function () { try { if (S && S.vets) ovVxpSync(); } catch (e) {} }, 400);
+
+  // ---- ground: painterly mottling, grain and grass tufts baked once per area ----
+  function ovGround(mc, th) {
+    try {
+      var g = mc.getContext("2d"), w = mc.width, h = mc.height, i, n, x, y, id, d, k, px = Math.max(1, Math.round(w * h / 170000));
+      var rs = 12345, R = function () { rs = (rs * 16807) % 2147483647; return rs / 2147483647; };
+      id = g.getImageData(0, 0, w, h); d = id.data;
+      g.save();
+      // big soft light/dark blotches break up the flat tile colour
+      n = Math.round(w * h / 9000); for (i = 0; i < n; i++) { x = R() * w; y = R() * h; var r0 = 18 + R() * 46, dk = R() < 0.55, gr = g.createRadialGradient(x, y, 0, x, y, r0); gr.addColorStop(0, dk ? "rgba(10,12,6,0.16)" : "rgba(235,225,150,0.10)"); gr.addColorStop(1, "rgba(0,0,0,0)"); g.fillStyle = gr; g.fillRect(x - r0, y - r0, r0 * 2, r0 * 2); }
+      // grass tufts only where the ground is green
+      n = Math.round(w * h / 120); var drawn = 0;
+      for (i = 0; i < n && drawn < 9000; i++) {
+        x = Math.floor(R() * (w - 4)); y = Math.floor(R() * (h - 4)); k = (y * w + x) * 4; var cr = d[k], cg = d[k + 1], cb = d[k + 2];
+        if (cg > cr + 6 && cg > cb + 10) {
+          drawn++; var lt = R() < 0.5; g.strokeStyle = lt ? "rgba(" + Math.min(255, cr + 40) + "," + Math.min(255, cg + 46) + "," + (cb + 8) + ",0.5)" : "rgba(" + (cr * 0.55 | 0) + "," + (cg * 0.6 | 0) + "," + (cb * 0.5 | 0) + ",0.55)"; g.lineWidth = 0.9;
+          g.beginPath(); g.moveTo(x, y + 2); g.lineTo(x - 1 + R() * 0.8, y - 1.5 - R() * 1.5); g.moveTo(x + 1, y + 2); g.lineTo(x + 1.5 + R() * 1.2, y - 1 - R() * 2); g.moveTo(x + 0.5, y + 2); g.lineTo(x + 0.2, y - 2.2 - R() * 1.6); g.stroke();
+        }
+      }
+      // grit
+      n = px * 90; for (i = 0; i < n; i++) { x = R() * w; y = R() * h; g.fillStyle = R() < 0.5 ? "rgba(0,0,0,0.12)" : "rgba(255,240,200,0.07)"; g.fillRect(x, y, 1, 1); }
+      g.restore();
+    } catch (e) {}
+  }
 
   // ---- input ----
   (function () {
