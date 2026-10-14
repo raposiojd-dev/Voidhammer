@@ -950,7 +950,7 @@ window.__vhGame = function () { (function () {
       S.px = tx; S.py = ty;
       var sid = tg.site; S.target = null;
       if (sid) arrive(sid);
-    } else { S.px += dx / d * step; S.py += dy / d * step; }
+    } else { var pq = ovNavMove(S, "px", "py", tx, ty, step); S.px = pq[0]; S.py = pq[1]; if (ovNavEnd(S) && Math.hypot(tx - S.px, ty - S.py) > step * 3) S.target = null; }
   }
 
   function update(dt) {
@@ -1267,7 +1267,7 @@ window.__vhGame = function () { (function () {
       }
       if (tx === null) return;
       var dx = tx - e.x, dy = ty - e.y, d = Math.hypot(dx, dy);
-      if (d > 8) { e.x += dx / d * spd * dd; e.y += dy / d * spd * dd; }
+      if (d > 8) { var nq = ovNavMove(e, "x", "y", tx, ty, spd * dd); e.x = nq[0]; e.y = nq[1]; }
     });
   }
 
@@ -1439,7 +1439,7 @@ window.__vhGame = function () { (function () {
       }
       if (tx === null) return;
       var dx = tx - h.x, dy = ty - h.y, dl = Math.hypot(dx, dy);
-      if (dl > 6) { h.x += dx / dl * spd * dd; h.y += dy / dl * spd * dd; }
+      if (dl > 6) { var nq2 = ovNavMove(h, "x", "y", tx, ty, spd * dd); h.x = nq2[0]; h.y = nq2[1]; }
     });
   }
   function allyDay() {
@@ -6127,7 +6127,7 @@ window.__vhGame = function () { (function () {
     if (!(VST.on && VST.drag && VST.mode === "map") || sheet) return false;
     var mg = Math.min(1, Math.hypot(VST.dx, VST.dy)); if (!mg) return true;
     S.target = null; var step = SPEED * dd * mg * (1 + 0.05 * sk("pathfinder") + 0.08 * sk("roadwise")), l = Math.hypot(VST.dx, VST.dy);
-    S.px = Math.max(12, Math.min(WORLD - 12, S.px + VST.dx / l * step)); S.py = Math.max(12, Math.min(WORLD - 12, S.py + VST.dy / l * step));
+    var sq = ovSlide(S.px, S.py, Math.max(12, Math.min(WORLD - 12, S.px + VST.dx / l * step)), Math.max(12, Math.min(WORLD - 12, S.py + VST.dy / l * step))); S.px = sq[0]; S.py = sq[1];
     return true;
   }
 
@@ -9404,6 +9404,70 @@ window.__vhGame = function () { (function () {
       g.restore();
     } catch (e) {}
   }
+
+  // ---- world terrain: water and mountains cannot be crossed, everyone walks around ----
+  var NV = { cs: 25, n: 112, g: null };
+  function nvBlockedRaw(x, y) {
+    var e = elevAt(x, y); if (e >= 0.7) return true;
+    if (e < 0.34) { for (var q = 0; q < S.sites.length; q++) { var s = S.sites[q]; if (Math.abs(x - s.x) < 108 && Math.abs(y - s.y) < 108 && Math.hypot(x - s.x, y - s.y) < 108) return false; } return true; }
+    return false;
+  }
+  function nvInit() {
+    if (NV.g) return; var n = NV.n, cs = NV.cs, g = new Uint8Array(n * n), x, y, q, s;
+    for (y = 0; y < n; y++) for (x = 0; x < n; x++) g[y * n + x] = nvBlockedRaw((x + 0.5) * cs, (y + 0.5) * cs) ? 1 : 0;
+    for (q = 0; q < S.sites.length; q++) { s = S.sites[q]; var sx = Math.floor(s.x / cs), sy = Math.floor(s.y / cs); for (y = -1; y <= 1; y++) for (x = -1; x <= 1; x++) if (sx + x >= 0 && sy + y >= 0 && sx + x < n && sy + y < n) g[(sy + y) * n + sx + x] = 0; }
+    NV.g = g;
+    // every site must be reachable: carve a pass to the main land for any that is cut off
+    var comp = new Int16Array(n * n).fill(-1), cc = 0, st = [];
+    function fill(i0) { st.length = 0; st.push(i0); comp[i0] = cc; while (st.length) { var i = st.pop(), cx = i % n, cy = (i / n) | 0; for (var dy = -1; dy <= 1; dy++) for (var dx = -1; dx <= 1; dx++) { if (!dx && !dy) continue; var nx = cx + dx, ny = cy + dy; if (nx < 0 || ny < 0 || nx >= n || ny >= n) continue; var j = ny * n + nx; if (g[j] || comp[j] >= 0) continue; comp[j] = cc; st.push(j); } } cc++; }
+    var cnt = {}; S.sites.forEach(function (s2) { var i = Math.floor(s2.y / cs) * n + Math.floor(s2.x / cs); if (comp[i] < 0) fill(i); cnt[comp[i]] = (cnt[comp[i]] || 0) + 1; });
+    var main = 0, best = -1; Object.keys(cnt).forEach(function (k) { if (cnt[k] > best) { best = cnt[k]; main = +k; } });
+    S.sites.forEach(function (s2) {
+      var i = Math.floor(s2.y / cs) * n + Math.floor(s2.x / cs); if (comp[i] === main) return;
+      var tb = null, td = 1e9; S.sites.forEach(function (o) { var oi = Math.floor(o.y / cs) * n + Math.floor(o.x / cs); if (comp[oi] === main) { var dd = Math.hypot(o.x - s2.x, o.y - s2.y); if (dd < td) { td = dd; tb = o; } } });
+      if (!tb) return; var steps = Math.ceil(td / (cs * 0.5)); for (var k = 0; k <= steps; k++) { var px = s2.x + (tb.x - s2.x) * k / steps, py = s2.y + (tb.y - s2.y) * k / steps, gx = Math.floor(px / cs), gy = Math.floor(py / cs); for (y = -1; y <= 1; y++) for (x = -1; x <= 1; x++) if (gx + x >= 0 && gy + y >= 0 && gx + x < n && gy + y < n) g[(gy + y) * n + gx + x] = 0; }
+      fill(i);
+    });
+  }
+  function nvB(x, y) { nvInit(); var cs = NV.cs, n = NV.n, gx = Math.floor(x / cs), gy = Math.floor(y / cs); if (gx < 0 || gy < 0 || gx >= n || gy >= n) return true; return NV.g[gy * n + gx] === 1; }
+  function nvLos(x0, y0, x1, y1) { var d = Math.hypot(x1 - x0, y1 - y0), k = Math.max(1, Math.ceil(d / 9)); for (var i = 1; i <= k; i++) if (nvB(x0 + (x1 - x0) * i / k, y0 + (y1 - y0) * i / k)) return false; return true; }
+  function ovSlide(x0, y0, x1, y1) {
+    if (!nvB(x1, y1)) return [x1, y1]; if (nvB(x0, y0)) return [x1, y1];
+    if (!nvB(x1, y0)) return [x1, y0]; if (!nvB(x0, y1)) return [x0, y1]; return [x0, y0];
+  }
+  function nvPath(x0, y0, x1, y1) {
+    nvInit(); var cs = NV.cs, n = NV.n, g = NV.g, sx = Math.max(0, Math.min(n - 1, Math.floor(x0 / cs))), sy = Math.max(0, Math.min(n - 1, Math.floor(y0 / cs))), tx = Math.max(0, Math.min(n - 1, Math.floor(x1 / cs))), ty = Math.max(0, Math.min(n - 1, Math.floor(y1 / cs)));
+    var gs = new Float32Array(n * n).fill(1e9), from = new Int32Array(n * n).fill(-1), done = new Uint8Array(n * n), heap = [], si = sy * n + sx;
+    function h(i) { var cx = i % n, cy = (i / n) | 0, dx = Math.abs(cx - tx), dy = Math.abs(cy - ty); return (dx + dy) + (1.414 - 2) * Math.min(dx, dy); }
+    function push(i, f) { heap.push([f, i]); var k = heap.length - 1; while (k > 0) { var pr = (k - 1) >> 1; if (heap[pr][0] <= heap[k][0]) break; var t = heap[pr]; heap[pr] = heap[k]; heap[k] = t; k = pr; } }
+    function pop() { var top = heap[0], last = heap.pop(); if (heap.length) { heap[0] = last; var k = 0, L = heap.length; for (;;) { var l = 2 * k + 1, r = l + 1, m = k; if (l < L && heap[l][0] < heap[m][0]) m = l; if (r < L && heap[r][0] < heap[m][0]) m = r; if (m === k) break; var t = heap[m]; heap[m] = heap[k]; heap[k] = t; k = m; } } return top; }
+    gs[si] = 0; push(si, h(si)); var bestI = si, bestH = h(si), ti = ty * n + tx, found = false;
+    while (heap.length) {
+      var cur = pop()[1]; if (done[cur]) continue; done[cur] = 1; var hh = h(cur); if (hh < bestH) { bestH = hh; bestI = cur; } if (cur === ti) { found = true; break; }
+      var cx = cur % n, cy = (cur / n) | 0;
+      for (var dy = -1; dy <= 1; dy++) for (var dx = -1; dx <= 1; dx++) {
+        if (!dx && !dy) continue; var nx = cx + dx, ny = cy + dy; if (nx < 0 || ny < 0 || nx >= n || ny >= n) continue; var j = ny * n + nx; if (g[j] || done[j]) continue;
+        if (dx && dy && (g[cy * n + nx] || g[ny * n + cx])) continue;
+        var ng = gs[cur] + (dx && dy ? 1.414 : 1); if (ng < gs[j]) { gs[j] = ng; from[j] = cur; push(j, ng + h(j)); }
+      }
+    }
+    var end = found ? ti : bestI, pts = [], i = end; while (i !== si && i >= 0) { pts.push([(i % n + 0.5) * cs, (((i / n) | 0) + 0.5) * cs]); i = from[i]; } pts.reverse();
+    if (found) pts.push([x1, y1]); return { pts: pts, full: found };
+  }
+  var NVM = new WeakMap();
+  function ovNavEnd(o) { var v = NVM.get(o); return !!(v && v.end); }
+  function ovNavMove(o, kx, ky, tx, ty, step) {
+    var x = o[kx], y = o[ky];
+    if (nvB(x, y) || nvLos(x, y, tx, ty)) { NVM.delete(o); var dx = tx - x, dy = ty - y, d = Math.hypot(dx, dy) || 1, m = Math.min(step, d); var nx = x + dx / d * m, ny = y + dy / d * m; if (!nvB(x, y)) { var sl = ovSlide(x, y, nx, ny); return sl; } return [nx, ny]; }
+    var nv = NVM.get(o), key = Math.floor(tx / NV.cs) + "," + Math.floor(ty / NV.cs), now = performance.now();
+    if (!nv || nv.k !== key || !nv.p.length || now - nv.t > 2500) { var r = nvPath(x, y, tx, ty); nv = { k: key, p: r.pts, t: now, end: false, full: r.full }; NVM.set(o, nv); }
+    while (nv.p.length > 1 && nvLos(x, y, nv.p[1][0], nv.p[1][1])) nv.p.shift();
+    if (!nv.p.length) { nv.end = true; return [x, y]; }
+    var w = nv.p[0], dx2 = w[0] - x, dy2 = w[1] - y, d2 = Math.hypot(dx2, dy2) || 1, m2 = Math.min(step, d2);
+    if (d2 <= step) { nv.p.shift(); if (!nv.p.length && !nv.full) nv.end = true; }
+    var q = [x + dx2 / d2 * m2, y + dy2 / d2 * m2]; if (nvB(q[0], q[1])) q = ovSlide(x, y, q[0], q[1]); return q;
+  }
+
 
   // ---- input ----
   (function () {
