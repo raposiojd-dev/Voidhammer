@@ -8406,7 +8406,7 @@ window.__vhGame = function () { (function () {
     setInterval(function () {
       var on = false; try { on = !!(F && !F.over && !F.deploy && $("bfc") && $("bfc").offsetParent && F.hero && !F.hero.dead); } catch (e) {}
       if (on) { var par = $("bfc").parentNode; if (c.parentNode !== par) par.appendChild(c); var bb = $("bfb").getBoundingClientRect(); c.style.top = Math.max(120, bb.top - 76) + "px"; }
-      c.style.display = on ? "flex" : "none";
+      c.style.display = "none"; /* round Shoot/Cast/Strike buttons removed */
     }, 250);
   })();
   // beyond the map edge the 3D camera shows a wall of forest, so the edge of the town is plain to see
