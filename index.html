@@ -8551,6 +8551,31 @@ window.__vhGame = function () { (function () {
       u.cd = 4.6; u.atk = 0.4; ovSay("cat", "Catapults hurl stone at the walls.");
     }
   }
+  function ovHex(c, d) { var m = /^#([0-9a-f]{6})$/i.exec(c || ""), r = 120, g = 112, b = 100; if (m) { var v = parseInt(m[1], 16); r = v >> 16; g = (v >> 8) & 255; b = v & 255; } var cl = function (x) { return Math.max(0, Math.min(255, Math.round(x + d))); }; return "rgb(" + cl(r) + "," + cl(g) + "," + cl(b) + ")"; }
+  function ovStoneWall(g, x, y, w, th, col, seed, tower) {
+    var topH = Math.max(6, th * 0.42), fy = y + topH, fh = th - topH + 7, i, j;
+    g.fillStyle = "rgba(0,0,0,0.35)"; g.fillRect(x + 3, y + th + 2, w, 6);
+    g.fillStyle = ovHex(col, 34); g.fillRect(x, y, w, topH);
+    for (i = 0; i < w / 9; i++) { g.fillStyle = "rgba(0,0,0," + (0.06 + ((i * 7 + seed) % 5) * 0.015) + ")"; g.fillRect(x + i * 9, y, 1, topH); }
+    g.fillStyle = "rgba(255,255,255,0.22)"; g.fillRect(x, y, w, 1.5);
+    g.fillStyle = ovHex(col, -4); g.fillRect(x, fy, w, fh);
+    var rows = Math.max(2, Math.round(fh / 7)), rh = fh / rows;
+    for (j = 0; j < rows; j++) {
+      var off = (j % 2) * 6, sx = x - off, n = 0;
+      while (sx < x + w) {
+        var sw = 11 + ((n * 5 + j * 3 + seed * 7) % 6), x0 = Math.max(x, sx), x1 = Math.min(x + w, sx + sw);
+        if (x1 - x0 > 1) { var sh = ((n * 13 + j * 7 + seed * 11) % 7 - 3) * 5; g.fillStyle = ovHex(col, sh - 2 - j * 2); g.fillRect(x0 + 0.5, fy + j * rh + 0.5, x1 - x0 - 1, rh - 1); g.fillStyle = "rgba(255,255,255,0.10)"; g.fillRect(x0 + 0.5, fy + j * rh + 0.5, x1 - x0 - 1, 1); g.fillStyle = "rgba(0,0,0,0.18)"; g.fillRect(x0 + 0.5, fy + (j + 1) * rh - 1.5, x1 - x0 - 1, 1); }
+        sx += sw; n++;
+      }
+    }
+    g.strokeStyle = "rgba(14,10,6,0.65)"; g.lineWidth = 1; g.beginPath();
+    for (j = 1; j < rows; j++) { g.moveTo(x, fy + j * rh); g.lineTo(x + w, fy + j * rh); } g.stroke();
+    var sd = g.createLinearGradient(0, fy, 0, fy + fh); sd.addColorStop(0, "rgba(0,0,0,0.18)"); sd.addColorStop(1, "rgba(0,0,0,0.38)"); g.fillStyle = sd; g.fillRect(x, fy, w, fh);
+    g.fillStyle = "rgba(0,0,0,0.3)"; g.fillRect(x, fy, w, 2);
+    g.strokeStyle = "#1a1610"; g.lineWidth = 1.2; g.strokeRect(x, y, w, topH + fh);
+    var mw = 8, gap = 6, nm = Math.floor((w + gap) / (mw + gap)); if (nm < 1) nm = 1; var mx0 = x + (w - (nm * (mw + gap) - gap)) / 2;
+    for (i = 0; i < nm; i++) { var bx = mx0 + i * (mw + gap); g.fillStyle = ovHex(col, 14); g.fillRect(bx, y - 8, mw, 8); g.fillStyle = ovHex(col, 40); g.fillRect(bx, y - 9, mw, 2.5); g.fillStyle = "rgba(0,0,0,0.3)"; g.fillRect(bx + mw - 2, y - 8, 2, 8); g.strokeStyle = "#1a1610"; g.lineWidth = 1; g.strokeRect(bx, y - 9, mw, 9); }
+  }
   function ovSgDraw(g, t, G) {
     var sg = F.sg, n = sg.n, k, y0 = SGLY[n - 1] - 120, y1 = SGLY[0] + SGTH + 4, col = sg.col, own = sg.owner;
     g.fillStyle = "rgba(70,60,48,0.30)"; g.fillRect(0, y0, FW, y1 - y0);
@@ -8560,9 +8585,7 @@ window.__vhGame = function () { (function () {
       L.segs.forEach(function (s) {
         var w = s.x1 - s.x0;
         if (s.hp > 0) {
-          g.fillStyle = col; g.fillRect(s.x0, y, w, th); g.fillStyle = "rgba(0,0,0,0.22)"; g.fillRect(s.x0, y + th - 7, w, 7);
-          g.strokeStyle = "#1a1610"; g.lineWidth = 1.2; g.strokeRect(s.x0, y, w, th);
-          for (var m = 0; m < w / 14; m++) g.fillRect(s.x0 + m * 14 + 2, y - 7, 8, 7);
+          ovStoneWall(g, s.x0, y, w, th, col, k);
           if (s.hp < s.hpm) { var f = s.hp / s.hpm; g.fillStyle = "rgba(20,10,5," + (0.5 * (1 - f)) + ")"; g.fillRect(s.x0, y, w, th); g.fillStyle = "#c0503a"; g.fillRect(s.x0 + 4, y - 11, (w - 8) * f, 2); }
         } else {
           g.fillStyle = "rgba(60,52,44,0.9)"; for (var q = 0; q < 8; q++) g.fillRect(s.x0 + 6 + q * (w - 14) / 8, y + 6 + ((q * 7) % 9), 10, 8);
@@ -8581,7 +8604,7 @@ window.__vhGame = function () { (function () {
         g.fillStyle = "#5a4020"; for (var db = 0; db < 9; db++) g.fillRect(gt.x0 + 12 + ((db * 37) % (gw - 26)), y + th + 1 + (db % 3) * 3, 9 + (db % 4), 3);
         g.fillStyle = "#a8382a"; g.beginPath(); g.moveTo(gt.x0 + gw / 2 - 5, y + th + 16); g.lineTo(gt.x0 + gw / 2 + 5, y + th + 16); g.lineTo(gt.x0 + gw / 2, y + th + 8); g.fill();
       }
-      g.fillStyle = col; g.fillRect(0, y - 14, 22, th + 14); g.fillRect(FW - 22, y - 14, 22, th + 14); g.strokeStyle = "#1a1610"; g.strokeRect(0, y - 14, 22, th + 14); g.strokeRect(FW - 22, y - 14, 22, th + 14);
+      ovStoneWall(g, 0, y - 14, 22, th + 14, col, k + 5, 1); ovStoneWall(g, FW - 22, y - 14, 22, th + 14, col, k + 9, 1);
       if (own === "light") { var gl = g.createLinearGradient(0, y - 20, 0, y + th); gl.addColorStop(0, "rgba(255,244,190,0.38)"); gl.addColorStop(1, "rgba(255,244,190,0)"); g.fillStyle = gl; g.fillRect(0, y - 20, FW, th + 20); }
       if (own === "ember") { g.fillStyle = "rgba(255,120,40,0.75)"; for (var e2 = 0; e2 < 14; e2++) g.fillRect(((e2 * 47 + Math.floor(t / 90) * 13) % 590), y - 9 - ((e2 * 5 + t / 60) % 7), 2, 3); }
       g.fillStyle = "rgba(240,224,180,0.55)"; g.font = "italic 10px Georgia, serif"; g.textAlign = "left"; g.fillText(SGNAMES[k], 28, y + 15);
