@@ -4675,7 +4675,7 @@ window.__vhGame = function () { (function () {
     var a = AR, cvs = aLowC(), g = cvs.getContext("2d"), p = a.p;
     var VW = P3 ? Math.round(AVW * P3Z) : AVW, VH = Math.max(120, Math.round(VW * innerHeight / Math.max(1, innerWidth) * ovK()));
     if (cvs.width !== VW * 2 || cvs.height !== VH * 2) { cvs.width = VW * 2; cvs.height = VH * 2; }
-    g.setTransform(2, 0, 0, 2, 0, 0); g.imageSmoothingEnabled = false;
+    g.setTransform(2, 0, 0, 2, 0, 0); g.imageSmoothingEnabled = false; ovTxHook(g);
     var cx = Math.round(p.x - VW / 2), cy = Math.round(p.y - 8 - VH * (P3 ? 0.56 : 0.5)), mw = a.W * ATS, mh = a.H * ATS;
     if (!P3) { cx = mw <= VW ? Math.round((mw - VW) / 2) : Math.max(0, Math.min(mw - VW, cx)); cy = mh <= VH ? Math.round((mh - VH) / 2) : Math.max(0, Math.min(mh - VH, cy)); }
     g.fillStyle = "#0b0912"; g.fillRect(0, 0, VW, VH); if (P3 && a.th && a.th.g) ovOutside(g, a, cx, cy, VW, VH);
@@ -6244,6 +6244,7 @@ window.__vhGame = function () { (function () {
       gd.fillStyle = "rgba(" + col + "," + al.toFixed(3) + ")"; gd.beginPath(); gd.arc(px, py, r, 0, 6.283); gd.fill();
     });
     ovRealmFX(gd, W, H, dpr, a);
+    ovTxDraw(gd, W, H, dpr, src);
   }
   // ================= Relic Trials: very hard side quests, one named Mythic weapon each =================
   var RT = [
@@ -8251,7 +8252,7 @@ window.__vhGame = function () { (function () {
       var sw = ww / T.m[i], sx = (ww - sw) / 2, dy = sk + T.D[i] * (H - sk), dh = (T.D[i + 1] - T.D[i]) * (H - sk) + 1;
       g.drawImage(src, sx, i * sh, sw, sh, 0, dy, W, dh);
     }
-    var fg = g.createLinearGradient(0, sk, 0, sk + (H - sk) * 0.4); fg.addColorStop(0, "rgba(90,92,108,0.85)"); fg.addColorStop(0.5, "rgba(40,42,52,0.4)"); fg.addColorStop(1, "rgba(10,9,7,0)"); g.fillStyle = fg; g.fillRect(0, sk, W, (H - sk) * 0.4);
+    var fg = g.createLinearGradient(0, sk, 0, sk + (H - sk) * 0.4); fg.addColorStop(0, "rgba(90,92,108,0.6)"); fg.addColorStop(0.5, "rgba(40,42,52,0.22)"); fg.addColorStop(1, "rgba(10,9,7,0)"); g.fillStyle = fg; g.fillRect(0, sk, W, (H - sk) * 0.4);
   }
   function ovTInv(e, r) {
     var px = e.clientX - r.left, py = e.clientY - r.top; if (!P3) return { x: px, y: py };
@@ -9228,13 +9229,13 @@ window.__vhGame = function () { (function () {
   }
   // ---- realm-themed town/village walk-arounds: tint + ambient particles by owner ----
   var RFX = {
-    ember: { tint: "255,90,30", ta: 0.16, mode: "overlay", n: 46, kind: "ember", cols: ["255,150,50", "255,200,90", "255,90,40"] },
-    stone: { tint: "120,105,90", ta: 0.2, mode: "multiply", n: 52, kind: "dust", cols: ["190,170,140", "150,135,115", "210,195,170"] },
+    ember: { tint: "255,90,30", ta: 0.1, mode: "overlay", n: 46, kind: "ember", cols: ["255,150,50", "255,200,90", "255,90,40"] },
+    stone: { tint: "120,105,90", ta: 0.12, mode: "multiply", n: 52, kind: "dust", cols: ["190,170,140", "150,135,115", "210,195,170"] },
     storm: { tint: "90,130,190", ta: 0.14, mode: "overlay", n: 30, kind: "wind", cols: ["220,235,255", "180,210,245"] },
     light: { tint: "255,225,140", ta: 0.16, mode: "overlay", n: 38, kind: "glint", cols: ["255,240,170", "255,255,220"] },
     frost: { tint: "150,200,255", ta: 0.2, mode: "overlay", n: 56, kind: "snow", cols: ["240,248,255", "200,225,255"] },
     spirit: { tint: "150,110,230", ta: 0.18, mode: "overlay", n: 28, kind: "wisp", cols: ["190,170,255", "140,220,230"] },
-    shadow: { tint: "20,15,40", ta: 0.28, mode: "multiply", n: 34, kind: "smoke", cols: ["70,60,95", "40,35,60"] },
+    shadow: { tint: "20,15,40", ta: 0.2, mode: "multiply", n: 34, kind: "smoke", cols: ["70,60,95", "40,35,60"] },
     metal: { tint: "190,60,130", ta: 0.14, mode: "overlay", n: 40, kind: "spark", cols: ["255,170,210", "255,230,240", "200,200,215"] }
   };
   var RFP = [], RFOR = "", RFT = 0;
@@ -9248,7 +9249,7 @@ window.__vhGame = function () { (function () {
     gd.globalCompositeOperation = "source-over";
     // vignette in the realm colour
     var vg = gd.createRadialGradient(W / 2, H / 2, Math.min(W, H) * 0.35, W / 2, H / 2, Math.max(W, H) * 0.75);
-    vg.addColorStop(0, "rgba(" + fx.tint + ",0)"); vg.addColorStop(1, "rgba(" + fx.tint + "," + (fx.kind === "smoke" ? 0.5 : 0.25) + ")"); gd.fillStyle = vg; gd.fillRect(0, 0, W, H);
+    vg.addColorStop(0, "rgba(" + fx.tint + ",0)"); vg.addColorStop(1, "rgba(" + fx.tint + "," + (fx.kind === "smoke" ? 0.32 : 0.12) + ")"); gd.fillStyle = vg; gd.fillRect(0, 0, W, H);
     var k = dt * 60, kind = fx.kind;
     RFP.forEach(function (p) {
       var tw = 0.5 + 0.5 * Math.sin(t * 2.4 + p.ph), r = p.s * dpr, al = 0.6, px, py;
@@ -9269,6 +9270,40 @@ window.__vhGame = function () { (function () {
       gd.fillStyle = "rgba(" + p.c + "," + al.toFixed(3) + ")"; gd.beginPath(); gd.arc(px, py, r, 0, 6.283); gd.fill();
     });
     gd.restore();
+  }
+
+  // ---- crisp labels: low-res text is recorded and redrawn as sharp vector text on the display canvas ----
+  var OVTX = [];
+  function ovTxHook(g) {
+    OVTX.length = 0;
+    if (g.__txh) return; g.__txh = 1;
+    var fr0 = g.fillRect; g.fillRect = function (x, y, w, h) { if (/^rgba\(10, ?8, ?6, ?0\.(78|8|85)\)$/.test(String(this.fillStyle))) return; return fr0.call(this, x, y, w, h); };
+    g.fillText = function (t, x, y) {
+      var m = this.getTransform(), lw = this.measureText(t).width, fz = /(\d+(?:\.\d+)?)px/.exec(this.font);
+      OVTX.push({ t: String(t), cx: x + lw / 2, y: y, m: m, fz: fz ? +fz[1] : 8, fs: this.fillStyle, al: this.globalAlpha });
+    };
+  }
+  function ovTxDraw(gd, W, H, dpr, src) {
+    gd.save(); gd.globalCompositeOperation = "screen"; gd.fillStyle = "rgba(255,244,228,0.09)"; gd.fillRect(0, 0, W, H); gd.restore();
+    if (!OVTX.length) return;
+    var T = P3 ? ovP3Tab() : null, sh = src.height * P3C / P3N, sk = P3SKY * H, ww = src.width, k = W / src.width;
+    gd.save(); gd.setTransform(1, 0, 0, 1, 0, 0); gd.globalCompositeOperation = "source-over"; gd.textAlign = "center"; gd.textBaseline = "alphabetic"; gd.lineJoin = "round";
+    OVTX.forEach(function (o) {
+      var m = o.m, ux = m.a * o.cx + m.c * o.y + m.e, uy = m.b * o.cx + m.d * o.y + m.f, X, Y, sc, fi, i, fr;
+      if (T) {
+        fi = uy / sh; if (fi < 0 || fi >= P3N) return; i = Math.floor(fi); fr = fi - i;
+        Y = sk + (T.D[i] + fr * (T.D[i + 1] - T.D[i])) * (H - sk); X = ((ux - ww / 2) * T.m[i] / ww + 0.5) * W; sc = T.m[i] * k;
+      } else { X = ux * k; Y = uy * k; sc = k; }
+      if (X < -200 || X > W + 200 || Y < -20 || Y > H + 20) return;
+      var px = Math.max(8 * dpr, o.fz * m.d * sc * 0.8);
+      gd.font = "700 " + px.toFixed(1) + "px system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif";
+      var tw = gd.measureText(o.t).width, ph = px * 0.5;
+      gd.globalAlpha = 1; gd.fillStyle = "rgba(10,8,6,0.72)";
+      var bx = X - tw / 2 - ph * 0.7, by = Y - px * 0.95, bw = tw + ph * 1.4, bh = px * 1.3, r = bh / 2;
+      gd.beginPath(); gd.moveTo(bx + r, by); gd.arcTo(bx + bw, by, bx + bw, by + bh, r); gd.arcTo(bx + bw, by + bh, bx, by + bh, r); gd.arcTo(bx, by + bh, bx, by, r); gd.arcTo(bx, by, bx + bw, by, r); gd.fill();
+      gd.globalAlpha = o.al; gd.fillStyle = o.fs; gd.fillText(o.t, X, Y);
+    });
+    gd.restore(); OVTX.length = 0;
   }
 
   // ---- input ----
