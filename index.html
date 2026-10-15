@@ -6105,7 +6105,7 @@ window.__vhGame = function () { (function () {
     el.addEventListener("pointermove", function (e) {
       if (!VST.on || e.pointerId !== VST.id || VST.mode !== mode) return;
       var dx = e.clientX - VST.ox, dy = e.clientY - VST.oy, l = Math.hypot(dx, dy), m = 46;
-      if (!VST.drag) { if (l < 12) return; VST.drag = true; vstShow(VST.ox, VST.oy); if (mode === "map" && S.speed === 0 && !sheet) S.speed = 1; }
+      if (!VST.drag) { if (l < 12) return; VST.drag = true; vstShow(VST.ox, VST.oy); if (mode === "map" && S.speed === 0 && !sheet) S.speed = 3; }
       if (l > m) { dx = dx / l * m; dy = dy / l * m; l = m; }
       vknob.style.transform = "translate(" + dx + "px," + dy + "px)";
       VST.dx = l < 8 ? 0 : dx / m; VST.dy = l < 8 ? 0 : dy / m;
@@ -8115,7 +8115,7 @@ window.__vhGame = function () { (function () {
     el.innerHTML = '<span id="sgtxt"></span> <button id="sgrush" style="margin-left:8px;padding:6px 12px;background:#a8382a;color:#fff;border:1px solid #e8b050;border-radius:4px;font:700 12px Georgia,serif;letter-spacing:1px">RUSH</button>';
     document.body.appendChild(el);
     var cur = null;
-    el.querySelector("#sgrush").addEventListener("click", function (ev) { ev.stopPropagation(); if (!cur) return; if (AR) leaveArea(); S.target = { t: "p", x: cur.x, y: cur.y, site: cur.id }; S.speed = 1; pausedSpeed = 1; });
+    el.querySelector("#sgrush").addEventListener("click", function (ev) { ev.stopPropagation(); if (!cur) return; if (AR) leaveArea(); S.target = { t: "p", x: cur.x, y: cur.y, site: cur.id }; S.speed = 3; pausedSpeed = 3; });
     setInterval(function () {
       var show = null;
       try {
@@ -8855,7 +8855,7 @@ window.__vhGame = function () { (function () {
   function ovWaitStart() {
     if (!AR) return; var id = AR.id, nm = (typeof getSpec === "function" && getSpec(id)) ? getSpec(id).name : id;
     WAITIN = { id: id, name: nm }; WSEEN = {};
-    leaveArea(); S.speed = 1; pausedSpeed = 1; ovWaitUi();
+    leaveArea(); S.speed = 3; pausedSpeed = 3; ovWaitUi();
     toast("Waiting at " + nm + ". You will be warned if enemies close in.");
   }
   (function () {
@@ -9344,7 +9344,7 @@ window.__vhGame = function () { (function () {
       if (mode === "field" && ovPanMove(e)) return;
       if (!VST.on || e.pointerId !== VST.id || VST.mode !== mode) return;
       var dx = e.clientX - VST.ox, dy = e.clientY - VST.oy, l = Math.hypot(dx, dy), m = 46;
-      if (!VST.drag) { if (l < 12) return; VST.drag = true; vstShow(VST.ox, VST.oy); if (mode === "map" && S.speed === 0 && !sheet) S.speed = 1; }
+      if (!VST.drag) { if (l < 12) return; VST.drag = true; vstShow(VST.ox, VST.oy); if (mode === "map" && S.speed === 0 && !sheet) S.speed = 3; }
       if (l > m) { dx = dx / l * m; dy = dy / l * m; l = m; }
       vknob.style.transform = "translate(" + dx + "px," + dy + "px)";
       VST.dx = l < 8 ? 0 : dx / m; VST.dy = l < 8 ? 0 : dy / m;
@@ -10082,8 +10082,8 @@ window.__vhGame = function () { (function () {
       case "backask": B.stage = "ask"; confirming = null; break;
       case "vow": vow(x); save(); return;
       case "done": closeSheet(true); return;
-      case "begin": S.intro = false; pausedSpeed = 1; closeSheet(true); if (!tutSeen()) openTutorial(false); else campKick(); return;
-      case "keepgoing": pausedSpeed = 1; closeSheet(true); return;
+      case "begin": S.intro = false; pausedSpeed = 3; closeSheet(true); if (!tutSeen()) openTutorial(false); else campKick(); return;
+      case "keepgoing": pausedSpeed = 3; closeSheet(true); return;
       case "again": NG = null; showTitle(); return;
       case "mainmenu": showTitle(); return;
       case "cont": closeSheet(true); if (S.intro) openSheet("intro"); return;
@@ -10103,7 +10103,7 @@ window.__vhGame = function () { (function () {
         c.f.track = null; c.cleared = {}; c.tier = t; toast((t === 1 ? "Nightmare" : "Hell") + " begins. The roads are the same. The things on them are not.");
       })(); break;
       case "qtrack": cp().f.track = x === "main" ? null : x; break;
-      case "qgo": { var qs = site(x); if (qs) { S.target = { t: "p", x: qs.x, y: qs.y, site: qs.id }; closeSheet(true); S.speed = 1; pausedSpeed = 1; } return; }
+      case "qgo": { var qs = site(x); if (qs) { S.target = { t: "p", x: qs.x, y: qs.y, site: qs.id }; closeSheet(true); S.speed = 3; pausedSpeed = 3; } return; }
       case "aenter": { var aid = areaIdFor(x); if (aid) startArea(aid); return; }
       case "abuild": ovBuildBtn(); return;
       case "aleave": leaveArea(); return;
@@ -10169,7 +10169,7 @@ window.__vhGame = function () { (function () {
       S.enemies.forEach(function (en) { var d = dist(wx, wy, en.x, en.y); if (d < ed) { ed = d; eh = en; } });
       S.target = eh ? { t: "e", id: eh.id } : { t: "p", x: wx, y: wy };
     }
-    if (S.speed === 0) S.speed = 1;
+    if (S.speed === 0) S.speed = 3;
   }
   stickBind(cv, "map", mapTap);
 
