@@ -670,7 +670,7 @@ window.__vhGame = function () { (function () {
     return Object.keys(got).map(function (k) { return got[k] + " " + LOOT[k].name.toLowerCase(); }).join(", ");
   }
   function lootCount() { var n = 0; Object.keys(S.loot).forEach(function (k) { n += S.loot[k]; }); return n; }
-  function lootPrice(k, t, extra) { return LOOT[k].base * (t.type === "village" ? 0.75 : 1 - Math.min(0.7, (t.ssat || 0) + (extra || 0))) * (has("forge") ? 1.15 : 1) * (1 + 0.06 * ((S.skills && S.skills.haggler) || 0)) * (1 + 0.08 * sk("quickcoin") + 0.1 * sk("fence")); }
+  function lootPrice(k, t, extra) { return LOOT[k].base * (t.type === "village" ? 0.75 : 1 - Math.min(0.7, (t.ssat || 0) + (extra || 0))) * (has("forge") ? 1.15 : 1) * (1 + 0.06 * ((S.skills && S.skills.haggler) || 0)) * (1 + 0.08 * sk("quickcoin") + 0.1 * sk("fence") + skfx("sell")); }
   var sheet = null, pausedSpeed = 0, B = null, confirming = null, reply = null, openRead = {}, resetting = false;
   var cam = { x: S.px, y: S.py, z: 0.9 };
 
@@ -718,7 +718,7 @@ window.__vhGame = function () { (function () {
     if (has("kill")) m += 0.08;
     if (has("name")) m += 0.10;
     if (hollow() >= 6 && t <= 8) m *= 1.5;
-    m *= 1 + 0.06 * sk("hiredsteel") + 0.05 * sk("nothing");
+    m *= 1 + 0.06 * sk("hiredsteel") + 0.05 * sk("nothing") + skfx("army");
     normVets(); VKEYS.forEach(function (q) { base += (S.vets[q] || 0) * (TROOPT[q - 1].mult - 1) * (1 + ((q === 5 || q === 6) ? 0.1 * sk("fletcher") : 0) + ((q === 7 || q === 8) ? 0.1 * sk("sparkcaller") : 0)); });
     return base * m * gearMult() * gearBattle().atk * (1 + 0.07 * (S.skills.drill || 0));
   }
@@ -945,7 +945,7 @@ window.__vhGame = function () { (function () {
     var tx, ty;
     if (tg.t === "e") { var e = enemyById(tg.id); if (!e) { S.target = null; return; } tx = e.x; ty = e.y; }
     else { tx = tg.x; ty = tg.y; }
-    var dx = tx - S.px, dy = ty - S.py, d = Math.hypot(dx, dy), step = SPEED * dd * (1 + 0.05 * sk("pathfinder") + 0.08 * sk("roadwise"));
+    var dx = tx - S.px, dy = ty - S.py, d = Math.hypot(dx, dy), step = SPEED * dd * (1 + 0.05 * sk("pathfinder") + 0.08 * sk("roadwise") + skfx("speed"));
     if (d <= step || d < 1) {
       S.px = tx; S.py = ty;
       var sid = tg.site; S.target = null;
@@ -1000,7 +1000,7 @@ window.__vhGame = function () { (function () {
   function finishBattle(forceWin, how) {
     var e = enemyById(B.eid), pr = B.pCur / B.p0, er = B.eCur / B.e0;
     var win = forceWin || er < pr;
-    var lost = Math.round(B.t0 * (forceWin ? (how === "burn" ? 0.1 : (1 - pr)) : (1 - pr)) * (has("mother") ? 0.9 : 1) * (B.siegeId ? 1.3 : 1) * (1 - 0.1 * (S.skills.rally || 0)) * (1 - 0.1 * sk("oath")) * (1 - 0.12 * Math.min(1, (S.gear.mail || 0) / Math.max(1, B.t0))) * gearBattle().def);
+    var lost = Math.round(B.t0 * (forceWin ? (how === "burn" ? 0.1 : (1 - pr)) : (1 - pr)) * (has("mother") ? 0.9 : 1) * (B.siegeId ? 1.3 : 1) * (1 - 0.1 * (S.skills.rally || 0)) * (1 - 0.1 * sk("oath") - skfx("deaths")) * (1 - 0.12 * Math.min(1, (S.gear.mail || 0) / Math.max(1, B.t0))) * gearBattle().def);
     if (how === "burn") lost = Math.ceil(B.t0 * 0.1 * (1 - 0.3 * sk("steadyhand")));
     loseTroops(lost); fadeSparks();
     if (B.allies && B.allies.length) allyLosses(win ? (forceWin ? (how === "burn" ? 0.1 : (1 - pr)) : (1 - pr)) : Math.min(0.85, (1 - pr) + 0.25), win);
@@ -1037,7 +1037,7 @@ window.__vhGame = function () { (function () {
     B.stage = "result"; renderSheet();
   }
   function battleFlee() {
-    var e = enemyById(B.eid), p = (B.kind === "void" ? 0.35 : 0.6) + (has("ford") ? 0.2 : 0) + 0.08 * sk("skirmisher") + 0.1 * sk("strays") + 0.1 * sk("ghost");
+    var e = enemyById(B.eid), p = (B.kind === "void" ? 0.35 : 0.6) + (has("ford") ? 0.2 : 0) + 0.08 * sk("skirmisher") + 0.1 * sk("strays") + 0.1 * sk("ghost") + skfx("escape");
     if (Math.random() < p) {
       S.grain = Math.floor(S.grain * 0.9); if (e) e.cool = 2;
       B.out = ["You got away, and left some grain behind."]; B.won = null; B.stage = "result"; renderSheet();
@@ -3398,7 +3398,7 @@ window.__vhGame = function () { (function () {
   function fieldHit(a, d, mult) {
     if (d.dead) return;
     var dmg = ovCounter(a, d) * (a.horse && a.t === d && !a.chg ? (a.chg = 1, 1.5) : 1) * a.w * (a.hero || a.kael ? 0.3 : 0.21) * (a.hero ? (1 + 0.12 * sk("blademaster")) * gearBattle().hero / Math.max(0.5, 1 - setAgg().cdr) : 1) * (d.s === "p" && !d.hero && !d.kael ? gearBattle().def : 1) * (mult || 1) * rnd(0.8, 1.2);
-    if (a.s === "p" && F.cry > 0) dmg *= 1.3;
+    if (a.s === "p" && F.cry > 0) dmg *= 1.3; if (d.s === "p" && F.wallT > F.t) dmg *= 1 - (F.wallRed || 0.4);
     if (onHill(a.x, a.y)) dmg *= 1.2;
     if (inTrees(d.x, d.y)) dmg *= 0.8;
     if (d.s === "p" && F.cmd === "hold" && !d.hero && !d.kael) dmg *= 0.8;
@@ -3738,7 +3738,7 @@ window.__vhGame = function () { (function () {
   function eIt(sl) { var v = eqq()[sl]; return v && v.charAt(0) === "#" ? findItem(v.slice(1)) : null; }
   function eKey(sl) { var v = eqq()[sl]; if (!v) return ""; var it = eIt(sl); return it ? it.base : (v.charAt(0) === "#" ? "" : v); }
   function affSum(a) { var t = 0; ["w", "a", "r", "k"].forEach(function (sl) { var it = eIt(sl); if (it && it.aff[a]) { if (a === "boss") it.aff.boss = Math.max(it.aff.boss, affVal("boss", AFV[it.rar])); t += it.aff[a] * ovMf(it); } }); return t + (setAgg()[a] || 0); }
-  function maxHp() { return 5 + (cp().hearts || 0) + (cp().qhp || 0) + sk("ironhide") + Math.round(affSum("vig")) + setAgg().hp + sk("hardened"); }
+  function maxHp() { return 5 + (cp().hearts || 0) + (cp().qhp || 0) + sk("ironhide") + Math.round(affSum("vig")) + setAgg().hp + sk("hardened") + Math.round(skfx("hearts")); }
   function rcol(it) { return RAR[it.rar].c; }
   function rname(it) { return '<span style="color:' + rcol(it) + '">' + it.name + "</span>"; }
   function rollRar(boss) { var x = Math.min(0.999, Math.random() + 0.04 * tier() + 0.03 * sk("fortune")); if (Math.random() < (boss ? 0.035 : 0.006) * (1 + 0.4 * tier())) return 4; if (boss) return x < 0.4 ? 1 : x < 0.88 ? 2 : 3; return x < 0.6 ? 0 : x < 0.92 ? 1 : x < 0.992 ? 2 : 3; }
@@ -3759,7 +3759,7 @@ window.__vhGame = function () { (function () {
   function eqq() { var c = cp(); if (!c.eq) c.eq = { w: "", a: "", r: "", k: "" }; if (c.arrows === undefined) c.arrows = 0; return c.eq; }
   function upLv(sl) { var c = cp(); if (!c.up) c.up = { w: 0, a: 0, r: 0 }; return c.up[sl] || 0; }
   function gearEff() { return Math.min(1.4, 0.45 + 0.08 * (lvl() - 1)); }
-  function atkDmg() { var e = eqq(); return (1 + setAgg().dmg + 0.12 * sk("cutthroat") + 0.1 * sk("hammerhand") + 0.1 * sk("hollowstrength")) * (0.8 + (cp().dmg || 0) + (sk("blademaster") >= 2 ? 1 : 0) + (eIt("w") ? eIt("w").wb * ovMf(eIt("w")) : (WB[eKey("w")] || 0)) * gearEff() + 0.5 * upLv("w")); }
+  function atkDmg() { var e = eqq(); return (1 + setAgg().dmg + 0.12 * sk("cutthroat") + 0.1 * sk("hammerhand") + 0.1 * sk("hollowstrength") + skfx("dmg")) * (0.8 + (cp().dmg || 0) + (sk("blademaster") >= 2 ? 1 : 0) + (eIt("w") ? eIt("w").wb * ovMf(eIt("w")) : (WB[eKey("w")] || 0)) * gearEff() + 0.5 * upLv("w")); }
   function armRed() { var e = eqq(); return Math.min(0.7 + (setAgg().blk >= 0.2 ? 0.1 : 0), setAgg().blk + 0.04 * sk("temper") + ((eIt("a") ? eIt("a").ar * ovMf(eIt("a")) : (ARMR[eKey("a")] || 0)) + (eIt("k") ? eIt("k").ar * ovMf(eIt("k")) : (ARMR[eKey("k")] || 0))) * Math.min(1.2, gearEff()) + 0.05 * upLv("a")); }
   function equipItem(k) {
     var e = eqq(), sl = SLOT[k]; if (!sl || (S.loot[k] || 0) < 1) return; var old = e[sl];
@@ -4514,7 +4514,7 @@ window.__vhGame = function () { (function () {
   }
   function dmgEn(e, dmg, dx, dy, kn) {
     sfx("hit");
-    if (e.dead || e.gone || e.yield) return false; var d = Math.hypot(dx, dy) || 1;
+    if (e.dead || e.gone || e.yield) return false; if (AR && AR.p && AR.p.buffT > AR.t) dmg *= 1.3; var d = Math.hypot(dx, dy) || 1;
     if (e.d.boss && sk("giantslayer")) dmg *= 1 + 0.15 * sk("giantslayer"); if (e.d.boss) dmg *= 1 + affSum("boss"); if (e.d.boss && sk("bossbane")) dmg *= 1 + 0.35 * sk("bossbane"); if (COOP.guest() && COOP.hit(e, dmg, dx, dy)) return true; e.hp -= dmg; e.flash = 0.2; e.kx = dx / d * (kn || 130) * (e.d.boss ? 0.12 : 0.5); e.ky = dy / d * (kn || 130) * (e.d.boss ? 0.12 : 0.5); AR.fx.push({ x: e.x, y: e.y - 8, t: 0.2 });
     AR.floats.push({ x: e.x, y: e.y - 16, t: 0.7, s: String(Math.round(dmg * 10) / 10) });
     if (e.d.yieldAt && e.hp <= e.d.yieldAt && e.hp > 0 && !cp().f.rusk) { e.yield = true; e.hp = Math.max(1, e.hp); }
@@ -4572,7 +4572,7 @@ window.__vhGame = function () { (function () {
     checkClear();
   }
   function hurtP(n) {
-    var p = AR.p; if (p.inv > 0) return; n = Math.max(0.25, n * COOP.dm() * (1 - armRed()) * (1 + 0.45 * tier())); p.hp -= n; sfx("hurt"); p.inv = 0.55; p.flash = 0.25;
+    var p = AR.p; if (p.inv > 0) return; n = Math.max(0.25, n * COOP.dm() * (1 - armRed()) * (1 + 0.45 * tier())); if (p.wallT > AR.t) n *= 1 - (p.wallRed || 0.4); p.hp -= n; sfx("hurt"); p.inv = 0.55; p.flash = 0.25;
     if (p.hp <= 0 && (AR.ward || 0) < sk("deathward")) { AR.ward = (AR.ward || 0) + 1; p.hp = p.max * 0.5; p.inv = 2; aToast("The Death-ward holds. You stand."); return; }
     if (p.hp <= 0) { var lose = Math.floor(S.crowns * 0.1); S.crowns -= lose; aToast("You fall. Someone drags you back" + (lose ? " and takes " + lose + " crowns for the trouble." : ".")); p.hp = p.max; p.x = AR.spawn[0]; p.y = AR.spawn[1]; p.inv = 2; AR.proj = []; AR.en.forEach(function (e) { if (!e.dead && !e.gone) { e.x = e.hx; e.y = e.hy; e.hp = e.hpm; e.aggro = false; e.yield = false; } }); }
   }
@@ -4616,6 +4616,7 @@ window.__vhGame = function () { (function () {
       if (e.dead || e.gone) return; e.flash = Math.max(0, e.flash - dt); e.cd -= dt;
       if (Math.abs(e.kx) + Math.abs(e.ky) > 4) { var kx = e.x + e.kx * dt, ky = e.y + e.ky * dt; if (boxFree(a, kx, e.y)) e.x = kx; if (boxFree(a, e.x, ky)) e.y = ky; e.kx *= 0.82; e.ky *= 0.82; return; }
       if (e.yield) return;
+      if (e.stun > 0) { e.stun -= dt; return; }
       var tg = COOP.target(e, p), dx = tg.x - e.x, dy = tg.y - e.y, d = Math.hypot(dx, dy);
       if (a.sp.over && e.aggro && d > 140) e.aggro = false;
       if (!e.aggro && d < (e.d.boss ? 120 : 76)) e.aggro = true; if (!e.aggro) return;
@@ -6123,7 +6124,7 @@ window.__vhGame = function () { (function () {
   function mapStickMove(dd) {
     if (!(VST.on && VST.drag && VST.mode === "map") || sheet) return false;
     var mg = Math.min(1, Math.hypot(VST.dx, VST.dy)); if (!mg) return true;
-    S.target = null; var step = SPEED * dd * mg * (1 + 0.05 * sk("pathfinder") + 0.08 * sk("roadwise")), l = Math.hypot(VST.dx, VST.dy);
+    S.target = null; var step = SPEED * dd * mg * (1 + 0.05 * sk("pathfinder") + 0.08 * sk("roadwise") + skfx("speed")), l = Math.hypot(VST.dx, VST.dy);
     var sq = ovSlide(S.px, S.py, Math.max(12, Math.min(WORLD - 12, S.px + VST.dx / l * step)), Math.max(12, Math.min(WORLD - 12, S.py + VST.dy / l * step))); S.px = sq[0]; S.py = sq[1];
     return true;
   }
@@ -9883,6 +9884,352 @@ window.__vhGame = function () { (function () {
     CSEL.el.style.display = ""; CSEL.on = true; CSEL.sel = (NG && NG.origin && ORIGINS[NG.origin] && CSEL.sel) ? CSEL.sel : null;
     csResize(); csPanel(); cancelAnimationFrame(CSEL.raf); CSEL.raf = requestAnimationFrame(csFrame);
   }
+// ===== Skill tree v2: a tiered, linked tree per character, with a signature battle skill each =====
+var skTab = 0, skSel = null, SKROWLV = [0, 3, 6, 12];
+var SKDISC = {
+  wanderer: ["Road and Siege", "Archery"], farmer: ["Command", "Trade and Land"], trader: ["Trade and Land", "Politics"],
+  mercenary: ["Command", "Warrior"], outlaw: ["Warrior", "Road and Siege"], smith: ["Warrior", "Command"],
+  noble: ["Command", "Politics"], voidtouched: ["Memory and Spark", "Warrior"]
+};
+// Each origin: root, two branches, two side passives, a signature active, a capstone.
+//   layout (5 columns):        .  .  R  .  .
+//                              .  L  .  Rt .
+//                              A  .  ACT .  B
+//                              .  .  CAP .  .
+var ORIGTREE = {
+  wanderer: [
+    { id: "roadwise", pos: [0, 2] }, { id: "lucky", pos: [1, 1], lv: 3 }, { id: "strays", pos: [1, 3], lv: 3 },
+    { id: "windwalker", pos: [2, 0], lv: 6, req: "lucky", max: 2, name: "Second Wind", per: "+1 heart", fx: { hearts: 1 }, desc: "The road has taught you to keep walking when it hurts." },
+    { id: "dustkick", pos: [2, 2], lv: 6, req: "roadwise", max: 5, active: 1, name: "Dust Kick", per: "stalls everything near you", desc: "A heel full of road, thrown where it counts." },
+    { id: "nobodysman", pos: [2, 4], lv: 6, req: "strays", max: 3, name: "Nobody's Man", per: "+6% map speed, +6% chance to get away", fx: { speed: 0.06, escape: 0.06 }, desc: "Nobody remembers your face, so nobody can hold you." },
+    { id: "longroad", pos: [3, 2], lv: 12, req: "dustkick", max: 3, name: "The Long Road", per: "+8% your damage, +5% map speed", fx: { dmg: 0.08, speed: 0.05 }, desc: "You have walked farther than anything that hunts you." }],
+  farmer: [
+    { id: "harvest", pos: [0, 2] }, { id: "strongback", pos: [1, 1], lv: 3 }, { id: "hardened", pos: [1, 3], lv: 3 },
+    { id: "thresher", pos: [2, 0], lv: 6, req: "strongback", max: 3, name: "Thresher", per: "+6% your damage", fx: { dmg: 0.06 }, desc: "Years of swinging a flail at wheat have their uses." },
+    { id: "scythe", pos: [2, 2], lv: 6, req: "harvest", max: 5, active: 1, name: "Scythe Sweep", per: "a wide cut around you", desc: "One long swing, the way you cut a field." },
+    { id: "fullgranary", pos: [2, 4], lv: 6, req: "hardened", max: 3, name: "Full Granary", per: "−5% battle deaths", fx: { deaths: 0.05 }, desc: "Well-fed men do not break as easily." },
+    { id: "breadiron", pos: [3, 2], lv: 12, req: "scythe", max: 3, name: "Bread and Iron", per: "+4% army strength", fx: { army: 0.04 }, desc: "Everyone you feed fights for you." }],
+  trader: [
+    { id: "counting", pos: [0, 2] }, { id: "quickcoin", pos: [1, 1], lv: 3 }, { id: "bulkdeal", pos: [1, 3], lv: 3 },
+    { id: "hiredguards", pos: [2, 0], lv: 6, req: "quickcoin", max: 3, name: "Hired Guards", per: "+4% army strength", fx: { army: 0.04 }, desc: "A good guard is a purchase. You buy the best." },
+    { id: "bribe", pos: [2, 2], lv: 6, req: "counting", max: 5, active: 1, name: "Buy Their Loyalty", per: "enemies stop fighting for coin", desc: "Everyone is loyal until someone offers more." },
+    { id: "credit", pos: [2, 4], lv: 6, req: "bulkdeal", max: 3, name: "Letters of Credit", per: "+6% when selling loot", fx: { sell: 0.06 }, desc: "Your word is worth more than other men's coin." },
+    { id: "everyprice", pos: [3, 2], lv: 12, req: "bribe", max: 3, name: "Everyone Has a Price", per: "−6% battle deaths, +8% when selling loot", fx: { deaths: 0.06, sell: 0.08 }, desc: "Even death takes a payment, if you offer the right one." }],
+  mercenary: [
+    { id: "hiredsteel", pos: [0, 2] }, { id: "payday", pos: [1, 1], lv: 3 }, { id: "combatpay", pos: [1, 3], lv: 3 },
+    { id: "veteranrolls", pos: [2, 0], lv: 6, req: "payday", max: 3, name: "Veteran Rolls", per: "−5% battle deaths", fx: { deaths: 0.05 }, desc: "You keep the names of the men who know how to live." },
+    { id: "wallcontract", pos: [2, 2], lv: 6, req: "hiredsteel", max: 5, active: 1, name: "Shield-Wall Contract", per: "you and your men take less damage", desc: "A clause nobody reads until the line is breaking." },
+    { id: "battletested", pos: [2, 4], lv: 6, req: "combatpay", max: 3, name: "Battle-Tested Line", per: "+4% army strength", fx: { army: 0.04 }, desc: "They have all done this before, and been paid for it." },
+    { id: "blackledger", pos: [3, 2], lv: 12, req: "wallcontract", max: 3, name: "The Black Ledger", per: "+6% army strength, −4% battle deaths", fx: { army: 0.06, deaths: 0.04 }, desc: "The company that never loses a debt never loses a man." }],
+  outlaw: [
+    { id: "cutthroat", pos: [0, 2] }, { id: "ghost", pos: [1, 1], lv: 3 }, { id: "fence", pos: [1, 3], lv: 3 },
+    { id: "huntedsense", pos: [2, 0], lv: 6, req: "ghost", max: 3, name: "Hunted Instincts", per: "+6% chance to get away", fx: { escape: 0.06 }, desc: "You hear the dogs before the dogs hear you." },
+    { id: "knife", pos: [2, 2], lv: 6, req: "cutthroat", max: 5, active: 1, name: "Knife in the Dark", per: "strike from behind, hard", desc: "Close the gap. End it. Be somewhere else." },
+    { id: "brawler", pos: [2, 4], lv: 6, req: "fence", max: 3, name: "Back-Alley Brawler", per: "+5% your damage", fx: { dmg: 0.05 }, desc: "Rules are for men with somewhere to go." },
+    { id: "pricehead", pos: [3, 2], lv: 12, req: "knife", max: 3, name: "Price on My Head", per: "+8% your damage, +4% map speed", fx: { dmg: 0.08, speed: 0.04 }, desc: "The more they want you, the faster you learn." }],
+  smith: [
+    { id: "hammerhand", pos: [0, 2] }, { id: "temper", pos: [1, 1], lv: 3 }, { id: "forgeheat", pos: [1, 3], lv: 3 },
+    { id: "anvilarm", pos: [2, 0], lv: 6, req: "temper", max: 2, name: "Anvil Arm", per: "+1 heart", fx: { hearts: 1 }, desc: "You can take what you can make." },
+    { id: "hammerfall", pos: [2, 2], lv: 6, req: "hammerhand", max: 5, active: 1, name: "Hammer Fall", per: "a ground-shaking blow", desc: "The anvil is a thing you drop on people." },
+    { id: "quenched", pos: [2, 4], lv: 6, req: "forgeheat", max: 3, name: "Quenched Steel", per: "+5% your damage", fx: { dmg: 0.05 }, desc: "Water and fire make the edge." },
+    { id: "masterwork", pos: [3, 2], lv: 12, req: "hammerfall", max: 3, name: "Masterwork", per: "+8% your damage, +3% army strength", fx: { dmg: 0.08, army: 0.03 }, desc: "Everything you carry is the best you have ever made." }],
+  noble: [
+    { id: "bloodstand", pos: [0, 2] }, { id: "oath", pos: [1, 1], lv: 3 }, { id: "highname", pos: [1, 3], lv: 3 },
+    { id: "heraldry", pos: [2, 0], lv: 6, req: "oath", max: 3, name: "Heraldry", per: "+4% army strength", fx: { army: 0.04 }, desc: "A banner they can name is a banner they will follow." },
+    { id: "banner", pos: [2, 2], lv: 6, req: "bloodstand", max: 5, active: 1, name: "Raise the Banner", per: "heals you and lifts your men", desc: "Hold it high. Every hand that sees it stands up." },
+    { id: "courtfavour", pos: [2, 4], lv: 6, req: "highname", max: 3, name: "Court Favour", per: "+3% army strength, −3% battle deaths", fx: { army: 0.03, deaths: 0.03 }, desc: "Half the officers in the Realms owe your house a favour." },
+    { id: "heir", pos: [3, 2], lv: 12, req: "banner", max: 3, name: "Heir of the Realm", per: "+6% army strength, −4% battle deaths", fx: { army: 0.06, deaths: 0.04 }, desc: "They remember what your name used to mean. So do you." }],
+  voidtouched: [
+    { id: "hollowstrength", pos: [0, 2] }, { id: "nothing", pos: [1, 1], lv: 3 }, { id: "coldmind", pos: [1, 3], lv: 3 },
+    { id: "echonothing", pos: [2, 0], lv: 6, req: "nothing", max: 3, name: "Echo of Nothing", per: "+6% your damage", fx: { dmg: 0.06 }, desc: "What is left of you hits cleaner." },
+    { id: "hollowstep", pos: [2, 2], lv: 6, req: "hollowstrength", max: 5, active: 1, name: "Hollow Step", per: "be where they were not looking", desc: "The quiet has a door. You know where it is." },
+    { id: "quietmind", pos: [2, 4], lv: 6, req: "coldmind", max: 3, name: "Quiet Mind", per: "+6% chance to get away", fx: { escape: 0.06 }, desc: "Nothing frightens a mind with nothing in it." },
+    { id: "quietface", pos: [3, 2], lv: 12, req: "hollowstep", max: 3, name: "The Quiet Wears My Face", per: "+10% your damage, +6% chance to get away", fx: { dmg: 0.1, escape: 0.06 }, desc: "You are not sure which of you is the echo." }]
+};
+// Signature battle skills. Every one costs something.
+var SKACT = {
+  dustkick: { cd: 14, cost: function () { return { cr: 6 }; }, txt: "6 crowns", eff: function (r) { return "Enemies close to you are stalled for " + (1.4 + 0.4 * r).toFixed(1) + " seconds, bosses for a third of that."; } },
+  scythe: { cd: 10, cost: function () { return { gr: 3 }; }, txt: "3 grain", eff: function (r) { return "A full circle around you for " + Math.round((1 + 0.35 * r) * 100) + "% of a strike."; } },
+  bribe: { cd: 40, cost: function (r) { return { cr: 20 + 10 * r }; }, txt: "20 crowns plus 10 per rank", eff: function (r) { return "Enemies near you down tools for " + (3 + 0.8 * r).toFixed(1) + " seconds, and in a battle up to " + (3 + 2 * r) + " of them run. Bosses cannot be bought."; } },
+  wallcontract: { cd: 30, cost: function (r) { return { cr: 8 + 3 * r }; }, txt: "8 crowns plus 3 per rank", eff: function (r) { return "For " + (5 + 1.5 * r).toFixed(1) + " seconds, damage to you and your men is cut by " + Math.round((0.35 + 0.07 * r) * 100) + "%."; } },
+  knife: { cd: 16, cost: function () { return { hp: 0.5 }; }, txt: "half a heart", eff: function (r) { return "Step behind the nearest enemy and strike for " + Math.round((3 + 0.7 * r) * 100) + "% of a strike. You cannot be hurt for a moment."; } },
+  hammerfall: { cd: 12, cost: function () { return { hp: 0.5 }; }, txt: "half a heart", eff: function (r) { return "Slam the ground: everything near you takes " + Math.round((1.2 + 0.3 * r) * 100) + "% of a strike and is stunned for " + (0.9 + 0.25 * r).toFixed(1) + " seconds."; } },
+  banner: { cd: 35, cost: function () { return { cr: 20 }; }, txt: "20 crowns", eff: function (r) { return "Heal " + (1 + 0.4 * r).toFixed(1) + " hearts and strike 30% harder for 8 seconds. In a battle, your men heal as well."; } },
+  hollowstep: { cd: 14, cost: function () { return { hp: 0.5 }; }, txt: "half a heart", eff: function (r) { return "Step through everything in front of you and strike it for " + Math.round((2 + 0.45 * r) * 100) + "% of a strike. You cannot be hurt for a moment."; } }
+};
+
+(function () {
+  var G = {
+    windwalker: '<path d="M10 18h18a4 4 0 1 0-4-4M8 25h26a4 4 0 1 1-4 4M12 32h12"/>',
+    dustkick: '<path d="M10 34l8-6 6 4 6-10M14 18c2-4 6-4 8-1M26 14c3-3 7-2 8 2M30 24c3-1 6 1 6 4"/>',
+    nobodysman: '<path d="M24 9c-8 0-12 6-12 14v12h24V23c0-8-4-14-12-14z"/><path d="M18 26h12"/>',
+    longroad: '<path d="M18 38c0-6 12-6 12-12s-12-6-12-12 8-4 8-4"/><path d="M14 38h20"/>',
+    thresher: '<path d="M14 38L30 14"/><path d="M30 14l8 3-3 8-8-3z"/>',
+    scythe: '<path d="M14 38L34 12"/><path d="M34 12c-8-2-16 2-20 8 6-2 12-2 18 2z"/>',
+    fullgranary: '<path d="M16 12h16l4 8v14H12V20z"/><path d="M16 12l4 4h8l4-4M20 24h8"/>',
+    breadiron: '<path d="M12 28c0-8 24-8 24 0v6H12z"/><path d="M18 24l2-4M24 22v-5M30 24l-2-4"/>',
+    hiredguards: '<path d="M24 10l11 4v9c0 7-5 12-11 14-6-2-11-7-11-14v-9z"/><path d="M24 17v14M18 22h12"/>',
+    bribe: '<circle cx="24" cy="24" r="12"/><path d="M24 17v14M20 21c0-3 8-3 8 0s-8 2-8 6 8 3 8 0"/>',
+    credit: '<path d="M14 12h20v24H14zM18 18h12M18 24h12M18 30h8"/>',
+    everyprice: '<path d="M24 10v26M12 16h24M12 16l-4 10h8zM36 16l-4 10h8zM16 38h16"/>',
+    veteranrolls: '<path d="M14 12h20v24H14z"/><path d="M18 19l2 2 4-4M18 27l2 2 4-4M27 20h4M27 28h4"/>',
+    wallcontract: '<path d="M10 14h12v14c0 4-3 7-6 8-3-1-6-4-6-8zM26 14h12v14c0 4-3 7-6 8-3-1-6-4-6-8z"/>',
+    battletested: '<path d="M14 36L32 12M30 10l6 2-2 6M12 30l6 6"/>',
+    blackledger: '<path d="M12 12h18a6 6 0 0 1 6 6v18H18a6 6 0 0 1-6-6z"/><path d="M18 18h12M18 24h12"/>',
+    huntedsense: '<path d="M8 24c4-8 12-11 16-11s12 3 16 11c-4 8-12 11-16 11S12 32 8 24z"/><circle cx="24" cy="24" r="5"/>',
+    knife: '<path d="M14 36l18-22 4 3-10 20z"/><path d="M12 38l4-2"/>',
+    brawler: '<path d="M14 22h20v10a6 6 0 0 1-6 6h-8a6 6 0 0 1-6-6zM18 22v-6M24 22v-8M30 22v-6"/>',
+    pricehead: '<path d="M13 26c-2-10 4-15 11-15s13 5 11 15c0 2-2 4-4 4v6H17v-6c-2 0-4-2-4-4z"/><circle cx="19" cy="24" r="2.5"/><circle cx="29" cy="24" r="2.5"/>',
+    anvilarm: '<path d="M10 18h26c0 6-6 8-10 8v6h6v4H16v-4h6v-6c-6 0-12-2-12-8z"/>',
+    hammerfall: '<path d="M22 38V20M14 12h20v8H14z"/><path d="M10 40h28"/>',
+    quenched: '<path d="M24 10c6 8 10 13 10 19a10 10 0 0 1-20 0c0-6 4-11 10-19z"/>',
+    masterwork: '<path d="M16 38V24M10 14h14v10H10z"/><path d="M34 10l2 5 5 .5-4 3 1.5 5-4.5-3-4.5 3 1.5-5-4-3 5-.5z"/>',
+    heavydraw: '<path d="M16 10c10 6 10 22 0 28M16 10v28M16 24h22M32 18l6 6-6 6"/>',
+    multishot: '<path d="M10 38L38 12M10 38L38 24M10 38L34 38"/>',
+    quickdraw: '<path d="M12 24h20M26 16l8 8-8 8M14 14h6M14 34h6"/>',
+    steadyaim: '<circle cx="24" cy="24" r="11"/><path d="M24 8v8M24 32v8M8 24h8M32 24h8"/>',
+    bloodstand: '<path d="M14 36V18l10-6 10 6v18z"/><path d="M14 36h20M24 12v24"/>',
+    bulkdeal: '<path d="M10 22h14v14H10zM24 22h14v14H24zM17 10h14v12H17z"/>',
+    coldmind: '<path d="M24 10v28M12 17l24 14M36 17L12 31"/>',
+    combatpay: '<circle cx="19" cy="30" r="7"/><circle cx="29" cy="26" r="7"/><path d="M14 12l10 10"/>',
+    counting: '<path d="M12 12h24v24H12zM12 20h24M12 28h24"/><circle cx="18" cy="16" r="1.5"/><circle cx="26" cy="24" r="1.5"/><circle cx="20" cy="32" r="1.5"/>',
+    cutthroat: '<path d="M12 36C16 20 28 14 38 12M12 36l8-2M20 28l8-2"/>',
+    fence: '<path d="M10 34h28M12 34V18M20 34V14M28 34V18M36 34V14M10 22h28"/>',
+    forgeheat: '<path d="M24 8c2 8 10 10 10 20a10 10 0 0 1-20 0c0-5 3-7 5-10 1 4 3 5 5 3-2-4-1-8 0-13z"/>',
+    ghost: '<path d="M14 38V22c0-8 4-12 10-12s10 4 10 12v16l-4-3-3 3-3-3-3 3-3-3z"/><circle cx="20" cy="22" r="1.5"/><circle cx="28" cy="22" r="1.5"/>',
+    hammerhand: '<path d="M14 34c0-8 4-14 12-14h6v8h-6c-2 0-4 2-4 6z"/><path d="M30 14v14M26 14h10"/>',
+    hardened: '<path d="M12 36c0-10 4-20 12-24 8 4 12 14 12 24z"/>',
+    harvest: '<path d="M24 38V14M24 18c-4 0-6-3-6-6 4 0 6 3 6 6zM24 18c4 0 6-3 6-6-4 0-6 3-6 6zM24 26c-4 0-6-3-6-6 4 0 6 3 6 6zM24 26c4 0 6-3 6-6-4 0-6 3-6 6z"/>',
+    highname: '<path d="M14 12h20v22l-4-3-6 5-6-5-4 3z"/><circle cx="24" cy="20" r="3"/>',
+    hiredsteel: '<path d="M12 36L34 12M36 36L14 12M30 12h6v6"/>',
+    hollowstrength: '<circle cx="24" cy="24" r="12"/><circle cx="24" cy="24" r="4"/>',
+    lucky: '<circle cx="24" cy="17" r="5"/><circle cx="17" cy="26" r="5"/><circle cx="31" cy="26" r="5"/><path d="M24 30v10"/>',
+    nothing: '<circle cx="24" cy="24" r="12"/><path d="M16 32l16-16"/>',
+    oath: '<path d="M10 28l8-8 6 4 6-4 8 8-14 10z"/>',
+    payday: '<ellipse cx="24" cy="16" rx="11" ry="4"/><path d="M13 16v6c0 2 5 4 11 4s11-2 11-4v-6M13 22v6c0 2 5 4 11 4s11-2 11-4v-6"/>',
+    quickcoin: '<circle cx="22" cy="24" r="10"/><path d="M34 14h4v4M38 14L30 22"/>',
+    roadwise: '<path d="M18 40l4-30h4l4 30M24 14v4M24 24v4M24 34v3"/>',
+    strays: '<circle cx="24" cy="30" r="6"/><circle cx="14" cy="20" r="3"/><circle cx="22" cy="14" r="3"/><circle cx="30" cy="14" r="3"/><circle cx="38" cy="20" r="3"/>',
+    strongback: '<path d="M12 36l6-14h12l6 14zM18 22l2-8h8l2 8"/>',
+    temper: '<path d="M14 14h20v8c0 8-4 12-10 14-6-2-10-6-10-14z"/><path d="M18 20h12"/>',
+    heraldry: '<path d="M24 10l12 5v10c0 6-5 10-12 13-7-3-12-7-12-13V15z"/><circle cx="24" cy="24" r="4"/>',
+    banner: '<path d="M14 10v30"/><path d="M14 12h22l-6 8 6 8H14z" fill="rgba(246,226,168,.3)"/>',
+    courtfavour: '<path d="M10 32l2-14 8 8 4-12 4 12 8-8 2 14z"/><path d="M10 36h28"/>',
+    heir: '<path d="M10 32l2-14 8 8 4-12 4 12 8-8 2 14z"/><circle cx="24" cy="24" r="2"/><path d="M10 36h28"/>',
+    echonothing: '<circle cx="24" cy="24" r="13"/><circle cx="24" cy="24" r="7"/><circle cx="24" cy="24" r="1.5"/>',
+    hollowstep: '<path d="M10 24h20M24 16l8 8-8 8"/><path d="M14 17v14"/>',
+    quietmind: '<circle cx="24" cy="24" r="12"/><path d="M18 24h12"/>',
+    quietface: '<path d="M13 14h22v12c0 7-5 11-11 12-6-1-11-5-11-12z"/><path d="M18 22h4M26 22h4M20 30c2 2 6 2 8 0"/>'
+  };
+  Object.keys(G).forEach(function (k) { if (!SKG[k]) SKG[k] = G[k]; });
+})();
+function skfx(k) {
+  var t = 0; (SKILLS || []).forEach(function (b) { b.items.forEach(function (it) { if (it.fx && it.fx[k] && S.skills && S.skills[it.id]) t += it.fx[k] * S.skills[it.id]; }); }); return t;
+}
+function skOrigin() { return (S.opt && S.opt.origin) || "wanderer"; }
+function skFind(id) { var f = null; SKILLS.forEach(function (b) { b.items.forEach(function (i) { if (i.id === id) f = i; }); }); return f; }
+function skBranch(name) { var f = null; SKILLS.forEach(function (b) { if (b.branch === name) f = b; }); return f; }
+(function () {
+  SKILLS.forEach(function (b) {
+    if (!b.origin || !ORIGTREE[b.origin]) return;
+    var old = {}; b.items.forEach(function (i) { old[i.id] = i; });
+    b.items = ORIGTREE[b.origin].map(function (sp) { var it = old[sp.id] || { origin: b.origin }; it = Object.assign(it, sp); it.origin = b.origin; return it; });
+  });
+  // the two dark branches share a tab
+  var nb = skBranch("Nightmare Arts"), hb = skBranch("Hell Arts");
+  if (nb) nb.items.forEach(function (it, i) { it.pos = [0, 1 + i]; });
+  if (hb) hb.items.forEach(function (it, i) { it.pos = [1, 1 + i]; });
+})();
+function skTabs() {
+  var o = skOrigin(), t = [], mine = null;
+  SKILLS.forEach(function (b) { if (b.origin === o) mine = b; });
+  if (mine) t.push({ name: mine.branch, blurb: mine.blurb, items: mine.items, mine: 1 });
+  (SKDISC[o] || ["Command", "Warrior"]).forEach(function (n) { var b = skBranch(n); if (b) t.push({ name: b.branch, blurb: b.blurb, items: b.items }); });
+  var nb = skBranch("Nightmare Arts"), hb = skBranch("Hell Arts");
+  t.push({ name: "Dark Arts", blurb: "Learned only by those who have beaten the Iron Reaper.", items: (nb ? nb.items : []).concat(hb ? hb.items : []), dark: 1 });
+  return t;
+}
+function skLayout(items) {
+  var pos = {}, rows = 0, byD = {}, depth = {};
+  var all = items.every(function (i) { return i.pos; });
+  if (all) { items.forEach(function (i) { pos[i.id] = i.pos; rows = Math.max(rows, i.pos[0] + 1); }); return { pos: pos, rows: rows }; }
+  function d(it) { if (depth[it.id] !== undefined) return depth[it.id]; var p = it.req && items.filter(function (q) { return q.id === it.req; })[0]; return (depth[it.id] = p ? d(p) + 1 : 0); }
+  items.forEach(function (it) { var k = d(it); (byD[k] = byD[k] || []).push(it); });
+  Object.keys(byD).forEach(function (k) {
+    var arr = byD[k], n = Math.min(5, arr.length), cs = { 1: [2], 2: [1, 3], 3: [1, 2, 3], 4: [0, 1, 3, 4], 5: [0, 1, 2, 3, 4] }[n];
+    arr.forEach(function (it, i) { pos[it.id] = [+k, cs[Math.min(i, n - 1)]]; }); rows = Math.max(rows, +k + 1);
+  });
+  return { pos: pos, rows: rows };
+}
+function skRowLv(items, r) { var m = 0; items.forEach(function (i) { if (i.pos && i.pos[0] === r && i.lv) m = Math.max(m, i.lv); }); return m; }
+function skWhy(it) {
+  var r = sk(it.id);
+  if (it.origin && skOrigin() !== it.origin) return "Not your path.";
+  if (it.need && beatN() < it.need) return it.need === 1 ? "Defeat the Iron Reaper in Normal to unlock." : "Defeat the Iron Reaper in Nightmare to unlock.";
+  if (r >= skMax(it)) return "Mastered.";
+  if (it.req && !sk(it.req)) return "Learn " + skName(it.req) + " first.";
+  if (it.lv && lvl() < it.lv) return "Needs level " + it.lv + ".";
+  if (points() < 1) return "No points to spend.";
+  return "";
+}
+function skillsSheet() {
+  var L = lvl(), xp = S.xp || 0, lo = 25 * (L - 1) * (L - 1), hi = 25 * L * L, pc = Math.max(0, Math.min(100, Math.round(100 * (xp - lo) / (hi - lo))));
+  var o = skOrigin(), tabs = skTabs(), P = points();
+  if (skTab >= tabs.length) skTab = 0;
+  var tb = tabs[skTab], lay = skLayout(tb.items), ROWH = 86;
+  if (!skSel || !skFind(skSel) || tb.items.map(function (i) { return i.id; }).indexOf(skSel) < 0) skSel = tb.items[0] && tb.items[0].id;
+  var h = '<div class="skt"><div class="skh"><div><h2>Skills</h2><p class="sub" style="margin:0">' + ((ORIGINS[o] || {}).name || "Wanderer") + " · Level " + L + '</p></div><div class="skpts"><b>' + P + "</b><span>point" + (P === 1 ? "" : "s") + "</span></div></div>";
+  h += '<div class="skxp"><i style="width:' + pc + '%"></i></div>';
+  h += '<div class="sktabs">' + tabs.map(function (t, i) {
+    var got = 0; t.items.forEach(function (it) { got += sk(it.id); });
+    var ic = t.items[0] ? skIcon(t.items[0].id, 30) : "";
+    return '<button class="' + (i === skTab ? "on " : "") + (t.mine ? "me" : "") + '" data-act="sktab" data-a="' + i + '">' + ic + "<span>" + t.name + "</span><em>" + got + "</em></button>";
+  }).join("") + "</div>";
+  h += '<p class="dim-t skbl">' + tb.blurb + "</p>";
+  // grid
+  var W = 500, H = lay.rows * ROWH, svg = '<svg class="skl" viewBox="0 0 ' + W + " " + H + '" preserveAspectRatio="none" aria-hidden="true">', cells = "";
+  tb.items.forEach(function (it) {
+    if (!it.req) return; var a = lay.pos[it.req], b = lay.pos[it.id]; if (!a || !b) return;
+    var x1 = (a[1] + 0.5) * 100, y1 = (a[0] + 0.5) * ROWH + 26, x2 = (b[1] + 0.5) * 100, y2 = (b[0] + 0.5) * ROWH - 26, lit = sk(it.req) > 0;
+    svg += '<line x1="' + x1 + '" y1="' + y1 + '" x2="' + x2 + '" y2="' + y2 + '" class="' + (lit ? "lit" : "") + '"/>';
+  });
+  svg += "</svg>";
+  for (var r = 0; r < lay.rows; r++) {
+    var rl = skRowLv(tb.items, r);
+    cells += '<div class="skrl" style="top:' + (r * ROWH + 4) + 'px">' + (rl ? "Lv " + rl : "") + "</div>";
+  }
+  tb.items.forEach(function (it) {
+    var p = lay.pos[it.id], rk = sk(it.id), mx = skMax(it), why = skWhy(it), can = !why, cls = "skn" + (rk > 0 ? " got" : "") + (rk >= mx ? " max" : "") + (can ? " can" : "") + (why && rk === 0 ? " lock" : "") + (it.active ? " act" : "") + (skSel === it.id ? " sel" : "");
+    cells += '<button class="' + cls + '" style="grid-row:' + (p[0] + 1) + ";grid-column:" + (p[1] + 1) + '" data-act="sksel" data-a="' + it.id + '" aria-label="' + it.name + '">' + skIcon(it.id, 54) + '<span class="skr">' + rk + "/" + mx + "</span>" + (it.active ? '<span class="ska">◆</span>' : "") + "</button>";
+  });
+  h += '<div class="skbd"><div class="skgw">' + svg + '<div class="skg" style="grid-auto-rows:' + ROWH + 'px">' + cells + "</div></div></div>";
+  // detail
+  var it = skFind(skSel);
+  if (it) {
+    var rk = sk(it.id), mx = skMax(it), why = skWhy(it), pips = ""; for (var i = 0; i < mx; i++) pips += i < rk ? "●" : "○";
+    var ac = SKACT[it.id];
+    h += '<div class="skd"><div class="skdt"><b>' + it.name + '</b><span class="skdp">' + pips + "</span></div>";
+    h += '<div class="skdk">' + (ac ? "Battle skill" : it.fx ? "Passive" : "Passive") + (it.lv ? " · Level " + it.lv : "") + (it.req ? " · After " + skName(it.req) : "") + "</div>";
+    h += '<p class="skdd">' + it.desc + "</p>";
+    if (ac) {
+      h += '<p class="skde"><b>Cost:</b> ' + ac.txt + " · <b>Cooldown:</b> " + ac.cd + " seconds</p>";
+      if (rk > 0) h += '<p class="skde"><b>Now (rank ' + rk + "):</b> " + ac.eff(rk) + "</p>";
+      if (rk < mx) h += '<p class="skde"><b>Next (rank ' + (rk + 1) + "):</b> " + ac.eff(rk + 1) + "</p>";
+      h += '<p class="skde dim-t">Used with its own button in dungeons, fights and battles.</p>';
+    } else h += '<p class="skde"><b>' + it.per + "</b> per rank." + (rk > 0 ? " Now: rank " + rk + "." : "") + "</p>";
+    h += '<div class="skdb">' + (why && rk < mx ? '<span class="dim-t">' + why + "</span>" : "<span></span>") + '<button class="' + (!why ? "solid" : "") + '" data-act="learn" data-a="' + it.id + '"' + (why ? " disabled" : "") + ">" + (rk >= mx ? "Max" : "Learn") + "</button></div></div>";
+  }
+  h += '<div class="sec">Forget</div>' + row("Unlearn everything", "Costs 100 crowns. Everything has a price, even changing who you are.", "Respec", "respec", "", "", spent() < 1 || S.crowns < 100, "amber");
+  return h + "</div>";
+}
+(function () {
+  var st = document.createElement("style");
+  st.textContent =
+    "#sheet.sk{max-height:95%}" +
+    ".skh{display:flex;justify-content:space-between;align-items:flex-end;gap:.6rem}.skh h2{margin:0}" +
+    ".skpts{text-align:center;border:1px solid #6a5028;border-radius:3px;padding:.2rem .7rem;background:linear-gradient(#2a2012,#120d07);min-width:4.2rem}.skpts b{display:block;font:500 1.5rem var(--serif2);color:#f2d88c;line-height:1.1}.skpts span{font:500 .55rem var(--mono);letter-spacing:.14em;text-transform:uppercase;color:#a8884e}" +
+    ".skxp{height:5px;background:#1c160d;border:1px solid #3a2e1a;border-radius:3px;margin:.5rem 0}.skxp i{display:block;height:100%;background:linear-gradient(90deg,#8a5a1c,#e0b050);border-radius:2px}" +
+    ".sktabs{display:flex;gap:6px;margin:.3rem 0}.sktabs button{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:1px;padding:.4rem .15rem .35rem;background:linear-gradient(#241d14,#100c07);border:1px solid #4a3a20;border-radius:3px;color:#a89468;font:500 .56rem var(--mono);letter-spacing:.06em;text-transform:uppercase;position:relative}" +
+    ".sktabs button span{display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:1.2}.sktabs button em{font-style:normal;position:absolute;top:2px;right:4px;font-size:.6rem;color:#d8b868}" +
+    ".sktabs button.on{border-color:#e0bc6a;color:#f6e6b4;background:linear-gradient(#41311a,#1a130a);box-shadow:inset 0 0 14px rgba(224,188,106,.28),0 0 10px rgba(224,188,106,.18)}.sktabs button.me:not(.on){border-color:#7a5a2a}" +
+    ".skbl{margin:.2rem 0 .4rem;font-size:.9rem}" +
+    ".skbd{border:1px solid #4a3a20;border-radius:5px;background:radial-gradient(120% 80% at 50% 0%,rgba(150,100,40,.16),rgba(0,0,0,0) 60%),repeating-linear-gradient(45deg,rgba(255,255,255,.012) 0 3px,rgba(0,0,0,.05) 3px 6px),#0c0a07;box-shadow:inset 0 0 24px #000,0 0 0 1px #000;padding:6px 4px}" +
+    ".skgw{position:relative}.skl{position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none}.skl line{stroke:#3a2e1a;stroke-width:3;vector-effect:non-scaling-stroke;stroke-linecap:round}.skl line.lit{stroke:#c8943a;filter:drop-shadow(0 0 3px rgba(224,160,60,.6))}" +
+    ".skg{display:grid;grid-template-columns:repeat(5,1fr);position:relative}.skrl{position:absolute;left:3px;font:500 .5rem var(--mono);letter-spacing:.08em;color:#6a5a3a;z-index:1}" +
+    ".skn{position:relative;justify-self:center;align-self:center;width:62px;height:62px;padding:0;border-radius:6px;border:2px solid #4a3a22;background:#14100a;box-shadow:0 3px 6px #000,inset 0 0 10px rgba(0,0,0,.7);display:grid;place-items:center;filter:grayscale(.85) brightness(.6);touch-action:manipulation}" +
+    ".skn svg{width:54px;height:54px;display:block}.skn.can{filter:none;border-color:#9a7a3a;animation:skp 2.4s ease-in-out infinite}.skn.got{filter:none;border-color:#d8b050;box-shadow:0 3px 6px #000,0 0 12px rgba(216,176,80,.45),inset 0 0 8px rgba(0,0,0,.5)}.skn.max{border-color:#f6dc8c;box-shadow:0 3px 6px #000,0 0 16px rgba(246,220,140,.7)}" +
+    ".skn.sel{outline:2px solid #f6e6b4;outline-offset:2px}.skn.act{border-radius:50%}.skn.act svg{width:52px;height:52px}" +
+    ".skr{position:absolute;right:-2px;bottom:-4px;font:700 .58rem var(--mono);color:#f2dfae;background:#120d07;border:1px solid #6a5028;border-radius:3px;padding:0 3px;line-height:1.3}.ska{position:absolute;left:-1px;top:-3px;font-size:.7rem;color:#e0b050;text-shadow:0 0 6px #e0904a,0 1px 0 #000}" +
+    "@keyframes skp{0%,100%{box-shadow:0 3px 6px #000,0 0 0 rgba(224,176,80,0)}50%{box-shadow:0 3px 6px #000,0 0 12px rgba(224,176,80,.45)}}" +
+    ".skd{margin-top:.6rem;padding:.7rem .8rem;border:1px solid #5a4424;border-radius:5px;background:linear-gradient(#1f180e,#100c07);box-shadow:inset 0 0 18px rgba(0,0,0,.6)}" +
+    ".skdt{display:flex;justify-content:space-between;align-items:baseline;gap:.5rem}.skdt b{font:500 1.15rem var(--serif2);color:#e8cc84;font-weight:500}.skdp{color:#d8b050;letter-spacing:.15em;font-size:.8rem}" +
+    ".skdk{font:500 .58rem var(--mono);letter-spacing:.12em;text-transform:uppercase;color:#8a7a54;margin:.1rem 0 .4rem}.skdd{font-style:italic;color:#bfb08a;margin:0 0 .4rem}.skde{margin:0 0 .35rem;font-size:.92rem}.skde b{font-weight:500;color:#d8b868}" +
+    ".skdb{display:flex;justify-content:space-between;align-items:center;gap:.6rem;margin-top:.4rem}" +
+    "#askill,#bfsk{position:absolute;border-radius:50%;font-family:inherit;font-weight:700;touch-action:none;color:#f4e6c0;text-shadow:0 1px 2px #000}" +
+    "#askill{right:6.6rem;bottom:calc(6.9rem + env(safe-area-inset-bottom,0px));width:3.9rem;height:3.9rem;font-size:.62rem;line-height:1.1;letter-spacing:0;padding:0;border:3px solid #e0bc6a;background:radial-gradient(circle at 35% 30%,#8a6a2a,#2a1a08 75%);box-shadow:0 0 0 2px #120d06,0 4px 10px #000,0 0 14px rgba(224,188,106,.5)}#askill:disabled{filter:grayscale(.8) brightness(.55);box-shadow:0 0 0 2px #120d06,0 4px 10px #000}#askill small{display:block;font-size:.6rem;opacity:.85}" +
+    "#bfsk{position:static!important;grid-column:1/-1;border-radius:3px!important;border:1px solid #e0bc6a!important;background:linear-gradient(#4a3818,#20160a)!important;font:600 11px 'IBM Plex Mono',ui-monospace,monospace!important;letter-spacing:.06em;padding:.6rem .2rem}#bfsk:disabled{opacity:.45}";
+  document.head.appendChild(st);
+})();
+// ---- the signature battle skill ----
+var SKT = {};
+function skActId() { var o = skOrigin(), l = ORIGTREE[o] || [], i; for (i = 0; i < l.length; i++) if (l[i].active && sk(l[i].id) > 0) return l[i].id; return null; }
+function skPay(id, r, fld) {
+  var c = SKACT[id].cost(r), mh = maxHp();
+  if (c.cr && S.crowns < c.cr) return "Needs " + c.cr + " crowns.";
+  if (c.gr && (S.grain || 0) < c.gr) return "Needs " + c.gr + " grain.";
+  if (c.hp) { if (!fld) { if (AR.p.hp <= c.hp + 0.01) return "Too hurt."; } else if (F.hero.hp <= F.hero.hpm * (c.hp / mh) + 1) return "Too hurt."; }
+  return { c: c, mh: mh };
+}
+function skSpend(pp, fld) {
+  var c = pp.c; if (c.cr) S.crowns -= c.cr; if (c.gr) S.grain -= c.gr;
+  if (c.hp) { if (fld) F.hero.hp = Math.max(1, F.hero.hp - F.hero.hpm * (c.hp / pp.mh)); else AR.p.hp = Math.max(0.1, AR.p.hp - c.hp); }
+}
+function skUseArea() {
+  var id = skActId(); if (!id || !AR || !AR.p || sheet || AR.dlg) return; var p = AR.p, r = sk(id), A = SKACT[id];
+  SKT.a = SKT.a || {}; if ((SKT.a[id] || 0) > AR.t) return;
+  var pp = skPay(id, r, false); if (typeof pp === "string") { aToast(pp); return; }
+  skSpend(pp, false); SKT.a[id] = AR.t + A.cd; p.atk = 0.3;
+  var live = AR.en.filter(function (e) { return !e.dead && !e.gone && !e.yield; });
+  function near(R) { return live.filter(function (e) { return Math.hypot(e.x - p.x, e.y - p.y) < R; }); }
+  function stun(e, t) { e.stun = Math.max(e.stun || 0, e.d.boss ? t * 0.35 : t); e.cd = Math.max(e.cd, 0.4); }
+  function ring() { AR.wave = { x: p.x, y: p.y - 6, t: 0.5 }; }
+  var dm = atkDmg();
+  if (id === "dustkick") { ring(); near(34 + 4 * r).forEach(function (e) { var dx = e.x - p.x, dy = e.y - p.y, d = Math.hypot(dx, dy) || 1; stun(e, 1.4 + 0.4 * r); e.kx = dx / d * 150; e.ky = dy / d * 150; }); aToast("Dust Kick!", "#e0bc6a"); }
+  else if (id === "scythe") { ring(); near(30 + 2 * r).forEach(function (e) { dmgEn(e, dm * (1 + 0.35 * r), e.x - p.x, e.y - p.y, 180); }); aToast("Scythe Sweep!", "#e0bc6a"); }
+  else if (id === "bribe") { near(70).forEach(function (e) { if (e.d.boss) return; stun(e, 3 + 0.8 * r); e.aggro = false; }); AR.floats.push({ x: p.x, y: p.y - 18, t: 1, s: "−" + SKACT[id].cost(r).cr, col: "#e8d08a" }); aToast("Their loyalty has a price.", "#e0bc6a"); }
+  else if (id === "wallcontract") { p.wallT = AR.t + 5 + 1.5 * r; p.wallRed = Math.min(0.7, 0.35 + 0.07 * r); aToast("Shield-wall holds.", "#e0bc6a"); }
+  else if (id === "knife") {
+    var best = null, bd = 90; live.forEach(function (e) { var d = Math.hypot(e.x - p.x, e.y - p.y) - (e.d.boss ? 25 : 0); if (d < bd) { bd = d; best = e; } });
+    if (!best) { SKT.a[id] = 0; aToast("No one close enough.", "#e0bc6a"); return; }
+    var fx = best.x - p.face.x * 10, fy = best.y - p.face.y * 10; if (boxFree(AR, fx, fy)) { p.x = fx; p.y = fy; } p.inv = Math.max(p.inv, 0.6); dmgEn(best, dm * (3 + 0.7 * r), p.face.x, p.face.y, 60); stun(best, 0.5); aToast("Knife in the dark.", "#e0bc6a");
+  }
+  else if (id === "hammerfall") { ring(); near(26 + 3 * r).forEach(function (e) { var dx = e.x - p.x, dy = e.y - p.y; dmgEn(e, dm * (1.2 + 0.3 * r), dx, dy, 260); stun(e, 0.9 + 0.25 * r); }); aToast("Hammer Fall!", "#e0bc6a"); }
+  else if (id === "banner") { p.hp = Math.min(p.max, p.hp + 1 + 0.4 * r); p.buffT = AR.t + 8; ring(); aToast("The banner is raised.", "#e0bc6a"); }
+  else if (id === "hollowstep") {
+    var hitL = [], dist0 = 56 + 4 * r, st = 4, k;
+    for (k = 0; k < dist0; k += st) {
+      var nx = p.x + p.face.x * st, ny = p.y + p.face.y * st; if (!boxFree(AR, nx, ny)) break; p.x = nx; p.y = ny;
+      live.forEach(function (e) { if (hitL.indexOf(e) < 0 && Math.hypot(e.x - p.x, e.y - p.y) < 14) { hitL.push(e); dmgEn(e, dm * (2 + 0.45 * r), p.face.x, p.face.y, 120); } });
+    }
+    p.inv = Math.max(p.inv, 0.5); AR.fx.push({ x: p.x, y: p.y - 8, t: 0.3 }); aToast("Hollow Step.", "#e0bc6a");
+  }
+}
+function skUseField() {
+  var id = skActId(); if (!id || !F || F.over || F.deploy || !F.hero || F.hero.dead) return; var u = F.hero, r = sk(id), A = SKACT[id];
+  SKT.f = SKT.f || {}; if ((SKT.f[id] || 0) > F.t) return;
+  var pp = skPay(id, r, true); if (typeof pp === "string") { fieldMsg(pp); return; }
+  var foes = F.units.filter(function (e) { return e.s === "e" && !e.dead && !e.gone && !e.eng; });
+  function near(R) { return foes.filter(function (e) { return dist(u.x, u.y, e.x, e.y) < R; }); }
+  function ring() { F.wave2 = { x: u.x, y: u.y, r: 0 }; }
+  var did = true;
+  if (id === "dustkick") { ring(); near(80 + 9 * r).forEach(function (e) { e.cd = Math.max(e.cd || 0, 2 + 0.6 * r); }); fieldMsg("Dust Kick!"); }
+  else if (id === "scythe") { ring(); near(54 + 5 * r).forEach(function (e) { fieldHit(u, e, 1.2 + 0.4 * r); }); fieldMsg("Scythe Sweep!"); }
+  else if (id === "bribe") { var ns = near(150).sort(function (a, b) { return dist(u.x, u.y, a.x, a.y) - dist(u.x, u.y, b.x, b.y); }).slice(0, 3 + 2 * r); ns.forEach(function (e) { e.rout = true; }); fieldMsg(ns.length + " of them took the coin and ran."); }
+  else if (id === "wallcontract") { F.wallT = F.t + 6 + 1.5 * r; F.wallRed = Math.min(0.7, 0.35 + 0.07 * r); ring(); fieldMsg("The shield-wall holds."); }
+  else if (id === "knife") { var t = foes.filter(function (e) { return dist(u.x, u.y, e.x, e.y) < 300; }).sort(function (a, b) { return b.w - a.w; })[0]; if (!t) { fieldMsg("No one close enough."); did = false; } else { u.x = t.x; u.y = t.y + 12; F.hm = null; fieldHit(u, t, 3 + 0.8 * r); t.cd = Math.max(t.cd || 0, 1); u.cd = 0.4; fieldMsg("Knife in the dark."); } }
+  else if (id === "hammerfall") { ring(); near(60 + 5 * r).forEach(function (e) { fieldHit(u, e, 1.2 + 0.3 * r); e.cd = Math.max(e.cd || 0, 1.5 + 0.4 * r); }); fieldMsg("Hammer Fall!"); }
+  else if (id === "banner") { F.units.forEach(function (q) { if (q.s === "p" && !q.dead && !q.gone && dist(u.x, u.y, q.x, q.y) < 170) q.hp = Math.min(q.hpm, q.hp + q.hpm * (0.18 + 0.05 * r)); }); F.cry = Math.max(F.cry || 0, 6); ring(); fieldMsg("The banner is raised. Your men stand."); }
+  else if (id === "hollowstep") { var t2 = foes.filter(function (e) { return dist(u.x, u.y, e.x, e.y) < 280; }).sort(function (a, b) { return dist(u.x, u.y, a.x, a.y) - dist(u.x, u.y, b.x, b.y); })[0]; if (!t2) { fieldMsg("Nothing to step to."); did = false; } else { u.x = t2.x; u.y = t2.y + 14; F.hm = null; fieldHit(u, t2, 2.5 + 0.6 * r); foes.forEach(function (e) { if (dist(t2.x, t2.y, e.x, e.y) < 50) e.cd = Math.max(e.cd || 0, 1.2); }); fieldMsg("Hollow Step."); } }
+  if (did) { skSpend(pp, true); SKT.f[id] = F.t + A.cd; try { sfx("hit"); } catch (e) {} }
+}
+// buttons
+(function () {
+  var a = null;
+  function mk() {
+    if ($("area") && !$("askill")) { a = document.createElement("button"); a.id = "askill"; a.hidden = true; $("area").appendChild(a); a.addEventListener("pointerdown", function (e) { e.stopPropagation(); e.preventDefault(); skUseArea(); }); }
+    if ($("bfb") && !$("bfsk")) { var b = document.createElement("button"); b.id = "bfsk"; b.hidden = true; $("bfb").appendChild(b); b.addEventListener("click", function (e) { e.stopPropagation(); skUseField(); }); }
+  }
+  setInterval(function () {
+    try {
+      mk(); var id = skActId(), nm = id ? skFind(id).name : "";
+      var ab = $("askill"), on = !!id && AR && $("area") && !$("area").hidden;
+      if (ab) { ab.hidden = !on; if (on) { var left = Math.max(0, Math.ceil(((SKT.a && SKT.a[id]) || 0) - AR.t)); ab.disabled = left > 0; ab.innerHTML = nm.replace(/ /g, "<br>") + (left ? "<small>" + left + "s</small>" : ""); } }
+      var fb = $("bfsk"), fon = !!id && F && !F.over && $("bf") && $("bf").classList.contains("on");
+      if (fb) { fb.hidden = !fon; if (fon) { var lf = Math.max(0, Math.ceil(((SKT.f && SKT.f[id]) || 0) - F.t)); fb.disabled = lf > 0 || !!F.deploy; fb.textContent = nm + (lf ? " (" + lf + "s)" : ""); } }
+      var sh = $("sheet"); if (sh) sh.classList.toggle("sk", !!sheet && sheet.kind === "skills");
+    } catch (er) {}
+  }, 250);
+})();
 
   // ---- input ----
   (function () {
@@ -9999,9 +10346,11 @@ window.__vhGame = function () { (function () {
       case "learn":
         (function () {
           var it = null; SKILLS.forEach(function (b) { b.items.forEach(function (i) { if (i.id === x) it = i; }); });
-          if (it && points() > 0 && sk(x) < skMax(it) && (!it.req || sk(it.req)) && (!it.need || beatN() >= it.need) && (!it.origin || ((S.opt && S.opt.origin) || "wanderer") === it.origin)) S.skills[x] = sk(x) + 1;
+          if (it && points() > 0 && sk(x) < skMax(it) && (!it.req || sk(it.req)) && (!it.need || beatN() >= it.need) && (!it.lv || lvl() >= it.lv) && (!it.origin || ((S.opt && S.opt.origin) || "wanderer") === it.origin)) S.skills[x] = sk(x) + 1;
         })(); break;
       case "skbr": skOpen[x] = !skOpen[x]; break;
+      case "sktab": skTab = +x; skSel = null; break;
+      case "sksel": skSel = x; break;
       case "respec": if (S.crowns >= 100 && spent() > 0) { S.crowns -= 100; S.skills = {}; toast("You begin again, a little poorer."); } break;
       case "dipjoin": dipJoin(x, +y || 0); break;
       case "dipleave": dipLeave(false); break;
