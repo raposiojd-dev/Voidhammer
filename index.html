@@ -10987,6 +10987,126 @@ function qFinish(q, opt, idx) { qFinish0(q, opt, idx); if (opt && typeof opt.eff
       { t: "Sit with the Hollow King. Teach the Void that change does not have to end.", reward: { xp: 1200, perm: "pts" }, set: { void_end: "taught" }, text: "You sit on the empty step and tell him a story. It takes all night. At dawn the Void is still there, but it is no longer pressing. It is listening." },
       { t: "Offer yourself to the Hollow Throne. Be the one who remembers them all.", reward: { xp: 1500, crowns: 500, item: 3, perm: "hp" }, set: { void_end: "vessel" }, text: "You walk into the Throne. For one second you are every name that was ever forgotten. Then you are yourself again, carrying all of them. The Void has someone to talk to. So do you." }] });
 })();
+// ===== STORY EXPANSION 2: the Voidhammer shard main chain (required for the Iron Gate) + Stonehold, Frostgrave, Shadowdeep, Metalcrown chains =====
+(function () {
+  function EB(id, name, hp, col, band) { ET[id] = { hp: hp, sp: 36, dmg: 2, col: col, band: band, name: name, big: 1, boss: 1 }; }
+  EB("shardkeeper", "The Shard-Keeper", 13, "#b8a060", "#fff0b0");
+  EB("galewyrm", "The Gale-Warden", 15, "#4a7a9a", "#c0f0ff");
+  EB("deepshard", "The Keep's Memory", 17, "#7a7a86", "#e0e0f0");
+  EB("hammerghost", "The First Hammerer", 20, "#5a4a3a", "#ffd080");
+  EB("quarryking", "The Petrified Foreman", 16, "#6a6a70", "#c0c0c8");
+  EB("senatorstone", "Senator of Stone", 17, "#7a7a82", "#d8d8e0");
+  EB("stillseer", "The Still Seer", 15, "#a0c8d0", "#f0ffff");
+  EB("frozenfuture", "The Frozen Future", 17, "#8ab8c8", "#ffffff");
+  EB("facelessone", "The Faceless One", 15, "#1e1e2a", "#8a8fc0");
+  EB("unmaker", "The Unmaker", 17, "#161620", "#b69cff");
+  EB("brassauditor", "The Brass Auditor", 15, "#7a6a3a", "#e8c860");
+  EB("unitseven", "Unit Seven", 17, "#5a5a68", "#ff6a3a");
+  function F() { return cp().f; }
+  function gift(o) { return function () { if (o.troops) S.from.ashford = (S.from.ashford || 0) + o.troops; if (o.grain) S.grain = (S.grain || 0) + o.grain; if (o.crowns) S.crowns += o.crowns; if (o.xp) addXp(o.xp); if (o.say) { try { aToast(o.say, "#f2c37a"); } catch (e) {} } }; }
+  function ch(q) { q.opt = q.opt === undefined ? 1 : q.opt; Q(q); }
+  var m = function (id) { return function (f) { return !!f["qd_" + id]; }; };
+
+  // ------------- MAIN CHAIN · THE SHARDS OF THE VOIDHAMMER (non-optional; required before the Iron Gate) -------------
+  ch({ id: "shard1", opt: 0, act: 2, hub: "luminantc", npc: "lume", need: function (f) { return !!f.q4done; }, name: "The First Shard", zone: "shard1", zname: "The Sealed Vault of Lumen", th: "cave", lv: 2, seed: 461, pal: ["inkling", "hollowsent"], boss: "shardkeeper", obj: "Recover the first shard of the Voidhammer from the sealed vault.",
+    gate: "A vault door that was never on any map. It has been waiting for the Twin-Spark page.",
+    intro: "The page you carried is not a prophecy. It is a key. The Voidhammer, the thing the Realms named their world after, was broken into four shards before there were Realms. The Council of Remembers hid the first and then forgot where. The page remembers. Take it down. Do not touch the shard bare-handed.",
+    turn: "You hold the first shard. It is warm and it weighs more than it should. When you hold it, you see a smith with no face, hammering at nothing, and every blow is a world beginning. I will not ask what you saw. I am afraid that I would remember it.",
+    opts: [{ t: "Carry the shard yourself. Someone has to.", reward: { xp: 300, perm: "pts" }, set: { shard1_kept: 1 }, text: "It settles against your ribs like a second heartbeat. Lume turns away, as if ashamed to have asked." },
+      { t: "Leave it with the Council. Memory should guard memory.", reward: { xp: 300, crowns: 300, item: 2 }, set: { shard1_council: 1 }, text: "Lume takes it with shaking hands. The Council will keep it safe, or forget it again. Neither of you says which you expect." }] });
+  ch({ id: "shard2", opt: 0, act: 3, hub: "windspire", npc: "orrin", need: m("shard1"), name: "The Second Shard", zone: "shard2", zname: "The Gale Citadel", th: "pass", lv: 3, seed: 462, pal: ["scout", "slinger"], boss: "galewyrm", obj: "Climb the Gale Citadel and take the second shard.",
+    gate: "A tower of wind-carved stone, so high the clouds come in at the doors.",
+    intro: "Stormreach does not keep things. We lose them to the wind. The second shard fell from the sky a thousand years ago and the Free Assembly argued for nine hundred of them about who owned it. The wind keeps it in a tower no one has climbed. I want to see if you can.",
+    turn: "The shard sings when the wind passes through it. Fast, bright, the sound of someone running away from something and not minding. Whatever the Voidhammer was, it was not made to be still.",
+    opts: [{ t: "Give the shard to Stormreach. Let it ride the wind.", reward: { xp: 400 }, set: { shard2_storm: 1 }, eff: gift({ troops: 10, say: "Stormreach's riders swear to you." }), text: "Orrin laughs until he is coughing. “Ride the wind. Yes. Nobody has ever had the nerve.”" },
+      { t: "Keep it. You will need all four.", reward: { xp: 400, perm: "pts" }, set: { shard2_kept: 1 }, text: "Orrin nods. He does not argue, which is unlike him. “Be quick,” he says. “It does not like waiting.”" }] });
+  ch({ id: "shard3", opt: 0, act: 4, hub: "granitekeep", npc: "orm", need: m("shard2"), name: "The Third Shard", zone: "shard3", zname: "The Foundation Stone", th: "mine", lv: 3, seed: 463, pal: ["slagimp", "wraith"], boss: "deepshard", obj: "Descend beneath Granite Keep and take the third shard.",
+    gate: "A stair that goes down past the Keep's foundations, past the oldest stone, into older stone.",
+    intro: "The Keep was not built on a mountain. It was built on a shard. We did not know until the Eternal Senate sat for two hundred years and noticed the stone was warm. Take it, and the Keep may fall. Leave it, and the Dominion will come for it. I have been a senator a long time. This is the only decision I have never been able to vote on.",
+    turn: "The Keep stands. For now. It stands because the shard wants it to. I have felt it in the floor for two hundred years and thought it was my heart.",
+    opts: [{ t: "Take the shard. The Keep will be rebuilt around its absence.", reward: { xp: 500, perm: "pts" }, set: { shard3_taken: 1 }, text: "The Keep groans. The stone settles. Orm bows his head. “Two hundred years. It was a kind of company.”" },
+      { t: "Leave it. Stonehold's duty is to keep it where it is.", reward: { xp: 500, crowns: 500, item: 3 }, set: { shard3_left: 1 }, eff: gift({ troops: 12, say: "The Eternal Senate commits twelve to your column." }), text: "Orm presses a hand to the wall. “Duty,” he says. “Thank you for understanding that.”" }] });
+  ch({ id: "shard4", opt: 0, act: 5, hub: "highmarch", npc: "hald", need: m("shard3"), name: "The Hammer Remembered", zone: "shard4", zname: "The Forge Before Forges", th: "ember", lv: 4, seed: 464, pal: ["cinderling", "slagimp"], boss: "hammerghost", obj: "Carry the shards to the forge before forges and face the First Hammerer.",
+    gate: "A forge with no fire and no walls. Three shards hum in your hands. A fourth is already on the anvil.",
+    intro: function () { var f = F(), kept = (f.shard1_kept ? 1 : 0) + (f.shard2_kept ? 1 : 0); return "The Voidhammer is not a weapon. I have read the Dominion's reports, the Council's page, and the oldest stones in Granite Keep, and the answer is the same. It is a tool for making the world change. Without it, the Void's stillness spreads. Four shards, one forge. " + (kept >= 2 ? "You kept two of them close, and that will let you reach the anvil yourself." : kept === 1 ? "You kept one, and the Realms hold the others. They will have to send them." : "The Realms hold all of them. You will have to ask each in turn.") + " The First Hammerer will not give it up easily. He has hammered the world into being for ten thousand years and no one has ever thanked him."; },
+    turn: "It is whole. The Voidhammer. It does not feel like a weapon. It feels like a question. The First Hammerer looked at you before he faded, and he said one word: “Finally.” I think he was waiting for someone to relieve him. The Iron Gate is open to you now. Everything past it is yours to answer.",
+    opts: [{ t: "Raise the Voidhammer. Let it be a hammer again.", reward: { xp: 900, crowns: 600, item: 3, perm: "hp" }, set: { hammer_raised: 1 }, text: "It rings once, across all nine Realms. In every city, someone who has been stuck for years takes a first step." },
+      { t: "Set it down. Nobody should carry the world's will.", reward: { xp: 900, perm: "pts", item: 3 }, set: { hammer_down: 1 }, text: "It rests on the anvil. The forge goes quiet. Somewhere far off, a bell rings that has not rung in ten thousand years." }] });
+  // the shard chain is required: the Iron Gate cannot be reached without the Voidhammer reforged
+  (function () { var g = QMAP.gate; if (g) { var on = g.need; g.need = function (f) { return (!on || on(f)) && !!f.qd_shard4; }; } })();
+
+  // ------------- STONEHOLD · THE SENATE OF STONE (Granite Keep) -------------
+  var s5 = function (f) { return !!f.q5done; };
+  ch({ id: "quarry2", act: 4, hub: "granitekeep", npc: "carrow", npcDef: { name: "Mason Carrow", col: "#8a8a94", hair: "#4a4a4a", idle: "My left hand is stone to the wrist. I find I miss it less every day. That is the part that frightens me." },
+    need: s5, name: "The Petrified Quarry", zone: "quarry2", zname: "The Stone Quarry", th: "mine", lv: 3, seed: 471, pal: ["slagimp", "wraith"], boss: "quarryking", obj: "Free the foreman at the bottom of the quarry.",
+    gate: "A quarry where every worker has stopped mid-swing. Their faces are grey and calm.",
+    intro: "Stonehold magic turns the caster to stone, limb by limb. Most take twenty years. The Foreman took a week. He cast too much, trying to hold the pit wall for his crew. Now the whole crew is stone with him. They are not dead. They are waiting. I can free them, if you break the Foreman's hold.",
+    turn: "They are moving. Not much, a finger, a breath. The Foreman is stone to the neck and he is weeping. He asks that you not tell his wife how long he held.",
+    opts: [{ t: "Free the crew, but leave the Foreman to his rest.", reward: { xp: 300, perm: "pts" }, set: { st_crew: 1 }, text: "The crew wakes in a slow wave. Carrow holds the Foreman's cold hand until the last light goes." },
+      { t: "Free them all, at any cost. Pay what it takes.", reward: { xp: 300, crowns: 200, item: 2 }, set: { st_all: 1 }, eff: gift({ troops: 8, say: "The quarry crew joins you. They have unfinished business with the Dominion." }), text: "Carrow's hand goes grey to the shoulder. He smiles. “I wanted to be useful before it finished.”" }] });
+  ch({ id: "senateseat", act: 4, hub: "granitekeep", npc: "senatrix", npcDef: { name: "Senatrix Ildra", col: "#a8a8b4", hair: "#d0d0d0", idle: "I have voted four thousand times. I remember eleven of them. Those were the ones that cost something." },
+    need: m("quarry2"), name: "The Empty Seat", zone: "senateseat", zname: "The Silent Chamber", th: "cave", lv: 3, seed: 472, pal: ["wraith", "slagimp"], boss: "senatorstone", obj: "Break the stone senator who will not leave his seat.",
+    gate: "The old senate chamber. One chair is still occupied by a figure of grey stone that was a man once.",
+    intro: "The Senate serves for life. One of us has served past life. Senator Orsk turned to stone two years ago and his seat is still voting. The chamber obeys him. If we remove him, we break precedent. If we leave him, he will vote us into the sea. Someone outside the Senate must decide.",
+    turn: "The vote is cast. Senator Orsk is at rest. The chamber is silent for the first time in two thousand years. Ildra says she will need to rebuild the whole Senate from this one precedent.",
+    opts: [{ t: "Let the Senate choose a living successor. Law moves on.", reward: { xp: 350, crowns: 300 }, set: { st_law: 1 }, text: "The chamber votes unanimously, for the first time in memory. It feels like a wound closing." },
+      { t: "Keep Orsk's seat empty. A monument to what duty costs.", reward: { xp: 350, perm: "pts" }, set: { st_monument: 1 }, text: "The empty chair is draped in grey. Every senator who passes it lowers their head." }] });
+  ch({ id: "granitevow", act: 5, hub: "granitekeep", npc: "carrow", need: function (f) { return f.qd_senateseat && f.q6done; }, name: "The Granite Vow", zone: "granitevow", zname: "The Vow Stair", th: "pass", lv: 4, seed: 473, pal: ["wraith", "wraithgun"], boss: "stoneking", obj: "Climb the Vow Stair and swear at the top.",
+    gate: "A stair of ten thousand steps, each carved with the name of a Stonehold soldier who held a line.",
+    intro: "There is a vow every Stonehold soldier takes: to hold until the stone holds them. No one has sworn it for outsiders. I would like you to be the first. It costs one thing. You must climb the whole stair, and you must remember every name on it.",
+    turn: "You climbed it. You said every name. Carrow touches your shoulder with a hand that is half stone. “You are one of us now. Not by blood. By duty. That is how Stonehold has always done it.”",
+    opts: [{ t: "Swear the vow. Hold until the stone holds you.", reward: { xp: 600, perm: "hp", item: 3 }, set: { st_vow: 1 }, eff: gift({ troops: 15, say: "Stonehold's oldest regiment marches under your banner." }), text: "The stair rings. Somewhere in the Keep, a bell rings once for every name." },
+      { t: "Decline. You will hold, but not forever.", reward: { xp: 600, crowns: 600 }, set: { st_nov: 1 }, text: "Carrow smiles with half his face. “That is honest. Stonehold has always valued honesty over comfort.”" }] });
+  ET.stoneking = { hp: 19, sp: 36, dmg: 2, col: "#6a6a72", band: "#e0e0e8", name: "The Stone King", big: 1, boss: 1 };
+
+  // ------------- FROSTGRAVE · THE STILL PROPHETS (Luminant) -------------
+  var f4 = function (f) { return !!f.q4done; };
+  ch({ id: "stillseer", act: 3, hub: "luminantc", npc: "iseult", npcDef: { name: "Prophet Iseult", col: "#a0d0d8", hair: "#f0ffff", idle: "I have seen what you will say. I will not tell you. It is so tiring to be right." },
+    need: f4, name: "The Quiet Prophecy", zone: "stillseer", zname: "The Still Observatory", th: "cave", lv: 3, seed: 481, pal: ["frostshade", "inkling"], boss: "stillseer", obj: "Reach the Still Seer before the prophecy completes.",
+    gate: "A tower with no door. Frost on the glass. A voice on the other side says what you are about to say.",
+    intro: "Frostgrave rules by foresight. Whoever sees farthest governs. The Still Seer saw so far that he stopped moving. He sits in the Observatory, frozen mid-sentence, and everything he said is coming true. The Prophet Court wants him silenced. I think he has not finished. Go in. Hear the end of the sentence.",
+    turn: "He finished the sentence. It was a name. It was yours. You are in the prophecy now, and I cannot tell you whether that is a blessing.",
+    opts: [{ t: "Tell the Court the Seer was wrong. Futures are not fixed.", reward: { xp: 350, perm: "pts" }, set: { fg_free: 1 }, text: "Iseult closes her eyes. “I have seen you say that,” she says. “I did not know if I would believe it.”" },
+      { t: "Tell the Court the Seer was right. Plan accordingly.", reward: { xp: 350, crowns: 350, item: 2 }, set: { fg_fate: 1 }, text: "The Court nods slowly. They have a plan for it. They have a plan for everything. It is why they are always late." }] });
+  ch({ id: "frozenfuture", act: 4, hub: "luminantc", npc: "iseult", need: function (f) { return f.qd_stillseer && f.q5done; }, name: "The Frozen Future", zone: "frozenfuture", zname: "The Winter Aisle", th: "cave", lv: 3, seed: 482, pal: ["frostshade", "frostshade"], boss: "frozenfuture", obj: "Walk the Winter Aisle and break the frozen future.",
+    gate: "A corridor of ice where every doorway shows a different version of tomorrow.",
+    intro: function () { return "You are in the prophecy now. " + (F().fg_free ? "You told the Court the future is not fixed. Let us test that." : "You told the Court the Seer was right. Let us see how much that costs.") + " There is a place where all the possible futures freeze, so the Prophet Court can read them. It has been growing for a century. Soon there will be no room for anything that has not already been foreseen. Break it open."; },
+    turn: "The future is thawing. It is messy. People are walking through doors they did not foresee. Iseult is laughing, which she has not done in a decade.",
+    opts: [{ t: "Let the future thaw. People should walk through what they cannot foresee.", reward: { xp: 450, perm: "hp" }, set: { fg_thaw: 1 }, text: "The ice runs in a thousand streams. In the Still City, someone cries for the first time in a century." },
+      { t: "Freeze one door open. Keep one future safe.", reward: { xp: 450, item: 3, crowns: 300 }, set: { fg_keep: 1 }, text: "Iseult touches the frozen door. “One,” she whispers. “I will keep one. I will not tell anyone which.”" }] });
+
+  // ------------- SHADOWDEEP · THE FACELESS COUNCIL (Windspire) -------------
+  var f3 = function (f) { return !!f.q4done; };
+  ch({ id: "unmade1", act: 3, hub: "windspire", npc: "vesper", npcDef: { name: "Vesper No-Name", col: "#2a2a3a", hair: "#1a1a22", idle: "My name was taken to protect me. I would like it back, but I do not remember who took it." },
+    need: f3, name: "The Unmaking Dockside", zone: "unmade1", zname: "The Quiet Warehouse", th: "cave", lv: 3, seed: 491, pal: ["knife", "assassin"], boss: "facelessone", obj: "Follow Vesper into the Quiet Warehouse.",
+    gate: "A warehouse on the docks. The crates are labelled with names that have been scratched out.",
+    intro: "Someone is unmaking the Faceless Council, one at a time. Not killing, unmaking. The victim never existed. Their chair is empty and nobody remembers who sat there. I am a Shadowdeep envoy and I may be next. Help me find where the unmaking is done, and I will tell you the Council's real names. That is worth more than gold.",
+    turn: "Someone I trusted. Someone I would have named my own. Their face is gone from my memory already. I wrote it down before I forgot. The page says: “Do not trust the one you trust most.”",
+    opts: [{ t: "Trust Vesper. She has no reason to lie.", reward: { xp: 350, perm: "pts" }, set: { sh_trust: 1 }, text: "Vesper looks at you for a very long time. “That may be the kindest thing anyone has ever said to someone without a name.”" },
+      { t: "Trust no one, including Vesper. Watch her closely.", reward: { xp: 350, crowns: 350 }, set: { sh_doubt: 1 }, text: "“Good,” Vesper says flatly. “That is the Shadowdeep way. I would worry if you did anything else.”" }] });
+  ch({ id: "unmade2", act: 4, hub: "windspire", npc: "vesper", need: function (f) { return f.qd_unmade1 && f.q5done; }, name: "The Unmaker", zone: "unmade2", zname: "The Unmade Chamber", th: "cave", lv: 4, seed: 492, pal: ["knife", "assassin"], boss: "unmaker", obj: "Find and face the Unmaker.",
+    gate: "A chamber in the Unmade City's hidden depths. The walls are transparent, but you cannot walk through them.",
+    intro: function () { return "I have the Council's real names now. " + (F().sh_trust ? "You trusted me, and I will not waste it. " : "You doubted me, and you were right to. ") + "One of them is the Unmaker. One of them has been taking the others out of the world. I do not know which. If I name the wrong one, I unmake an innocent. If I name no one, we all go. Come with me. Be my other pair of eyes."; },
+    turn: "It was Vesper. Or it was the part of Vesper that wanted to be the last one standing. We found the real culprit in the end, a Council elder who feared being forgotten more than being hated. He unmade the others so that someone would at least remember him. That is the saddest sentence I have ever said.",
+    opts: [{ t: "Restore the unmade. Pay the price of memory.", reward: { xp: 550, perm: "hp" }, set: { sh_restore: 1 }, eff: gift({ troops: 10, say: "The restored Council members pledge a hundred knives." }), text: "Three chairs fill. Three faces return. They look at you with no memory of the years they lost, and then with sudden, terrible gratitude." },
+      { t: "Leave the dead unmade. The Council is safer with fewer names.", reward: { xp: 550, crowns: 700, item: 3 }, set: { sh_leave: 1 }, text: "The Council closes its ranks. The empty chairs are removed. Nobody speaks of them again. You will not forget, but you will always be the only one." }] });
+
+  // ------------- METALCROWN · THE IRON LEDGER (Highmarch) -------------
+  var f6 = function (f) { return !!f.q6done; };
+  ch({ id: "brassledger", act: 5, hub: "highmarch", npc: "auditor", npcDef: { name: "Auditor Brass", col: "#9a8a4a", hair: "#2a2a2a", idle: "I count lives in units of productivity. It is a comfort. Please do not ask me what a life is worth." },
+    need: f6, name: "The Iron Ledger", zone: "brassledger", zname: "The Counting House", th: "mine", lv: 4, seed: 501, pal: ["wraith", "wraithgun"], boss: "brassauditor", obj: "Break the Counting House and take the Dominion's ledger.",
+    gate: "A foundry-office built like a fortress. Every window is a column of numbers.",
+    intro: "I defected from the Dominion Council three days ago. The ledger I carried is the proof. It records every worker who was traded as a unit of output, every village that was rounded off a map. If you take the Counting House's copy, the Dominion cannot deny it. If you destroy it, they cannot be held to it. I do not know which is right. I only know that I counted too long.",
+    turn: "The ledger is in your hand. It is only paper. A hundred thousand names, each with a number beside it. I would like to say I feel nothing. I have tried for eleven years.",
+    opts: [{ t: "Publish it. Let every Realm read what the Dominion counted.", reward: { xp: 600, perm: "pts" }, set: { mc_public: 1 }, eff: gift({ troops: 10, say: "Workers across the Dominion desert to your banner." }), text: "The ledger goes out on a hundred wagons. In a hundred towns, people read names they recognise. The Dominion's grip on its own workers cracks like old iron." },
+      { t: "Hold it. Use it as leverage when the war needs ending.", reward: { xp: 600, crowns: 800, item: 3 }, set: { mc_hold: 1 }, text: "Brass nods slowly. “That is the practical choice,” he says. “I think I preferred being a practical man. I am no longer sure why.”" }] });
+  ch({ id: "unitseven", act: 5, hub: "highmarch", npc: "auditor", need: m("brassledger"), name: "Unit Seven", zone: "unitseven", zname: "The Spark Yard", th: "mine", lv: 4, seed: 502, pal: ["wraith", "wraithgun"], boss: "unitseven", obj: "Face Unit Seven in the Spark Yard.",
+    gate: "A yard where the machines hum in time and the people working them walk in step.",
+    intro: "Unit Seven was a man, once. The Dominion's synthetic spark takes humanity a little at a time. By the end it takes the name. Unit Seven is the Spark Yard's overseer, and he has started to speak in numbers. I knew him. I would like to know whether he is still in there. I do not think I can ask him myself.",
+    turn: "He said your name, once, at the end. He said it like a person says a name they have been trying to remember. Then he said a number. Then he was quiet. I think the number was his birthday.",
+    opts: [{ t: "Bury him under his own name, not his number.", reward: { xp: 650, perm: "hp" }, set: { mc_name: 1 }, text: "Brass writes the name on a plank with a hand that shakes. It is the first time in eleven years he has written a word that is not a figure." },
+      { t: "Salvage the spark. The Realms need whatever is left.", reward: { xp: 650, crowns: 600, item: 3 }, set: { mc_salvage: 1 }, text: "The spark core is warm and humming. Brass does not look at it. “Efficient,” he says. “It is always efficient.”" }] });
+})();
 
   // ---- input ----
   (function () {
