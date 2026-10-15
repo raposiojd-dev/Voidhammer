@@ -11108,6 +11108,46 @@ function qFinish(q, opt, idx) { qFinish0(q, opt, idx); if (opt && typeof opt.eff
       { t: "Salvage the spark. The Realms need whatever is left.", reward: { xp: 650, crowns: 600, item: 3 }, set: { mc_salvage: 1 }, text: "The spark core is warm and humming. Brass does not look at it. “Efficient,” he says. “It is always efficient.”" }] });
 })();
 
+  // ================= Roads: every village and town is joined by an open road =================
+  function rdLink() {
+    var ids = S.sites, n = ids.length, par = ids.map(function (_, i) { return i; });
+    function f(i) { while (par[i] !== i) { par[i] = par[par[i]]; i = par[i]; } return i; }
+    function idx(id) { for (var i = 0; i < n; i++) if (ids[i].id === id) return i; return -1; }
+    var has = {}; ROADS.forEach(function (r) { var a = idx(r[0]), b = idx(r[1]); if (a < 0 || b < 0) return; has[Math.min(a, b) + "_" + Math.max(a, b)] = 1; par[f(a)] = f(b); });
+    var pairs = []; for (var i = 0; i < n; i++) for (var j = i + 1; j < n; j++) pairs.push([i, j, Math.hypot(ids[i].x - ids[j].x, ids[i].y - ids[j].y)]);
+    pairs.sort(function (p, q) { return p[2] - q[2]; });
+    pairs.forEach(function (p) { if (f(p[0]) !== f(p[1])) { par[f(p[0])] = f(p[1]); ROADS.push([ids[p[0]].id, ids[p[1]].id]); has[p[0] + "_" + p[1]] = 1; } });
+    // a site with only one road gets a second link to its nearest neighbour so no spot is a dead end
+    for (i = 0; i < n; i++) {
+      var deg = 0; ROADS.forEach(function (r) { if (r[0] === ids[i].id || r[1] === ids[i].id) deg++; });
+      if (deg >= 2) continue;
+      for (var k = 0; k < pairs.length; k++) { var p = pairs[k]; if ((p[0] === i || p[1] === i) && !has[p[0] + "_" + p[1]] && p[2] < 520) { ROADS.push([ids[p[0]].id, ids[p[1]].id]); has[p[0] + "_" + p[1]] = 1; break; } }
+    }
+  }
+  function nvInit() {
+    var sig = S.sites.length + ":" + Math.round(S.sites.reduce(function (a, s) { return a + s.x * 3 + s.y; }, 0));
+    if (NV.g && NV.sig === sig) return;
+    NV.sig = sig; var n = NV.n, cs = NV.cs, g = new Uint8Array(n * n), x, y, q, s;
+    for (y = 0; y < n; y++) for (x = 0; x < n; x++) g[y * n + x] = nvBlockedRaw((x + 0.5) * cs, (y + 0.5) * cs) ? 1 : 0;
+    function clear(px, py, r) { var gx = Math.floor(px / cs), gy = Math.floor(py / cs); for (var yy = -r; yy <= r; yy++) for (var xx = -r; xx <= r; xx++) { var ax = gx + xx, ay = gy + yy; if (ax >= 0 && ay >= 0 && ax < n && ay < n) g[ay * n + ax] = 0; } }
+    for (q = 0; q < S.sites.length; q++) { s = S.sites[q]; clear(s.x, s.y, 2); }
+    rdLink();
+    ROADS.forEach(function (r, idx) {
+      var a = site(r[0]), b = site(r[1]); if (!a || !b) return;
+      var mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2, dx = b.x - a.x, dy = b.y - a.y, l = Math.hypot(dx, dy) || 1, off = (hash(idx, 5) - 0.5) * 36, cx = mx - dy / l * off, cy = my + dx / l * off;
+      var steps = Math.ceil(l / (cs * 0.4));
+      for (var k = 0; k <= steps; k++) { var t = k / steps, u = 1 - t, px = u * u * a.x + 2 * u * t * cx + t * t * b.x, py = u * u * a.y + 2 * u * t * cy + t * t * b.y; clear(px, py, 1); }
+    });
+    NV.g = g;
+  }
+  // slide along walls: if straight on is blocked, try turning the step up to 90 degrees either way
+  function ovSlide(x0, y0, x1, y1) {
+    if (!nvB(x1, y1)) return [x1, y1]; if (nvB(x0, y0)) return [x1, y1];
+    var dx = x1 - x0, dy = y1 - y0, d = Math.hypot(dx, dy) || 1, a0 = Math.atan2(dy, dx), A = [0.35, -0.35, 0.7, -0.7, 1.05, -1.05, 1.4, -1.4, 1.57, -1.57];
+    for (var i = 0; i < A.length; i++) { var a = a0 + A[i], k = Math.cos(A[i]) > 0.1 ? 1 : 1, nx = x0 + Math.cos(a) * d, ny = y0 + Math.sin(a) * d; if (!nvB(nx, ny)) return [nx, ny]; }
+    return [x0, y0];
+  }
+
   // ---- input ----
   (function () {
     window.addEventListener("keydown", function (e) { if (!AR) return; var k = e.key.length === 1 ? e.key.toLowerCase() : e.key; akeys[k] = true; if (k === " " || k === "Enter" || k === "j") { e.preventDefault(); aPress = true; } if (k === "k") aShootP = true; if (k === "l") aCastP = true; });
