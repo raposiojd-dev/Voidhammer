@@ -4330,6 +4330,20 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
       if (Math.abs(sp.spawn[0] - c[0]) < 2 && Math.abs(sp.spawn[1] - c[1]) < 2) ok = false;
       if (ok) { item.x = c[0]; item.y = c[1]; sp.npcs.push(item); return item; }
     }
+    var fx, fy, best = null, bd = 1e9;
+    for (fy = 2; fy < sp.h - 2; fy++) for (fx = 2; fx < sp.w - 2; fx++) {
+      var ok2 = true, dp = 99;
+      (sp.npcs || []).forEach(function (n) { if (Math.abs(n.x - fx) < 2 && Math.abs(n.y - fy) < 2) ok2 = false; });
+      (sp.chests || []).forEach(function (n) { if (Math.abs(n[0] - fx) < 2 && Math.abs(n[1] - fy) < 2) ok2 = false; });
+      (sp.exits || []).forEach(function (e) { if (fx >= e.x - 3 && fx <= e.x + e.w + 2 && fy >= e.y - 3 && fy <= e.y + e.h + 2) ok2 = false; });
+      (sp.houses || []).forEach(function (h) { if (fx >= h[0] - 1 && fx <= h[0] + h[2] && fy >= h[1] - 1 && fy <= h[1] + h[3] + 1) ok2 = false; });
+      (sp.water || []).forEach(function (h) { if (fx >= h[0] - 1 && fx <= h[0] + h[2] && fy >= h[1] - 1 && fy <= h[1] + h[3]) ok2 = false; });
+      if (Math.abs(sp.spawn[0] - fx) < 2 && Math.abs(sp.spawn[1] - fy) < 2) ok2 = false;
+      if (!ok2) continue;
+      (sp.paths || []).forEach(function (pp) { var cx2 = Math.max(Math.min(pp[0], pp[2]), Math.min(fx, Math.max(pp[0], pp[2]))), cy2 = Math.max(Math.min(pp[1], pp[3]), Math.min(fy, Math.max(pp[1], pp[3]))); dp = Math.min(dp, Math.hypot(fx - cx2, fy - cy2)); });
+      if (dp < bd) { bd = dp; best = [fx, fy]; }
+    }
+    if (best) { item.x = best[0]; item.y = best[1]; sp.npcs.push(item); return item; }
     throw new Error("no spot in " + hub);
   }
 
@@ -4367,7 +4381,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
     else h += b >= 3 ? "<p><b>Hell is conquered.</b></p>" : '<p class="dim-t">Defeat the Iron Reaper in Hell to finish the game.</p>';
     return h;
   }
-  function qFinish(q, opt, idx) {
+  function qFinish0(q, opt, idx) {
     var c = cp(), f = c.f, r = typeof opt.reward === "function" ? opt.reward(f) : opt.reward; f["qd_" + q.id] = 1; f["qe_" + q.id] = idx; if (opt.set) Object.keys(opt.set).forEach(function (k) { f[k] = opt.set[k]; });
     r = tierRw(r); if (r.xp) addXp(r.xp); if (r.crowns) S.crowns += r.crowns;
     if (r.perm === "hp") { c.qhp = (c.qhp || 0) + 1; if (AR) { AR.p.max = maxHp(); AR.p.hp = AR.p.max; } }
@@ -10788,6 +10802,190 @@ function skTabs() {
   var st = document.createElement("style");
   st.textContent = ".sktabs{overflow-x:auto;scrollbar-width:none}.sktabs::-webkit-scrollbar{display:none}.sktabs button{flex:0 0 auto!important;min-width:64px!important;padding-left:.4rem!important;padding-right:.4rem!important}.sktabs button.sh:not(.on){border-color:#3a6a5a}";
   document.head.appendChild(st);
+})();
+function qFinish(q, opt, idx) { qFinish0(q, opt, idx); if (opt && typeof opt.eff === "function") { try { opt.eff(); } catch (e) {} } }
+// ===== STORY EXPANSION: six chains of linked quests, Act VI, new characters. Every choice is remembered. =====
+(function () {
+  function EB(id, name, hp, col, band, extra) { ET[id] = Object.assign({ hp: hp, sp: 36, dmg: 2, col: col, band: band, name: name, big: 1, boss: 1 }, extra || {}); }
+  EB("tollmaster", "Tollmaster Brek", 9, "#6a4a2a", "#e0b040");
+  EB("collector", "The Collector", 11, "#3a3a44", "#c0a060");
+  EB("wolfking", "The Wolf-King of Ashford", 13, "#5a4a3a", "#d8d0b0");
+  EB("trialwarden", "The Trial-Warden", 11, "#7a3a28", "#ff8a3a");
+  EB("slagking", "The Slag King", 14, "#4a3a34", "#ff6a2a");
+  EB("passionchamp", "The Champion of Passion", 16, "#8a2a28", "#ffd060");
+  EB("hollowcap", "Captain Ael, Hollowed", 13, "#3a4658", "#9aa8c8");
+  EB("voidwarden", "The Name-Eater", 15, "#262432", "#cfc4ff");
+  EB("hush", "The Hush", 18, "#1a1a22", "#ffffff");
+  EB("namethief", "The Name-Thief", 12, "#5a4a78", "#e8d8ff");
+  EB("oathbreaker", "The Oathbreaker", 14, "#6a5a8a", "#d0b8ff");
+  EB("lanternking", "The Lantern-King", 17, "#c8b060", "#fff4c0");
+  EB("stormbanner", "Stormbanner", 14, "#3a6a8a", "#9ae0ff");
+  EB("contractor", "The Contractor", 15, "#22222e", "#b69cff");
+  EB("mirrorself", "The Other Wound", 17, "#4a5a6a", "#e0f0ff");
+  EB("hush1", "The First Silence", 17, "#202028", "#e8e8f0");
+  EB("voidmirror", "The Voyager's Shadow", 20, "#101018", "#c8c8ff");
+  EB("unmade", "The Unmade", 21, "#14141c", "#ffffff");
+  EB("hollowking", "The Hollow King", 26, "#0c0c12", "#ffffff");
+
+  function F() { return cp().f; }
+  function addTroops(n) { S.from.ashford = (S.from.ashford || 0) + n; }
+  function gift(o) { return function () { if (o.troops) addTroops(o.troops); if (o.grain) S.grain = (S.grain || 0) + o.grain; if (o.crowns) S.crowns += o.crowns; if (o.xp) addXp(o.xp); try { if (o.say) aToast(o.say, "#f2c37a"); } catch (e) {} }; }
+  function ch(q) { q.opt = q.opt === undefined ? 1 : q.opt; Q(q); }
+  var d1 = function (f) { return !!f.q1done; };
+
+  // ---------------- CHAIN 1 · ASHFORD · THE LEDGER OF ASHES ----------------
+  ch({ id: "tithe", act: 1, hub: "ashford", npc: "dessa", npcDef: { name: "Cooper Dessa", col: "#a8683a", hair: "#3a2a1a", idle: "I count barrels for a living. Somebody has been counting them wrong on purpose." },
+    need: d1, name: "The Missing Tithe", zone: "tithe", zname: "The Smugglers' Cellar", th: "cave", lv: 1, seed: 401, pal: ["bandit", "slinger"], boss: "tollmaster", obj: "Find the stolen tithe grain in the Smugglers' Cellar.",
+    gate: "A hatch behind the old drover's yard, kept shut with a very new lock.",
+    intro: "The village tithe, forty sacks, left the granary and never reached Emberfall. Somebody in Ashford opened a door with a key. I will not say a name until I am sure. Follow the cart-ruts to the cellar behind the drover's yard. See who is counting my barrels.",
+    turn: "Brek is dead and the sacks are what is left of them. He had a ledger. The signature at the bottom is not his. You know whose it is, and so do I. What do I tell the village?",
+    opts: [{ t: "“Bandits took it. Brek had help from outside.”", reward: { xp: 90, crowns: 70 }, set: { ash_lie: 1 }, text: "Dessa looks at you a long moment, then nods and puts the ledger in her coat. “Outside. Yes. If that is what you saw.” She does not sound like she believes you, and she does not argue." },
+      { t: "“The miller sold it. Haldan's name is on the page.”", reward: { xp: 90, item: 1 }, set: { ash_truth: 1 }, text: "“Thank you,” Dessa says, and it costs her. “Somebody had to say it out loud. I only hope it was worth it.”" }] });
+  ch({ id: "millers", act: 1, hub: "ashford", npc: "haldan", npcDef: { name: "Miller Haldan", col: "#c8b890", hair: "#8a8a8a", idle: "Flour gets in everything. It is the one honest dust I know." },
+    need: function (f) { return f.qd_tithe; }, name: "The Miller's Debt", zone: "millcellar", zname: "The Old Mill Undercroft", th: "cave", lv: 1, seed: 402, pal: ["bandit", "hound"], boss: "collector", obj: "Burn Haldan's debt note in the Old Mill Undercroft.",
+    gate: "A flagstone under the millstone, lifted and not quite put back.",
+    intro: function () { return F().ash_truth ? "Dessa came to my door with the ledger and half of Ashford has stopped speaking to me. Fine. It was my hand that signed it. Brek's people lent me the money for my daughter's medicine, and they never stopped collecting. There is a man in the undercroft with my note. I cannot go. I cannot stand to see him again." : "You kept my name clean. I do not know why, and I do not know how to thank you, so I will pay in the only coin I have: the truth. I signed Brek's ledger. My daughter was ill. Their collector still holds the note. He will come for me next. Please. End it."; },
+    turn: "The Collector is down. The note is in your hand. It is a small piece of paper. It has hung over this village for two years.",
+    opts: [{ t: "Burn the note. It was never his to collect.", reward: { xp: 120, perm: "pts" }, set: { ash_burn: 1 }, eff: gift({ troops: 6, say: "Haldan's sons join your column." }), text: "The paper curls and goes black. Haldan sits down on an upturned barrel and cannot stop shaking. By morning his six sons are at your camp, asking where to stand." },
+      { t: "Give the note to Dessa. A debt is a debt, and the law should decide.", reward: { xp: 120, crowns: 240 }, set: { ash_law: 1 }, text: "Dessa takes it with both hands. Whatever the village decides, it will decide it in the open. Haldan nods, grey-faced, and does not ask for mercy." }] });
+  ch({ id: "harvest", act: 1, hub: "ashford", npc: "dessa", need: function (f) { return f.qd_millers; }, name: "The Harvest Oath", zone: "harvestfield", zname: "The Burning Fields", th: "pass", lv: 2, seed: 403, pal: ["hound", "bandit"], boss: "wolfking", obj: "Drive the Wolf-King from the Burning Fields.",
+    gate: "The east field, black at the edges, and the smell of wet fur.",
+    intro: function () { return "Whatever the village decides about Haldan, it has to eat first. Something with a wolf's skull for a crown has taken the east fields and the pack is burning what it cannot carry. " + (F().ash_burn ? "Haldan's boys have already gone out there with pitchforks. They are going to get themselves killed." : F().ash_law ? "The village is split over the note and nobody will go out there together." : "Nobody will go out there together."); },
+    turn: "The Wolf-King is dead and the fields will not burn again this year. Ashford has not been this quiet in two summers. They are asking who should speak for them at the harvest.",
+    opts: [{ t: "“Dessa. She counts honestly, even when it hurts.”", reward: { xp: 150, crowns: 150, item: 2 }, set: { ash_reeve: "dessa" }, eff: gift({ grain: 30 }), text: "The village votes by raised hand. Dessa is reeve before the count is done. She orders the granary doors left unlocked, and for the first time nobody takes more than they need." },
+      { t: "“Haldan. A man who has paid for his mistake should be trusted with it.”", reward: { xp: 150, crowns: 100, perm: "pts" }, set: { ash_reeve: "haldan" }, eff: gift({ troops: 5 }), text: "It is a close vote. Haldan weeps when it is called. Ashford will remember that you chose mercy, and so will Dessa." }] });
+
+  // ---------------- CHAIN 2 · EMBERFALL · THE CINDER COURT ----------------
+  var d2 = function (f) { return !!f.q2done; };
+  ch({ id: "embertrial", act: 1, hub: "emberfall", npc: "pyrrha", npcDef: { name: "Pyrrha Ashgrove", col: "#e0602a", hair: "#ff7a2a", idle: "In Emberfall a leader is chosen by who can stand closest to the fire. I intend to stand in it." },
+    need: d2, name: "The Trial of Cinders", zone: "embertrial", zname: "The Cinder Trial", th: "ember", lv: 2, seed: 411, pal: ["cinderling", "slinger"], boss: "trialwarden", obj: "Stand witness at Pyrrha's Trial of Cinders.",
+    gate: "A ring of fired brick outside the walls. The heat is a wall of its own.",
+    intro: "The Passion Court meets at the turn of the moon. Seven contend for the throne's right hand. I am one. The old law says every contender walks the Trial with a witness who is not Flameborne, so that nobody can say the fire lied. Walk it with me.",
+    turn: "I stood in the fire and it did not take me. I felt every feeling I own. All of them at once. That is the trial. Nobody tells you the trial is surviving yourself. Will you speak for me at the Court?",
+    opts: [{ t: "“I will speak for you.”", reward: { xp: 140, crowns: 90 }, set: { ember_pyrrha: 1 }, text: "Pyrrha's eyes catch the light like struck flint. “Then say it loud. Flameborne trusts anything loud.”" },
+      { t: "“I will say what I saw. Nothing more.”", reward: { xp: 140, item: 1 }, set: { ember_neutral: 1 }, text: "“Honest,” Pyrrha says, almost smiling. “That is rarer than courage here.”" }] });
+  ch({ id: "cassforge", act: 1, hub: "emberfall", npc: "cass", npcDef: { name: "Old Cass the Flamewright", col: "#9a5a2a", hair: "#d8d0c0", idle: "I made the throne's first sword. It is still hungry. I do not look at it." },
+    need: function (f) { return f.qd_embertrial; }, name: "What the Flame Remembers", zone: "cassforge", zname: "The First Forge", th: "mine", lv: 2, seed: 412, pal: ["slagimp", "cinderling"], boss: "slagking", obj: "Reach the first forge and decide what to do with the recipe.",
+    gate: "A mine shaft that glows from below, as though the rock is breathing.",
+    intro: "The Ember King is burning out. Everyone knows. Everyone prays. I made his sword and I know where I hid the method: how to bind a king's passion into steel so it can outlast him. It would save the Realm. It cost me my wife the first time. Go down. Decide better than I did.",
+    turn: "You have it. The method for ember-steel that burns without fire, in my own hand. I wrote it forty years ago and I have never wanted to read it again.",
+    opts: [{ t: "Give it to Pyrrha. The next ruler should have the power to hold the Realm.", reward: { xp: 180, item: 2 }, set: { ember_recipe: "pyrrha" }, text: "Cass nods slowly. “Powerful people pay. I hope she knows the price.”" },
+      { t: "Burn it. No one should bind a person into steel.", reward: { xp: 180, perm: "pts" }, set: { ember_recipe: "burn" }, text: "The paper flares and is gone. Cass lets out a long breath he has held for forty years." },
+      { t: "Keep it. You will decide when you must.", reward: { xp: 150, crowns: 300 }, set: { ember_recipe: "keep" }, text: "“Hm,” Cass says. “Do not wait until it is too late. That is the only warning I ever got.”" }] });
+  ch({ id: "passion", act: 2, hub: "emberfall", npc: "pyrrha", need: function (f) { return f.qd_cassforge && f.q3done; }, name: "The Passion Court", zone: "passionhall", zname: "The Court of Ash", th: "ember", lv: 3, seed: 413, pal: ["cinderling", "bandit"], boss: "passionchamp", obj: "Survive the Court of Ash and its champion.",
+    gate: "The Court meets in a hall with no roof. Ash falls like snow.",
+    intro: function () { return "The Court begins. " + (F().ember_recipe === "pyrrha" ? "I have the recipe, and the Court will see it as strength or as theft. I do not know which." : F().ember_recipe === "burn" ? "They say the recipe was burned. Half the Court wants to hang whoever did it. Half wants to thank them." : "They are afraid of what you carry, whether or not they know it.") + " The champion of the old order will meet any challenger in the ash. I need a second."; },
+    turn: "It is done. The Court has chosen. Whatever comes next, Emberfall will be different, and you were in the room when it changed.",
+    opts: [{ t: "Crown Pyrrha. Let the Realm burn bright and young.", reward: { xp: 300, crowns: 200, item: 3 }, set: { ember_end: "pyrrha" }, eff: gift({ troops: 12, say: "Emberfall's berserkers swear to Pyrrha. Twelve ride with you." }), text: "Pyrrha steps into the fire and does not step out. The crowd roars. She says your name before her own." },
+      { t: "Break the contest. Let the Passion Court choose by vote, not by fire.", reward: { xp: 300, perm: "pts" }, set: { ember_end: "vote" }, eff: gift({ grain: 40, say: "Emberfall remembers who ended the burning." }), text: "It is the first Court in two hundred years that ends without a body. Pyrrha does not forgive you. She is alive to be angry, and that is the point." }] });
+
+  // ---------------- CHAIN 3 · HIGHMARCH · THE HOLLOW GARRISON ----------------
+  var d3 = function (f) { return !!f.q3done; };
+  ch({ id: "hollowpost", act: 2, hub: "highmarch", npc: "marl", npcDef: { name: "Sergeant Marl", col: "#7a8498", hair: "#5a5a5a", idle: "I have eleven names on my roll. I could swear there were twenty-two." },
+    need: d3, name: "The Quiet Post", zone: "hollowpost", zname: "The Quiet Post", th: "pass", lv: 2, seed: 421, pal: ["hollowsent", "knife"], boss: "hollowcap", obj: "Find out why the watch post stopped answering.",
+    gate: "A beacon tower on the ridge. The beacon is lit. Nobody has tended it in weeks.",
+    intro: "Redtor Post stopped answering our horns nine days ago. The fire still burns but nobody feeds it. I sent two riders and neither came back, and when I count the roll, I cannot remember who I sent. Go. Please bring Captain Ael home, whatever shape he is in.",
+    turn: "He is gone, and he was gone before you got there. His face was blank. His mouth was moving, saying a roll of names. You stood quietly until it was done. Tell me what you saw.",
+    opts: [{ t: "“They were killed by raiders. A clean death.”", reward: { xp: 120, crowns: 100 }, set: { hm_clean: 1 }, text: "Marl nods. He wants to believe it. He is good at wanting." },
+      { t: "“Something unwrote them. Their names are gone. The Void is here.”", reward: { xp: 150, item: 1 }, set: { hm_void: 1 }, text: "“Yes,” Marl says, very quietly. “I thought so. I have been looking at my roll for nine days and it keeps getting shorter.”" }] });
+  ch({ id: "namesroll", act: 2, hub: "highmarch", npc: "wynn", npcDef: { name: "Scout Wynn", col: "#4a7a58", hair: "#2a2a1a", idle: "I scouted the Void's edge once. It does not hurt. That is what is wrong with it." },
+    need: function (f) { return f.qd_hollowpost; }, name: "The Roll of Names", zone: "namesroll", zname: "The Unwritten Barracks", th: "cave", lv: 3, seed: 422, pal: ["hollowsent", "inkling"], boss: "voidwarden", obj: "Recover the lost roll from the Name-Eater.",
+    gate: "A cellar door chalked with names. The chalk is still wet and the names are fading.",
+    intro: function () { return F().hm_void ? "Marl believes you about the Void. That is why I am asking. There is a thing in the old barracks that eats names. It has Redtor's roll. If you take it back the men are remembered. If you leave it, they are not." : "Marl told me what you said about the raiders. I know what I found at Redtor. Raiders do not unwrite a man. There is a thing in the old barracks that holds the roll. Take it back."; },
+    turn: "You have the roll. It is warm. Every name on it is whispering softly, like a crowd waiting for a door to open.",
+    opts: [{ t: "Read the names aloud, one by one. Let them be remembered.", reward: { xp: 220, perm: "pts" }, set: { hm_read: 1 }, text: "It takes until dawn. The courtyard fills with quiet people who do not know why they came. When the last name is spoken, Marl is on his knees, and Wynn is looking at the sky." },
+      { t: "Burn the roll. The dead earned their rest.", reward: { xp: 200, item: 2 }, set: { hm_burn: 1 }, text: "The roll burns without smoke. Something that was in the room leaves. Marl cannot remember why he is crying." }] });
+  ch({ id: "woundpass", act: 3, hub: "highmarch", npc: "wynn", need: function (f) { return f.qd_namesroll && f.q4done; }, name: "The Wound in the Pass", zone: "woundpass", zname: "The Wound in the Pass", th: "pass", lv: 3, seed: 423, pal: ["hollowsent", "wraith"], boss: "hush", obj: "Seal the wound in the pass before the Hush spreads.",
+    gate: "The pass is wrong. Snow falls and makes no sound. Your own footsteps are missing.",
+    intro: "Something has opened in the high pass. It is not a cave or a crevice. It is a place where the world forgot to continue. The snow falls into it and does not land. If it grows, Highmarch is next. You have seen the Void's work. Come and see its door.",
+    turn: "The door is shut, for now. It will open again, somewhere else. The Hush spoke before it fell. It said one word, and I think it was not a threat. I think it was a plea.",
+    opts: [{ t: "Seal it with the garrison's help. Hold the line.", reward: { xp: 320, crowns: 250, item: 3 }, set: { void_held: 1 }, eff: gift({ troops: 10, say: "The garrison of Highmarch marches with you." }), text: "Marl, Wynn and a hundred men stand in a silent snowfall for three days. When it is over, nobody speaks of it. They all know." },
+      { t: "Study it. Learn what it wants before you close it.", reward: { xp: 320, perm: "pts" }, set: { void_studied: 1 }, text: "You sit at the edge for a long hour, and something looks back. It is not hungry. It is afraid. Of change." }] });
+
+  // ---------------- CHAIN 4 · LUMINANT · THE MEMORY THIEF ----------------
+  ch({ id: "forgetting", act: 2, hub: "luminantc", npc: "wenna", npcDef: { name: "Elder Wenna", col: "#e8e0a0", hair: "#f0f0f0", idle: "I used to know the name of every elder. I am not certain I know my own." },
+    need: d3, name: "The Forgetting Council", zone: "forgetting", zname: "The Thief's Archive", th: "cave", lv: 2, seed: 431, pal: ["inkling", "inkspit"], boss: "namethief", obj: "Find the thief who is stealing the Council's names.",
+    gate: "A door in the Annex that was not there last week. It opens on a room of unlabeled shelves.",
+    intro: "The Council of Remembers is forgetting, and not only from age. Someone is taking names, whole names, from the memory-glass and the minds that hold them. We keep the memory of the Realm. We cannot keep our own. Find the thief. I will tell you who I am when you return, if I can.",
+    turn: "You have found it. A child's memory of me, stored in glass. The Name-Thief was feeding on grief and hunger and old pain. I remember my daughter. I wish I did not.",
+    opts: [{ t: "Return the memory to Wenna. Memory is hers to carry.", reward: { xp: 150, perm: "pts" }, set: { lf_return: 1 }, text: "Wenna holds the glass and weeps. “It hurts,” she says. “Thank you. It hurts, and it is mine.”" },
+      { t: "Shatter it. She has suffered enough.", reward: { xp: 150, crowns: 200 }, set: { lf_shatter: 1 }, text: "The glass dies in a flash of white. Wenna blinks and asks politely who you are. She is calm. She is lighter. She is not quite herself." }] });
+  ch({ id: "promises", act: 2, hub: "luminantc", npc: "elyndra", npcDef: { name: "Elyndra of the Lanterns", col: "#c8a0e8", hair: "#e8e0ff", idle: "I remember everything. Every word. Every promise. Do not ask me to forget, because I will say no." },
+    need: function (f) { return f.qd_forgetting; }, name: "The Ledger of Promises", zone: "promises", zname: "The Hall of Oaths", th: "cave", lv: 3, seed: 432, pal: ["inkling", "hollowsent"], boss: "oathbreaker", obj: "Face the Oathbreaker in the Hall of Oaths.",
+    gate: "A silent hall of paper lanterns, each lit by a promise somebody made.",
+    intro: function () {
+      var f = F(), l = [];
+      if (f.ash_lie) l.push("You told Dessa the bandits took the tithe. You knew it was Haldan.");
+      if (f.ash_truth) l.push("You exposed Haldan before the village. It was true. It was also cruel.");
+      if (f.hm_clean) l.push("You told Marl his men died cleanly. They were unwritten.");
+      if (f.lf_shatter) l.push("You destroyed Wenna's memory because it hurt her.");
+      if (f.ember_recipe === "keep") l.push("You kept Cass's recipe and told nobody.");
+      if (!l.length) l.push("You have kept your word so far. That is rarer than you think.");
+      return "I keep a ledger of promises and the lies that grew around them. I do not judge. I remember. " + l.join(" ") + " There is a thing in the Hall of Oaths that eats broken vows. It has grown fat on the Realm. Come with me, and be honest with it, because it will know.";
+    },
+    turn: "The Oathbreaker is gone. It spoke with your voice at the end. It listed your promises. Every one. I have never seen anyone hear that and stay standing.",
+    opts: [{ t: "“I will answer for every one of them.”", reward: { xp: 250, perm: "pts" }, set: { el_owned: 1 }, text: "Elyndra puts a hand over her own heart. “That is all I ever wanted from anyone. Not perfection. Ownership.”" },
+      { t: "“Some of those lies kept people alive.”", reward: { xp: 250, crowns: 250 }, set: { el_defend: 1 }, text: "“Some did,” Elyndra says gently. “And some kept you comfortable. I will remember both. I always do.”" }] });
+  ch({ id: "lanterns", act: 3, hub: "luminantc", npc: "elyndra", need: function (f) { return f.qd_promises && f.q5done; }, name: "The Lantern Procession", zone: "lanternhall", zname: "The Lantern Road", th: "cave", lv: 3, seed: 433, pal: ["inkling", "echo"], boss: "lanternking", obj: "Walk the Lantern Road and end the Lantern-King's procession.",
+    gate: "A road of lanterns that burn a hundred years of someone's memories.",
+    intro: "The Spiritveil dead do not rest, because the living will not let go. A procession walks the Lantern Road every night, led by a king who was never crowned. He carries every grief anyone has put down. Someone has to take it from him, or the Lantern City goes mad. It will cost you something. Everything does.",
+    turn: "He has set it down. The lanterns are going out one by one, quietly. Elyndra stands in the middle of the road, looking at her hands. She is crying, and she is smiling.",
+    opts: [{ t: "Carry one grief yourself. Choose the lightest and remember it.", reward: { xp: 400, perm: "hp" }, set: { lantern_carry: 1 }, text: "The grief is not yours, and it is. A stranger's last day, in your head forever. You will not forget it. It is the best thing you ever lost." },
+      { t: "Let the lanterns go dark. The dead have earned it.", reward: { xp: 400, crowns: 400, item: 3 }, set: { lantern_dark: 1 }, text: "The road goes black, one lamp at a time. In the Lantern City, a hundred people sleep through the night for the first time in years." }] });
+
+  // ---------------- CHAIN 5 · WINDSPIRE · THE WIND OWES ----------------
+  var d4 = function (f) { return !!f.q4done; };
+  ch({ id: "kaelone", act: 3, hub: "windspire", npc: "kaelren", npcDef: { name: "Kaelren Stormborne", col: "#6cc0e8", hair: "#f0f8ff", idle: "I have never lost a race. I have never won one either. I just keep leaving before it ends." },
+    need: d4, name: "The Last Courier", zone: "kaelone", zname: "The Storm Road", th: "pass", lv: 3, seed: 441, pal: ["scout", "slinger"], boss: "stormbanner", obj: "Ride the Storm Road with Kaelren.",
+    gate: "A cliff road where the wind blows sideways and every cairn is carved with a courier's name.",
+    intro: "There is a message that has to cross the Storm Road before the Assembly sits. Nine couriers have died trying. I have volunteered every time. The Assembly says I may not go. I would like you to tell me I may. Or not. I do not know which I want.",
+    turn: "You came back. I almost did not. I stood at the last cairn and I thought about charging the banner alone, the way I always do. This time I looked behind me and you were there. That felt like something. I do not have a name for it.",
+    opts: [{ t: "“Stay behind me this time. You do not have to die for the message.”", reward: { xp: 260, perm: "pts" }, set: { kael_stay: 1 }, text: "Kaelren laughs, a short startled sound. “Behind someone. Hm. Nobody has ever asked me to be behind them.”" },
+      { t: "“Charge. I will cover you.”", reward: { xp: 260, item: 2 }, set: { kael_go: 1 }, text: "He grins like a boy, and is gone down the road in a blue streak. He does not look back. You see him get there. You see him live. This time." }] });
+  ch({ id: "jorrenone", act: 3, hub: "windspire", npc: "jorren", npcDef: { name: "Jorren", col: "#3a3a4e", hair: "#1a1a22", idle: "Do not ask where I go. I will always come back. That is the only promise I have ever made." },
+    need: d4, name: "The Knife That Was Never Asked", zone: "jorrenone", zname: "The Dockshade", th: "cave", lv: 3, seed: 442, pal: ["knife", "assassin"], boss: "contractor", obj: "Follow Jorren into the Dockshade.",
+    gate: "A cellar behind the Spire's docks. Someone has scratched a sign on the door you almost recognise.",
+    intro: "I have one more contract. I did not take it. It was given to me before I was old enough to refuse, and the man who gave it is dead, and the contract is not. Someone in the Dockshade holds it. I am going. I did not ask you to come. I would like to know I was not alone, once.",
+    turn: "It is over. It was my own name on the paper. They made me a knife before I was a person. I think I would like to see what the person is like.",
+    opts: [{ t: "“Whatever you were made as, you are free to be something else.”", reward: { xp: 280, perm: "pts" }, set: { jorren_free: 1 }, text: "He does not answer. He cleans his blade slowly and puts it away without sharpening it. It is the first time you have seen him do that." },
+      { t: "“Keep the knife close. You are good at it.”", reward: { xp: 280, crowns: 260 }, set: { jorren_knife: 1 }, text: "“Yes,” he says, as if you had confirmed an old suspicion. “I am.” He walks away with a very straight back." }] });
+  ch({ id: "twowounds", act: 4, hub: "windspire", npc: "kaelren", need: function (f) { return f.qd_kaelone && f.qd_jorrenone && f.q5done; }, name: "Two Wounds", zone: "twowounds", zname: "The Mirror Road", th: "pass", lv: 3, seed: 443, pal: ["scout", "knife"], boss: "mirrorself", obj: "Cross the Mirror Road, where everyone meets the self they run from.",
+    gate: "A road of polished stone, where every step shows a version of you that stayed behind.",
+    intro: function () { var f = F(); return "Jorren and I have been circling each other for a month. " + (f.kael_stay ? "You taught me I could stay." : "You taught me I could charge and live.") + " " + (f.jorren_free ? "You told him he could be someone." : "You told him to keep the knife.") + " There is a road that makes you face the thing you run from. We are going to walk it together. I would like you at our back."; },
+    turn: "The Mirror is shattered. Jorren sat down in the road and laughed. Kaelren took his hand. Neither of them has said a word about it since. They do not need to.",
+    opts: [{ t: "Tell them they are the best companions anyone could ask for.", reward: { xp: 350, perm: "hp" }, set: { two_bond: 1 }, text: "Kaelren looks at his boots. Jorren says, “Obviously,” and means it. The three of you walk out of the Mirror Road side by side." },
+      { t: "Say nothing. Let them find it on their own.", reward: { xp: 350, item: 3 }, set: { two_quiet: 1 }, text: "In the evening, you hear them talking quietly by a fire, and you leave them to it." }] });
+
+  // ---------------- ACT VI · THE QUIET BETWEEN (main story, after the Iron Reaper) ----------------
+  ACTS.push({ n: "VI", t: "The Quiet Between", d: "The Void is not an enemy. It is a fear. And fears can be answered.", open: function (f) { return !!f.qd_gate; }, done: function (f) { return !!f.qd_hollowthrone; } });
+  ACTOPEN[6] = function (f) { return !!f.qd_gate; };
+  var m = function (id) { return function (f) { return !!f["qd_" + id]; }; };
+  ch({ id: "silence1", opt: 0, act: 6, hub: "granitekeep", npc: "voyager", npcDef: { name: "The Voyager", col: "#c8c8d8", hair: "#f0f0f8", idle: "I have walked this road before. I walked it before the Keep had stones. Do not ask me how." },
+    name: "The First Silence", zone: "silence1", zname: "The Silent Village", th: "pass", lv: 4, seed: 451, pal: ["hollowsent", "wraith"], boss: "hush1", obj: "Enter the Silent Village.",
+    gate: "A village of lit windows and no sound. Not a dog, not a child, not wind.",
+    intro: "The Iron Reaper was never the real threat. It was a lid on a pot. A village in the Greywater has gone quiet, and no one in it remembers having been anything else. I have seen this before. I will go with you. I will not fight with magic. I will not tell you why. I will not leave you.",
+    turn: "It spoke. You heard it. It said: “Stop.” Only that. All the Void wants is for everything to stop, because everything hurts when it moves. I do not hate it. That is the difficult part.",
+    opts: [{ t: "“It is afraid. We should not hate it.”", reward: { xp: 500, crowns: 300 }, set: { v6_pity: 1 }, text: "The Voyager looks at you for a long time. “Yes,” he says. “That is what I thought, the first time too. It cost me everything.”" },
+      { t: "“It has to be stopped. Whatever it feels.”", reward: { xp: 500, item: 3 }, set: { v6_war: 1 }, text: "“Perhaps,” the Voyager says. “Perhaps that is the only way. I have never found another. I have tried.”" }] });
+  ch({ id: "voyagerpast", opt: 0, act: 6, hub: "granitekeep", npc: "voyager", need: m("silence1"), name: "What the Voyager Will Not Say", zone: "voyagerroad", zname: "The Road He Walked", th: "cave", lv: 4, seed: 452, pal: ["hollowsent", "frostshade"], boss: "voidmirror", obj: "Follow the Voyager down the road he never describes.",
+    gate: "A road of grey stone under a grey sky. Everything is exactly where it was left, forever.",
+    intro: function () { return "You have asked me twice why I do not use magic, and I told you to stop asking. " + (F().v6_pity ? "You said the Void is afraid, and that is true. " : "You said the Void must be stopped, and you might be right. ") + "There is a road I walked once, to a place where a man made a bargain with it. I think it is time you saw it. I will not narrate. I will only walk."; },
+    turn: "You saw it. You saw him, the man I was, making the bargain. He asked the Void to let him not feel the loss of everyone he loved. It said yes. He has not felt anything since. That is why I cannot die, and why I cannot use magic, and why I follow you. It is the only thing that still feels like a choice.",
+    opts: [{ t: "“You can still choose who you are. Starting now.”", reward: { xp: 600, perm: "pts" }, set: { v6_choose: 1 }, text: "The Voyager breathes out slowly. A single tear tracks down his cheek, as though he has forgotten how. “I would like that,” he says. “I would like that very much.”" },
+      { t: "“Then we finish what you started. Together.”", reward: { xp: 600, crowns: 500, item: 3 }, set: { v6_together: 1 }, text: "“Together,” he says, and the word has weight. “Yes. That may be what I was waiting for.”" }] });
+  ch({ id: "unmaderoad", opt: 0, act: 6, hub: "windspire", npc: "aeris", need: m("voyagerpast"), name: "The Unmade Road", zone: "unmaderoad", zname: "The Unmade Road", th: "pass", lv: 4, seed: 453, pal: ["wraith", "hollowsent"], boss: "unmade", obj: "Hold the Unmade Road until the Realms arrive.",
+    gate: "The road ends in a white blur. Beyond it there is no road, only the idea of one.",
+    intro: "The Void has taken a road. Not a village. A road. The whole thing is gone, as though no one ever walked it. The Realms must march to the Hollow Throne together. They will not do it unless someone holds this road first. Stormreach will ride. Stonehold will march. Lightforge remembers. I need you to hold the line while they decide.",
+    turn: "You held. The Realms are marching, all nine of them. I did not think I would live to see that.",
+    opts: [{ t: "“Stonehold's Eternal Senate stands beside us.”", reward: { xp: 700, crowns: 400 }, set: { v6_stone: 1 }, eff: gift({ troops: 15, say: "Stonehold marches with you." }), text: "The Senators arrive in slow stone ranks. Orm gives you a nod that is two hundred years deep." },
+      { t: "“Stormreach rides first. Speed is what the Void cannot match.”", reward: { xp: 700, item: 3 }, set: { v6_storm: 1 }, eff: gift({ troops: 15, say: "Stormreach rides with you." }), text: "The riders pass in a roar of wind and thunder. The Void's quiet is the first thing to break." }] });
+  ch({ id: "hollowthrone", opt: 0, act: 6, hub: "highmarch", npc: "hald", need: m("unmaderoad"), name: "The Hollow Throne", zone: "hollowthrone", zname: "The Hollow Throne", th: "pass", lv: 5, seed: 454, pal: ["hollowsent", "wraith"], boss: "hollowking", obj: "End the Hollow King, or answer him.",
+    gate: "A throne of nothing at the end of the world. A king of nothing sits on it, wearing the faces of everyone who was ever forgotten.",
+    intro: function () { var f = F(); return "This is the last road. " + (f.v6_choose ? "The Voyager will walk it as himself, for the first time. " : f.v6_together ? "The Voyager walks beside you. " : "") + "The Hollow King is every thing the Void has ever taken, speaking with one voice. He does not want to destroy the world. He wants to make it stop hurting. Every Realm has marched. Every companion stands behind you. What you choose here is the shape of everything after."; },
+    turn: "It is over. The throne is empty. The Realms are shaking hands with people who were their enemies a year ago, and nobody can quite say how. Book One ends here. Everything after is what you make of it.",
+    opts: [{ t: "Break the Hollow King. The world must keep moving.", reward: { xp: 1200, crowns: 1000, item: 3, perm: "hp" }, set: { void_end: "broken" }, text: "The Hollow King shatters like glass. The faces he wore go free, one by one, and every one of them looks at you. The Void pulls back, wounded, and will return." },
+      { t: "Sit with the Hollow King. Teach the Void that change does not have to end.", reward: { xp: 1200, perm: "pts" }, set: { void_end: "taught" }, text: "You sit on the empty step and tell him a story. It takes all night. At dawn the Void is still there, but it is no longer pressing. It is listening." },
+      { t: "Offer yourself to the Hollow Throne. Be the one who remembers them all.", reward: { xp: 1500, crowns: 500, item: 3, perm: "hp" }, set: { void_end: "vessel" }, text: "You walk into the Throne. For one second you are every name that was ever forgotten. Then you are yourself again, carrying all of them. The Void has someone to talk to. So do you." }] });
 })();
 
   // ---- input ----
