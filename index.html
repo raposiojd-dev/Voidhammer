@@ -1169,16 +1169,16 @@ window.__vhGame = function () { (function () {
       if (s.stock <= 0) { s.unrest = (s.unrest || 0) + 1; if (s.owner === "player" && s.unrest === 5) toast("Hunger is turning to anger in " + s.name + "."); }
       else if (s.stock > s.cap * 0.1) s.unrest = Math.max(0, (s.unrest || 0) - 2);
       if (s.owner !== "rebel" && (s.unrest || 0) >= 12) rebelTown(s);
-      if (s.stock > s.cap * 0.5) s.gar = Math.min(s.gmax * (s.owner === "player" ? 1.5 : 1), s.gar + 0.3);
+      if (s.stock > s.cap * 0.5) s.gar = Math.min(ovGM(s), s.gar + 0.3);
     });
     ovShare();
-    S.sites.forEach(function (s) { if (s.type !== "village") s.gar = Math.min(s.gmax * (s.owner === "player" ? 1.5 : 1), s.gar + (s.owner === "player" ? 0.15 + 0.08 * sk("garrisoner") : 0.6)); if (s.id === "irontown" && s.owner === "metal" && !s.hard) { s.hard = 1; s.gmax = Math.max(s.gmax, 280); s.wall = Math.max(s.wall, 3.2); s.gar = Math.max(s.gar, 240); } });
+    S.sites.forEach(function (s) { if (s.type !== "village") s.gar = Math.min(ovGM(s), s.gar + (s.owner === "player" ? 0.15 + 0.08 * sk("garrisoner") : (s.owner === "metal" ? 1.4 : 0.6))); if (s.id === "irontown" && s.owner === "metal" && !s.hard) { s.hard = 1; s.gmax = Math.max(s.gmax, 280); s.wall = Math.max(s.wall, 3.2); s.gar = Math.max(s.gar, 240); } });
     var lords = S.enemies.filter(function (e) { return e.kind === "lord"; });
     lords.forEach(function (e) {
       var ownN = holdings(e.fac).length;
       var pw = e.fac === "metal" ? mcPower() : 1;
-      if (e.fac === "metal") e.q = 1.2 * (1 + 0.55 * (pw - 1));
-      e.n = Math.min((32 + ownN * (e.fac === "metal" ? 6 : 12)) * (e.fac === "metal" ? 1 + 0.6 * (pw - 1) : 1), e.n + (0.5 + ownN * 0.15) * (e.fac === "metal" ? 1 + (pw - 1) * 0.8 : 1));
+      if (e.fac === "metal") e.q = 1.3 * (1 + 0.55 * (pw - 1));
+      e.n = Math.min((32 + ownN * (e.fac === "metal" ? 6 : 12)) * (e.fac === "metal" ? (1 + 0.6 * (pw - 1)) * (1.35 + 0.12 * ovFoes()) : 1), e.n + (0.5 + ownN * 0.15) * (e.fac === "metal" ? (1 + (pw - 1) * 0.8) * 1.6 : 1));
       if (e.fac === "metal" && !domOpen()) { e.dest = null; return; }
       var tgt = null;
       S.sites.forEach(function (s) { if (s.type !== "village" && atWar(e.fac, s.owner) && dist(e.x, e.y, s.x, s.y) < 36) tgt = s; });
@@ -1200,12 +1200,12 @@ window.__vhGame = function () { (function () {
     Object.keys(FAC).forEach(function (f) {
       if (f === "player" || f === "rebel") return;
       var cnt = S.enemies.filter(function (e) { return e.kind === "lord" && e.fac === f; }).length, hs = holdings(f);
-      var want = f === "metal" ? Math.min(6, 2 + mcFellCount()) : 2;
+      var want = f === "metal" ? Math.min(9, 3 + mcFellCount() + ovFoes()) : 2;
       if (cnt < want && hs.length && (S.fres[f] || 0) <= S.day) {
         var c = hs[0], used = {}; S.enemies.forEach(function (q) { if (q.fac === f) used[q.name] = 1; });
         var nm2 = FAC[f].lords.filter(function (q) { return !used[q]; })[0] || FAC[f].lords[0];
-        S.enemies.push({ id: S.eid++, kind: "lord", fac: f, name: nm2, x: c.x + 40, y: c.y + 30, n: f === "metal" ? 30 : 22, q: 1.1, cool: 0, dest: null });
-        S.fres[f] = S.day + (f === "metal" ? 8 : 12);
+        S.enemies.push({ id: S.eid++, kind: "lord", fac: f, name: nm2, x: c.x + 40, y: c.y + 30, n: f === "metal" ? 48 : 22, q: f === "metal" ? 1.3 : 1.1, cool: 0, dest: null });
+        S.fres[f] = S.day + (f === "metal" ? Math.max(3, 8 - ovFoes()) : 12);
       }
     });
     dipDay();
@@ -8140,6 +8140,8 @@ window.__vhGame = function () { (function () {
   var SGLY = [330, 236, 142], SGTH = 22, SGNAMES = ["Outer wall", "Inner wall", "The keep"];
   function ovEngOf(id) { if (!S.eng) S.eng = {}; return S.eng[id] || (S.eng[id] = { lad: 0, ram: 0, twr: 0, cat: 0 }); }
   function ovSgN(st) { return st && (st.type === "castle" || st.id === "irontown") ? 3 : 2; }
+  function ovFoes() { try { return Math.round(realmList().length / 3) + (S.pwar && S.pwar.metal ? 1 : 0); } catch (er) { return 1; } }
+  function ovGM(s) { return s.gmax * (s.owner === "player" ? 1.5 : s.owner === "metal" && s.type !== "village" && s.id !== "irontown" ? 1.5 + 0.05 * ovFoes() : 1); }
   function ovCapK(st) { if (!st || st.id !== "irontown" || st.owner !== "metal") return 0; return S.sites.filter(function (q) { return q.owner === "metal" && q.id !== "irontown" && q.type !== "village"; }).length; }
   function ovCapMul(st) { return st && st.id === "irontown" ? 1.4 * (1 + 0.5 * ovCapK(st)) : 1; }
   function ovDefAdv(st) { return (1.35 + 0.1 * (ovSgN(st) - 1)) * ovCapMul(st); }
