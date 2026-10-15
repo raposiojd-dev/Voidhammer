@@ -1006,7 +1006,7 @@ window.__vhGame = function () { (function () {
     if (B.allies && B.allies.length) allyLosses(win ? (forceWin ? (how === "burn" ? 0.1 : (1 - pr)) : (1 - pr)) : Math.min(0.85, (1 - pr) + 0.25), win);
     if (win && B.kind === "lord" && B.fac === "metal" && S.mc) { S.mc.defeats++; }
     if (win && B.kind === "lord") { dipBattle(B.fac); ovRelief(B.eid); }
-    if (win && B.kind === "lord" && Math.random() < (B.fac === "metal" ? 0.5 : 0.22) * (1 + 0.3 * tier())) { var my2 = genItem(5, null, 3 + tier()), c2 = cp(); if (!c2.items) c2.items = []; c2.items.push(my2); toast("The hero fell and left " + my2.name + "."); log("A fallen hero left behind " + my2.name + ", a mythic " + SLOTN[my2.slot].toLowerCase() + ".", "e"); }
+    if (win && B.kind === "lord" && false) { var my2 = genItem(5, null, 3 + tier()), c2 = cp(); if (!c2.items) c2.items = []; c2.items.push(my2); toast("The hero fell and left " + my2.name + "."); log("A fallen hero left behind " + my2.name + ", a mythic " + SLOTN[my2.slot].toLowerCase() + ".", "e"); }
     if (win) {
       var loot = Math.round(DF.loot * B.en0 * (B.kind === "void" || B.kind === "rift" ? 3 : 1.6) * (1 + 0.15 * (S.skills.scavenger || 0)) * (1 + 0.08 * Math.min(1, (S.gear.blades || 0) / Math.max(1, B.t0))));
       var gotXp = addXp(B.en0 * (B.kind === "void" ? 5 : 3)); S.vxp = (S.vxp || 0) + Math.max(1, Math.round(B.en0 * 0.5));
@@ -4559,7 +4559,7 @@ window.__vhGame = function () { (function () {
       if (rr === 0) { var bk = pick(["blades", "mail", "bows", "kit"]); S.loot[bk] = (S.loot[bk] || 0) + 1; S.salvage = lootCount(); AR.floats.push({ x: e.x, y: e.y - 30, t: 1.2, s: "+" + LOOT[bk].name, col: RAR[0].c }); }
       else AR.items.push({ x: e.x - 4, y: e.y, t: "item", item: genItem(rr, null, tier() * 2) });
     }
-    if (HEROB[e.type] && Math.random() < HEROB[e.type] * (1 + 0.3 * tier())) { var my = genItem(5, null, 3 + tier()); AR.items.push({ x: e.x + 6, y: e.y + 3, t: "item", item: my }); aToast("A hero's treasure: " + my.name, RAR[5].c); }
+    if (HEROB[e.type] && Math.random() < HEROB[e.type] * (1 + 0.15 * tier())) { var my = genItem(5, null, 3 + tier()); AR.items.push({ x: e.x + 6, y: e.y + 3, t: "item", item: my }); aToast("A hero's treasure: " + my.name, RAR[5].c); }
     AR.fx.push({ x: e.x, y: e.y - 6, t: 0.4 });
     if (sk("bloodlust") && Math.random() < 0.12 * sk("bloodlust")) { AR.p.hp = Math.min(AR.p.max, AR.p.hp + 0.5); AR.floats.push({ x: AR.p.x, y: AR.p.y - 18, t: 0.8, s: "+blood", col: "#ff5a5a" }); }
     if (e.type === "grath") { cp().f.grathdead = 1; aToast("Grath is down. Check the chest."); }
@@ -5457,7 +5457,7 @@ window.__vhGame = function () { (function () {
     dawn: { n: "Dawnforged", p: { w: "Dawnforged Brand", a: "Dawnforged Harness", r: "Dawnforged Arc", k: "Dawnforged Greaves" }, b: { 2: { dmg: 0.1 }, 4: { dmg: 0.45, army: 0.15, cdr: 0.1 } }, d: { 2: "+10% strike", 4: "+45% strike, −10% attack time, +15% army strength in map battles" } }
   }, SETK = Object.keys(SETS);
   var MYTH = { w: ["Voidhammer", "Worldsplitter", "The Verdict of Nine"], a: ["Aegis of the Shattered Realms", "Nine-Realm Bulwark"], r: ["Lastlight", "The Unmaking Arc"], k: ["Mantle of Broken Stillness", "Shroud of Nine Names"] };
-  var HEROB = { dravik: 1, sable: 0.6, quill: 0.6, hollowknife: 0.5, unwritten: 0.5 };
+  var HEROB = { dravik: 0.16, sable: 0.1, quill: 0.1, hollowknife: 0.08, unwritten: 0.08 };
   var AFN = [0, 1, 2, 3, 2, 3], AFV = [0, 1, 2, 3, 2.5, 4.5];
   function pickSet(slot) {
     var its = (cp().items || []), miss = SETK.filter(function (k) { return !its.some(function (i) { return i.set === k && i.slot === slot; }); });
@@ -7548,7 +7548,7 @@ window.__vhGame = function () { (function () {
     if (r < pM) rr = 5; else if (r < pM + pS) rr = 4; else if (Math.random() < 0.35) rr = Math.min(3, rr + 1);
     var need = rr >= 4 ? 25 : rr === 3 ? 20 : rr === 2 ? 10 : 1;
     AR.items.push({ x: e.x - 5, y: e.y + 3, t: "item", item: genItem(rr, null, lv + 1 + 2 * tier()) });
-    if (HEROB[t] && Math.random() < HEROB[t] * (1 + 0.3 * tier())) { var my = genItem(5, null, 3 + tier()); AR.items.push({ x: e.x + 7, y: e.y + 3, t: "item", item: my }); }
+    if (HEROB[t] && Math.random() < HEROB[t] * (1 + 0.15 * tier())) { var my = genItem(5, null, 3 + tier()); AR.items.push({ x: e.x + 7, y: e.y + 3, t: "item", item: my }); }
     if (L < need) setTimeout(function () { if (AR) aToast("Its best treasure needs level " + need + ". Come back stronger.", "#b69cff"); }, 900);
     else if (rr >= 4) setTimeout(function () { if (AR) aToast(rr === 5 ? "A mythic treasure." : "A set piece.", RAR[rr].c); }, 900);
   }
