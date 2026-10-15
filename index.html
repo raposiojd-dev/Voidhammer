@@ -891,8 +891,8 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
       if (S.from[pick] <= 0) delete S.from[pick];
     }
   }
-  function wageDay() { var mc = S.from.merc || 0, ex = 0; normVets(); VKEYS.forEach(function (q) { ex += (S.vets[q] || 0) * (TROOPT[q - 1].wage - 0.25); }); return ((T() - mc) * 0.25 + mc * 0.6 + ex) * (1 - 0.08 * (S.skills.discipline || 0)) * (1 - 0.1 * sk("payday")) * DF.up; }
-  function eatDay() { return DF.up * T() * 0.12 * (has("meal") ? 0.85 : 1) * (1 + 0.05 * (S.skills.sergeant || 0)) * (1 - 0.08 * (S.skills.forager || 0)) * (1 - 0.06 * Math.min(1, (S.gear.kit || 0) / Math.max(1, T()))); }
+  function wageDay() { var mc = S.from.merc || 0, ex = 0; normVets(); VKEYS.forEach(function (q) { ex += (S.vets[q] || 0) * (TROOPT[q - 1].wage - 0.25); }); return ((T() - mc) * 0.25 + mc * 0.6 + ex) * (1 - 0.08 * (S.skills.discipline || 0)) * (1 - 0.1 * sk("payday")) * (1 - Math.min(0.6, skfx("wage"))) * DF.up; }
+  function eatDay() { return DF.up * T() * 0.12 * (has("meal") ? 0.85 : 1) * (1 + 0.05 * (S.skills.sergeant || 0)) * (1 - 0.08 * (S.skills.forager || 0)) * (1 - Math.min(0.6, skfx("forage"))) * (1 - 0.06 * Math.min(1, (S.gear.kit || 0) / Math.max(1, T()))); }
   function daysOf(have, perDay) { return perDay > 0 ? Math.floor(have / perDay) : 99; }
   function creditWord(c) { return c <= -2 ? "Hostile" : c < 2 ? "Wary" : c < 5 ? "Friendly" : "Trusting"; }
   function moodWord(m) { return m >= 60 ? "Busy" : m >= 30 ? "Steady" : m >= 10 ? "Quiet" : "Still"; }
@@ -2982,12 +2982,12 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
   function points() { return Math.max(0, lvl() - 1 - spent() + ((S.camp && S.camp.qpts) || 0) + 3 * Math.min(3, (S.camp && S.camp.beat) || 0)); }
   function fr(k) { return Math.min(1, (S.gear[k] || 0) / Math.max(1, T())); }
   function addXp(n) {
-    n = Math.round(n * (1 + 0.1 * fr("bows"))); var before = lvl(); S.xp = (S.xp || 0) + n;
+    n = Math.round(n * (1 + 0.1 * fr("bows")) * (1 + skfx("xp"))); var before = lvl(); S.xp = (S.xp || 0) + n;
     if (lvl() > before) { toast("Level " + lvl() + ". You have a skill point."); log("Reached level " + lvl() + ".", "e"); }
     return n;
   }
   function isTown(s) { return s.type === "town"; }
-  function buyPrice(k, s) { return Math.max(1, Math.round(LOOT[k].base * (isTown(s) ? 1.8 : 2.1) * (1 - 0.05 * sk("haggler") - 0.06 * sk("bulkdeal")))); }
+  function buyPrice(k, s) { return Math.max(1, Math.round(LOOT[k].base * (isTown(s) ? 1.8 : 2.1) * (1 - 0.05 * sk("haggler") - 0.06 * sk("bulkdeal") - skfx("buy")))); }
   function forgeSection(s) {
     var h = '<div class="sec">Forge: make better gear</div><p class="dim-t">Bring spare salvage from your backpack. The smith melts it down and works it into something finer.</p>';
     Object.keys(FORGE).forEach(function (k) {
@@ -3533,7 +3533,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
       F.units.forEach(function (u) { if (u.s === "p" && !u.hero && !u.kael) { u.ax = u.x; u.ay = u.y; } });
       fieldMsg({ follow: "Your men form on you.", charge: "Charge!", hold: "Hold the line.", retreat: "Fall back!" }[c]);
     } else if (c === "cry") {
-      if (F.crycd <= 0 && !F.hero.dead) { F.cry = 9; F.crycd = 26 * (1 - setAgg().cdr); F.wave2 = { x: F.hero.x, y: F.hero.y, r: 0 }; fieldMsg("Your men roar. Hit harder for a few seconds."); }
+      if (F.crycd <= 0 && !F.hero.dead) { F.cry = 9 + skfx("cry"); F.crycd = Math.max(10, 26 * (1 - setAgg().cdr) - skfx("crycd")); F.wave2 = { x: F.hero.x, y: F.hero.y, r: 0 }; fieldMsg("Your men roar. Hit harder for a few seconds."); }
     } else if (c === "cast") {
       if (S.held.length && !F.wave) {
         var pick = null; ["kill", "meal", "mother", "forge", "name", "kael"].forEach(function (k) { if (!pick && has(k)) pick = k; }); pick = pick || S.held[0];
@@ -3555,7 +3555,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
   function fieldHit(a, d, mult) {
     if (d.dead) return;
     var dmg = ovCounter(a, d) * (a.horse && a.t === d && !a.chg ? (a.chg = 1, 1.5) : 1) * a.w * (a.hero || a.kael ? 0.3 : 0.21) * (a.hero ? (1 + 0.12 * sk("blademaster")) * gearBattle().hero / Math.max(0.5, 1 - setAgg().cdr) : 1) * (d.s === "p" && !d.hero && !d.kael ? gearBattle().def : 1) * (mult || 1) * rnd(0.8, 1.2);
-    if (a.s === "p" && F.cry > 0) dmg *= 1.3; if (d.s === "p" && F.wallT > F.t) dmg *= 1 - (F.wallRed || 0.4);
+    if (a.s === "p" && F.cry > 0) dmg *= 1.3; if (d.s === "p" && F.wallT > F.t) dmg *= 1 - (F.wallRed || 0.4); if (a.s === "p" && !a.hero && !a.kael) dmg *= 1 + skfx("tdmg"); if (d.s === "p" && !d.hero && !d.kael) dmg *= 1 - Math.min(0.5, skfx("tarm"));
     if (onHill(a.x, a.y)) dmg *= 1.2;
     if (inTrees(d.x, d.y)) dmg *= 0.8;
     if (d.s === "p" && F.cmd === "hold" && !d.hero && !d.kael) dmg *= 0.8;
@@ -3646,7 +3646,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
       if (arw.t >= arw.dur) {
         F.arrows.splice(i, 1); ovSpark(arw.ex, arw.ey - 3, null, 1);
         if (arw.d && !arw.d.dead && !arw.d.gone && dist(arw.d.x, arw.d.y, arw.ex, arw.ey) < (arw.rad || 16)) {
-          var ad = ovCounter(arw.a, arw.d) * (arw.a.jav ? 1.25 : 1) * arw.a.w * 0.3 * (arw.mul || 1) * rnd(0.75, 1.25) * (onHill(arw.a.x, arw.a.y) ? 1.15 : 1) * (inTrees(arw.d.x, arw.d.y) ? 0.7 : 1) * (arw.s === "p" && F.cry > 0 ? 1.3 : 1);
+          var ad = ovCounter(arw.a, arw.d) * (arw.a.jav ? 1.25 : 1) * arw.a.w * 0.3 * (arw.mul || 1) * rnd(0.75, 1.25) * (onHill(arw.a.x, arw.a.y) ? 1.15 : 1) * (inTrees(arw.d.x, arw.d.y) ? 0.7 : 1) * (arw.s === "p" && F.cry > 0 ? 1.3 : 1) * (arw.s === "p" ? 1 + skfx("tarch") : 1);
           if (arw.d.s === "p" && F.cmd === "hold" && !arw.d.hero && !arw.d.kael) ad *= 0.8;
           arw.d.hp -= ad; arw.d.flash = 0.18;
           if (arw.d.hp <= 0 && !arw.d.dead) { arw.d.dead = true; F.corpses.push({ x: arw.d.x, y: arw.d.y, s: arw.d.s, v: arw.d.void }); if (arw.d.hero) fieldMsg("You are down! The line wavers."); if (arw.d.kael && !arw.d.friend) { F.kdead = true; fieldMsg("Kaelren has fallen."); } if (arw.d.friend) fieldMsg("Your friend is down!"); }
@@ -3659,7 +3659,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
         if (x.dead || x.gone || x.rout || x.hero || x.kael || x.void) return;
         var f = x.s === "p" ? pf : ef; if (f >= 0.3) return;
         var pr = (0.3 - f) * (x.s === "p" ? (F.hero.dead ? 1.6 : 0.8) : (B.kind === "lord" ? 0.8 : 1.4)) * 1.2;
-        if (x.s === "p" && F.cry > 0) pr *= 0.3;
+        if (x.s === "p" && F.cry > 0) pr *= 0.3; if (x.s === "p") pr *= 1 - Math.min(0.7, skfx("morale"));
         if (Math.random() < pr) x.rout = true;
       });
     }
@@ -4672,7 +4672,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
   function dmgEn(e, dmg, dx, dy, kn) {
     sfx("hit");
     if (e.dead || e.gone || e.yield) return false; if (AR && AR.p && AR.p.buffT > AR.t) dmg *= 1.3; var d = Math.hypot(dx, dy) || 1;
-    if (e.d.boss && sk("giantslayer")) dmg *= 1 + 0.15 * sk("giantslayer"); if (e.d.boss) dmg *= 1 + affSum("boss"); if (e.d.boss && sk("bossbane")) dmg *= 1 + 0.35 * sk("bossbane"); if (COOP.guest() && COOP.hit(e, dmg, dx, dy)) return true; e.hp -= dmg; e.flash = 0.2; e.kx = dx / d * (kn || 130) * (e.d.boss ? 0.12 : 0.5); e.ky = dy / d * (kn || 130) * (e.d.boss ? 0.12 : 0.5); AR.fx.push({ x: e.x, y: e.y - 8, t: 0.2 });
+    if (e.d.boss && sk("giantslayer")) dmg *= 1 + 0.15 * sk("giantslayer"); if (e.d.boss) dmg *= 1 + affSum("boss") + skfx("bossdmg"); if (e.d.boss && sk("bossbane")) dmg *= 1 + 0.35 * sk("bossbane"); if (COOP.guest() && COOP.hit(e, dmg, dx, dy)) return true; e.hp -= dmg; e.flash = 0.2; e.kx = dx / d * (kn || 130) * (e.d.boss ? 0.12 : 0.5); e.ky = dy / d * (kn || 130) * (e.d.boss ? 0.12 : 0.5); AR.fx.push({ x: e.x, y: e.y - 8, t: 0.2 });
     AR.floats.push({ x: e.x, y: e.y - 16, t: 0.7, s: String(Math.round(dmg * 10) / 10) });
     if (e.d.yieldAt && e.hp <= e.d.yieldAt && e.hp > 0 && !cp().f.rusk) { e.yield = true; e.hp = Math.max(1, e.hp); }
     if (e.hp <= 0) killEn(e); return true;
@@ -4705,7 +4705,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
   }
   function killEn0(e) {
     e.dead = true; sfx("kill"); if (AR.sp.over) ovKill(e); if (e.ns) { AR.floats.push({ x: e.x, y: e.y - 20, t: 1, s: e.type === "assassin" ? "+30" : "+8", col: "#b69cff" }); S.crowns += e.type === "assassin" ? 30 : 8; } cp().kills = (cp().kills || 0) + 1; addXp((e.d.boss ? 30 : 8) * (1 + tier()));
-    var c = Math.round(Math.floor(3 + Math.random() * 7) * (e.d.boss ? 5 : 1) * (1 + affSum("gold")) * (1 + 0.6 * tier())); S.crowns += c; if (affSum("life") > 0) AR.p.hp = Math.min(AR.p.max, AR.p.hp + affSum("life")); AR.floats.push({ x: e.x, y: e.y - 14, t: 1, s: "+" + c });
+    var c = Math.round(Math.floor(3 + Math.random() * 7) * (e.d.boss ? 5 : 1) * (1 + affSum("gold") + skfx("loot")) * (1 + 0.6 * tier())); S.crowns += c; if (affSum("life") > 0) AR.p.hp = Math.min(AR.p.max, AR.p.hp + affSum("life")); AR.floats.push({ x: e.x, y: e.y - 14, t: 1, s: "+" + c });
     if (Math.random() < 0.35 || e.d.boss) { var gr = e.d.boss ? 3 + Math.floor(Math.random() * 3) : 1 + Math.floor(Math.random() * 2); S.grain = (S.grain || 0) + gr; AR.floats.push({ x: e.x + 8, y: e.y - 8, t: 1, s: "+" + gr + " grain", col: "#e8d08a" }); }
     if (Math.random() < 0.3 || e.d.boss) AR.items.push({ x: e.x, y: e.y, t: "heart" });
     if (Math.random() < 0.35) AR.items.push({ x: e.x + 5, y: e.y + 2, t: "arrow" });
@@ -4729,7 +4729,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
     checkClear();
   }
   function hurtP(n) {
-    var p = AR.p; if (p.inv > 0) return; n = Math.max(0.25, n * COOP.dm() * (1 - armRed()) * (1 + 0.45 * tier())); if (p.wallT > AR.t) n *= 1 - (p.wallRed || 0.4); p.hp -= n; sfx("hurt"); p.inv = 0.55; p.flash = 0.25;
+    var p = AR.p; if (p.inv > 0) return; n = Math.max(0.25, n * COOP.dm() * (1 - armRed()) * (1 + 0.45 * tier())); if (p.wallT > AR.t) n *= 1 - (p.wallRed || 0.4); n *= 1 - Math.min(0.6, skfx("tough")); if (Math.random() < Math.min(0.5, skfx("dodge"))) { p.inv = 0.5; AR.floats.push({ x: p.x, y: p.y - 16, t: 0.7, s: "dodge", col: "#bfe8ff" }); return; } p.hurtT = AR.t; p.adrT = AR.t + skfx("adren"); p.hp -= n; sfx("hurt"); p.inv = 0.55; p.flash = 0.25;
     if (p.hp <= 0 && (AR.ward || 0) < sk("deathward")) { AR.ward = (AR.ward || 0) + 1; p.hp = p.max * 0.5; p.inv = 2; aToast("The Death-ward holds. You stand."); return; }
     if (p.hp <= 0) { var lose = Math.floor(S.crowns * 0.1); S.crowns -= lose; aToast("You fall. Someone drags you back" + (lose ? " and takes " + lose + " crowns for the trouble." : ".")); p.hp = p.max; p.x = AR.spawn[0]; p.y = AR.spawn[1]; p.inv = 2; AR.proj = []; AR.en.forEach(function (e) { if (!e.dead && !e.gone) { e.x = e.hx; e.y = e.hy; e.hp = e.hpm; e.aggro = false; e.yield = false; } }); }
   }
@@ -4745,9 +4745,10 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
     if (a.dlg) { aPress = aShootP = aCastP = false; return; }
     walkClock(dt);
     p.atk2 = Math.max(0, (p.atk2 || 0) - dt);
+    if (p.hp < p.max && a.t - (p.hurtT || -9) > 3) p.hp = Math.min(p.max, p.hp + skfx("regen") * dt);
     if (aShootP) { aShootP = false; aShoot(); }
     if (aCastP) { aCastP = false; dlgOpen("cast"); return; }
-    var v = aInput(), sp = 54 * (1 + affSum("spd")) * (a.sp.over ? 1.35 : 1);
+    var v = aInput(), sp = 54 * (1 + affSum("spd") + skfx("aspd")) * ((p.adrT || 0) > a.t ? 1.25 : 1) * (a.sp.over ? 1.35 : 1);
     if (v[0] || v[1]) {
       p.face = Math.abs(v[0]) > Math.abs(v[1]) ? { x: Math.sign(v[0]), y: 0 } : { x: 0, y: Math.sign(v[1]) }; p.anim += dt * 9; stepSfx(dt);
       var nx = p.x + v[0] * sp * dt, ny = p.y + v[1] * sp * dt;
@@ -10647,6 +10648,147 @@ function skUseField() {
     var sxp = W / 2 + (s.x - cam.x) * cam.z, syp = H * 0.45 + (s.y - cam.y) * cam.z; if (sxp < -200 * cam.z || sxp > W + 200 * cam.z || syp < -200 * cam.z || syp > H + 200 * cam.z) return;
     ctx.save(); ctx.translate(s.x, s.y); try { ovBldExtras(s, t); } catch (e) {} ctx.restore();
   }
+// ===== Shared skill trees (every character) + extra unique skills =====
+// Survival: dungeons, bosses, running.  Warfare: troops and field battles.  Wayfaring: the world map.
+// Each origin gets slightly different strength from the shared trees (SGB), shown in the skill text.
+var SGB = {
+  wanderer: { aspd: 1.3, speed: 1.3, escape: 1.25, forage: 1.1, tdmg: 0.8, morale: 0.9, dodge: 0.9 },
+  farmer: { tough: 1.3, regen: 1.3, forage: 1.4, deaths: 1.25, wage: 1.15, aspd: 0.85, speed: 0.9, escape: 0.85 },
+  trader: { buy: 1.4, sell: 1.2, wage: 1.25, xp: 1.15, speed: 1.1, tdmg: 0.8, tough: 0.85, bossdmg: 0.8 },
+  mercenary: { tdmg: 1.3, tarm: 1.25, morale: 1.25, tarch: 1.15, army: 1.2, wage: 0.9, forage: 0.9, buy: 0.9 },
+  outlaw: { dodge: 1.35, aspd: 1.2, escape: 1.3, adren: 1.4, loot: 1.3, tarm: 0.8, morale: 0.85, wage: 0.9 },
+  smith: { tough: 1.25, bossdmg: 1.25, tarm: 1.2, regen: 0.8, aspd: 0.85, speed: 0.9, escape: 0.85 },
+  noble: { cry: 1.4, crycd: 1.4, morale: 1.3, army: 1.2, xp: 1.15, tough: 0.85, dodge: 0.85, forage: 0.9 },
+  voidtouched: { dodge: 1.2, bossdmg: 1.25, regen: 1.4, adren: 1.2, tdmg: 0.85, morale: 0.7, buy: 0.85, wage: 1.1 }
+};
+var SGL = {
+  aspd: ["+", "%", "speed in dungeons"], dodge: ["+", "%", "chance to dodge a hit"], tough: ["−", "%", "damage taken"], bossdmg: ["+", "%", "damage to bosses"],
+  adren: ["", "", ""], regen: ["", "", ""], loot: ["+", "%", "crowns from kills"], tdmg: ["+", "%", "damage by your troops"], tarm: ["−", "%", "damage to your troops"],
+  morale: ["−", "%", "chance your men break"], tarch: ["+", "%", "damage by your archers"], cry: ["", "", ""], crycd: ["", "", ""], forage: ["−", "%", "grain eaten"],
+  buy: ["−", "%", "price when buying"], wage: ["−", "%", "wages"], xp: ["+", "%", "experience"], speed: ["+", "%", "map speed"], escape: ["+", "%", "chance to get away"],
+  deaths: ["−", "%", "battle deaths"], army: ["+", "%", "army strength"], sell: ["+", "%", "when selling loot"], dmg: ["+", "%", "your damage"], hearts: ["+", "", " heart"]
+};
+function sgBias(it, k) { return it.shared ? ((SGB[skOrigin()] || {})[k] || 1) : 1; }
+function sgPer(it) {
+  var out = [];
+  Object.keys(it.fx).forEach(function (k) {
+    var v = it.fx[k] * sgBias(it, k), t;
+    if (k === "adren") t = "+25% speed for " + (v).toFixed(1) + " s after a hit";
+    else if (k === "regen") t = "heal " + (v * 10).toFixed(1) + " hearts per 10 s when not being hit";
+    else if (k === "cry") t = "Rallying Cry lasts " + v.toFixed(1) + " s longer";
+    else if (k === "crycd") t = "Rallying Cry ready " + v.toFixed(1) + " s sooner";
+    else if (k === "hearts") t = "+" + v + " heart";
+    else { var L = SGL[k]; t = L[0] + Math.round(v * 1000) / 10 + "% " + L[2]; }
+    out.push(t);
+  });
+  var tx = out.join(", "), o = skOrigin(), diff = Object.keys(it.fx).some(function (k) { return it.shared && sgBias(it, k) !== 1; });
+  if (diff) {
+    var m = Object.keys(it.fx).map(function (k) { return sgBias(it, k); }), a = m.reduce(function (x, y) { return x + y; }, 0) / m.length;
+    tx += a > 1.03 ? " (your path is gifted at this)" : a < 0.97 ? " (not your strength)" : "";
+  }
+  return tx;
+}
+function sgItem(sp, shared) {
+  var it = sp; it.shared = !!shared;
+  Object.defineProperty(it, "per", { get: function () { return sgPer(it); }, configurable: true });
+  return it;
+}
+(function () {
+  function branch(name, blurb, rows) { SKILLS.push({ branch: name, blurb: blurb, shared: 1, items: rows.map(function (r) { return sgItem(r, 1); }) }); }
+  branch("Survival", "On foot: dungeons, bosses, and staying alive when it goes wrong.", [
+    { id: "sv_footwork", name: "Footwork", pos: [0, 2], max: 5, fx: { aspd: 0.04 }, desc: "Fast feet are the cheapest armour there is." },
+    { id: "sv_evasion", name: "Evasion", pos: [1, 1], lv: 3, req: "sv_footwork", max: 4, fx: { dodge: 0.04 }, desc: "Be where the blow is not." },
+    { id: "sv_thick", name: "Thick Skin", pos: [1, 3], lv: 3, req: "sv_footwork", max: 4, fx: { tough: 0.04 }, desc: "You have been hit before. It stopped surprising your body." },
+    { id: "sv_reader", name: "Read the Boss", pos: [2, 0], lv: 6, req: "sv_evasion", max: 4, fx: { bossdmg: 0.06 }, desc: "Every big thing has a rhythm. Learn it, then break it." },
+    { id: "sv_adren", name: "Adrenaline", pos: [2, 2], lv: 6, req: "sv_footwork", max: 3, fx: { adren: 0.8 }, desc: "Pain is a starting gun. Run." },
+    { id: "sv_breath", name: "Second Breath", pos: [2, 4], lv: 6, req: "sv_thick", max: 3, fx: { regen: 0.03 }, desc: "Out of reach of the blows, the body mends." },
+    { id: "sv_slayer", name: "Giant's Bane", pos: [3, 2], lv: 12, req: "sv_adren", max: 3, fx: { bossdmg: 0.06, tough: 0.03 }, desc: "The bigger they are, the more places there are to hit." }]);
+  branch("Warfare", "Your men in the field: damage, nerve and the voice that holds them.", [
+    { id: "wf_drill", name: "Drill Sergeant", pos: [0, 2], max: 5, fx: { tdmg: 0.03 }, desc: "Men who drill together hit together." },
+    { id: "wf_shield", name: "Shield Discipline", pos: [1, 1], lv: 3, req: "wf_drill", max: 4, fx: { tarm: 0.03 }, desc: "Locked shields turn a charge into a shove." },
+    { id: "wf_nerve", name: "Steady Nerve", pos: [1, 3], lv: 3, req: "wf_drill", max: 4, fx: { morale: 0.08 }, desc: "A line that does not run cannot be broken." },
+    { id: "wf_arch", name: "Archery Doctrine", pos: [2, 0], lv: 6, req: "wf_shield", max: 3, fx: { tarch: 0.06 }, desc: "Volleys by the count, not by the nerve." },
+    { id: "wf_voice", name: "Rallying Voice", pos: [2, 2], lv: 6, req: "wf_drill", max: 4, fx: { cry: 1.5, crycd: 2 }, desc: "They hear you over everything." },
+    { id: "wf_surgeon", name: "Field Surgeon", pos: [2, 4], lv: 6, req: "wf_nerve", max: 3, fx: { deaths: 0.04 }, desc: "Pull them back in time and they live." },
+    { id: "wf_lord", name: "Warlord", pos: [3, 2], lv: 12, req: "wf_voice", max: 3, fx: { army: 0.05, tdmg: 0.04 }, desc: "An army that knows your name fights as one thing." }]);
+  branch("Wayfaring", "The world map: pace, supplies, prices and getting away clean.", [
+    { id: "wy_pace", name: "Long Strides", pos: [0, 2], max: 5, fx: { speed: 0.03 }, desc: "Miles go quicker when you stop counting them." },
+    { id: "wy_forage", name: "Forager", pos: [1, 1], lv: 3, req: "wy_pace", max: 4, fx: { forage: 0.06 }, desc: "Berries, roots, a rabbit. The column eats a little less." },
+    { id: "wy_eye", name: "Haggler's Eye", pos: [1, 3], lv: 3, req: "wy_pace", max: 4, fx: { buy: 0.03 }, desc: "You know what a thing is worth before they say." },
+    { id: "wy_light", name: "Travel Light", pos: [2, 0], lv: 6, req: "wy_forage", max: 3, fx: { wage: 0.04 }, desc: "Fewer mouths idle, fewer wages owed." },
+    { id: "wy_scout", name: "Scout's Eye", pos: [2, 2], lv: 6, req: "wy_pace", max: 4, fx: { escape: 0.04 }, desc: "You see the ambush a mile before it sees you." },
+    { id: "wy_study", name: "Quick Study", pos: [2, 4], lv: 6, req: "wy_eye", max: 3, fx: { xp: 0.06 }, desc: "Every town is a lesson if you listen." },
+    { id: "wy_master", name: "Master of the Road", pos: [3, 2], lv: 12, req: "wy_scout", max: 3, fx: { speed: 0.04, escape: 0.04, forage: 0.04 }, desc: "The road bends a little when you walk it." }]);
+  // extra unique skills, a fifth row behind each character's capstone
+  var X = {
+    wanderer: ["longroad", { id: "u_manyroads", name: "Many Roads", fx: { speed: 0.05, forage: 0.05 }, desc: "There is always another way around." }, { id: "u_straycoin", name: "Stray Luck", fx: { loot: 0.1, sell: 0.04 }, desc: "Things fall out of pockets near you." }],
+    farmer: ["breadiron", { id: "u_hearth", name: "Hearth and Home", fx: { regen: 0.03, tough: 0.03 }, desc: "You are always a little bit at home." }, { id: "u_plough", name: "Plough the Dead", fx: { deaths: 0.04, forage: 0.06 }, desc: "Nothing is wasted. Not grain, not men." }],
+    trader: ["everyprice", { id: "u_cheaphands", name: "Cheap Hands", fx: { wage: 0.05, buy: 0.03 }, desc: "You hire by the week and haggle by the day." }, { id: "u_rumours", name: "Market Rumours", fx: { xp: 0.06, sell: 0.04 }, desc: "You hear it in the market before it is true." }],
+    mercenary: ["blackledger", { id: "u_advance", name: "Pay in Advance", fx: { tdmg: 0.04, morale: 0.06 }, desc: "Paid men fight like it matters." }, { id: "u_nofall", name: "Never Fall Back", fx: { tarm: 0.04, tdmg: 0.03 }, desc: "The contract has no clause for retreat." }],
+    outlaw: ["pricehead", { id: "u_ninelives", name: "Nine Lives", fx: { dodge: 0.04, adren: 0.6 }, desc: "You have used eight. You are counting." }, { id: "u_cutpurse", name: "Cut Purse", fx: { loot: 0.12, escape: 0.04 }, desc: "Their coin is yours before they notice the knife." }],
+    smith: ["masterwork", { id: "u_dealer", name: "Arms Dealer", fx: { sell: 0.06, tough: 0.03 }, desc: "Everyone needs steel. You know who needs it most." }, { id: "u_anvilhard", name: "Hard as the Anvil", fx: { tough: 0.05, bossdmg: 0.04 }, desc: "You were beaten into shape too." }],
+    noble: ["heir", { id: "u_houses", name: "Rally the Houses", fx: { cry: 1.5, crycd: 2 }, desc: "Lords answer a name they were raised to answer." }, { id: "u_bearing", name: "Noble Bearing", fx: { morale: 0.07, army: 0.03 }, desc: "Men do not run from someone who does not." }],
+    voidtouched: ["quietface", { id: "u_coldhunger", name: "Cold Hunger", fx: { regen: 0.03, bossdmg: 0.05 }, desc: "What was taken from you wants feeding." }, { id: "u_unmoored", name: "Unmoored", fx: { dodge: 0.04, aspd: 0.04 }, desc: "Part of you is never where they swing." }]
+  };
+  Object.keys(X).forEach(function (o) {
+    var b = null; SKILLS.forEach(function (q) { if (q.origin === o) b = q; });
+    if (!b) return; var cap = X[o][0];
+    [1, 2].forEach(function (i, n) {
+      var sp = X[o][i]; sp.pos = [4, n ? 3 : 1]; sp.lv = 15; sp.req = cap; sp.max = 3; sp.origin = o;
+      sgItem(sp, 0); b.items.push(sp); if (ORIGTREE[o]) ORIGTREE[o].push(sp);
+    });
+  });
+})();
+(function () {
+  var G = {
+    sv_footwork: '<path d="M12 36h16l6-8-6-4-6 2-4-10"/><path d="M10 40h28"/>', sv_evasion: '<path d="M30 10c-8 4-12 12-12 20M34 18c-6 4-8 10-8 18M14 22l-4 4 6 2"/>',
+    sv_thick: '<path d="M24 8l12 5v10c0 8-5 13-12 17-7-4-12-9-12-17V13z"/><path d="M18 20h12M18 27h12"/>', sv_reader: '<circle cx="24" cy="22" r="10"/><circle cx="24" cy="22" r="3"/><path d="M12 38h24"/>',
+    sv_adren: '<path d="M26 6L14 26h9l-3 16 14-22h-9z"/>', sv_breath: '<path d="M24 38c-10-6-14-12-14-18a7 7 0 0 1 14-2 7 7 0 0 1 14 2c0 6-4 12-14 18z"/>',
+    sv_slayer: '<path d="M24 6l4 14h-8z"/><path d="M24 20v18M16 38h16M14 26l10-6 10 6"/>',
+    wf_drill: '<path d="M10 38V22M20 38V16M30 38V22M40 38V16M8 26h34"/>', wf_shield: '<path d="M10 14h12v14c0 4-3 7-6 8-3-1-6-4-6-8zM26 14h12v14c0 4-3 7-6 8-3-1-6-4-6-8z"/>',
+    wf_nerve: '<circle cx="24" cy="24" r="12"/><path d="M24 12v4M24 32v4M12 24h4M32 24h4M24 24l5-5"/>', wf_arch: '<path d="M14 36l8-8M24 8c10 8 10 24 0 32M24 8v32M14 24h26M34 18l6 6-6 6"/>',
+    wf_voice: '<path d="M12 20h8l10-8v24l-10-8h-8zM34 18c3 3 3 9 0 12M38 14c5 6 5 14 0 20"/>', wf_surgeon: '<path d="M20 10h8v10h10v8H28v10h-8V28H10v-8h10z"/>',
+    wf_lord: '<path d="M10 34l2-16 8 8 4-14 4 14 8-8 2 16z"/><path d="M10 38h28"/>',
+    wy_pace: '<path d="M8 38c6-14 12-16 18-16s10 4 14 16"/><path d="M24 22V10l8 4-8 4"/>', wy_forage: '<path d="M24 38V18M24 22c-5 0-8-4-8-8 5 0 8 4 8 8zM24 28c5 0 8-4 8-8-5 0-8 4-8 8z"/>',
+    wy_eye: '<ellipse cx="24" cy="24" rx="14" ry="9"/><circle cx="24" cy="24" r="4"/><path d="M24 8v5M24 35v5"/>', wy_light: '<path d="M16 20h16v18H16zM20 20v-6h8v6"/>',
+    wy_scout: '<path d="M8 24c4-8 12-11 16-11s12 3 16 11c-4 8-12 11-16 11S12 32 8 24z"/><circle cx="24" cy="24" r="5"/><circle cx="24" cy="24" r="1.5"/>', wy_study: '<path d="M10 14h12v22H10zM26 14h12v22H26zM14 20h4M30 20h4"/>',
+    wy_master: '<path d="M8 38c4-6 10-10 16-10s12 4 16 10M24 28V8l10 5-10 5"/>',
+    u_manyroads: '<path d="M24 40V24M24 24L12 12M24 24l12-12M24 30L10 26M24 30l14-4"/>', u_straycoin: '<circle cx="24" cy="26" r="10"/><path d="M24 20v12M20 24h8"/><path d="M12 10l3 4M36 10l-3 4"/>',
+    u_hearth: '<path d="M10 24L24 10l14 14M14 22v16h20V22"/><path d="M21 38v-8h6v8"/>', u_plough: '<path d="M8 34h32M12 34l4-8h16l4 8M20 26v-8M28 26v-8"/>',
+    u_cheaphands: '<path d="M10 28c0-6 6-8 14-8s14 2 14 8-6 8-14 8-14-2-14-8z"/><path d="M24 20V12M20 14h8"/>', u_rumours: '<path d="M10 14h28v16H24l-8 8v-8h-6z"/><path d="M16 20h16M16 25h10"/>',
+    u_advance: '<circle cx="24" cy="24" r="12"/><path d="M24 16v16M20 20c0-3 8-3 8 0s-8 2-8 6 8 3 8 0"/><path d="M36 10l-6 6"/>', u_nofall: '<path d="M14 38V10l22 8-22 8"/>',
+    u_ninelives: '<path d="M16 14c-3 6-3 14 2 20 3 3 9 3 12 0 5-6 5-14 2-20M18 22l-2-6 5 3M30 22l2-6-5 3M20 30c2 2 6 2 8 0"/>', u_cutpurse: '<path d="M14 18c0-4 4-6 10-6s10 2 10 6l4 18H10z"/><path d="M20 12l4 6 4-6"/>',
+    u_dealer: '<path d="M10 20h28L34 36H14zM18 20v-6h12v6"/>', u_anvilhard: '<path d="M10 18h26c0 6-6 8-10 8v6h6v4H16v-4h6v-6c-6 0-12-2-12-8z"/><path d="M36 12l4 4"/>',
+    u_houses: '<path d="M8 34V20l6-4 6 4v14M20 34V16l6-6 6 6v18M32 34V22l6-3 4 3v12"/>', u_bearing: '<path d="M24 8l5 9 10 2-7 7 2 10-10-5-10 5 2-10-7-7 10-2z"/>',
+    u_coldhunger: '<circle cx="24" cy="24" r="13"/><path d="M14 20c4 4 16 4 20 0M17 31h14"/><path d="M20 31v4M24 31v5M28 31v4"/>', u_unmoored: '<path d="M14 38V22c0-8 4-12 10-12s10 4 10 12v16"/><path d="M18 30h12" stroke-dasharray="3 3"/><circle cx="20" cy="22" r="1.5"/><circle cx="28" cy="22" r="1.5"/>'
+  };
+  Object.keys(G).forEach(function (k) { SKG[k] = G[k]; });
+})();
+// bias-aware skfx, cached briefly (it sits in hot loops)
+var SGC = { t: 0, k: "", v: {} };
+function skfx(k) {
+  var now = Date.now(), key = skOrigin() + "|" + spent();
+  if (now - SGC.t > 400 || SGC.k !== key) { SGC = { t: now, k: key, v: {} }; }
+  if (SGC.v[k] !== undefined) return SGC.v[k];
+  var t = 0; SKILLS.forEach(function (b) { b.items.forEach(function (it) { if (it.fx && it.fx[k] && S.skills && S.skills[it.id]) t += it.fx[k] * S.skills[it.id] * sgBias(it, k); }); });
+  return (SGC.v[k] = t);
+}
+// tabs: your own path, the three shared trees, your two disciplines, the dark arts
+function skTabs() {
+  var o = skOrigin(), t = [], mine = null;
+  SKILLS.forEach(function (b) { if (b.origin === o) mine = b; });
+  if (mine) t.push({ name: mine.branch, blurb: mine.blurb, items: mine.items, mine: 1 });
+  ["Survival", "Warfare", "Wayfaring"].forEach(function (n) { var b = skBranch(n); if (b) t.push({ name: b.branch, blurb: b.blurb + " Every character learns these, each a little differently.", items: b.items, shared: 1 }); });
+  (SKDISC[o] || ["Command", "Warrior"]).forEach(function (n) { var b = skBranch(n); if (b) t.push({ name: b.branch, blurb: b.blurb, items: b.items }); });
+  var nb = skBranch("Nightmare Arts"), hb = skBranch("Hell Arts");
+  t.push({ name: "Dark Arts", blurb: "Learned only by those who have beaten the Iron Reaper.", items: (nb ? nb.items : []).concat(hb ? hb.items : []), dark: 1 });
+  return t;
+}
+(function () {
+  var st = document.createElement("style");
+  st.textContent = ".sktabs{overflow-x:auto;scrollbar-width:none}.sktabs::-webkit-scrollbar{display:none}.sktabs button{flex:0 0 auto!important;min-width:64px!important;padding-left:.4rem!important;padding-right:.4rem!important}.sktabs button.sh:not(.on){border-color:#3a6a5a}";
+  document.head.appendChild(st);
+})();
 
   // ---- input ----
   (function () {
