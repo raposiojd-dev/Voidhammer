@@ -531,7 +531,7 @@ window.__vhGame = function () { (function () {
     return NS;
   }
   function dominionSites() {
-    var cap = mkT("irontown", "Iron Throne City", 1420, 380, 45, 3.4, 4.0, "metal", "town"); cap.gar = 110; cap.gmax = 135; cap.wall = 2.2; cap.cap = 260; cap.stock = 150;
+    var cap = mkT("irontown", "Iron Throne City", 1420, 380, 45, 3.4, 4.0, "metal", "town"); cap.gar = 240; cap.gmax = 280; cap.wall = 3.2; cap.hard = 1; cap.cap = 260; cap.stock = 150;
     var a = mkT("ironwatch", "Ironwatch", 1150, 570, 45, 3, 4, "metal", "castle"), b = mkT("steelgate", "Steelgate", 1700, 520, 45, 3, 4, "metal", "castle");
     a.gar = 80; b.gar = 80; a.stock = b.stock = 90;
     return [cap, a, b,
@@ -1172,7 +1172,7 @@ window.__vhGame = function () { (function () {
       if (s.stock > s.cap * 0.5) s.gar = Math.min(s.gmax * (s.owner === "player" ? 1.5 : 1), s.gar + 0.3);
     });
     ovShare();
-    S.sites.forEach(function (s) { if (s.type !== "village") s.gar = Math.min(s.gmax * (s.owner === "player" ? 1.5 : 1), s.gar + (s.owner === "player" ? 0.15 + 0.08 * sk("garrisoner") : 0.6)); });
+    S.sites.forEach(function (s) { if (s.type !== "village") s.gar = Math.min(s.gmax * (s.owner === "player" ? 1.5 : 1), s.gar + (s.owner === "player" ? 0.15 + 0.08 * sk("garrisoner") : 0.6)); if (s.id === "irontown" && s.owner === "metal" && !s.hard) { s.hard = 1; s.gmax = Math.max(s.gmax, 280); s.wall = Math.max(s.wall, 3.2); s.gar = Math.max(s.gar, 240); } });
     var lords = S.enemies.filter(function (e) { return e.kind === "lord"; });
     lords.forEach(function (e) {
       var ownN = holdings(e.fac).length;
@@ -8139,12 +8139,14 @@ window.__vhGame = function () { (function () {
   };
   var SGLY = [330, 236, 142], SGTH = 22, SGNAMES = ["Outer wall", "Inner wall", "The keep"];
   function ovEngOf(id) { if (!S.eng) S.eng = {}; return S.eng[id] || (S.eng[id] = { lad: 0, ram: 0, twr: 0, cat: 0 }); }
-  function ovSgN(st) { return st && st.type === "castle" ? 3 : 2; }
-  function ovDefAdv(st) { return 1.35 + 0.1 * (ovSgN(st) - 1); }
+  function ovSgN(st) { return st && (st.type === "castle" || st.id === "irontown") ? 3 : 2; }
+  function ovCapK(st) { if (!st || st.id !== "irontown" || st.owner !== "metal") return 0; return S.sites.filter(function (q) { return q.owner === "metal" && q.id !== "irontown" && q.type !== "village"; }).length; }
+  function ovCapMul(st) { return st && st.id === "irontown" ? 1.4 * (1 + 0.5 * ovCapK(st)) : 1; }
+  function ovDefAdv(st) { return (1.35 + 0.1 * (ovSgN(st) - 1)) * ovCapMul(st); }
   function siegeBody(s) {
     var f = FAC[s.owner], reb = s.owner === "rebel", n = ovSgN(s), eff = Math.round(s.gar * s.wall * ovDefAdv(s)), my = Math.round(pStrength()), e = ovEngOf(s.id), k;
     var h = '<div class="warn"><b>' + (reb ? "The rebels hold " : f.name + " hold ") + s.name + '.</b> ' + (reb ? "The people rose when the grain ran out. Any lord may take it back." : "You are at war. The gates are shut to you.") + "</div>";
-    h += "<p>The garrison is about " + Math.round(s.gar / 2) * 2 + " men behind " + n + " layers of wall (" + (n === 3 ? "outer wall, inner wall and keep" : "outer wall and inner ward") + "), worth about " + eff + " in a fight with the defenders' advantage. Your column is worth about " + my + ".</p>";
+    h += "<p>The garrison is about " + Math.round(s.gar / 2) * 2 + " men behind " + n + " layers of wall (" + (n === 3 ? "outer wall, inner wall and keep" : "outer wall and inner ward") + "), worth about " + eff + " in a fight with the defenders' advantage. Your column is worth about " + my + ".</p>" + (s.id === "irontown" && s.owner === "metal" ? '<p class="dim-t"><b>The Dominion feeds its heart.</b> ' + ovCapK(s) + " other holdings send men, iron and grain to the Iron Throne, adding " + Math.round(ovCapK(s) * 50) + "% to its defence. Its walls are the strongest in the Realms even with none. Take their other towns and castles first, then come with everything you have.</p>" : "");
     h += '<p class="dim-t">' + (my > eff * 1.15 ? "You are strong enough to try the walls." : my > eff * 0.7 ? "It would be close. Build engines and starve them first." : "Do not assault. You would be cut down.") + " Ready: " + e.lad + " ladders, " + e.ram + " rams, " + e.twr + " towers, " + e.cat + " catapults. Without any, your men carry two rough ladders per wall.</p>";
     h += row("Make camp and build siege engines", "Choose what to build and watch it go up. Your army eats and the garrison starves while you work. A relief army may come.", "Make camp", "sgcamp", s.id, "", T() < 1, "amber");
     h += row("Assault the walls now", "With whatever siege works you have built, or rough ladders if none. You will lose more men than in the open.", "Assault", "assault", s.id, "", T() < 3, "amber");
