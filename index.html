@@ -7137,7 +7137,7 @@ window.__vhGame = function () { (function () {
     g.setTransform(1, 0, 0, 1, 0, 0);
     return c;
   }
-  function drawSite(s, t) {
+  function drawSite0b(s, t) {
     var x = s.x, y = s.y, r, i;
     var sxp = W / 2 + (x - cam.x) * cam.z, syp = H * 0.45 + (y - cam.y) * cam.z; if (sxp < -160 * cam.z || sxp > W + 160 * cam.z || syp < -160 * cam.z || syp > H + 160 * cam.z) { return; }
     r = mulberry((s.x * 31 + s.y * 17) | 0);
@@ -9109,8 +9109,8 @@ window.__vhGame = function () { (function () {
   function tCard(id, cnt) {
     var T2 = TROOPT[id - 1], cls = id === 1 ? "levy" : T2.cls, C = TCLS[cls], cn = tCounters(cls), open = troopOpen === id;
     var ready = cnt > 0 && TROOPT.some(function (q) { return tFroms(q).indexOf(id) >= 0 && !promoteCheck(q.id, id); });
-    var h = '<div class="xcard' + (open ? " open" : "") + (ready ? " ready" : "") + '" data-act="troopinfo" data-a="' + id + '"><div class="xic">' + tIcon(id, 42) + '</div><div class="xmid"><div class="xn">' + T2.name + ' <span class="xcls" style="color:' + C.c + '">' + C.n + " · T" + tTier(id) + "</span></div>" +
-      '<div class="xsub">Strength ' + T2.mult + " · wage " + T2.wage.toFixed(2) + "/day" + (T2.horse ? " · fast" : "") + (T2.jav ? " · short range" : "") + (cnt > 0 ? " · exp " + Math.floor(ovTx(id)) : "") + (ready ? '<div class="xrdy">Ready to promote</div>' : "") + '</div></div><div class="xct">' + cnt + "</div></div>";
+    var h = '<div class="xcard' + (open ? " open" : "") + (ready ? " ready" : "") + '" data-act="troopinfo" data-a="' + id + '" style="--fc:' + ovTFc(id) + '"><div class="xic">' + tIcon(id, 72) + '</div><div class="xmid"><div class="xn">' + T2.name + ' <span class="xcls" style="color:' + C.c + '">' + C.n + " · T" + tTier(id) + "</span></div>" +
+      '<div class="xsub">Strength ' + T2.mult + " · wage " + T2.wage.toFixed(2) + "/day" + (T2.horse ? " · fast" : "") + (T2.jav ? " · short range" : "") + (cnt > 0 ? " · exp " + Math.floor(ovTx(id)) : "") + (ready ? '<div class="xrdy">Ready to promote</div>' : "") + '</div><div class="xbar"><i style="width:' + Math.min(100, T2.mult / 4.2 * 100) + '%"></i></div></div><div class="xct">' + cnt + "</div></div>";
     if (open) {
       h += '<div class="xdet"><p>' + (id === 1 ? "Farmers with spears. Fights as 1 man. Every other soldier starts as one." : T2.desc) + "</p>";
       var ups = TROOPT.filter(function (q) { return tFroms(q).indexOf(id) >= 0 && (!q.realm || realmOpen(q.realm)); });
@@ -10397,6 +10397,98 @@ function skUseField() {
     else if (hat === "glow" && !away) { g.fillStyle = "rgba(200,160,255,0.35)"; g.beginPath(); g.arc(-1.1, -12.4, 1.5, 0, 6.283); g.arc(1.1, -12.4, 1.5, 0, 6.283); g.fill(); g.fillStyle = "#e8d8ff"; g.fillRect(-1.5, -12.9, 0.8, 1); g.fillRect(0.7, -12.9, 0.8, 1); }
     if (o.flash) { g.fillStyle = "rgba(255,255,255,0.75)"; rrect(g, -3.6, -10.4, 7.2, 7.2, 1.6); g.fill(); g.beginPath(); g.ellipse(0, -12.8, 3.1, 3.3, 0, 0, 6.283); g.fill(); g.fillRect(-2.7, -4.2, 5.4, 4.2); }
     g.restore();
+  }
+  // ================= troops menu: a full-length portrait per soldier, Bannerlord encyclopedia style =================
+  var UNPIC = {};
+  var ROMAN = ["", "I", "II", "III", "IV", "V", "VI"];
+  function ovTFc(id) { try { var q = TROOPT[id - 1]; return q && q.realm && FAC[q.realm] ? FAC[q.realm].col : "#c8873a"; } catch (e) { return "#c8873a"; } }
+  function ovTroopPic(id) {
+    var q = TROOPT[id - 1], key = id; if (UNPIC[key]) return UNPIC[key];
+    var fac = ovTFc(id), ti = Math.min(4, id === 1 ? 1 : tTier(id)), cls = id === 1 ? "sword" : (q.cls === "horse" || q.cls === "spark" ? (q.cls === "horse" ? "spear" : "sword") : q.cls);
+    var W = 72, H = 88, K = 3, c = document.createElement("canvas"); c.width = W * K; c.height = H * K; var g = c.getContext("2d"); g.scale(K, K);
+    // backdrop: realm-coloured banner light
+    var bg = g.createRadialGradient(W / 2, H * 0.55, 4, W / 2, H * 0.55, 56); bg.addColorStop(0, shade(fac, -0.15)); bg.addColorStop(1, shade(fac, -0.78)); g.fillStyle = bg; g.fillRect(0, 0, W, H);
+    g.fillStyle = "rgba(255,255,255,0.05)"; for (var bi = 0; bi < W; bi += 12) g.fillRect(bi, 0, 6, H);
+    g.fillStyle = "rgba(0,0,0,0.38)"; g.beginPath(); g.ellipse(W / 2, 79, 22, 5, 0, 0, 6.283); g.fill();
+    var u = { cls: cls, ranged: cls === "ranged" && !q.jav, jav: !!q.jav, tier: Math.max(2, ti), slot: id, atk: 0, acol: fac, horse: !!q.horse, hp: 1, hpm: 1 };
+    var face = { x: 0, y: 1 }, o = { col: ti >= 3 ? fac : "#c8873a", fac: fac, tier: ti, sl: id, hair: ["#3a2a18", "#2a1a10", "#6a4a24", "#8a6a3a"][id % 4], band: ti > 2 ? "#f0d060" : "#e8e0d0", face: face, walk: false, anim: 0, mount: !!q.horse, mv: false, big: false };
+    g.save(); g.translate(W / 2, 74); g.scale(3.5, 3.5);
+    var lift = ovMountDraw(g, 0, 0, u, o, { x: 1, y: 0 }); if (q.horse) { o.face = { x: 1, y: 0 }; face = o.face; }
+    drawChar0(g, 0, -lift, o);
+    g.save(); g.translate(0, -lift); ovHeld0(g, u, false, false, true, face, 1, 0); if (u.tier >= 2 && !u.ranged) ovHeld(g, u, false, false, true, face, 1, 0); g.restore();
+    g.restore();
+    if (q.spark) { var sg = g.createRadialGradient(W / 2, 40, 2, W / 2, 40, 34); sg.addColorStop(0, "rgba(180,140,255,0.35)"); sg.addColorStop(1, "rgba(180,140,255,0)"); g.fillStyle = sg; g.fillRect(0, 0, W, H); }
+    return (UNPIC[key] = c.toDataURL("image/png"));
+  }
+  function tIcon(id, sz) {
+    var q = TROOPT[id - 1], ti = id === 1 ? 1 : tTier(id), h = sz || 40, w = Math.round(h * 0.82), fc = ovTFc(id);
+    return '<div class="xfig" style="width:' + w + 'px;height:' + h + 'px;--fc:' + fc + '"><img src="' + ovTroopPic(id) + '" width="' + w + '" height="' + h + '" alt="">' + (q && q.realm ? '<i class="xcr"></i>' : "") + '<b class="xtr">' + (ROMAN[ti] || ti) + "</b></div>";
+  }
+  (function () {
+    var st = document.createElement("style");
+    st.textContent = ".xfig{position:relative;flex:none;border:1.5px solid #b8944a;border-radius:4px;overflow:hidden;box-shadow:0 0 0 1px #1a1208,inset 0 0 8px rgba(0,0,0,.6);background:#201810}.xfig img{display:block;image-rendering:auto}.xtr{position:absolute;left:0;bottom:0;min-width:1.15rem;padding:0 .25rem;text-align:center;font:700 .62rem 'IM Fell English',Georgia,serif;letter-spacing:.04em;color:#f0d890;background:linear-gradient(#2a2014,#120d07);border-top:1px solid #b8944a;border-right:1px solid #b8944a;border-radius:0 4px 0 0}.xcr{position:absolute;right:2px;top:2px;width:.55rem;height:.55rem;background:var(--fc);border:1px solid #f0d890;transform:rotate(45deg)}" +
+      ".xcard{border:1px solid #4a3a22;border-left:4px solid var(--fc,#c8873a);background:linear-gradient(90deg,rgba(0,0,0,.32),rgba(36,27,16,.5));box-shadow:inset 0 0 0 1px rgba(184,148,74,.08)}.xcard.open{border-color:#b8944a;border-left-color:var(--fc,#c8873a);background:linear-gradient(90deg,rgba(60,42,20,.55),rgba(36,27,16,.6))}.xcard .xn{font-family:'IM Fell English',Georgia,serif;font-size:1.08rem;color:#ecdcb4}" +
+      ".xbar{height:4px;margin-top:.3rem;background:#0e0a06;border:1px solid #3a2c18;border-radius:2px;overflow:hidden}.xbar i{display:block;height:100%;background:linear-gradient(90deg,#8a6a2a,#e8c460)}.xct{font:700 1.15rem 'IM Fell English',Georgia,serif;color:#f0d890;min-width:1.8rem;text-align:right}";
+    document.head.appendChild(st);
+  })();
+  // ================= the map shows what you build: every building appears, and villages grow =================
+  function ovSmoke(x, y, t, k, n) {
+    for (var i = 0; i < (n || 3); i++) { var ph = ((t / 1800 + i / (n || 3) + k * 0.31) % 1); ctx.fillStyle = "rgba(220,214,200," + (0.34 * (1 - ph)).toFixed(2) + ")"; ctx.beginPath(); ctx.arc(x + Math.sin(ph * 6 + k) * 2, y - ph * 14, 1.3 + ph * 2.2, 0, 6.283); ctx.fill(); }
+  }
+  function ovGlow(x, y, r, a, rgb) {
+    ctx.save(); ctx.globalCompositeOperation = "lighter"; var gr = ctx.createRadialGradient(x, y, 0, x, y, r); gr.addColorStop(0, "rgba(" + rgb + "," + a.toFixed(2) + ")"); gr.addColorStop(1, "rgba(" + rgb + ",0)"); ctx.fillStyle = gr; ctx.beginPath(); ctx.arc(x, y, r, 0, 6.283); ctx.fill(); ctx.restore();
+  }
+  function ovBldDraw(id, x, y, t, s, big) {
+    var fl = 0.75 + 0.25 * Math.sin(t / 90 + x), k = Math.round(x + y);
+    if (id === "tavern") {
+      house(x, y - 8, 13, 8, "#7a3b2a"); ctx.strokeStyle = "#3a2410"; ctx.lineWidth = 0.9; ctx.beginPath(); ctx.moveTo(x + 6.5, y - 6); ctx.lineTo(x + 10, y - 6); ctx.stroke();
+      var sw = Math.sin(t / 500 + k) * 0.5; ctx.save(); ctx.translate(x + 10, y - 6); ctx.rotate(sw * 0.3); ctx.fillStyle = "#d8a84a"; ctx.fillRect(-2, 0, 4, 3.2); ctx.fillStyle = "#6a3a14"; ctx.fillRect(-0.7, 0.7, 1.4, 1.6); ctx.restore();
+      ctx.fillStyle = "#f4c860"; ctx.fillRect(x - 3, y - 6.2, 1.6, 1.6); ovGlow(x - 2.2, y - 5.4, 5, 0.35 * fl, "255,200,90"); ovSmoke(x - 3, y - 14, t, k);
+    } else if (id === "smithy") {
+      house(x, y - 7, 11, 7, "#4a3a34"); ctx.fillStyle = "#14100a"; ctx.fillRect(x - 2, y - 4, 4, 4); ovGlow(x, y - 2, 6, 0.8 * fl, "255,130,40"); ctx.fillStyle = "#2a2a30"; ctx.fillRect(x + 6, y - 2.2, 3.6, 1.4); ctx.fillRect(x + 7, y - 0.8, 1.6, 0.8);
+      ctx.fillStyle = "#3a2a1c"; ctx.fillRect(x + 2.5, y - 14, 2.2, 5); ovSmoke(x + 3.6, y - 14, t, k, 4);
+    } else if (id === "beacon") {
+      tower(x, y, 6, 22, "#3a3a4a"); ovGlow(x, y - 28, 20, 0.7 * fl, "170,150,255"); ctx.fillStyle = "rgba(210,196,255," + (0.8 * fl).toFixed(2) + ")"; ctx.beginPath(); ctx.moveTo(x - 2, y - 24); ctx.quadraticCurveTo(x, y - 33 * fl - 2, x + 2, y - 24); ctx.fill(); ctx.fillStyle = "#fff"; ctx.beginPath(); ctx.arc(x, y - 25.6, 1.1, 0, 6.283); ctx.fill();
+    } else if (id === "granary") {
+      ctx.fillStyle = "rgba(0,0,0,0.28)"; ctx.beginPath(); ctx.ellipse(x + 1, y, 8, 2, 0, 0, 6.283); ctx.fill(); ctx.fillStyle = "#a08850"; ctx.fillRect(x - 6, y - 8, 12, 8); ctx.strokeStyle = "#3a2a14"; ctx.lineWidth = 0.4; for (var gi = -4; gi < 6; gi += 2.4) { ctx.beginPath(); ctx.moveTo(x + gi, y - 8); ctx.lineTo(x + gi, y); ctx.stroke(); }
+      ctx.fillStyle = "#6a4a28"; ctx.beginPath(); ctx.moveTo(x - 8, y - 8); ctx.lineTo(x, y - 15); ctx.lineTo(x + 8, y - 8); ctx.closePath(); ctx.fill(); ctx.strokeStyle = "#1a1610"; ctx.lineWidth = 0.7; ctx.stroke(); ctx.fillStyle = "#2a1c10"; ctx.fillRect(x - 1.5, y - 4.5, 3, 4.5);
+    } else if (id === "barracks") {
+      house(x, y - 9, 20, 9, "#5a5a6a"); ctx.strokeStyle = "#d8cdb0"; ctx.lineWidth = 0.8; ctx.beginPath(); ctx.moveTo(x - 11, y - 1); ctx.lineTo(x - 11, y - 19); ctx.stroke(); ctx.fillStyle = ownerCol(s); ctx.beginPath(); ctx.moveTo(x - 11, y - 19); ctx.lineTo(x - 4 + Math.sin(t / 250), y - 17); ctx.lineTo(x - 11, y - 14); ctx.fill();
+      ctx.strokeStyle = "#6a4a28"; ctx.lineWidth = 1; for (var di = 0; di < 2; di++) { var dx = x + 13 + di * 5; ctx.beginPath(); ctx.moveTo(dx, y); ctx.lineTo(dx, y - 7); ctx.moveTo(dx - 2, y - 5); ctx.lineTo(dx + 2, y - 5); ctx.stroke(); }
+    } else if (id === "market") {
+      var cols = ["#c8442c", "#e0b040", "#3a7ab0"]; for (var mi = 0; mi < 3; mi++) { var mx = x - 9 + mi * 9; ctx.fillStyle = "rgba(0,0,0,0.25)"; ctx.beginPath(); ctx.ellipse(mx, y, 5, 1.6, 0, 0, 6.283); ctx.fill(); ctx.fillStyle = "#6a4a28"; ctx.fillRect(mx - 4, y - 5, 0.9, 5); ctx.fillRect(mx + 3.1, y - 5, 0.9, 5); for (var si = 0; si < 4; si++) { ctx.fillStyle = si % 2 ? "#efe6cf" : cols[mi]; ctx.fillRect(mx - 4.5 + si * 2.3, y - 8, 2.3, 3.4); } ctx.fillStyle = "#b8944a"; ctx.fillRect(mx - 2.5, y - 2, 5, 2); ctx.fillStyle = cols[(mi + 1) % 3]; ctx.fillRect(mx - 1.5, y - 3.2, 1.4, 1.2); }
+    } else if (id === "yard") {
+      ctx.fillStyle = "rgba(120,90,50,0.55)"; ctx.fillRect(x - 11, y - 8, 22, 10); ctx.strokeStyle = "#5a3a1c"; ctx.lineWidth = 0.9; ctx.strokeRect(x - 11, y - 8, 22, 10);
+      for (var yi = 0; yi < 3; yi++) { var yx = x - 6 + yi * 6; ctx.strokeStyle = "#7a5a30"; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.moveTo(yx, y - 1); ctx.lineTo(yx, y - 7); ctx.stroke(); ctx.fillStyle = "#a08850"; ctx.fillRect(yx - 1.4, y - 7.6, 2.8, 2.4); }
+      var sw2 = Math.sin(t / 220 + k); ctx.strokeStyle = "#dfe4e8"; ctx.lineWidth = 0.8; ctx.beginPath(); ctx.moveTo(x - 9, y - 2); ctx.lineTo(x - 9 + 4 * sw2, y - 7); ctx.stroke();
+    }
+  }
+  function ovBldExtras(s, t) {
+    var h = s.has || {}, vil = s.type === "village", ids, n, i;
+    ids = vil ? ["tavern", "smithy", "beacon"] : ["barracks", "market", "tavern", "smithy", "granary", "yard"];
+    // the village itself grows with every building raised
+    var built = 0; for (var kk in h) if (h[kk]) built++;
+    var ctr = ownerCol(s);
+    if (vil) {
+      var rr = mulberry(strHash(s.id + "g")), want = Math.min(12, built * 2), DEG = [-90, -55, -125, -20, -160, 12, 168, -75, -105, 30, 150, -40];
+      for (i = 0; i < want; i++) { var a = DEG[i % 12] * Math.PI / 180 + (rr() - 0.5) * 0.14, ring = i < 6 ? 1 : 1.32, hx = Math.cos(a) * 52 * ring, hy = Math.sin(a) * 33 * ring; house(hx, hy, 7 + rr() * 3, 5 + rr() * 2, ["#8a3f2c", "#6f4a2c", "#7a5a30", "#7a3b2a"][(rr() * 4) | 0]); if (i % 3 === 0) ovSmoke(hx + 1, hy - 5, t, i, 2); }
+      if (built >= 4) { ctx.fillStyle = "#d8cdb0"; ctx.fillRect(-1, -62, 1.2, 14); ctx.fillStyle = ctr; ctx.beginPath(); ctx.moveTo(0.2, -62); ctx.lineTo(8 + Math.sin(t / 260), -59.5); ctx.lineTo(0.2, -56); ctx.fill(); }
+    } else if (h.walls) {
+      var wx = 78, wy = 52; ctx.save(); ctx.lineJoin = "round"; ctx.strokeStyle = "rgba(20,16,10,0.85)"; ctx.lineWidth = 6; ctx.beginPath(); ctx.ellipse(0, 4, wx, wy, 0, 0, 6.283); ctx.stroke();
+      ctx.strokeStyle = "#8c846f"; ctx.lineWidth = 4; ctx.beginPath(); ctx.ellipse(0, 4, wx, wy, 0, 0, 6.283); ctx.stroke(); ctx.strokeStyle = "#b8b098"; ctx.lineWidth = 1; ctx.beginPath(); ctx.ellipse(0, 2.2, wx, wy, 0, 0, 6.283); ctx.stroke();
+      ctx.strokeStyle = "rgba(30,24,16,0.7)"; ctx.lineWidth = 2; ctx.setLineDash([3, 3]); ctx.beginPath(); ctx.ellipse(0, 4 - 2.5, wx, wy, 0, 0, 6.283); ctx.stroke(); ctx.setLineDash([]); ctx.restore();
+      [[-wx, 4], [wx, 4], [-wx * 0.7, -wy * 0.72], [wx * 0.7, -wy * 0.72], [-wx * 0.7, wy * 0.72 + 4], [wx * 0.7, wy * 0.72 + 4]].forEach(function (q) { tower(q[0], q[1] + 6, 8, 13, "#6a5a4a"); });
+    }
+    var SL = vil ? { tavern: [58, 14], smithy: [-60, 12], beacon: [-50, -42] } : { barracks: [-62, -38], market: [64, -30], tavern: [66, 14], smithy: [-70, 14], granary: [-40, -52], yard: [50, -52] };
+    ids.forEach(function (id) { if (h[id] && SL[id]) ovBldDraw(id, SL[id][0], SL[id][1], t, s, !vil); });
+    // a place being built shows its scaffold
+    if (!vil && s.build) { ctx.strokeStyle = "#8b6b3e"; ctx.lineWidth = 1.4; ctx.strokeRect(-6, 40, 14, 10); ctx.beginPath(); ctx.moveTo(-6, 40); ctx.lineTo(8, 50); ctx.moveTo(8, 40); ctx.lineTo(-6, 50); ctx.stroke(); }
+  }
+  function drawSite(s, t) {
+    drawSite0b(s, t);
+    if (!(s.has || s.build)) return;
+    var sxp = W / 2 + (s.x - cam.x) * cam.z, syp = H * 0.45 + (s.y - cam.y) * cam.z; if (sxp < -200 * cam.z || sxp > W + 200 * cam.z || syp < -200 * cam.z || syp > H + 200 * cam.z) return;
+    ctx.save(); ctx.translate(s.x, s.y); try { ovBldExtras(s, t); } catch (e) {} ctx.restore();
   }
 
   // ---- input ----
