@@ -11148,6 +11148,225 @@ function qFinish(q, opt, idx) { qFinish0(q, opt, idx); if (opt && typeof opt.eff
     return [x0, y0];
   }
 
+  // ================= One hero, one tree =================
+  // Your upbringing (childhood, adolescence, young adulthood) decides the skills you start with and the kit you carry.
+  var UPB = [
+    { key: "c", title: "Childhood", ask: "Where did you grow up?", opts: [
+      { id: "farm", name: "A farm in the Ashford fields", line: "You grew up behind a plough in the Ashford fields, where winters are thin and work is not.", sk: { harvest: 1, sv_footwork: 1 }, g: 14, c: -10, cost: "Poor: 10 crowns less in your purse." },
+      { id: "wagon", name: "A merchant's wagon", line: "You grew up on a merchant's wagon, counting coin before you could count years.", sk: { counting: 1, haggler: 1 }, c: 25, cost: "Soft hands. Nobody taught you to fight." },
+      { id: "forge", name: "A smith's forge", line: "You grew up beside a forge, where everything was either hot or heavy.", sk: { hammerhand: 1, ironhide: 1 }, loot: { blades: 2, mail: 2 }, c: -5, cost: "5 crowns less. The forge ate everything." },
+      { id: "keep", name: "A garrison keep", line: "You grew up in a garrison keep, the child of a soldier, among men who drilled at dawn.", sk: { hiredsteel: 1, wf_drill: 1 }, from: { ashford: 2 }, c: -10, cost: "A hard upbringing: 10 crowns less." },
+      { id: "road", name: "The roads, an orphan", line: "You grew up on the roads with no family, no door and no one to miss you.", sk: { roadwise: 1, pathfinder: 1 }, c: 0, cost: "No one behind you. No one to help." },
+      { id: "archive", name: "A Spiritveil archive-town", line: "You grew up among archives and lanterns, where every promise is written down.", sk: { steadyhand: 1, silvertongue: 1 }, c: -5, cost: "5 crowns less. Books cost." }] },
+    { key: "a", title: "Adolescence", ask: "What shaped you as a teenager?", opts: [
+      { id: "hunter", name: "A hunter's apprentice", line: "At fourteen you were apprenticed to a hunter, and learned to wait for the shot.", sk: { fletcher: 1, wy_pace: 1 }, loot: { bows: 2 }, c: -5, cost: "5 crowns less." },
+      { id: "thief", name: "Running with thieves", line: "At fourteen you ran with thieves, and learned to leave before anyone looked.", sk: { cutthroat: 1, sv_footwork: 1 }, c: 5, cost: "The watch knows your face." },
+      { id: "levy", name: "Drilled in the levy", line: "At fourteen they put a spear in your hand and taught you to stand in a line.", sk: { drill: 1, wf_drill: 1 }, from: { ashford: 2 }, c: -10, cost: "10 crowns less. The levy kept your wages." },
+      { id: "acolyte", name: "A temple acolyte", line: "At fourteen you took a quiet vow in a temple, and learned to speak so people stay.", sk: { silvertongue: 1, steadyhand: 1 }, c: -10, cost: "A vow of poverty: 10 crowns less." },
+      { id: "caravan", name: "A caravan guard", line: "At fourteen you walked beside the caravans, and learned what lives at the edge of the road.", sk: { pathfinder: 1, giantslayer: 1 }, c: 0, cost: "Always on the move: no home to go back to." },
+      { id: "void", name: "Touched by the Void", line: "At fourteen the Void touched you and let you go. Something in you was left hollow.", sk: { hollowstrength: 1, sparkward: 1 }, burn: 1, c: 0, cost: "You lose your name. A memory is burned from the start." }] },
+    { key: "y", title: "Young adulthood", ask: "What did you do before Ashford?", opts: [
+      { id: "sellsword", name: "Rode with a sellsword company", line: "Before Ashford you rode with a sellsword company. Six of them still follow you.", sk: { hiredsteel: 1, wf_drill: 1 }, from: { merc: 6 }, c: 5, cost: "Six sellswords expect wages, and leave if unpaid." },
+      { id: "outlaw", name: "An outlaw on the run", line: "Before Ashford you ran with outlaws. Six exiles still follow you, and the Flameborne remember your face.", sk: { cutthroat: 1, sv_footwork: 1 }, from: { exile: 6 }, loot: { blades: 3 }, pwar: "ember", c: 0, cost: "Flameborne lords hunt you from day one." },
+      { id: "retainer", name: "Retainer of an exiled house", line: "Before Ashford you served an exiled house. Six of its retainers follow you, and Stonehold wants the name you no longer say.", sk: { bloodstand: 1, silvertongue: 1 }, from: { ashford: 6 }, gear: { steel: 2 }, pwar: "stone", c: 10, cost: "Stonehold lords want you dead from day one." },
+      { id: "clerk", name: "A clerk in a counting house", line: "Before Ashford you kept ledgers in a counting house, and saved what you could.", sk: { counting: 1, haggler: 1 }, c: 70, g: 10, cost: "No fighters at your back." },
+      { id: "journeyman", name: "A journeyman smith", line: "Before Ashford you were a journeyman smith. You carry what you could not sell.", sk: { hammerhand: 1, ironhide: 1 }, loot: { blades: 4, mail: 3, bows: 2 }, c: 10, cost: "No fighters at your back." },
+      { id: "pilgrim", name: "A pilgrim of the long road", line: "Before Ashford you walked the long road as a pilgrim, on foot and unafraid of the dark.", sk: { pathfinder: 1, roadwise: 1 }, c: 15, g: 8, cost: "Nothing to your name but the road." }] }
+  ];
+  function upbPick(st, id) { var o = UPB[st].opts; for (var i = 0; i < o.length; i++) if (o[i].id === id) return o[i]; return o[0]; }
+  function upbSel() {
+    var u = (S && S.opt && S.opt.upb) || (typeof OPT !== "undefined" && OPT.upb) || {};
+    return [upbPick(0, u.c || "road"), upbPick(1, u.a || "caravan"), upbPick(2, u.y || "pilgrim")];
+  }
+  function upbKit(sel) {
+    var k = { crowns: 20, grain: 0, from: {}, loot: {}, gear: {}, sk: {}, pwar: [], burn: 0 };
+    sel.forEach(function (o) {
+      k.crowns += o.c || 0; k.grain += o.g || 0;
+      [["from", o.from], ["loot", o.loot], ["gear", o.gear]].forEach(function (p) { if (p[1]) Object.keys(p[1]).forEach(function (q) { k[p[0]][q] = (k[p[0]][q] || 0) + p[1][q]; }); });
+      Object.keys(o.sk || {}).forEach(function (q) { k.sk[q] = Math.min(3, (k.sk[q] || 0) + o.sk[q]); });
+      if (o.pwar) k.pwar.push(o.pwar); if (o.burn) k.burn = 1;
+    });
+    k.crowns = Math.max(5, k.crowns); return k;
+  }
+  function originApply(NS, byId) {
+    if (typeof UPB === "undefined" || !UPB) { NS.auto = { buy: false, days: 10 }; return; }
+    var sel = upbSel(), k = upbKit(sel), st = DF.start;
+    NS.auto = { buy: false, days: 10 };
+    NS.crowns = k.crowns + st; NS.grain = k.grain; NS.from = Object.keys(k.from).length ? k.from : NS.from; NS.skills = Object.assign({}, k.sk); NS.skStart = Object.assign({}, k.sk);
+    if (Object.keys(k.loot).length) NS.loot = k.loot; if (Object.keys(k.gear).length) NS.gear = k.gear;
+    if (k.pwar.length) { NS.pwar = {}; k.pwar.forEach(function (p) { NS.pwar[p] = true; }); }
+    if (k.burn) { NS.held = (NS.held || []).filter(function (h) { return h !== "name"; }); NS.burned = ["name"]; }
+    var intro = sel.map(function (o) { return o.line; }).join(" ") + " You walk into Ashford, and a clerk of the levy writes your name in her book.";
+    ORIGINS.wanderer.intro = intro;
+    NS.journal = [{ d: 1, k: "e", text: intro }];
+  }
+  function spent() { var n = 0, f = 0; Object.keys(S.skills || {}).forEach(function (k) { n += S.skills[k]; }); Object.keys(S.skStart || {}).forEach(function (k) { f += S.skStart[k]; }); return Math.max(0, n - f); }
+  function sgBias() { return 1; }
+  function ovMf() { return 1; }
+  function ovWhoTxt() { return ""; }
+
+  // ---- character creator ----
+  var MK = { el: null, step: 0, pick: [null, null, null] };
+  function mkUpbText(o) {
+    var t = Object.keys(o.sk || {}).map(function (q) { return skName(q) + (o.sk[q] > 1 ? " ×" + o.sk[q] : ""); }).join(", ");
+    var kit = []; if (o.c) kit.push((o.c > 0 ? "+" : "−") + Math.abs(o.c) + " crowns"); if (o.g) kit.push("+" + o.g + " grain");
+    if (o.from) Object.keys(o.from).forEach(function (q) { kit.push("+" + o.from[q] + " men"); });
+    if (o.loot || o.gear) kit.push("gear"); return t + (kit.length ? " · " + kit.join(", ") : "");
+  }
+  function mkRender() {
+    var el = MK.el, st = MK.step, h = "";
+    if (st < 3) {
+      var U = UPB[st];
+      h += '<div class="mkh"><small>STEP ' + (st + 1) + " OF 3</small><h1>" + U.title + "</h1><p>" + U.ask + '</p></div><div class="mkl">';
+      U.opts.forEach(function (o, i) {
+        h += '<button class="mkcard' + (MK.pick[st] === o.id ? " on" : "") + '" data-mk="' + o.id + '"><b>' + o.name + '</b><span class="mkd">' + o.line + '</span><span class="mkg"><i>You start with</i> ' + mkUpbText(o) + '</span><span class="mkc"><i>Cost</i> ' + o.cost + "</span></button>";
+      });
+      h += '</div><div class="mkb"><button id="mkback">Back</button><button id="mknext" class="solid"' + (MK.pick[st] ? "" : " disabled") + ">Next</button></div>";
+    } else {
+      var sel = [upbPick(0, MK.pick[0]), upbPick(1, MK.pick[1]), upbPick(2, MK.pick[2])], k = upbKit(sel), img = "";
+      try { img = portrait("wanderer"); } catch (e) {}
+      h += '<div class="mkh"><small>YOUR STORY</small><h1>Who you are</h1></div><div class="mkl"><div class="mkp">' + (img ? '<img src="' + img + '" alt="">' : "") + '<div class="mkt">' + sel.map(function (o) { return o.line; }).join(" ") + "</div></div>";
+      h += '<div class="mks"><b>Starting skills</b>' + Object.keys(k.sk).map(function (q) { return '<span class="mkchip">' + skName(q) + (k.sk[q] > 1 ? " ×" + k.sk[q] : "") + "</span>"; }).join("") + "</div>";
+      var kit = [k.crowns + " crowns"]; if (k.grain) kit.push(k.grain + " grain"); Object.keys(k.from).forEach(function (q) { kit.push(k.from[q] + " followers"); }); if (Object.keys(k.loot).length || Object.keys(k.gear).length) kit.push("some gear");
+      h += '<div class="mks"><b>You carry</b> ' + kit.join(", ") + ".</div>";
+      var costs = sel.map(function (o) { return o.cost; }); h += '<div class="mks"><b>What it cost you</b>' + costs.map(function (c) { return "<div>" + c + "</div>"; }).join("") + "</div>";
+      h += '<p class="mkn">Everything else is learned on the road, in one tree.</p></div><div class="mkb"><button id="mkback">Back</button><button id="csgo" class="solid">Begin your story</button></div>';
+    }
+    el.innerHTML = h; var l = el.querySelector(".mkl"); if (l) l.scrollTop = 0;
+  }
+  function ovCSelOpen() {
+    if (!MK.el) {
+      var s = document.createElement("style");
+      s.textContent = "#mkc{position:fixed;inset:0;z-index:200000;background:radial-gradient(120% 70% at 50% 0%,#2a1c0e,#0a0806 70%);color:#e8dcc0;display:flex;flex-direction:column;padding:calc(.8rem + env(safe-area-inset-top,0px)) 14px calc(.8rem + env(safe-area-inset-bottom,0px));font-family:'IM Fell English',Georgia,serif}" +
+        "#mkc .mkh{text-align:center;margin-bottom:.5rem}#mkc small{font:500 .6rem 'IBM Plex Mono',ui-monospace,monospace;letter-spacing:.2em;color:#a8884e}#mkc h1{margin:.15rem 0;font-weight:400;font-style:italic;font-size:1.7rem;color:#f2dfb0}#mkc .mkh p{margin:0;color:#bfae88}" +
+        "#mkc .mkl{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:8px;padding:2px 1px;-webkit-overflow-scrolling:touch}" +
+        "#mkc .mkcard{flex-shrink:0;text-transform:none;letter-spacing:0;text-align:left;display:flex;flex-direction:column;gap:4px;padding:.65rem .8rem;background:linear-gradient(#241d14,#120d08);border:1px solid #4a3a20;border-radius:5px;color:#e8dcc0;font:inherit;touch-action:manipulation}#mkc .mkcard b{text-transform:none;letter-spacing:0;font-weight:400;font-size:1.12rem;color:#f0d890}#mkc .mkcard.on{border-color:#e0bc6a;box-shadow:0 0 14px rgba(224,188,106,.35),inset 0 0 14px rgba(224,188,106,.12);background:linear-gradient(#3a2c18,#1a130a)}" +
+        "#mkc .mkd{font-style:italic;color:#c9b995;font-size:.95rem}#mkc .mkg,#mkc .mkc{font:500 .7rem 'IBM Plex Mono',ui-monospace,monospace;line-height:1.45;color:#d8c48c}#mkc .mkc{color:#c98a6a}#mkc i{font-style:normal;color:#8a7a54;text-transform:uppercase;letter-spacing:.1em;font-size:.58rem;margin-right:.3rem}" +
+        "#mkc .mkb{display:flex;gap:10px;margin-top:.6rem}#mkc .mkb button{flex:1;padding:.8rem;border-radius:4px;border:1px solid #6a5028;background:#1a140c;color:#e8dcc0;font:600 .8rem 'IBM Plex Mono',ui-monospace,monospace;letter-spacing:.08em;text-transform:uppercase}#mkc .mkb button.solid{border-color:#e0bc6a;background:linear-gradient(#5a4220,#2a1c0a);color:#fbeec4}#mkc .mkb button:disabled{opacity:.4}" +
+        "#mkc .mkp{display:flex;gap:12px;align-items:center;padding:.6rem;border:1px solid #4a3a20;border-radius:5px;background:#140f09}#mkc .mkp img{width:84px;height:84px;image-rendering:pixelated;border-radius:4px;border:1px solid #6a5028}#mkc .mkt{font-style:italic;color:#d6c6a0;font-size:.95rem}" +
+        "#mkc .mks{padding:.55rem .7rem;border:1px solid #3a2e1a;border-radius:5px;background:#100b07;font-size:.95rem}#mkc .mks b{display:block;font:500 .6rem 'IBM Plex Mono',ui-monospace,monospace;letter-spacing:.14em;text-transform:uppercase;color:#a8884e;margin-bottom:.25rem}#mkc .mks div{color:#c98a6a;margin-top:.15rem}" +
+        "#mkc .mkchip{display:inline-block;margin:2px 4px 2px 0;padding:.12rem .5rem;border:1px solid #9a7a3a;border-radius:99px;background:#241a0c;color:#f2dfae;font:500 .7rem 'IBM Plex Mono',ui-monospace,monospace}#mkc .mkn{text-align:center;color:#8a7a54;font-style:italic;margin:.2rem 0}";
+      document.head.appendChild(s);
+      var el = document.createElement("div"); el.id = "mkc"; document.body.appendChild(el); MK.el = el;
+      el.addEventListener("click", function (e) {
+        var c = e.target.closest && e.target.closest("[data-mk]");
+        if (c) { MK.pick[MK.step] = c.getAttribute("data-mk"); mkRender(); return; }
+        var b = e.target.closest && e.target.closest("button"); if (!b) return;
+        if (b.id === "mknext" && MK.pick[MK.step]) { MK.step++; mkRender(); }
+        else if (b.id === "mkback") { if (MK.step > 0) { MK.step--; mkRender(); } else { MK.el.style.display = "none"; try { act("mainmenu"); } catch (er) {} } }
+        else if (b.id === "csgo") { NG = NG || Object.assign({}, OPT); NG.origin = "wanderer"; NG.upb = { c: MK.pick[0], a: MK.pick[1], y: MK.pick[2] }; MK.el.style.display = "none"; openSheet("newgame"); }
+      });
+    }
+    var u = (NG && NG.upb) || {}; MK.pick = [u.c || null, u.a || null, u.y || null]; MK.step = 0;
+    MK.el.style.display = ""; mkRender();
+  }
+
+  // ---- one skill tree ----
+  var SKSEC = [
+    ["Survival", "Survival", "On your feet: dodging, toughness and nerve against bosses and packs."],
+    ["Warfare", "Warfare", "In the line: drill, shields, voice and command in battle."],
+    ["Wayfaring", "Wayfaring", "On the map: pace, foraging, scouting and the long road."],
+    ["Command", "Command", "Drill, discipline and rank for the men who follow you."],
+    ["Warrior", "Warrior", "Hit harder, take it better."],
+    ["Archery", "Archery", "Bows, quivers and steady aim."],
+    ["Trade and Land", "Trade and Land", "Coin, grain and holding ground."],
+    ["Politics", "Politics", "Words that open gates and lords."],
+    ["Road and Siege", "Road and Siege", "Roads, sappers and the void line."],
+    ["Memory and Spark", "Memory and Spark", "The spark, and what it costs to carry."],
+    ["Road Wisdom", "The Long Road", "Luck, escape and the second wind."],
+    ["Hands in the Soil", "The Plough", "Grain, endurance and the wide sweep."],
+    ["The Merchant's Way", "The Counting House", "Coin, bribes and bargains."],
+    ["Sellsword Code", "The Sellsword's Code", "Steel for pay, and pay on time."],
+    ["Cutthroat Ways", "The Cutthroat's Way", "Fight to leave. Strike from behind."],
+    ["The Forge-Hand", "The Forge-Hand", "You know how a blade is made, so you know how it breaks."],
+    ["Blood and Name", "Blood and Name", "A banner men will follow."],
+    ["Hollow Gifts", "Hollow Gifts", "What the quiet took, it left room in."],
+    ["Nightmare Arts+Hell Arts", "Dark Arts", "Learned only by those who have beaten the Iron Reaper."]
+  ];
+  var SKOP2 = {};
+  function skSecs() {
+    return SKSEC.map(function (d, i) {
+      var items = []; d[0].split("+").forEach(function (n) { var b = skBranch(n); if (b) items = items.concat(b.items); });
+      return { i: i, name: d[1], blurb: d[2], items: items };
+    }).filter(function (s) { return s.items.length; });
+  }
+  function skWhy(it) {
+    var r = sk(it.id);
+    if (it.need && beatN() < it.need) return it.need === 1 ? "Defeat the Iron Reaper in Normal to unlock." : "Defeat the Iron Reaper in Nightmare to unlock.";
+    if (r >= skMax(it)) return "Mastered.";
+    if (it.req && !sk(it.req)) return "Learn " + skName(it.req) + " first.";
+    if (it.lv && lvl() < it.lv) return "Needs level " + it.lv + ".";
+    if (points() < 1) return "No points to spend.";
+    return "";
+  }
+  function skActId() {
+    var ids = []; SKILLS.forEach(function (b) { b.items.forEach(function (i) { if (i.active && sk(i.id) > 0) ids.push(i.id); }); });
+    if (!ids.length) return null; return ids.indexOf(S.skEq) >= 0 ? S.skEq : ids[0];
+  }
+  function skSecHtml(sc) {
+    var lay = skLayout(sc.items), ROWH = 86, W = 500, H = lay.rows * ROWH, svg = '<svg class="skl" viewBox="0 0 ' + W + " " + H + '" preserveAspectRatio="none" aria-hidden="true">', cells = "";
+    sc.items.forEach(function (it) {
+      if (!it.req) return; var a = lay.pos[it.req], b = lay.pos[it.id]; if (!a || !b) return;
+      svg += '<line x1="' + ((a[1] + 0.5) * 100) + '" y1="' + ((a[0] + 0.5) * ROWH + 26) + '" x2="' + ((b[1] + 0.5) * 100) + '" y2="' + ((b[0] + 0.5) * ROWH - 26) + '" class="' + (sk(it.req) > 0 ? "lit" : "") + '"/>';
+    });
+    svg += "</svg>";
+    for (var r = 0; r < lay.rows; r++) { var rl = skRowLv(sc.items, r); cells += '<div class="skrl" style="top:' + (r * ROWH + 4) + 'px">' + (rl ? "Lv " + rl : "") + "</div>"; }
+    sc.items.forEach(function (it) {
+      var p = lay.pos[it.id], rk = sk(it.id), mx = skMax(it), why = skWhy(it), can = !why;
+      var cls = "skn" + (rk > 0 ? " got" : "") + (rk >= mx ? " max" : "") + (can ? " can" : "") + (why && rk === 0 ? " lock" : "") + (it.active ? " act" : "") + (skSel === it.id ? " sel" : "");
+      cells += '<button class="' + cls + '" style="grid-row:' + (p[0] + 1) + ";grid-column:" + (p[1] + 1) + '" data-act="sksel" data-a="' + it.id + '" aria-label="' + it.name + '">' + skIcon(it.id, 54) + '<span class="skr">' + rk + "/" + mx + "</span>" + (it.active ? '<span class="ska">◆</span>' : "") + "</button>";
+    });
+    return '<div class="skgw">' + svg + '<div class="skg" style="grid-auto-rows:' + ROWH + 'px">' + cells + "</div></div>";
+  }
+  function skillsSheet() {
+    var L = lvl(), xp = S.xp || 0, lo = 25 * (L - 1) * (L - 1), hi = 25 * L * L, pc = Math.max(0, Math.min(100, Math.round(100 * (xp - lo) / (hi - lo)))), P = points(), secs = skSecs();
+    if (!skSel || !skFind(skSel)) skSel = "sv_footwork";
+    var h = '<div class="skt"><div class="skh"><div><h2>Skills</h2><p class="sub" style="margin:0">' + (S.pname || "You") + " · Level " + L + '</p></div><div class="skpts"><b>' + P + "</b><span>point" + (P === 1 ? "" : "s") + "</span></div></div>";
+    h += '<div class="skxp"><i style="width:' + pc + '%"></i></div>';
+    h += '<div class="skjs">' + secs.map(function (s) { var got = 0; s.items.forEach(function (it) { got += sk(it.id); }); return '<button class="skj' + (got ? " has" : "") + '" data-skj="' + s.i + '">' + s.name + (got ? " <em>" + got + "</em>" : "") + "</button>"; }).join("") + "</div>";
+    h += '<div class="skbd">';
+    secs.forEach(function (s) {
+      var got = 0, tot = 0; s.items.forEach(function (it) { got += sk(it.id); tot += skMax(it); });
+      var open = SKOP2[s.i] !== undefined ? SKOP2[s.i] : (s.i < 3 || got > 0 || s.items.some(function (it) { return it.id === skSel; }));
+      var act = s.items.filter(function (it) { return it.active; })[0];
+      h += '<div class="sksec" id="sksec' + s.i + '"><button class="skst' + (open ? " open" : "") + '" data-skt="' + s.i + '"><b>' + s.name + '</b><span>' + s.blurb + (act ? " Battle skill: " + act.name + "." : "") + '</span><em>' + got + "/" + tot + "</em></button>" + (open ? skSecHtml(s) : "") + "</div>";
+    });
+    h += "</div>";
+    h += '<div class="sec">Forget</div>' + row("Unlearn everything", "Costs 100 crowns. You keep what your upbringing gave you. Everything has a price, even changing who you are.", "Respec", "respec", "", "", spent() < 1 || S.crowns < 100, "amber");
+    var it = skFind(skSel);
+    if (it) {
+      var rk = sk(it.id), mx = skMax(it), why = skWhy(it), pips = ""; for (var i = 0; i < mx; i++) pips += i < rk ? "●" : "○";
+      var ac = SKACT[it.id];
+      h += '<div class="skd"><div class="skdt"><b>' + it.name + '</b><span class="skdp">' + pips + "</span></div>";
+      h += '<div class="skdk">' + (ac ? "Battle skill" : "Passive") + (it.lv ? " · Level " + it.lv : "") + (it.req ? " · After " + skName(it.req) : "") + "</div>";
+      h += '<p class="skdd">' + it.desc + "</p>";
+      if (ac) {
+        h += '<p class="skde"><b>Cost:</b> ' + ac.txt + " · <b>Cooldown:</b> " + ac.cd + " seconds</p>";
+        if (rk > 0) h += '<p class="skde"><b>Now (rank ' + rk + "):</b> " + ac.eff(rk) + "</p>";
+        if (rk < mx) h += '<p class="skde"><b>Next (rank ' + (rk + 1) + "):</b> " + ac.eff(rk + 1) + "</p>";
+        h += '<p class="skde dim-t">One battle skill is on your button at a time.' + (rk > 0 && skActId() === it.id ? " This one is equipped." : "") + "</p>";
+      } else h += '<p class="skde"><b>' + it.per + "</b> per rank." + (rk > 0 ? " Now: rank " + rk + "." : "") + "</p>";
+      h += '<div class="skdb">' + (why && rk < mx ? '<span class="dim-t">' + why + "</span>" : "<span></span>");
+      if (ac && rk > 0 && skActId() !== it.id) h += '<button class="sk-eq" data-skq="' + it.id + '">Equip</button>';
+      h += '<button class="' + (!why ? "solid" : "") + '" data-act="learn" data-a="' + it.id + '"' + (why ? " disabled" : "") + ">" + (rk >= mx ? "Max" : "Learn") + "</button></div></div>";
+    }
+    return h + "</div>";
+  }
+  (function () {
+    var s = document.createElement("style");
+    s.textContent = ".skjs{display:flex;flex-wrap:wrap;gap:5px;margin:.3rem 0 .5rem}.skj{padding:.25rem .5rem;border:1px solid #4a3a20;border-radius:99px;background:#16110a;color:#a89468;font:500 .56rem 'IBM Plex Mono',ui-monospace,monospace;letter-spacing:.05em;text-transform:uppercase}.skj.has{border-color:#9a7a3a;color:#e0c888}.skj em{font-style:normal;color:#f2d88c}" +
+      ".sksec{margin-bottom:.4rem}.skst{width:100%;display:grid;grid-template-columns:1fr auto;gap:0 .5rem;text-align:left;padding:.45rem .6rem;border:1px solid #5a4424;border-radius:4px;background:linear-gradient(#241b10,#120d07);color:#e8cc84}.skst b{font:500 1.02rem var(--serif2);font-weight:500}.skst span{grid-column:1;font:italic .78rem var(--serif2,Georgia,serif);color:#a8986e}.skst em{grid-row:1/3;grid-column:2;align-self:center;font:600 .62rem 'IBM Plex Mono',ui-monospace,monospace;font-style:normal;color:#d8b868}.skst.open{border-color:#c8a050}" +
+      ".skd{position:sticky;bottom:-1px;z-index:6;margin-top:.8rem;padding:.45rem .75rem!important;background:linear-gradient(#1f180e,#100c07);box-shadow:0 -8px 14px rgba(0,0,0,.7),inset 0 0 18px rgba(0,0,0,.6)}.skd .skdd{margin:0 0 .2rem;font-size:.85rem}.skd .skde{font-size:.85rem;margin:0 0 .2rem}.skd .skdk{margin:0 0 .2rem}.sk-eq{padding:.5rem .8rem;border:1px solid #e0bc6a;border-radius:3px;background:#2a1c0a;color:#f6e6b4}";
+    document.head.appendChild(s);
+    document.addEventListener("click", function (e) {
+      var t = e.target.closest && e.target.closest("[data-skj],[data-skt],[data-skq]"); if (!t || !sheet || sheet.kind !== "skills") return;
+      if (t.hasAttribute("data-skq")) { S.skEq = t.getAttribute("data-skq"); renderSheet(); save(); return; }
+      var i = +(t.getAttribute("data-skt") || t.getAttribute("data-skj")), cur = SKOP2[i];
+      if (t.hasAttribute("data-skt")) { if (cur === undefined) { var sc = skSecs().filter(function (q) { return q.i === i; })[0], got = 0; sc.items.forEach(function (it) { got += sk(it.id); }); cur = i < 3 || got > 0 || sc.items.some(function (it) { return it.id === skSel; }); } SKOP2[i] = !cur; renderSheet(); return; }
+      SKOP2[i] = true; renderSheet(); var el = document.getElementById("sksec" + i); if (el && el.scrollIntoView) el.scrollIntoView({ block: "start" });
+    });
+  })();
+
   // ---- input ----
   (function () {
     window.addEventListener("keydown", function (e) { if (!AR) return; var k = e.key.length === 1 ? e.key.toLowerCase() : e.key; akeys[k] = true; if (k === " " || k === "Enter" || k === "j") { e.preventDefault(); aPress = true; } if (k === "k") aShootP = true; if (k === "l") aCastP = true; });
@@ -11263,12 +11482,12 @@ function qFinish(q, opt, idx) { qFinish0(q, opt, idx); if (opt && typeof opt.eff
       case "learn":
         (function () {
           var it = null; SKILLS.forEach(function (b) { b.items.forEach(function (i) { if (i.id === x) it = i; }); });
-          if (it && points() > 0 && sk(x) < skMax(it) && (!it.req || sk(it.req)) && (!it.need || beatN() >= it.need) && (!it.lv || lvl() >= it.lv) && (!it.origin || ((S.opt && S.opt.origin) || "wanderer") === it.origin)) S.skills[x] = sk(x) + 1;
+          if (it && points() > 0 && sk(x) < skMax(it) && (!it.req || sk(it.req)) && (!it.need || beatN() >= it.need) && (!it.lv || lvl() >= it.lv)) S.skills[x] = sk(x) + 1;
         })(); break;
       case "skbr": skOpen[x] = !skOpen[x]; break;
       case "sktab": skTab = +x; skSel = null; break;
       case "sksel": skSel = x; break;
-      case "respec": if (S.crowns >= 100 && spent() > 0) { S.crowns -= 100; S.skills = {}; toast("You begin again, a little poorer."); } break;
+      case "respec": if (S.crowns >= 100 && spent() > 0) { S.crowns -= 100; S.skills = Object.assign({}, S.skStart || {}); toast("You begin again, a little poorer."); } break;
       case "dipjoin": dipJoin(x, +y || 0); break;
       case "dipleave": dipLeave(false); break;
       case "dipally": dipAlly(x); break;
