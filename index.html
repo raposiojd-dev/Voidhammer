@@ -3158,6 +3158,12 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
   }
   // illustrated header for towns and castles
   function placeArt(s) {
+    var c = s.type === "castle", h = 0, id = String(s.id || s.name || ""), i;
+    for (i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) >>> 0;
+    var src = "img/" + (c ? "castle" : "town") + (1 + (h % 2)) + ".webp", col = ownerCol(s);
+    return '<div style="position:relative;margin:0.7rem 0 0.4rem"><img src="' + src + '" alt="" style="display:block;width:100%;aspect-ratio:21/9;object-fit:cover;border-radius:8px;border:1px solid var(--line)" onerror="this.parentNode.hidden=1"><div style="position:absolute;left:0;right:0;bottom:0;height:4px;border-radius:0 0 8px 8px;background:' + col + '"></div></div>';
+  }
+  function placeArtOld(s) {
     var col = ownerCol(s), c = s.type === "castle";
     var sv = '<svg viewBox="0 0 340 120" width="100%" style="display:block;border-radius:8px;border:1px solid var(--line);margin:0.7rem 0 0.4rem" aria-hidden="true">' +
       '<defs><linearGradient id="sk" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3a4a66"/><stop offset="1" stop-color="#d9a76a"/></linearGradient></defs>' +
@@ -4603,6 +4609,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
     ovTownPaint(m, sp, th);
     terrainEnhance(m, g, W, H, th, sp);
     d2Decor(m, g, W, H, th, sp);
+    enHousesLate(m, sp);
     m.save(); m.setTransform(1, 0, 0, 1, 0, 0); ovGround(mc, th); m.restore();
     ovShade(m, g, W, H, th);
     var A = { id: id, sp: sp, W: W, H: H, g: g, mc: mc, th: th, npcs: [], en: [], items: [], proj: [], fx: [], floats: [], t: 0, dlg: null, dch: [] };
@@ -4850,7 +4857,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
       if (it.t === "arrow") { g.fillStyle = "#e8d8a8"; g.fillRect(Math.round(it.x) - 3, Math.round(it.y), 7, 1); g.fillStyle = "#a07030"; g.fillRect(Math.round(it.x) + 3, Math.round(it.y) - 1, 2, 3); return; } g.fillStyle = "#e84a5a"; var bx = Math.round(it.x), by = Math.round(it.y - 4 + Math.sin(a.t * 5) * 1.2); g.fillRect(bx - 3, by - 3, 3, 3); g.fillRect(bx, by - 3, 3, 3); g.fillRect(bx - 2, by, 5, 2); g.fillRect(bx - 1, by + 2, 3, 1); });
     var list = [];
     a.npcs.forEach(function (n) { if (n.vis && !n.vis()) return; list.push({ x: n.px, y: n.py, f: function () { if (n.cell) { ovCast(g, n.px, n.py, 14, 17); g.fillStyle = "#4a4a56"; g.fillRect(n.px - 7, n.py - 18, 14, 17); g.fillStyle = "#1e1e26"; g.fillRect(n.px - 5, n.py - 16, 10, 15); g.fillStyle = "#8a8a96"; g.fillRect(n.px - 3, n.py - 14, 1, 11); g.fillRect(n.px + 2, n.py - 14, 1, 11); } else if (n.gate) { ovCast(g, n.px, n.py, 18, 17); g.fillStyle = "#5a5466"; g.fillRect(n.px - 9, n.py - 17, 18, 4); g.fillRect(n.px - 9, n.py - 14, 4, 13); g.fillRect(n.px + 5, n.py - 14, 4, 13); g.fillStyle = "#0e0c14"; g.fillRect(n.px - 5, n.py - 14, 10, 13); g.fillStyle = "rgba(154,127,214," + (0.35 + 0.2 * Math.sin(a.t * 3)) + ")"; g.fillRect(n.px - 3, n.py - 10, 6, 9); } else if (n.draw) { n.draw(g, n.px, n.py, a.t); } else if (n.chest) ovChest(g, n); else drawChar(g, n.px, n.py, { sp: "npc:" + n.id, nm: n.name, col: n.col, hair: n.hair, face: { x: 0, y: 1 }, small: n.small, big: false }); if (n.mk && n.mk()) { var mq = n.mk(), my = n.py - 20 + Math.round(Math.sin(a.t * 4)); g.font = "bold 12px monospace"; g.fillStyle = "#1a1209"; g.fillText(mq === 1 ? "!" : "?", n.px - 3, my + 1); g.fillText(mq === 1 ? "!" : "?", n.px - 5, my); g.fillStyle = mq === 1 ? "#ffd84a" : "#9fd8ff"; g.fillText(mq === 1 ? "!" : "?", n.px - 4, my); } } }); });
-    a.en.forEach(function (e) { if (e.dead || e.gone) return; list.push({ x: e.x, y: e.y, f: function () { drawChar(g, e.x, e.y, { sp: e.type, col: e.d.col, band: e.d.band, hair: "#2a1a14", face: { x: Math.sign(p.x - e.x), y: 1 }, big: e.d.big, walk: e.aggro && !e.yield, anim: a.t * 8, flash: e.flash > 0 }); ovHeldE(g, e); if (e.hp < e.hpm || e.d.boss) { g.fillStyle = "#000"; g.fillRect(e.x - 6, e.y - 19, 12, 2); g.fillStyle = e.yield ? "#e0d070" : "#d4562c"; g.fillRect(e.x - 6, e.y - 19, Math.max(0, Math.round(12 * e.hp / e.hpm)), 2); } if (e.yield) { g.fillStyle = "#ffd84a"; g.fillRect(e.x - 1, e.y - 27, 2, 5); g.fillRect(e.x - 1, e.y - 21, 2, 2); } } }); });
+    a.en.forEach(function (e) { if (e.dead || e.gone) return; list.push({ x: e.x, y: e.y, f: function () { drawChar(g, e.x, e.y, { sp: e.type, col: e.d.col, band: e.d.band, hair: "#2a1a14", face: { x: Math.sign(p.x - e.x), y: 1 }, big: e.d.big, walk: e.aggro && !e.yield, anim: a.t * 8, flash: e.flash > 0 }); if (!e.sp) ovHeldE(g, e); if (e.hp < e.hpm || e.d.boss) { g.fillStyle = "#000"; g.fillRect(e.x - 6, e.y - 19, 12, 2); g.fillStyle = e.yield ? "#e0d070" : "#d4562c"; g.fillRect(e.x - 6, e.y - 19, Math.max(0, Math.round(12 * e.hp / e.hpm)), 2); } if (e.yield) { g.fillStyle = "#ffd84a"; g.fillRect(e.x - 1, e.y - 27, 2, 5); g.fillRect(e.x - 1, e.y - 21, 2, 2); } } }); });
     list.push({ x: p.x, y: p.y, f: function () { if (p.inv > 0 && Math.floor(a.t * 20) % 2) return; drawChar(g, p.x, p.y, { sp: "hero", atk: p.atk, col: eqq().a === "plate" ? "#c9d2e0" : eqq().a === "mail" ? "#8a8f9c" : eqq().k ? "#a8743c" : pLook().cloak, hair: pLook().hair, skin: pLook().skin, hat: pLook().hat, hatc: pLook().hatc, band: pLook().band, face: p.face, walk: (aInput()[0] || aInput()[1]), anim: p.anim, flash: p.flash > 0.12 }); ovHeldA(g, p, p.face, p.atk > 0 ? 1 - p.atk / 0.2 : -1, eqq().w === "steel" ? "steel" : "iron"); if (p.atk > 0) drawSlash(g, p); } });
     COOP.draw(a, list, g);
     if (a.sp.dyn) a.sp.dyn(a, list, g);
@@ -11841,7 +11848,7 @@ function enPaint(m, g, W, H, th, sp) {
       else if (t === 7) { fill(tg, px, py, 0.8); trees.push([x, y]); }
     }
     m.restore(); m.globalAlpha = 1;
-    if (HR) sp.houses.forEach(function (h) { enHouse(m, h, sp, MS); });
+    sp._hr = HR;
     var hsh = function (a, b) { var q = Math.sin(a * 91.7 + b * 47.3 + sp.seed) * 43758.5453; return q - Math.floor(q); };
     trees.forEach(function (q) {
       var x = q[0], y = q[1], v = hsh(x, y), px = x * ATS + 8, py = y * ATS + 17;
@@ -11854,6 +11861,10 @@ function enPaint(m, g, W, H, th, sp) {
       m.drawImage(s, px - sw / 2, py - sh + 1, sw, sh); m.restore();
     });
   } catch (e) { if (window.console) console.log("enPaint", e); }
+}
+
+function enHousesLate(m, sp) {
+  try { if (!sp._hr || !sp.houses) return; var MS = m.canvas._ms || 1; sp.houses.forEach(function (h) { enHouse(m, h, sp, MS); }); } catch (e) { if (window.console) console.log("enHouses", e); }
 }
 // crisp rendering, walk cycle and proper sword
 function ovAsc(VW) { var d = Math.min(window.devicePixelRatio || 1, 2.5); return Math.max(3, Math.min(8, Math.round(innerWidth * d / VW))); }
