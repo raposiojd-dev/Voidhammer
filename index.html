@@ -969,7 +969,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
     if (sheet && sheet.kind === "site" && sheet.id === s.id) closeSheet(true);
   }
 
-  function dailyTick() {
+  function dailyTick1() {
     var t = T();
     if (t > 0) {
       var dg = daysOf(S.grain, eatDay()), dc = daysOf(S.crowns, wageDay());
@@ -2883,6 +2883,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
     else if (sheet.kind === "tutorial") h = tutSheet();
     else if (sheet.kind === "quest") h = questSheet();
     else if (sheet.kind === "skills") h = skillsSheet();
+    else if (sheet.kind === "hkev") h = hkEvSheet();
     else if (sheet.kind === "ledger") h = ledgerSheet(just);
     else if (sheet.kind === "record") h = recordSheet();
     else if (sheet.kind === "key") h = keySheet();
@@ -11501,6 +11502,95 @@ function qFinish(q, opt, idx) { qFinish0(q, opt, idx); if (opt && typeof opt.eff
     return out;
   }
 
+  // ================= Road events: something is always happening, and everything costs something =================
+  var HKEV = null;
+  function evGive(rar) { try { var it = genItem(rar, null, 1 + Math.floor(lvl() / 4)); if (giveItem(it, true)) return it; } catch (e) {} return null; }
+  function evHeld() { return (S.held || []).filter(function (h) { return FRAGS[h]; }).slice(0, 3); }
+  function evChance() { return Math.max(0.25, Math.min(0.85, 0.35 + 0.035 * lvl() + 0.04 * sk("cutthroat") + 0.04 * sk("hammerhand") + 0.04 * sk("hiredsteel"))); }
+  var HKEVS = [
+    { id: "wounded", w: 3, title: "A traveller on the verge", body: function () { return "A woman sits against a milestone, one boot off, her leg wrapped in a torn sleeve. She has been there since dawn. Nobody has stopped."; }, opts: function () {
+      return [
+        { t: "Share 8 grain and bind the leg", d: "−8 grain", ok: S.grain >= 8, go: function () { S.grain -= 8; var x = addXp(35); S.crowns += 25; return "She presses a purse into your hand and tells you which fords are safe. +" + x + " xp, +25 crowns."; } },
+        { t: "Take her purse while she is weak", d: "+45 crowns. Elyndra writes it down.", go: function () { S.crowns += 45; try { log("I took a wounded woman's purse on the road and walked on. Elyndra wrote it down without a word.", "ely"); } catch (e) {} if (T() > 0) loseTroops(1); return "It is lighter than you hoped. One of your followers leaves that night, without saying why. +45 crowns, −1 follower."; } },
+        { t: "Walk on", d: "Nothing happens.", go: function () { return "You walk on. The milestone gets smaller behind you."; } }]; } },
+    { id: "merchant", w: 3, title: "A merchant with something under the cloth", body: function () { return "A merchant has pulled his cart off the road to mend a wheel. Under the cloth is something he will not name until he has seen your purse."; }, opts: function () {
+      var price = 90 + lvl() * 12;
+      return [
+        { t: "Buy it (" + price + " crowns)", d: "A Rare item, guaranteed.", ok: S.crowns >= price, go: function () { S.crowns -= price; var it = evGive(2); return it ? "You unwrap it: " + it.name + ". He is gone before you finish counting." : "He takes your crowns and hands you a bundle of arrows. It was not what he said it was. +0"; } },
+        { t: "Haggle", d: sk("haggler") ? "Your haggling helps." : "Risky: he may walk off.", go: function () { var p = 0.35 + 0.15 * sk("haggler"); if (Math.random() < p && S.crowns >= Math.round(price * 0.6)) { var c = Math.round(price * 0.6); S.crowns -= c; var it = evGive(2); return "He grumbles, and takes " + c + " crowns. " + (it ? it.name + " is yours." : "The pack is full, so he keeps it."); } return "He wraps the cloth tighter and drives on. No deal."; } },
+        { t: "Decline", d: "", go: function () { return "You nod and ride on."; } }]; } },
+    { id: "duel", w: 3, title: "A sellsword wants a fight", body: function () { return "A man in a patched brigandine blocks the road, one hand on his hilt. He is not drunk and not angry. He wants forty crowns, and he wants to win them."; }, opts: function () {
+      var p = evChance();
+      return [
+        { t: "Accept the duel", d: "About " + Math.round(p * 100) + "% to win. Win: +60 crowns, xp. Lose: −40 crowns and a follower walks.", go: function () { if (Math.random() < p) { var x = addXp(55); S.crowns += 60; return "It is over in a dozen breaths. He laughs, pays, and wishes you luck. +60 crowns, +" + x + " xp."; } var lose = Math.min(40, S.crowns); S.crowns -= lose; if (T() > 0) loseTroops(1); return "He is better. He takes " + lose + " crowns and leaves you on one knee. One follower decides you are not worth it. −" + lose + " crowns, −1 follower."; } },
+        { t: "Pay him 20 crowns to go", d: "−20 crowns", ok: S.crowns >= 20, go: function () { S.crowns -= 20; return "He bites a coin, nods, and steps aside."; } },
+        { t: "Go around", d: "Lose a day's march.", go: function () { S.day += 1; return "The detour costs you a day, and nobody remembers it."; } }]; } },
+    { id: "shrine", w: 2, need: function () { return evHeld().length > 0; }, title: "A shrine that hums", body: function () { return "A shrine of void-glass stands by the road, older than the road. It hums a note you almost remember. It does not ask for crowns. It asks for something you were carrying."; }, opts: function () {
+      var o = evHeld().map(function (id) { return { t: "Burn: " + FRAGS[id].title, d: "+1 skill point. The memory is gone for good.", go: function () { burnFragment(id); S.camp = S.camp || {}; S.camp.qpts = (S.camp.qpts || 0) + 1; return "The glass drinks it. You feel lighter, and sharper, and you cannot say what you have lost. +1 skill point."; } }; });
+      o.push({ t: "Leave 30 crowns instead", d: "−30 crowns, +xp", ok: S.crowns >= 30, go: function () { S.crowns -= 30; var x = addXp(30); return "The hum softens. +" + x + " xp."; } });
+      o.push({ t: "Leave it alone", d: "", go: function () { return "You keep your memories. The hum follows you for a mile."; } });
+      return o; } },
+    { id: "cache", w: 3, title: "Cart tracks into the trees", body: function () { return "Wheel ruts leave the road and vanish into a stand of birch. Something heavy was hauled in, and nobody has hauled it out."; }, opts: function () {
+      return [
+        { t: "Search it yourself", d: "Gold or a gift, unless it is a trap. Losing men is possible.", go: function () { var r = Math.random(); if (r < 0.55) { var c = 40 + Math.floor(Math.random() * 60); S.crowns += c; S.grain += 6; return "A dead man's store: " + c + " crowns and a sack of grain. +" + c + " crowns, +6 grain."; } if (r < 0.8) { var it = evGive(1 + (Math.random() < 0.4 ? 1 : 0)); return it ? "Under the cart lies " + it.name + "." : "A good blade, but your pack is full."; } var k = Math.min(2, T()); if (k) loseTroops(k); return "A snare line, and the men who laid it. You run. −" + k + " follower" + (k === 1 ? "" : "s") + "."; } },
+        { t: "Send two followers ahead", d: "Safer, and the loot is smaller.", ok: T() >= 3, go: function () { var c = 25 + Math.floor(Math.random() * 25); S.crowns += c; return "They come back with a chest lid and " + c + " crowns. +" + c + " crowns."; } },
+        { t: "Leave it", d: "", go: function () { return "You leave the ruts for someone braver."; } }]; } },
+    { id: "deserters", w: 2, need: function () { return T() + 5 <= capNow(); }, title: "Deserters on the road", body: function () { return "Five men in the tatters of three different uniforms walk toward you with their hands open. They do not want to go home. They do not want to go back."; }, opts: function () {
+      return [
+        { t: "Take them in", d: "+5 followers. Their wages are yours.", go: function () { S.from.exile = (S.from.exile || 0) + 5; return "They fall in behind you without a word. +5 followers."; } },
+        { t: "Feed them and send them on", d: "−6 grain, +xp", ok: S.grain >= 6, go: function () { S.grain -= 6; var x = addXp(25); return "They eat like men who have not. They go east. +" + x + " xp."; } },
+        { t: "Turn them away", d: "", go: function () { return "They go, slowly. Nobody speaks for an hour."; } }]; } },
+    { id: "children", w: 2, title: "Hungry children", body: function () { return "Three children are selling kindling at a crossroads, and none of them is looking at the kindling. They are looking at your pack."; }, opts: function () {
+      return [
+        { t: "Give 15 grain", d: "−15 grain", ok: S.grain >= 15, go: function () { S.grain -= 15; var x = addXp(45); S.crowns += 15; return "The smallest one gives you every piece of kindling and a coin from somewhere. +" + x + " xp, +15 crowns."; } },
+        { t: "Give 5 grain", d: "−5 grain", ok: S.grain >= 5, go: function () { S.grain -= 5; var x = addXp(15); return "It is not enough, and they know it, and they say thank you anyway. +" + x + " xp."; } },
+        { t: "Walk on", d: "", go: function () { return "You do not look back. You think about it for a while."; } }]; } }
+  ];
+  function hkEvDay() {
+    if (!S || !S.sites || sheet || B || (typeof mode !== "undefined" && mode !== "map")) return;
+    if (AR) return;
+    var e = S.hkEv = S.hkEv || { next: S.day + 4, last: "" };
+    if (S.day < e.next) return;
+    if (Math.random() > 0.6) return;
+    var pool = HKEVS.filter(function (v) { return v.id !== e.last && (!v.need || v.need()); }), tot = 0;
+    pool.forEach(function (v) { tot += v.w; }); var r = Math.random() * tot, pick = pool[0];
+    for (var i = 0; i < pool.length; i++) { r -= pool[i].w; if (r <= 0) { pick = pool[i]; break; } }
+    e.last = pick.id; e.next = S.day + 6 + Math.floor(Math.random() * 5);
+    HKEV = { ev: pick, res: null }; openSheet("hkev");
+  }
+  function hkPick(a) {
+    if (!HKEV) { closeSheet(true); return; }
+    if (a === "done") { HKEV = null; closeSheet(true); return; }
+    if (HKEV.res) return; var o = HKEV.ev.opts()[+a]; if (!o || o.ok === false) return;
+    var out = ""; try { out = o.go(); } catch (e) { out = "Nothing comes of it."; }
+    HKEV.res = out; try { log(HKEV.ev.title + ". " + out, "e"); } catch (e) {} hkS().ev = (hkS().ev || 0) + 1;
+  }
+  function hkEvSheet() {
+    if (!HKEV) return "<h2>The road is quiet</h2>";
+    var v = HKEV.ev, h = "<h2>" + v.title + '</h2><p class="sub">On the road · Day ' + Math.floor(S.day) + "</p><p>" + v.body() + "</p>";
+    if (HKEV.res) return h + '<div class="warn" style="border-color:var(--amber)">' + HKEV.res + '</div><div class="row"><div class="rd"></div><button class="solid" data-act="hkpick" data-a="done">Go on</button></div>';
+    var os = v.opts(); os.forEach(function (o, i) { h += row(o.t, o.d, "Choose", "hkpick", i, "", o.ok === false); });
+    return h;
+  }
+  // a line that always shows what is nearly done
+  (function () {
+    var el = null;
+    setInterval(function () {
+      try {
+        if (!S || !S.sites) return;
+        if (!el) { el = document.createElement("div"); el.id = "hkg"; el.style.cssText = "position:fixed;left:50%;top:calc(7.4rem + env(safe-area-inset-top,0px));transform:translateX(-50%);z-index:900;pointer-events:none;padding:.25rem .7rem;border:1px solid #5a4424;border-radius:99px;background:rgba(14,10,6,.82);color:#e8d08a;font:500 .62rem 'IBM Plex Mono',ui-monospace,monospace;letter-spacing:.05em;white-space:nowrap;display:none"; document.body.appendChild(el); }
+        var on = !sheet && !AR && (typeof mode === "undefined" || mode === "map") && !($("bf") && $("bf").classList.contains("on"));
+        if (!on) { el.style.display = "none"; return; }
+        var h = hkS(), best = null, bp = -1;
+        DEEDS.forEach(function (d) { if (h.d[d.id]) return; var v = 0; try { v = d.v(); } catch (e) { return; } var p = v / d.n; if (p > bp && p < 1) { bp = p; best = [d, Math.floor(v)]; } });
+        if (!best) { el.style.display = "none"; return; }
+        el.textContent = "Next deed · " + best[0].name + " " + best[1] + "/" + best[0].n; el.style.display = "block";
+      } catch (e) {}
+    }, 1000);
+  })();
+
+  function dailyTick() { dailyTick1(); try { hkEvDay(); } catch (e) {} }
+
   // ---- input ----
   (function () {
     window.addEventListener("keydown", function (e) { if (!AR) return; var k = e.key.length === 1 ? e.key.toLowerCase() : e.key; akeys[k] = true; if (k === " " || k === "Enter" || k === "j") { e.preventDefault(); aPress = true; } if (k === "k") aShootP = true; if (k === "l") aCastP = true; });
@@ -11613,6 +11703,7 @@ function qFinish(q, opt, idx) { qFinish0(q, opt, idx); if (opt && typeof opt.eff
       case "sparkburn": if (sparkPick && S.held.indexOf(x) >= 0) { doPromote(sparkPick, x); } sparkPick = 0; break;
       case "sparkno": sparkPick = 0; break;
       case "gunequip": if (GEARB[x]) { var mv2 = Math.min(5, S.gear[x] || 0); if (mv2 > 0) { S.gear[x] -= mv2; S.loot[x] = (S.loot[x] || 0) + mv2; S.salvage = lootCount(); } } break;
+      case "hkpick": hkPick(x); break;
       case "learn":
         (function () {
           var it = null; SKILLS.forEach(function (b) { b.items.forEach(function (i) { if (i.id === x) it = i; }); });
