@@ -1133,7 +1133,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
   function startBattle(e) {
     sfx("horn");
     S.target = null;
-    var al = alliesNear(); B = { allies: al, allyS: alliesStrength(al), eid: e.id, stage: "ask", log: [], round: 0, p0: (Math.max(0.1, pStrength()) + alliesStrength(al)) * (1 + ((e.kind === "void" || e.riftId) ? 0.06 * sk("voidward") : 0)), e0: e.n * e.q * (e.siegeId ? 1 - 0.06 * sk("sapper") : 1), kaelDone: false, out: [], won: null, t0: T(), en0: e.n, kind: e.kind, siegeId: e.siegeId || null, riftId: e.riftId || null, fac: e.fac || null, title: e.title || (e.kind === "lord" ? e.name + " of " + FAC[e.fac].name : null) };
+    var al = alliesNear(); B = { allies: al, allyS: alliesStrength(al), eid: e.id, stage: "ask", log: [], round: 0, p0: (Math.max(0.1, pStrength()) + alliesStrength(al)) * (1 + ((e.kind === "void" || e.riftId) ? 0.06 * sk("voidward") : 0)), e0: e.n * e.q * (e.siegeId ? 1 - 0.06 * sk("sapper") - Math.min(0.3, skfx("siege")) : 1), kaelDone: false, out: [], won: null, t0: T(), en0: e.n, kind: e.kind, siegeId: e.siegeId || null, riftId: e.riftId || null, fac: e.fac || null, title: e.title || (e.kind === "lord" ? e.name + " of " + FAC[e.fac].name : null) };
     B.pCur = B.p0; B.eCur = B.e0;
     openSheet("battle");
   }
@@ -2923,7 +2923,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
   var GEARFX = { steel: "+30% strength", plate: "+40% strength", longbows: "+16% strength", blades: "+15% strength, +8% loot", mail: "+20% strength, fewer deaths in battle", bows: "+8% strength, +10% experience", kit: "+5% strength, men eat 6% less" };
   var SKILLS = [
     { branch: "Command", blurb: "Bigger columns, harder men.", items: [
-      { id: "giantslayer", name: "Giant-Slayer", per: "+15% damage to bosses", max: 3, desc: "You watch how the big ones move, then hit where it hurts." },
+      { id: "giantslayer", name: "Giant-Slayer", per: "+10% damage to bosses", max: 3, desc: "You watch how the big ones move, then hit where it hurts." },
       { id: "drill", grow: 1, name: "Drill", per: "+7% strength, +10 column", max: 3, desc: "Hard days in the yard. Your men hit harder." },
       { id: "discipline", name: "Discipline", per: "−8% wages", max: 3, req: "drill", desc: "Men who know their place cost less to keep." },
       { id: "rally", name: "Rally", per: "−10% battle deaths", max: 3, req: "discipline", desc: "A voice that gets men off the ground." },
@@ -2942,7 +2942,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
       { id: "heavydraw", name: "Heavy Draw", per: "+12% arrow damage", max: 5, req: "fletcher", desc: "A stiffer bow, a longer pull, a harder landing." }] },
     { branch: "Trade and Land", blurb: "Coin, grain, and what you carry.", items: [
       { id: "haggler", name: "Haggler", per: "+6% selling, −5% buying", max: 3, desc: "You know what a thing is worth." },
-      { id: "forager", name: "Forager", per: "−8% food eaten", max: 3, req: "haggler", desc: "You find food where others see mud." },
+      { id: "forager", name: "Provisioner", per: "−8% food eaten", max: 3, req: "haggler", desc: "Buy cheap, store dry, waste nothing. The column eats less." },
       { id: "scavenger", grow: 1, name: "Scavenger", per: "+15% loot", max: 3, req: "forager", desc: "Nothing gets left on the field." },
       { id: "steward", name: "Steward", per: "+10% income from holdings", max: 3, req: "haggler", desc: "Your towns run on time." },
       { id: "garrisoner", name: "Garrisoner", per: "garrisons refill faster", max: 3, req: "steward", desc: "Your walls are never empty for long." }] },
@@ -2951,7 +2951,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
       { id: "diplomat", name: "Diplomat", per: "−15% cost of peace and truces", max: 3, req: "silvertongue", desc: "Envoys work harder when they trust you." },
       { id: "renown", name: "Renown", per: "−8% price to hire heroes", max: 3, req: "silvertongue", desc: "Heroes have heard your name." }] },
     { branch: "Road and Siege", blurb: "Move first. Break walls.", items: [
-      { id: "pathfinder", grow: 1, name: "Pathfinder", per: "+5% map speed", max: 3, desc: "You know where the roads really go." },
+      { id: "pathfinder", grow: 1, name: "Pathfinder", per: "+5% map speed, −3% grain eaten", max: 3, fx: { forage: 0.03 }, desc: "You know where the roads really go." },
       { id: "sapper", name: "Sapper", per: "−6% enemy strength in sieges", max: 3, req: "pathfinder", desc: "A wall is only stone someone laid badly." },
       { id: "voidward", name: "Void-ward", per: "+6% strength against the Void", max: 3, req: "pathfinder", desc: "You have stood in the quiet and walked out." }] },
     { branch: "Memory and Spark", blurb: "Make magic cost less.", items: [
@@ -2965,7 +2965,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
       { id: "fortune", need: 1, name: "Dark Fortune", per: "+5% better loot rarity", max: 3, desc: "Luck follows those it cannot kill." }] },
     { branch: "Hell Arts", need: 2, blurb: "Learned only by those who beat Nightmare.", items: [
       { id: "deathward", need: 2, name: "Death-ward", per: "survive one killing blow per area", max: 2, desc: "Something that is not you stands in the way." },
-      { id: "bossbane", need: 2, name: "Bossbane", per: "+35% damage to bosses", max: 3, desc: "You have learned how the big ones fall." },
+      { id: "bossbane", need: 2, name: "Bossbane", per: "+20% damage to bosses", max: 3, desc: "You have learned how the big ones fall." },
       { id: "tempo", need: 2, name: "Tempo", per: "−8% time between strikes", max: 3, desc: "Faster than they can remember being hit." }] }
   ];
   var skOpen = {};
@@ -4695,7 +4695,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
   function dmgEn(e, dmg, dx, dy, kn) {
     sfx("hit");
     if (e.dead || e.gone || e.yield) return false; if (AR && AR.p && AR.p.buffT > AR.t) dmg *= 1.3; var d = Math.hypot(dx, dy) || 1;
-    if (e.d.boss && sk("giantslayer")) dmg *= 1 + 0.15 * sk("giantslayer"); if (e.d.boss) dmg *= 1 + affSum("boss") + skfx("bossdmg"); if (e.d.boss && sk("bossbane")) dmg *= 1 + 0.35 * sk("bossbane"); if (COOP.guest() && COOP.hit(e, dmg, dx, dy)) return true; e.hp -= dmg; e.flash = 0.2; e.kx = dx / d * (kn || 130) * (e.d.boss ? 0.12 : 0.5); e.ky = dy / d * (kn || 130) * (e.d.boss ? 0.12 : 0.5); AR.fx.push({ x: e.x, y: e.y - 8, t: 0.2 });
+    if (e.d.boss && sk("giantslayer")) dmg *= 1 + 0.10 * sk("giantslayer"); if (e.d.boss) dmg *= 1 + affSum("boss") + skfx("bossdmg"); if (e.d.boss && sk("bossbane")) dmg *= 1 + 0.20 * sk("bossbane"); if (COOP.guest() && COOP.hit(e, dmg, dx, dy)) return true; e.hp -= dmg; e.flash = 0.2; e.kx = dx / d * (kn || 130) * (e.d.boss ? 0.12 : 0.5); e.ky = dy / d * (kn || 130) * (e.d.boss ? 0.12 : 0.5); AR.fx.push({ x: e.x, y: e.y - 8, t: 0.2 });
     AR.floats.push({ x: e.x, y: e.y - 16, t: 0.7, s: String(Math.round(dmg * 10) / 10) });
     if (e.d.yieldAt && e.hp <= e.d.yieldAt && e.hp > 0 && !cp().f.rusk) { e.yield = true; e.hp = Math.max(1, e.hp); }
     if (e.hp <= 0) killEn(e); return true;
@@ -5847,7 +5847,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
     { branch: "Hands in the Soil", origin: "farmer", blurb: "Only the Farmer. Work you can eat.", items: [
       { id: "harvest", origin: "farmer", name: "Harvest Hand", per: "+1 grain a day, and more for bigger columns", max: 3, desc: "Your men lend a hand in the fields they pass." },
       { id: "strongback", origin: "farmer", name: "Strong Back", per: "+3 pack slots", max: 3, req: "harvest", desc: "You have carried worse than this." },
-      { id: "hardened", origin: "farmer", name: "Field Hardened", per: "+1 heart", max: 3, req: "harvest", desc: "Weather and work have made you hard to hurt." }] },
+      { id: "hardened", origin: "farmer", name: "Field Hardened", per: "+1 heart", max: 2, req: "harvest", desc: "Weather and work have made you hard to hurt." }] },
     { branch: "The Merchant's Way", origin: "trader", blurb: "Only the Trader. Everything has a price.", items: [
       { id: "counting", origin: "trader", name: "Counting House", per: "+2 crowns a day, plus more for bigger columns", max: 3, desc: "Coin finds its way to you while you sleep." },
       { id: "quickcoin", origin: "trader", name: "Quick Coin", per: "+12% when selling items, +8% when selling loot", max: 3, req: "counting", desc: "You never sell to the first buyer." },
@@ -10697,7 +10697,7 @@ var SGL = {
   adren: ["", "", ""], regen: ["", "", ""], loot: ["+", "%", "crowns from kills"], tdmg: ["+", "%", "damage by your troops"], tarm: ["−", "%", "damage to your troops"],
   morale: ["−", "%", "chance your men break"], tarch: ["+", "%", "damage by your archers"], cry: ["", "", ""], crycd: ["", "", ""], forage: ["−", "%", "grain eaten"],
   buy: ["−", "%", "price when buying"], wage: ["−", "%", "wages"], xp: ["+", "%", "experience"], speed: ["+", "%", "map speed"], escape: ["+", "%", "chance to get away"],
-  deaths: ["−", "%", "battle deaths"], army: ["+", "%", "army strength"], sell: ["+", "%", "when selling loot"], dmg: ["+", "%", "your damage"], hearts: ["+", "", " heart"]
+  deaths: ["−", "%", "battle deaths"], siege: ["−", "%", "enemy strength in sieges"], army: ["+", "%", "army strength"], sell: ["+", "%", "when selling loot"], dmg: ["+", "%", "your damage"], hearts: ["+", "", " heart"]
 };
 function sgBias(it, k) { return it.shared ? ((SGB[skOrigin()] || {})[k] || 1) : 1; }
 function sgPer(it) {
@@ -10733,19 +10733,20 @@ function sgItem(sp, shared) {
     { id: "sv_reader", name: "Read the Boss", pos: [2, 0], lv: 6, req: "sv_evasion", max: 4, fx: { bossdmg: 0.06 }, desc: "Every big thing has a rhythm. Learn it, then break it." },
     { id: "sv_adren", name: "Adrenaline", pos: [2, 2], lv: 6, req: "sv_footwork", max: 3, fx: { adren: 0.8 }, desc: "Pain is a starting gun. Run." },
     { id: "sv_breath", name: "Second Breath", pos: [2, 4], lv: 6, req: "sv_thick", max: 3, fx: { regen: 0.03 }, desc: "Out of reach of the blows, the body mends." },
-    { id: "sv_slayer", name: "Giant's Bane", pos: [3, 2], lv: 12, req: "sv_adren", max: 3, fx: { bossdmg: 0.06, tough: 0.03 }, desc: "The bigger they are, the more places there are to hit." }]);
+    { id: "sv_slayer", name: "Iron Nerve", pos: [3, 2], lv: 12, req: "sv_adren", max: 3, fx: { dodge: 0.03, tough: 0.03 }, desc: "Fear is just information. You have learned to read it and keep moving." }]);
   branch("Warfare", "Your men in the field: damage, nerve and the voice that holds them.", [
-    { id: "wf_drill", name: "Drill Sergeant", pos: [0, 2], max: 5, fx: { tdmg: 0.03 }, desc: "Men who drill together hit together." },
+    { id: "wf_drill", name: "Close Order", pos: [0, 2], max: 5, fx: { tdmg: 0.03 }, desc: "Men who drill together hit together." },
     { id: "wf_shield", name: "Shield Discipline", pos: [1, 1], lv: 3, req: "wf_drill", max: 4, fx: { tarm: 0.03 }, desc: "Locked shields turn a charge into a shove." },
     { id: "wf_nerve", name: "Steady Nerve", pos: [1, 3], lv: 3, req: "wf_drill", max: 4, fx: { morale: 0.08 }, desc: "A line that does not run cannot be broken." },
     { id: "wf_arch", name: "Archery Doctrine", pos: [2, 0], lv: 6, req: "wf_shield", max: 3, fx: { tarch: 0.06 }, desc: "Volleys by the count, not by the nerve." },
     { id: "wf_voice", name: "Rallying Voice", pos: [2, 2], lv: 6, req: "wf_drill", max: 4, fx: { cry: 1.5, crycd: 2 }, desc: "They hear you over everything." },
     { id: "wf_surgeon", name: "Field Surgeon", pos: [2, 4], lv: 6, req: "wf_nerve", max: 3, fx: { deaths: 0.04 }, desc: "Pull them back in time and they live." },
-    { id: "wf_lord", name: "Warlord", pos: [3, 2], lv: 12, req: "wf_voice", max: 3, fx: { army: 0.05, tdmg: 0.04 }, desc: "An army that knows your name fights as one thing." }]);
+    { id: "wf_lord", name: "Warlord", pos: [3, 2], lv: 12, req: "wf_voice", max: 3, fx: { army: 0.05, tdmg: 0.04 }, desc: "An army that knows your name fights as one thing." },
+    { id: "wf_siege", name: "Siegecraft", pos: [3, 0], lv: 12, req: "wf_arch", max: 3, fx: { siege: 0.04 }, desc: "Ladders where the wall is low, rams where the gate is old. You read a fortress like a face." }]);
   branch("Wayfaring", "The world map: pace, supplies, prices and getting away clean.", [
     { id: "wy_pace", name: "Long Strides", pos: [0, 2], max: 5, fx: { speed: 0.03 }, desc: "Miles go quicker when you stop counting them." },
     { id: "wy_forage", name: "Forager", pos: [1, 1], lv: 3, req: "wy_pace", max: 4, fx: { forage: 0.06 }, desc: "Berries, roots, a rabbit. The column eats a little less." },
-    { id: "wy_eye", name: "Haggler's Eye", pos: [1, 3], lv: 3, req: "wy_pace", max: 4, fx: { buy: 0.03 }, desc: "You know what a thing is worth before they say." },
+    { id: "wy_eye", name: "Sharp Eye", pos: [1, 3], lv: 3, req: "wy_pace", max: 4, fx: { buy: 0.03 }, desc: "You know what a thing is worth before they say." },
     { id: "wy_light", name: "Travel Light", pos: [2, 0], lv: 6, req: "wy_forage", max: 3, fx: { wage: 0.04 }, desc: "Fewer mouths idle, fewer wages owed." },
     { id: "wy_scout", name: "Scout's Eye", pos: [2, 2], lv: 6, req: "wy_pace", max: 4, fx: { escape: 0.04 }, desc: "You see the ambush a mile before it sees you." },
     { id: "wy_study", name: "Quick Study", pos: [2, 4], lv: 6, req: "wy_eye", max: 3, fx: { xp: 0.06 }, desc: "Every town is a lesson if you listen." },
@@ -10758,7 +10759,7 @@ function sgItem(sp, shared) {
     mercenary: ["blackledger", { id: "u_advance", name: "Pay in Advance", fx: { tdmg: 0.04, morale: 0.06 }, desc: "Paid men fight like it matters." }, { id: "u_nofall", name: "Never Fall Back", fx: { tarm: 0.04, tdmg: 0.03 }, desc: "The contract has no clause for retreat." }],
     outlaw: ["pricehead", { id: "u_ninelives", name: "Nine Lives", fx: { dodge: 0.04, adren: 0.6 }, desc: "You have used eight. You are counting." }, { id: "u_cutpurse", name: "Cut Purse", fx: { loot: 0.12, escape: 0.04 }, desc: "Their coin is yours before they notice the knife." }],
     smith: ["masterwork", { id: "u_dealer", name: "Arms Dealer", fx: { sell: 0.06, tough: 0.03 }, desc: "Everyone needs steel. You know who needs it most." }, { id: "u_anvilhard", name: "Hard as the Anvil", fx: { tough: 0.05, bossdmg: 0.04 }, desc: "You were beaten into shape too." }],
-    noble: ["heir", { id: "u_houses", name: "Rally the Houses", fx: { cry: 1.5, crycd: 2 }, desc: "Lords answer a name they were raised to answer." }, { id: "u_bearing", name: "Noble Bearing", fx: { morale: 0.07, army: 0.03 }, desc: "Men do not run from someone who does not." }],
+    noble: ["heir", { id: "u_houses", name: "Rally the Houses", fx: { cry: 1.0, army: 0.04 }, desc: "Lords answer a name they were raised to answer." }, { id: "u_bearing", name: "Noble Bearing", fx: { morale: 0.07, army: 0.03 }, desc: "Men do not run from someone who does not." }],
     voidtouched: ["quietface", { id: "u_coldhunger", name: "Cold Hunger", fx: { regen: 0.03, bossdmg: 0.05 }, desc: "What was taken from you wants feeding." }, { id: "u_unmoored", name: "Unmoored", fx: { dodge: 0.04, aspd: 0.04 }, desc: "Part of you is never where they swing." }]
   };
   Object.keys(X).forEach(function (o) {
