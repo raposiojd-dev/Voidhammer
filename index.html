@@ -5908,6 +5908,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
   // ---- level-up and skill-point alerts (v63) ----
   var lastLv = -1, lastPts = -1, alertT = 0, alertEl = null;
   function showAlert(big, small, act) {
+    if (typeof HK !== "undefined" && HK.bn && HK.bn.classList.contains("on") && performance.now() < HK.bt) { setTimeout(function () { showAlert(big, small, act); }, Math.max(100, HK.bt - performance.now() + 50)); return; }
     sfx("level");
     if (!alertEl) { alertEl = document.createElement("div"); alertEl.id = "vhalert"; document.body.appendChild(alertEl); }
     alertEl.setAttribute("data-act", act || "askills");
@@ -8869,7 +8870,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
     g.fillStyle = "#2a1c0e"; g.beginPath(); g.arc(x, y, r, 0, 6.283); g.fill(); g.strokeStyle = "#8a6a3a"; g.lineWidth = 1.2; g.beginPath(); g.arc(x, y, r - 1, 0, 6.283); g.stroke();
     g.strokeStyle = "#a8884a"; g.lineWidth = 1; g.beginPath(); for (var i = 0; i < 4; i++) { var a = rot + i * 1.5708; g.moveTo(x, y); g.lineTo(x + Math.cos(a) * (r - 1), y + Math.sin(a) * (r - 1)); } g.stroke();
   }
-  function ovEngDraw(g, u, t) {
+  function ovEngDraw0(g, u, t) {
     var x = u.x, y = u.y, fl = u.flash > 0, sc = u.eng === "ram" ? 1.5 : 1.25, rot = (x + y) * 0.15, wood = fl ? "#f0d4a8" : "#6a4a28", dk = fl ? "#d8b888" : "#3a2814", lt = fl ? "#fff0d0" : "#8a6a3a";
     g.save(); g.translate(x, y); g.scale(sc, sc); g.translate(-x, -y);
     g.fillStyle = "rgba(0,0,0,0.3)"; g.beginPath(); g.ellipse(x, y + 2, 22, 6, 0, 0, 6.283); g.fill();
@@ -11450,7 +11451,7 @@ function qFinish(q, opt, idx) { qFinish0(q, opt, idx); if (opt && typeof opt.eff
     HK.q.push([top, big, sub]);
   }
   function hkShow() {
-    if (!HK.bn || !HK.q.length || performance.now() < HK.bt) return;
+    if (!HK.bn || !HK.q.length || performance.now() < HK.bt) return; if (typeof alertEl !== "undefined" && alertEl && alertEl.style.display === "block") return;
     var q = HK.q.shift(); HK.bn.innerHTML = "<small>" + q[0] + "</small><b>" + q[1] + "</b><span>" + q[2] + "</span>"; HK.bn.classList.remove("on"); void HK.bn.offsetWidth; HK.bn.classList.add("on"); HK.bt = performance.now() + 3300;
     try { sfx("level"); } catch (e) {}
   }
@@ -12982,6 +12983,19 @@ function ovGateNpc(g, n, a) {
   var pu = 0.3 + 0.18 * Math.sin(a.t * 2.5), gr = g.createRadialGradient(n.px, by - h * 0.35, 1, n.px, by - h * 0.35, w * 0.4);
   gr.addColorStop(0, "rgba(" + (k === "cave_mouth" ? "120,170,255" : "190,140,255") + "," + pu.toFixed(2) + ")"); gr.addColorStop(1, "rgba(120,80,200,0)");
   g.globalCompositeOperation = "lighter"; g.fillStyle = gr; g.fillRect(n.px - w / 2, by - h, w, h); g.restore();
+}
+
+// painted siege engines (img/map/eng_<kind>.webp): ram, siege tower, catapult
+var SGW = { ram: 54, twr: 52, cat: 48 };
+function ovEngDraw(g, u, t) {
+  var k = u.eng, im = wm2("eng_" + k); if (!im) return ovEngDraw0(g, u, t);
+  var x = u.x, y = u.y, w = SGW[k] || 50, h = w * im.naturalHeight / im.naturalWidth, bob = u.atk > 0 && k === "ram" ? Math.sin(t / 60) * 1.5 : 0, lurch = u.atk > 0 && k === "cat" ? -Math.max(0, Math.sin(t / 90)) * 2 : 0;
+  g.save(); g.imageSmoothingEnabled = true; g.imageSmoothingQuality = "high";
+  g.fillStyle = "rgba(0,0,0,0.35)"; g.beginPath(); g.ellipse(x + 2, y + 3, w * 0.46, w * 0.13, 0, 0, 6.283); g.fill();
+  g.drawImage(im, x - w / 2 + bob, y + 6 - h + lurch, w, h);
+  if (u.flash > 0) { g.globalCompositeOperation = "lighter"; g.globalAlpha = 0.5; g.drawImage(im, x - w / 2 + bob, y + 6 - h + lurch, w, h); }
+  g.restore();
+  if (u.hp < u.hpm) { var bw = 22; g.fillStyle = "rgba(0,0,0,0.65)"; g.fillRect(x - bw / 2, y - h - 2, bw, 2); g.fillStyle = "#c8a24a"; g.fillRect(x - bw / 2, y - h - 2, bw * Math.max(0, u.hp / u.hpm), 2); }
 }
 // ---- ovVO: voice-over from pre-rendered files (vo/<who>_<key>_<n>.mp3). Hero and folk lines now; narrator later. ----
 var VO = (function () {
