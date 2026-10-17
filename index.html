@@ -2661,6 +2661,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
     var buy = Math.round(tBuyPrice(t) * 10) / 10, sell = Math.round(t.gs * (1 - Math.min(0.7, t.sat)) * 10) / 10;
     var spr = Math.round(6 * (1 - Math.min(0.7, t.ssat)) * (has("forge") ? 1.15 : 1) * 10) / 10;
     var h = "<p class=\"dim-t\">Grain: buy at " + buy + ", sell at " + sell + ". Salvage: " + spr + " each.</p>";
+    h += row("Writ board", "Contracts posted by the town: hunts, nests, strongboxes. New writs every seven days, harder as you grow.", "Writs", "writs", t.id, "", false, "amber");
     h += '<div class="sec">Market</div>';
     var gf = gflow(t);
     h += '<div class="row"><div class="rd">Grain per day<small>Villages send ' + gf.i.toFixed(1) + ", the town uses " + gf.o.toFixed(1) + (gf.n < -0.05 ? ". Stores run out in about " + Math.floor(t.stock / -gf.n) + " days." : gf.n > 0.05 ? ". Stores are filling." : ".") + '</small></div><b style="color:' + (gf.n < -0.05 ? "#e0644a" : "#9bc27a") + '">' + gfmt(gf.n) + "</b></div>";
@@ -2869,7 +2870,8 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
   function renderSheet(just) {
     if (!sheet) return;
     var body = $("sbody"), st = body.scrollTop, h = "";
-    if (sheet.kind === "site") { var s = site(sheet.id); if (!s) { closeSheet(true); return; } h = siteSheet(s); }
+    if (sheet.kind === "writs") h = writSheet(sheet.id);
+    else if (sheet.kind === "site") { var s = site(sheet.id); if (!s) { closeSheet(true); return; } h = siteSheet(s); }
     else if (sheet.kind === "party") h = partySheet(just);
     else if (sheet.kind === "realms") h = realmsSheet();
     else if (sheet.kind === "diplo") h = diploSheet();
@@ -4013,7 +4015,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
         { id: "v1", name: "Villager", x: cx + 3, y: mid - 2, col: "#4a8a6a", hair: "#3a2a18", d: function () { return "vill:" + sid; } },
         { id: "v2", name: "Villager", x: cx - 3, y: mid - 3, col: "#7a5a8a", hair: "#bbbbbb", d: function () { return "vill:" + sid + ":b"; } }] };
   }
-  function getSpec(id) { if (AREAS[id]) return AREAS[id]; if (id.indexOf("yard:") === 0 && site(id.slice(5))) return (AREAS[id] = yardSpec(id)); if (/^cave\d+$/.test(id)) { var cs = caveSpec(id); if (cs) return (AREAS[id] = cs); } if (id.indexOf("g:") === 0 && site(id.slice(2))) return (AREAS[id] = genSpec(id)); return null; }
+  function getSpec(id) { if (AREAS[id]) return AREAS[id]; if (id.indexOf("writ:") === 0) { var wsp = writSpec(id); if (wsp) AREAS[id] = wsp; return wsp; } if (id.indexOf("yard:") === 0 && site(id.slice(5))) return (AREAS[id] = yardSpec(id)); if (/^cave\d+$/.test(id)) { var cs = caveSpec(id); if (cs) return (AREAS[id] = cs); } if (id.indexOf("g:") === 0 && site(id.slice(2))) return (AREAS[id] = genSpec(id)); return null; }
 
   // ---- area definitions (tiles) ----
   var AREAS = {
@@ -12606,6 +12608,86 @@ function ovExitsIn(sp, g, W, H) {
     });
   } catch (x) {}
 }
+// ---- THE WRIT BOARD: endless scaling contracts posted in every town. New writs every seven days. ----
+var WRITP = ["Thornback", "Greywater", "Saltmere", "Blackfen", "Hollow Ridge", "Old Kiln", "Weir Bottom", "Gallows Wood", "Rook's Cut", "Mire End", "Cold Harrow", "Ashgrove", "Crow's Reach", "Stonebridge", "Redtor"];
+var WRITA = ["the Grey", "the Hungry", "Half-Hand", "the Quiet", "Ninefinger", "Ironjaw", "the Widow-maker", "Longshanks", "the Collector", "Saltbeard", "the Unburied", "Lanternless"];
+var WRITK = [
+  { k: "hunt", t: function (n, p) { return "Hunt: " + n; }, s: function (n, p) { return n + " has been taking travellers on the " + p + " road. Bring the head."; }, th: "cave" },
+  { k: "nest", t: function (n, p) { return "Clear the " + p + " nest"; }, s: function (n, p) { return "A band led by " + n + " dug in under " + p + ". The town wants the road open."; }, th: "cave" },
+  { k: "relic", t: function (n, p) { return "Recover the " + p + " strongbox"; }, s: function (n, p) { return n + " took a sealed strongbox from the " + p + " tollhouse. The seal matters more than the coin."; }, th: "cave" },
+  { k: "lamp", t: function (n, p) { return "Put out the lights at " + p; }, s: function (n, p) { return "Lanterns burn at " + p + " and nobody tends them. " + n + " is down there with whatever is left of the lamplighters."; }, th: "cave" }
+];
+function writWeek() { return Math.floor((S.day || 1) / 7); }
+function writActMax() { var m = 1; try { QS.forEach(function (q) { if (q.act && qSt(q) >= 2) m = Math.max(m, q.act); }); } catch (e) {} return m; }
+function writList(hub) {
+  var wk = writWeek(), r = arng(nhash("writ" + hub + "w" + wk)), out = [], i, am = writActMax(), tr = (typeof tier === "function" ? tier() : 0), done = (S.writs && S.writs.done) || {};
+  var ko = Math.floor(r() * WRITK.length), usedP = {};
+  for (i = 0; i < 3; i++) {
+    var K = WRITK[(ko + i) % WRITK.length], nm = ["Brek", "Oswin", "Marrow", "Tavish", "Hesper", "Corrin", "Ysolde", "Dunmore", "Ferris", "Agna"][Math.floor(r() * 10)] + " " + WRITA[Math.floor(r() * WRITA.length)], pl = WRITP[Math.floor(r() * WRITP.length)]; while (usedP[pl]) pl = WRITP[Math.floor(r() * WRITP.length)]; usedP[pl] = 1;
+    var lv = Math.max(1, Math.min(6, am + tr * 2 + i - 1 + (r() < 0.3 ? 1 : 0))), id = "writ:" + hub + ":" + wk + ":" + i;
+    out.push({ id: id, hub: hub, i: i, k: K.k, title: K.t(nm, pl), sub: K.s(nm, pl), lv: lv, nm: nm, pl: pl, cr: Math.round((70 + 40 * lv) * (1 + 0.5 * tr)), xp: 50 + 35 * lv, done: !!done[id], seed: nhash(id) % 99991 });
+  }
+  return out;
+}
+function writById(id) { var p = id.split(":"); if (p.length < 4) return null; var L = writList(p[1]); if (+p[2] !== writWeek()) return null; return L[+p[3]] || null; }
+function writSpec(id) {
+  var w = writById(id); if (!w) return null;
+  var r = arng(w.seed), W = 44, H = 32, rooms = [], tries = 0, i, lv = w.lv, T = Math.min(3, lv - 1), tp = ETIER[T], bp = BTIER[T];
+  while (rooms.length < 6 && tries++ < 400) {
+    var rw = 6 + Math.floor(r() * 5), rh = 5 + Math.floor(r() * 4), rx = 2 + Math.floor(r() * (W - rw - 4)), ry = 2 + Math.floor(r() * (H - rh - 4)), ok = true;
+    rooms.forEach(function (o) { if (rx < o.x + o.w + 3 && rx + rw + 3 > o.x && ry < o.y + o.h + 3 && ry + rh + 3 > o.y) ok = false; });
+    if (ok) rooms.push({ x: rx, y: ry, w: rw, h: rh, cx: rx + (rw >> 1), cy: ry + (rh >> 1) });
+  }
+  rooms.sort(function (a, b) { return a.cx - b.cx; });
+  var en = [], ch = [], k, f = rooms[0], last = rooms[rooms.length - 1];
+  function spot(o) { return [o.x + 1 + Math.floor(r() * (o.w - 2)), o.y + 1 + Math.floor(r() * (o.h - 2))]; }
+  for (k = 1; k < rooms.length - 1; k++) { var cnt = 2 + Math.floor(r() * 3) + Math.floor(lv / 2); for (i = 0; i < cnt; i++) { var sp = spot(rooms[k]); en.push([tp[Math.floor(r() * tp.length)], sp[0], sp[1], lv]); } if (r() < 0.5) { var cs = spot(rooms[k]); ch.push([cs[0], cs[1], Math.min(4, lv)]); } }
+  var bs = [last.cx, last.cy]; en.push([bp[Math.floor(r() * bp.length)], bs[0], bs[1], lv, "", "", w.nm]); for (i = 0; i < 2 + Math.floor(lv / 3); i++) { var gs = spot(last); if (Math.abs(gs[0] - bs[0]) + Math.abs(gs[1] - bs[1]) > 2) en.push([tp[Math.floor(r() * tp.length)], gs[0], gs[1], lv]); }
+  ch.push([last.x + 1, last.y + 1, Math.min(4, lv + 1)]);
+  var pil = []; rooms.forEach(function (o, ix) { if (ix === 0) return; for (var p = 0; p < 3; p++) { var sx = o.x + 1 + Math.floor(r() * (o.w - 2)), sy = o.y + 1 + Math.floor(r() * (o.h - 2)), bad = Math.abs(sx - o.cx) + Math.abs(sy - o.cy) <= 3; en.forEach(function (q) { if (Math.abs(q[1] - sx) + Math.abs(q[2] - sy) < 3) bad = true; }); ch.forEach(function (q) { if (Math.abs(q[0] - sx) + Math.abs(q[1] - sy) < 2) bad = true; }); if (!bad) pil.push([sx, sy]); } });
+  var ex = { x: f.cx - 1, y: f.y + f.h - 1, w: 2, h: 1 }; Object.defineProperty(ex, "to", { get: function () { return "world"; }, enumerable: true });
+  return { name: w.title, th: w.k === "lamp" ? "cave" : "cave", w: W, h: H, seed: w.seed, safe: 0, lv: lv, spawn: [f.cx, f.y + 1], enemies: en, chests: ch, trees: 0, exits: [ex], writ: w.id,
+    pre: function (g) {
+      var x, y; for (y = 0; y < H; y++) for (x = 0; x < W; x++) g[y][x] = 2;
+      rooms.forEach(function (o) { for (y = o.y; y < o.y + o.h; y++) for (x = o.x; x < o.x + o.w; x++) g[y][x] = 0; });
+      function corr(x0, y0, x1, y1) { var x = x0, y = y0; while (x !== x1) { g[y][x] = 0; g[y + 1][x] = 0; x += x1 > x ? 1 : -1; } while (y !== y1) { g[y][x] = 0; g[y][x + 1] = 0; y += y1 > y ? 1 : -1; } }
+      for (var q = 0; q < rooms.length - 1; q++) corr(rooms[q].cx, rooms[q].cy, rooms[q + 1].cx, rooms[q + 1].cy);
+      pil.forEach(function (q) { g[q[1]][q[0]] = 7; });
+    } };
+}
+function writSheet(hub) {
+  var s = site(hub), L = writList(hub), n = (S.writs && S.writs.n) || 0, h = "<h2>Writ board</h2><p class=\"sub\">" + (s ? s.name : hub) + " · " + n + " writs honoured · new writs in " + Math.max(1, Math.ceil(7 - ((S.day || 1) % 7))) + " days</p>";
+  h += '<p class="dim-t">Contracts posted by the town. Each one is a hole in the ground with something at the bottom that wants to stay there. Harder as you grow. Pays crowns, experience and whatever the last room is keeping.</p>';
+  L.forEach(function (w) {
+    var tag = ["", "Easy", "Fair", "Hard", "Grim", "Deadly", "Mythic"][w.lv] || "Deadly";
+    h += row(w.title + ' <span style="color:#c9a45c;font:500 .62rem \'IBM Plex Mono\',monospace;letter-spacing:.1em;margin-left:.3rem">' + tag.toUpperCase() + " · LV " + w.lv + "</span>", w.sub + " Pays " + w.cr + " crowns and " + w.xp + " experience.", w.done ? "Done" : "Go", "writgo", w.id, "", w.done, w.done ? "" : "amber");
+  });
+  h += '<div class="sec">Standing</div><p class="dim-t">' + (n >= 30 ? "Towns post their worst for you now. Your name is on the board before the writ is." : n >= 10 ? "Boards across the realms carry your name. The writs have started to get harder on purpose." : "Honour ten writs and the towns will start asking for you by name.") + "</p>";
+  return h;
+}
+function writGo(id) {
+  var w = writById(id); if (!w) { toast("That writ has expired."); return; }
+  if (w.done) { toast("Already honoured."); return; }
+  if (AR && !AR.sp.over) { toast("Leave town first, then ride out."); return; }
+  closeSheet(true); S.speed = 0; S.target = null; delete AREAS[id]; startArea(id); setTimeout(function () { aToast(w.title + ". " + w.nm + " is at the bottom.", "#e0bc6a"); }, 600);
+}
+function writTick() {
+  try {
+    if (!AR || !AR.sp || !AR.sp.writ) return; var id = AR.sp.writ, w = writById(id); if (!w) return;
+    S.writs = S.writs || { done: {}, n: 0 }; if (S.writs.done[id]) return;
+    var bosses = AR.en.filter(function (e) { return e.d && e.d.boss; }); if (!bosses.length || bosses.some(function (e) { return !e.dead && !e.gone; })) return;
+    S.writs.done[id] = 1; S.writs.n = (S.writs.n || 0) + 1; S.crowns += w.cr; addXp(w.xp);
+    try { if (S.writs.n % 5 === 0) { var it = genItem(Math.min(3, 1 + Math.floor(w.lv / 2)), null, w.lv); if (it) { giveItem(it); aToast("The town's thanks: " + it.name + ".", "#e0bc6a"); } } } catch (e) {}
+    AR.floats.push({ x: AR.p.x, y: AR.p.y - 20, t: 1.6, s: "Writ honoured: +" + w.cr + " crowns", col: "#ffe08a" });
+    aToast("Writ honoured. " + w.nm + " will not be posted again.", "#e0bc6a"); try { log("Honoured a writ: " + w.title + "."); } catch (e) {}
+  } catch (e) {}
+}
+setInterval(writTick, 600);
+document.addEventListener("click", function (ev) {
+  var b = ev.target && ev.target.closest ? ev.target.closest("[data-act=writs],[data-act=writgo]") : null; if (!b) return;
+  ev.stopPropagation(); ev.preventDefault(); var act = b.getAttribute("data-act"), a = b.getAttribute("data-a");
+  if (act === "writs") openSheet("writs", a); else writGo(a);
+}, true);
 
   // ---- input ----
   (function () {
