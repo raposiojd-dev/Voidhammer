@@ -11946,15 +11946,16 @@ function ovHeldA(g, c, face, sw, kind){
   var dir = fxv < 0 ? -1 : (fxv > 0 ? 1 : (c._hd || 1)); c._hd = dir;
   var vw = vert ? (fyv < 0 ? "b" : "f") : "s", hx, hy, L = 9, fa, sg;
   if (vw === "s") { hx = c.x + dir * 2.2; hy = c.y - 9.5; fa = dir > 0 ? 0 : Math.PI; sg = dir; }
-  else if (vw === "f") { hx = c.x + 3.6; hy = c.y - 9; fa = Math.PI / 2; sg = 1; }
-  else { hx = c.x - 3.6; hy = c.y - 10.5; fa = -Math.PI / 2; sg = -1; }
+  else if (vw === "f") { hx = c.x + 3.4; hy = c.y - 10; fa = Math.PI / 2; sg = 1; }
+  else { hx = c.x - 3.2; hy = c.y - 11; fa = -Math.PI / 2; sg = -1; }
   // raw angle is in a "facing right" frame; map it onto the real facing, mirrored for left/up
   function A(raw) { return vw === "s" ? (dir > 0 ? raw : Math.PI - raw) : fa + sg * raw; }
   var ang, a0 = -1.9, a1 = 1.0;
   if (sw >= 0) { var e = 1 - Math.pow(1 - sw, 2); ang = A(a0 + (a1 - a0) * e);
     g.save(); var tr = 7; for (var i = 1; i <= tr; i++) { var qa = A(a0 + (a1 - a0) * Math.max(0, e - i * 0.07)); g.globalAlpha = 0.22 * (1 - i / (tr + 1)); g.strokeStyle = kind === "steel" ? "#bfe8ff" : "#fff6dc"; g.lineWidth = 3.2 - i * 0.3; g.lineCap = "round"; g.beginPath(); g.arc(hx, hy, L - 1.5, Math.min(qa, ang), Math.max(qa, ang)); g.stroke(); }
     g.restore();
-  } else ang = A(-0.6 + Math.sin((c.anim || 0) * 0.5) * 0.05);
+  } else ang = vw === "f" ? 0.5 + Math.sin((c.anim || 0) * 0.5) * 0.05 : vw === "b" ? -1.25 + Math.sin((c.anim || 0) * 0.5) * 0.05 : A(-0.6 + Math.sin((c.anim || 0) * 0.5) * 0.05);
+  if (vw !== "s") L = 8;
   ovBlade(g, hx, hy, ang, L, 1.6, kind === "steel" ? "#bfe0f4" : "#d4dbe2");
   g.fillStyle = "#a8775a"; g.strokeStyle = "rgba(20,12,8,0.7)"; g.lineWidth = 0.3; g.beginPath(); g.arc(hx, hy, 0.8, 0, 6.283); g.fill(); g.stroke();
 }
