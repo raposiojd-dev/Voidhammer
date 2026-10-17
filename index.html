@@ -7406,6 +7406,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
     });
     if (F.hm && !F.over) { g.strokeStyle = "rgba(240,208,96," + (0.5 + 0.4 * Math.sin(t / 150)) + ")"; g.lineWidth = 1; g.beginPath(); g.ellipse(F.hm.x, F.hm.y, 6, 2.6, 0, 0, 6.283); g.stroke(); }
     if (F.ht && !F.ht.dead) { g.strokeStyle = "rgba(230,90,60,0.95)"; g.lineWidth = 1.2; g.beginPath(); g.ellipse(F.ht.x, F.ht.y, 7, 3, 0, 0, 6.283); g.stroke(); }
+    ovBfDec(g);
     // everything standing, back to front
     var list = [], x0 = cx - hw - 30, x1 = cx + hw + 30, y0 = cy - up - 40, y1 = cy + dn + 30;
     F.units.forEach(function (u) { if (!u.dead && !u.gone && (ovYaw() || (u.x > x0 && u.x < x1 && u.y > y0 && u.y < y1))) list.push({ x: u.x, y: u.y, u: u }); });
@@ -7419,6 +7420,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
     });
     ovArrows(g);
     ovWaves(g);
+    ovBfFx(g, t, dt);
     if (SRC) { ovP3Draw(cR, SRC); g = cR.getContext("2d"); ch = cH; r = gdpr(); }
     g.setTransform(r, 0, 0, r, 0, 0);
     var vg = g.createRadialGradient(cw / 2, ch * 0.5, Math.min(cw, ch) * 0.35, cw / 2, ch * 0.5, Math.max(cw, ch) * 0.8); vg.addColorStop(0, "rgba(0,0,0,0)"); vg.addColorStop(1, "rgba(0,0,0,0.55)"); g.fillStyle = vg; g.fillRect(0, 0, cw, ch);
@@ -12283,6 +12285,43 @@ function ovDiablo(g, a) {
   // screen shake
   var cv = document.getElementById("acv");
   if (cv) { var sk = a._sk || 0; if (sk > 0) { a._sk = Math.max(0, sk - dt); var m = Math.min(1, sk * 5) * 5; cv.style.transform = "translate(" + ((Math.random() - 0.5) * m).toFixed(1) + "px," + ((Math.random() - 0.5) * m).toFixed(1) + "px)"; } else if (cv.style.transform) cv.style.transform = ""; }
+}
+// ---- army battles: same grit ----
+function ovBfTrack() {
+  if (!F || F._tk === F.t) return; F._tk = F.t;
+  var D = F._dc || (F._dc = []), P = F._pt || (F._pt = []), hits = 0;
+  F.units.forEach(function (u) {
+    if (u._h0 === undefined) u._h0 = u.hp;
+    if (u.hp < u._h0 - 0.01 && !u.gone) {
+      hits++; var dead = u.dead && !u._dd; if (u.dead) u._dd = 1;
+      var k = u.hero ? 8 : dead ? 7 : 3, c = (u.void || F.ecol === "#6a4a9a") ? "spark" : "blood";
+      for (var i = 0; i < k; i++) { var an = Math.random() * 6.283, sp = 14 + Math.random() * 30; P.push({ x: u.x, y: u.y - 7, vx: Math.cos(an) * sp, vy: Math.sin(an) * sp * 0.6 - 18, t: 0.35 + Math.random() * 0.3, k: c }); }
+      if (Math.random() < (dead ? 1 : 0.35)) D.push({ x: u.x + (Math.random() - 0.5) * 6, y: u.y + 1, r: dead ? 2.4 : 1.2, a: 0.5 });
+    }
+    u._h0 = u.hp;
+  });
+  if (hits) F._sk = Math.max(F._sk || 0, Math.min(0.25, 0.04 + hits * 0.01));
+  if (D.length > 220) D.splice(0, D.length - 220); if (P.length > 260) P.splice(0, P.length - 260);
+}
+function ovBfDec(g) {
+  if (!ovFxOn() || !F) return; ovBfTrack();
+  g.save(); (F._dc || []).forEach(function (d) { g.globalAlpha = d.a; g.fillStyle = "#3a0a0c"; g.beginPath(); g.ellipse(d.x, d.y, d.r * 1.4, d.r * 0.7, 0, 0, 6.283); g.fill(); }); g.restore();
+}
+function ovBfFx(g, t, dt) {
+  if (!ovFxOn() || !F) return;
+  var P = F._pt || [], i, now = t / 1000;
+  g.save();
+  // glow around the commander, flickering
+  var h = F.hero; if (h && !h.dead) { var fl = 1 + 0.06 * Math.sin(now * 9) + 0.04 * Math.sin(now * 23), lg = g.createRadialGradient(h.x, h.y - 4, 0, h.x, h.y - 4, 70 * fl); lg.addColorStop(0, "rgba(255,170,80,0.16)"); lg.addColorStop(1, "rgba(255,120,40,0)"); g.globalCompositeOperation = "lighter"; g.fillStyle = lg; g.fillRect(h.x - 72, h.y - 76, 144, 144); }
+  for (i = P.length - 1; i >= 0; i--) {
+    var q = P[i]; q.t -= dt; if (q.t <= 0) { P.splice(i, 1); continue; }
+    q.x += q.vx * dt; q.y += q.vy * dt; q.vy += 90 * dt; g.globalAlpha = Math.min(1, q.t * 3);
+    if (q.k === "blood") { g.globalCompositeOperation = "source-over"; g.fillStyle = "#7a1418"; } else { g.globalCompositeOperation = "lighter"; g.fillStyle = "#ffcf7a"; }
+    g.fillRect(q.x, q.y, 1.3, 1.3);
+  }
+  g.restore();
+  var cv = document.getElementById("bfc");
+  if (cv) { var sk = F._sk || 0; if (sk > 0) { F._sk = Math.max(0, sk - dt); var m = Math.min(1, sk * 5) * 4; cv.style.transform = "translate(" + ((Math.random() - 0.5) * m).toFixed(1) + "px," + ((Math.random() - 0.5) * m).toFixed(1) + "px)"; } else if (cv.style.transform) cv.style.transform = ""; }
 }
 
   // ---- input ----
