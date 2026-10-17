@@ -3936,7 +3936,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
       items.forEach(function (k) {
         if (k === "special") {
           var c0 = cp(); if (!c0.spec) c0.spec = {}; if (!c0.spec[sid]) c0.spec[sid] = (town0(sid) ? [genItem(1), genItem(2)] : [genItem(1)]);
-          c0.spec[sid].forEach(function (it) { var pv = itemValue(it); out.push({ t: it.name + " (" + RAR[it.rar].n + ") · " + itemTxt(it) + " · " + pv + " crowns", col: rcol(it), cost: pv, req: function () { return packN() < packCap() || !eqq()[it.slot]; }, fn: function () { c0.spec[sid] = c0.spec[sid].filter(function (q) { return q !== it; }); giveItem(it, true); equipIfBetter(it); }, go: id }); });
+          c0.spec[sid].forEach(function (it) { var pv = itemValue(it) * ovBuyMul(it.rar); out.push({ t: it.name + " (" + RAR[it.rar].n + ") · " + itemTxt(it) + " · " + pv + " crowns", col: rcol(it), cost: pv, req: function () { return packN() < packCap() || !eqq()[it.slot]; }, fn: function () { c0.spec[sid] = c0.spec[sid].filter(function (q) { return q !== it; }); giveItem(it, true); equipIfBetter(it); }, go: id }); });
           return;
         }
         if (k === "pack") { var pl = cp().packup || 0; if (pl < 3) { var pc = [90, 200, 360][pl]; out.push({ t: "Bigger satchel: " + packCap() + " to " + (packCap() + 4) + " pack slots · " + pc + " crowns", cost: pc, fn: function () { cp().packup = pl + 1; aToast("Pack size " + packCap() + "."); }, go: id }); } return; }
@@ -11648,6 +11648,7 @@ function skfx(k) {
 }
 function itemTxt(it) { var s = itemTxt0(it), p = powOf(it); return p ? s + " · ✦ " + p.t : s; }
 // ---- the first big choice: a stranger offers a relic, and every relic has a price ----
+function ovBuyMul(r) { return [1, 1.3, 6, 20, 20, 60][r] || 1; }
 function lgGift(name, slot) {
   var it = genItem(3, slot, 1, true); it.name = name; giveItem(it, true); try { equipObj(it); } catch (e) {} return it;
 }
@@ -11656,9 +11657,9 @@ var LGSTRANGER = {
   body: function () { return "You have only just begun, and someone has already been waiting for you. He does not give a name. He lays three things on a cloak between you: a blade, a coat and a pair of soft-soled boots. 'Each one makes you something,' he says. 'Each one takes something back. I would not choose for you.'"; },
   opts: function () {
     return [
-      { t: "The blade: Cinderbrand", d: "+16% damage. You mend slower. He takes 30 crowns.", go: function () { S.crowns = Math.max(0, S.crowns - 30); lgGift("Cinderbrand", "w"); return "It is warm in your hand. You decide you are someone who hits first."; } },
-      { t: "The coat: The Unbroken Coat", d: "+18% toughness, -5% attack speed. He takes 30 crowns.", go: function () { S.crowns = Math.max(0, S.crowns - 30); lgGift("The Unbroken Coat", "a"); return "It is heavy and it does not tear. You decide you are someone who stays standing."; } },
-      { t: "The boots: Cloak of Quiet Steps", d: "+10% dodge and escape, -5% damage. He takes 30 crowns.", go: function () { S.crowns = Math.max(0, S.crowns - 30); lgGift("Cloak of Quiet Steps", "k"); return "You cannot hear yourself walk. You decide you are someone nobody catches."; } },
+      { t: "The blade: Cinderbrand", d: "+16% damage. You mend slower. He takes 3000 crowns.", ok: S.crowns >= 3000, go: function () { S.crowns = Math.max(0, S.crowns - 3000); lgGift("Cinderbrand", "w"); return "It is warm in your hand. You decide you are someone who hits first."; } },
+      { t: "The coat: The Unbroken Coat", d: "+18% toughness, -5% attack speed. He takes 3000 crowns.", ok: S.crowns >= 3000, go: function () { S.crowns = Math.max(0, S.crowns - 3000); lgGift("The Unbroken Coat", "a"); return "It is heavy and it does not tear. You decide you are someone who stays standing."; } },
+      { t: "The boots: Cloak of Quiet Steps", d: "+10% dodge and escape, -5% damage. He takes 3000 crowns.", ok: S.crowns >= 3000, go: function () { S.crowns = Math.max(0, S.crowns - 3000); lgGift("Cloak of Quiet Steps", "k"); return "You cannot hear yourself walk. You decide you are someone nobody catches."; } },
       { t: "Take nothing", d: "+1 skill point. Your own road.", go: function () { S.camp = S.camp || {}; S.camp.qpts = (S.camp.qpts || 0) + 1; return "He nods as if that was the answer he hoped not to need. +1 skill point. The fire is only a fire again."; } }
     ];
   }
@@ -11667,7 +11668,7 @@ var LGSTRANGER = {
   setInterval(function () {
     try {
       if (!S || !S.sites || sheet || B || AR) return; if (typeof mode !== "undefined" && mode !== "map") return;
-      var h = hkS(); if (h.gift || h.kills < 3) return;
+      var h = hkS(); if (h.gift || h.kills < 3 || S.crowns < 3000) return;
       h.gift = 1; HKEV = { ev: LGSTRANGER, res: null }; openSheet("hkev");
     } catch (e) {}
   }, 2000);
