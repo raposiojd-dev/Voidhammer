@@ -11676,7 +11676,7 @@ function deepEnter(n) {
   Object.keys(c.f || {}).forEach(function (k) { if (k.indexOf("chest:deep") === 0) delete c.f[k]; });
   delete AREAS[id]; if (c.cleared) delete c.cleared[id]; if (c.rs) delete c.rs[id];
   (AREAS.ashford.npcs || []).forEach(function (o) { if (o.id === "gate_den") g = o; });
-  var q = { seed: 7000 + n * 31 + (deepS().runs % 5) * 7, pal: pk.pal, boss: pk.boss, lv: 1 + Math.round(n * 0.7), zone: id, zname: "The Deep · Floor " + n, th: pk.th, hub: "ashford" };
+  var q = { seed: 7000 + n * 31, pal: pk.pal, boss: pk.boss, lv: 1 + Math.round(n * 0.7), zone: id, zname: "The Deep · Floor " + n, th: pk.th, hub: "ashford" };
   mkZoneV(q, g ? g.x : 16, g ? g.y : 5, "ashford");
   AREAS[id].clear = function () { deepClear(n); };
   startArea(id);
@@ -11684,7 +11684,9 @@ function deepEnter(n) {
 }
 function deepClear(n) {
   var d = deepS(); if (n > d.best) d.best = n; if (n === 1) d.runs++;
-  var cr = 30 * n, xp = 25 * n; S.crowns += cr; addXp(xp);
+  var party = 1; try { party = COOP.count(); } catch (e) {}
+  var cr = 30 * n * (party > 1 ? 1.25 : 1), xp = 25 * n * (party > 1 ? 1.25 : 1); cr = Math.round(cr); S.crowns += cr; addXp(xp);
+  if (party > 1) { d.tog = (d.tog || 0) + 1; var ex = genItem(1, null, n, false); if (!giveItem(ex, true)) dropAtP(ex); try { aToast("Fellowship spoils: +25% rewards and a bonus find (" + ex.name + ")"); } catch (e) {} }
   var rar = n % 10 === 0 ? 5 : n % 5 === 0 ? 3 : (n >= 3 && Math.random() < 0.4 ? 2 : 1);
   var it = genItem(rar, null, n, rar >= 3);
   if (!giveItem(it, false)) dropAtP(it);
@@ -11701,11 +11703,12 @@ DLG["deep_next"] = {
 function deepSheet() {
   var d = deepS(), n = d.best + 1, h = "<h2>The Deep</h2><p class=\"sub\">Floors cleared: " + d.best + "</p>";
   h += "<p>A crack under Ashford that does not end. Every floor is a new dungeon, tougher than the last. Foes hit harder, your wounds stay with you, and each descent has a toll. Every fifth floor holds a legendary. Every tenth, a mythic.</p>";
-  h += row("Start at floor 1. Climb out any time you clear a floor.", "Foes +7% damage per floor", "Descend", "deepgo", 1, "", S.crowns < deepToll(1));
+  h += row("Start at floor 1. Climb out any time you clear a floor.", "Foes +7% damage per floor. With a friend in the same floor: +25% rewards and a bonus find, and the same floor for both of you", "Descend", "deepgo", 1, "", S.crowns < deepToll(1));
   if (d.best >= 1) h += row("Pick up where you left off.", "Toll " + deepToll(n) + " crowns", "Floor " + n, "deepgo", n, "", S.crowns < deepToll(n));
   return h;
 }
 DEEDS.push(
+  { id: "dptog", name: "Not Alone", d: "Clear 3 floors of the Deep with a friend beside you.", n: 3, v: function () { return deepS().tog || 0; }, xp: 300, cr: 200 },
   { id: "dp5", name: "Into the Deep", d: "Clear 5 floors of the Deep.", n: 5, v: function () { return deepS().best; }, xp: 150, cr: 100 },
   { id: "dp10", name: "Below the Foundations", d: "Clear 10 floors of the Deep.", n: 10, v: function () { return deepS().best; }, xp: 400, cr: 300 },
   { id: "dp20", name: "Where the Light Ends", d: "Clear 20 floors of the Deep.", n: 20, v: function () { return deepS().best; }, xp: 1200, cr: 800 }
