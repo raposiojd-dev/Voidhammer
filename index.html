@@ -11648,7 +11648,7 @@ function skfx(k) {
 }
 function itemTxt(it) { var s = itemTxt0(it), p = powOf(it); return p ? s + " · ✦ " + p.t : s; }
 // ---- the first big choice: a stranger offers a relic, and every relic has a price ----
-function ovBuyMul(r) { return [1, 1.3, 6, 20, 20, 60][r] || 1; }
+function ovBuyMul(r) { return [1, 1.5, 25, 60, 45, 120][r] || 1; }
 function lgGift(name, slot) {
   var it = genItem(3, slot, 1, true); it.name = name; giveItem(it, true); try { equipObj(it); } catch (e) {} return it;
 }
