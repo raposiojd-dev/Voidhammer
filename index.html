@@ -3913,7 +3913,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
   function giveItem1(it, silent) {
     var c = cp(); if (!c.items) c.items = []; var e = eqq(), auto = !e[it.slot];
     if (!auto && packN() >= packCap()) { if (!silent && AR && AR.t - (AR._ft || -9) > 2.5) { AR._ft = AR.t; aToast("Pack full (" + packN() + "/" + packCap() + "). Open Gear to sell or drop something.", "#ff6a5a"); } return false; }
-    c.items.push(it); if (!silent) sfx(it.rar >= 3 ? "rare" : "item");
+    c.items.push(it); if (!silent) sfx(it.rar >= 3 ? "rare" : "item"); if (!silent && it.rar >= 2 && typeof VO !== "undefined") setTimeout(function () { VO.pool("hero", "loot", 20000); }, 400);
     if (auto) { e[it.slot] = "#" + it.uid; if (AR) { AR.p.max = maxHp(); } }
     if (!silent) aToast(it.name + " · " + RAR[it.rar].n + (auto ? " (equipped)" : ". Pack " + packN() + "/" + packCap() + "."), rcol(it));
     return true;
@@ -4806,12 +4806,12 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
       if (e.stun > 0) { e.stun -= dt; return; }
       var tg = COOP.target(e, p), dx = tg.x - e.x, dy = tg.y - e.y, d = Math.hypot(dx, dy);
       if (a.sp.over && e.aggro && d > 140) e.aggro = false;
-      if (!e.aggro && d < (e.d.boss ? 120 : 76)) e.aggro = true; if (!e.aggro) return;
+      if (!e.aggro && d < (e.d.boss ? 120 : 76)) { e.aggro = true; if (e.d.boss && typeof VO !== "undefined") VO.pool("hero", "boss", 8000); } if (!e.aggro) return;
       var spd = e.d.sp * (e.d.ranged ? 0.8 : 1) * (e.mul || 1);
       if (e.d.ranged) {
         var want = d < 54 ? -1 : d > 86 ? 1 : 0, mx = dx / (d || 1) * want * spd * dt, my = dy / (d || 1) * want * spd * dt;
         if (boxFree(a, e.x + mx, e.y)) e.x += mx; if (boxFree(a, e.x, e.y + my)) e.y += my;
-        e.shot -= dt; if (e.shot <= 0 && d < 120) { e.shot = e.type === "wraithgun" ? 1.3 : 1.6; a.proj.push({ x: e.x, y: e.y - 6, vx: dx / d * 88, vy: dy / d * 88, life: 2 }); }
+        e.shot -= dt; if (e.shot <= 0 && d < 120) { e.shot = e.type === "wraithgun" ? 1.3 : 1.6; a.proj.push({ x: e.x, y: e.y - 6, vx: dx / d * 88, vy: dy / d * 88, life: 2, boss: !!(e.d && e.d.boss) }); }
       } else if (d > (e.d.boss ? 19 : 15)) {
         var sx = dx / d * spd * dt, sy = dy / d * spd * dt; if (boxFree(a, e.x + sx, e.y)) e.x += sx; else if (boxFree(a, e.x, e.y + (dy > 0 ? 1 : -1) * spd * dt)) e.y += (dy > 0 ? 1 : -1) * spd * dt; if (boxFree(a, e.x, e.y + sy)) e.y += sy; else if (boxFree(a, e.x + (dx > 0 ? 1 : -1) * spd * dt, e.y)) e.x += (dx > 0 ? 1 : -1) * spd * dt;
       } else if (e.cd <= 0) { e.cd = e.d.boss ? 0.65 : 0.85; (tg.r ? COOP.hurtRf(tg.r) : hurtP)(Math.min(e.d.dmg + Math.min(3, Math.floor((lvl() - 1) / 5)) + (e.d.boss ? 1 + Math.min(2, Math.floor((lvl() - 1) / 8)) : 0) + (e.d.boss && tier() > 0 ? 1 : 0), Math.max(1, AR.p.max * (e.d.boss ? 0.3 : 0.2)))); }
@@ -7772,7 +7772,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
       if (e.s1 <= 0) {
         e.s1 = Math.max(2.6, 5.2 - 0.6 * T - (hpf < 0.5 ? 1 : 0));
         var n = hpf < 0.5 ? 12 : 8, off = Math.random() * 6.28;
-        for (var i = 0; i < n; i++) { var an = off + i * 6.283 / n; a.proj.push({ x: e.x, y: e.y - 6, vx: Math.cos(an) * 66, vy: Math.sin(an) * 66, life: 2.2 }); }
+        for (var i = 0; i < n; i++) { var an = off + i * 6.283 / n; a.proj.push({ x: e.x, y: e.y - 6, vx: Math.cos(an) * 66, vy: Math.sin(an) * 66, life: 2.2, boss: 1 }); }
         e.flash = 0.25; a.fx.push({ x: e.x, y: e.y - 8, t: 0.4 });
       }
       e.s2 = (e.s2 === undefined ? 9 : e.s2) - dt;
@@ -11478,7 +11478,7 @@ function qFinish(q, opt, idx) { qFinish0(q, opt, idx); if (opt && typeof opt.eff
     HK.c = 0; hkDraw();
   }
   function killEn0(e) { killEn00(e); try { hkKill(e); } catch (er) {} }
-  function hurtP(n) { var hp0 = AR && AR.p ? AR.p.hp : 0, a0 = [].slice.call(arguments), r; a0[0] = a0[0] * deepMul(); r = hurtP1.apply(this, a0); try { if (AR && AR.p && AR.p.hp < hp0 - 0.01) hkEnd("hit"); } catch (er) {} return r; }
+  function hurtP(n) { if (typeof VO !== "undefined" && Math.random() < 0.25) VO.pool("hero", "hurt", 12000); var hp0 = AR && AR.p ? AR.p.hp : 0, a0 = [].slice.call(arguments), r; a0[0] = a0[0] * deepMul(); r = hurtP1.apply(this, a0); try { if (AR && AR.p && AR.p.hp < hp0 - 0.01) hkEnd("hit"); } catch (er) {} return r; }
   function giveItem(it, silent) {
     var r = giveItem1(it, silent);
     try { if (r && it && it.rar >= 2 && !silent) { var h = hkS(); if (it.rar >= 3) h.leg++; else h.rare++; hkBanner(it.rar >= 3 ? "LEGENDARY FIND" : "RARE FIND", it.name, RAR[it.rar].n + " · " + itemTxt(it)); } } catch (er) {}
@@ -12925,92 +12925,96 @@ function invImg(it, sz) {
   var rc = (RAR[it.rar] || RAR[0]).c, glow = it.rar >= 2 ? ",0 0 " + Math.round(sz * 0.25) + "px " + rc : "";
   return '<img src="' + itemIcon(it) + '" width="' + sz + '" height="' + sz + '" style="display:block;border-radius:3px;box-shadow:inset 0 0 0 1px ' + rc + glow + '" onerror="this.style.visibility=\'hidden\'">';
 }
-// ---- ovVO: voice-over. Narrator reads the story chapters; the hero and the people he meets speak short lines. ----
-// Uses the phone's own speech engine (no files, works offline). Narrator = deep, slow UK male. Hero = younger male. Folk = a third voice.
+
+// ---- fireballs: enemy and boss shots are real fire now (core, flame tail, embers, glow) ----
+function ovFireball(g, q, t, big) {
+  var sp = Math.hypot(q.vx, q.vy) || 1, ux = q.vx / sp, uy = q.vy / sp, R = big ? 4.2 : 2.6, fl = 1 + 0.18 * Math.sin(t * 0.045 + q.x);
+  q._tr = q._tr || []; q._tr.push([q.x, q.y]); if (q._tr.length > (big ? 9 : 6)) q._tr.shift();
+  g.save(); g.globalCompositeOperation = "lighter";
+  // tail: fading blobs along the path, wobbling
+  for (var i = 0; i < q._tr.length - 1; i++) {
+    var k = i / q._tr.length, p = q._tr[i], w = Math.sin(t * 0.03 + i * 1.7) * (big ? 1.6 : 1.0);
+    var rr = R * (0.25 + 0.75 * k) * fl, tx = p[0] - uy * w, ty = p[1] + ux * w;
+    var tg = g.createRadialGradient(tx, ty, 0, tx, ty, rr * 2.2);
+    tg.addColorStop(0, "rgba(255,140,40," + (0.6 * k).toFixed(2) + ")"); tg.addColorStop(0.5, "rgba(230,60,10," + (0.3 * k).toFixed(2) + ")"); tg.addColorStop(1, "rgba(120,10,0,0)");
+    g.fillStyle = tg; g.beginPath(); g.arc(tx, ty, rr * 2.2, 0, 6.283); g.fill();
+  }
+  // outer glow
+  var og = g.createRadialGradient(q.x, q.y, 0, q.x, q.y, R * 3.4 * fl);
+  og.addColorStop(0, "rgba(255,140,40,0.55)"); og.addColorStop(0.45, "rgba(255,70,10,0.22)"); og.addColorStop(1, "rgba(200,30,0,0)");
+  g.fillStyle = og; g.beginPath(); g.arc(q.x, q.y, R * 3.4 * fl, 0, 6.283); g.fill();
+  // body, stretched along travel
+  g.save(); g.translate(q.x, q.y); g.rotate(Math.atan2(uy, ux));
+  var bg = g.createRadialGradient(0, 0, 0, 0, 0, R * 1.5);
+  bg.addColorStop(0, "rgba(255,250,215,1)"); bg.addColorStop(0.35, "rgba(255,200,80,0.95)"); bg.addColorStop(0.75, "rgba(255,110,20,0.7)"); bg.addColorStop(1, "rgba(255,60,0,0)");
+  g.fillStyle = bg; g.beginPath(); g.ellipse(-R * 0.3, 0, R * 1.5 * fl, R * 1.05 * fl, 0, 0, 6.283); g.fill();
+  // licks of flame trailing off the back
+  g.strokeStyle = "rgba(255,130,40,0.5)"; g.lineWidth = big ? 1.3 : 0.9; g.lineCap = "round"; g.beginPath();
+  for (var j = 0; j < (big ? 6 : 4); j++) { var an = Math.PI + (j - 1.5) * 0.35 + Math.sin(t * 0.02 + j * 2.1) * 0.25, L = R * (1.0 + 0.7 * Math.abs(Math.sin(t * 0.03 + j))); g.moveTo(-R * 0.4, 0); g.lineTo(Math.cos(an) * L - R * 0.4, Math.sin(an) * L * 0.8); }
+  g.stroke(); g.restore();
+  // embers
+  for (var e = 0; e < (big ? 4 : 2); e++) { var ph = (t * 0.002 + e * 0.37 + q.x * 0.01) % 1, ex = q.x - ux * ph * R * 7 + Math.sin(t * 0.01 + e * 5) * 3, ey = q.y - uy * ph * R * 7 - ph * 5; g.fillStyle = "rgba(255,200,90," + (1 - ph).toFixed(2) + ")"; g.fillRect(ex, ey, 0.9, 0.9); }
+  g.restore();
+}
+function ovProjA(g, q, a) {
+  var t = performance.now(), sp = Math.hypot(q.vx, q.vy) || 1, ux = q.vx / sp, uy = q.vy / sp;
+  g.fillStyle = "rgba(" + OVSH_C + ",0.3)"; g.beginPath(); g.ellipse(q.x + 1.5, q.y + 6, 3, 1, 0, 0, 6.283); g.fill();
+  if (q.own && !q.bolt) ovArrowShape(g, q.x, q.y, ux, uy, 10, true);
+  else if (q.bolt) ovOrb(g, q.x, q.y, ux, uy, 3, "150,110,255", t);
+  else ovFireball(g, q, t, !!q.boss);
+}
+// ---- ovVO: voice-over from pre-rendered files (vo/<who>_<key>_<n>.mp3). Hero and folk lines now; narrator later. ----
 var VO = (function () {
-  var SS = window.speechSynthesis, on = true, voices = [], picked = null, primed = false, last = {}, lastAny = 0, cur = null, duck = null;
+  var on = true, last = {}, lastAny = 0, cur = null, N = {}, ac = null, bufs = {}, loading = {};
   try { on = localStorage.getItem("vhvo") !== "0"; } catch (e) {}
-  function load() { if (!SS) return; voices = SS.getVoices() || []; picked = null; }
-  if (SS) { load(); SS.onvoiceschanged = load; }
-  function find(prefs, lang) {
-    for (var i = 0; i < prefs.length; i++) for (var j = 0; j < voices.length; j++) if (voices[j].name.indexOf(prefs[i]) === 0 && (!lang || voices[j].lang.indexOf(lang) === 0)) return voices[j];
-    for (var k = 0; k < voices.length; k++) if (lang && voices[k].lang.indexOf(lang) === 0) return voices[k];
-    return voices[0] || null;
+  // how many takes exist per key (filled from vo/index.json)
+  fetch("vo/index.json").then(function (r) { return r.json(); }).then(function (j) { N = j || {}; }).catch(function () {});
+  function ctx() { if (ac) return ac; try { ac = (typeof mac !== "undefined" && mac) ? mac : new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {} return ac; }
+  function load(name) {
+    if (bufs[name]) return Promise.resolve(bufs[name]); if (loading[name]) return loading[name];
+    var c = ctx(); if (!c) return Promise.reject();
+    return (loading[name] = fetch("vo/" + name + ".mp3").then(function (r) { if (!r.ok) throw 0; return r.arrayBuffer(); }).then(function (ab) { return new Promise(function (res, rej) { c.decodeAudioData(ab, res, rej); }); }).then(function (b) { bufs[name] = b; return b; }));
   }
-  function pick() {
-    if (picked) return picked; if (!voices.length) load();
-    // iPhone/Mac: Daniel, Arthur (GB), Aaron, Fred (US), Gordon, Lee (AU), Rishi. Android/Chrome: Google UK English Male, Microsoft Ryan.
-    var nar = find(["Daniel", "Arthur", "Google UK English Male", "Microsoft Ryan", "Microsoft George", "Oliver"], "en-GB") || find(["Aaron", "Fred", "Google US English", "Microsoft Guy", "Microsoft David"], "en");
-    var hero = find(["Aaron", "Gordon", "Fred", "Google US English", "Microsoft Guy", "Microsoft Andrew", "Microsoft David", "Lee"], "en");
-    if (hero === nar) hero = find(["Arthur", "Gordon", "Lee", "Rishi", "Oliver", "Microsoft Ryan"], "en") || nar;
-    var folk = find(["Lee", "Rishi", "Gordon", "Oliver", "Microsoft Thomas", "Google UK English Female", "Karen", "Moira"], "en") || nar;
-    picked = { narrator: { v: nar, pitch: 0.68, rate: 0.84 }, hero: { v: hero, pitch: 0.9, rate: 0.98 }, folk: { v: folk, pitch: 1.0, rate: 1.0 } };
-    return picked;
-  }
-  function strip(h) { return String(h).replace(/<[^>]+>/g, " ").replace(/&nbsp;/g, " ").replace(/&amp;/g, "&").replace(/&quot;/g, '"').replace(/&#8217;|&rsquo;|’/g, "'").replace(/\s+/g, " ").trim(); }
   function setDuck(d) {
-    try { if (typeof FMG !== "undefined" && FMG && FMG.gain) { var t = (typeof mac !== "undefined" && mac) ? mac.currentTime : 0; FMG.gain.cancelScheduledValues(t); FMG.gain.setTargetAtTime(d ? 0.28 : 0.7, t, 0.25); } } catch (e) {}
+    try { if (typeof FMG !== "undefined" && FMG && FMG.gain) { var t = ctx().currentTime; FMG.gain.cancelScheduledValues(t); FMG.gain.setTargetAtTime(d ? 0.3 : 0.7, t, 0.2); } } catch (e) {}
   }
-  function stop() { if (!SS) return; try { SS.cancel(); } catch (e) {} cur = null; setDuck(false); }
-  function say(text, who, opt) {
-    opt = opt || {}; if (!SS || !on || !text) return false;
-    text = strip(text); if (!text) return false;
-    if (cur && cur.who === "narrator" && who !== "narrator" && !opt.force) return false; // never talk over the narrator
+  function stop() { if (cur) { try { cur.src.stop(); } catch (e) {} cur = null; } setDuck(false); }
+  function play(name, who, opt) {
+    opt = opt || {}; if (!on) return false;
+    if (cur && cur.who === "narrator" && who !== "narrator" && !opt.force) return false;
     if (who !== "narrator" && !opt.force && performance.now() - lastAny < 900) return false;
-    var P = pick()[who] || pick().hero;
-    if (!opt.keep) { try { SS.cancel(); } catch (e) {} }
-    var u = new SpeechSynthesisUtterance(text);
-    if (P.v) u.voice = P.v; u.lang = (P.v && P.v.lang) || "en-GB"; u.pitch = P.pitch; u.rate = P.rate; u.volume = who === "narrator" ? 1 : 0.95;
-    cur = { who: who, u: u }; lastAny = performance.now();
-    if (who === "narrator") setDuck(true);
-    u.onend = u.onerror = function () { if (cur && cur.u === u) { cur = null; setDuck(false); } };
-    try { SS.speak(u); } catch (e) { cur = null; return false; }
+    var c = ctx(); if (!c) return false; if (c.state === "suspended") { try { c.resume(); } catch (e) {} }
+    lastAny = performance.now();
+    load(name).then(function (b) {
+      if (cur) { try { cur.src.stop(); } catch (e) {} }
+      var s = c.createBufferSource(), g = c.createGain(); s.buffer = b; g.gain.value = who === "narrator" ? 1 : 0.95; s.connect(g); g.connect(c.destination);
+      cur = { src: s, who: who }; if (who === "narrator") setDuck(true);
+      s.onended = function () { if (cur && cur.src === s) { cur = null; setDuck(false); } };
+      s.start();
+    }).catch(function () {});
     return true;
   }
-  // pools of short lines; each key remembers what it said last so it does not repeat straight away
-  function pool(key, lines, who, gapMs) {
-    gapMs = gapMs || 0; var now = performance.now(), L = last[key] || { t: -1e9, i: -1 };
-    if (now - L.t < gapMs) return false;
-    var i = Math.floor(Math.random() * lines.length); if (lines.length > 1 && i === L.i) i = (i + 1) % lines.length;
-    if (say(lines[i], who)) { last[key] = { t: now, i: i }; return true; } return false;
+  // pick a take for who/key, avoiding the last one used
+  function pool(who, key, gapMs) {
+    gapMs = gapMs || 0; var now = performance.now(), L = last[who + key] || { t: -1e9, i: -1 }, arr = N[who + "_" + key] || [];
+    if (!arr.length || now - L.t < gapMs) return false;
+    var i = arr[Math.floor(Math.random() * arr.length)]; if (arr.length > 1 && i === L.i) i = arr[(arr.indexOf(i) + 1) % arr.length];
+    if (play(who + "_" + key + "_" + i, who)) { last[who + key] = { t: now, i: i }; return true; } return false;
   }
-  function prime() {
-    if (primed || !SS) return; primed = true;
-    try { var u = new SpeechSynthesisUtterance(" "); u.volume = 0; SS.speak(u); } catch (e) {}
-  }
-  window.addEventListener("pointerdown", prime, { once: true, capture: true });
-  window.addEventListener("touchend", prime, { once: true, capture: true });
-  return { say: say, pool: pool, stop: stop, strip: strip, on: function () { return on; }, set: function (v) { on = !!v; try { localStorage.setItem("vhvo", on ? "1" : "0"); } catch (e) {} if (!on) stop(); }, pick: pick, cur: function () { return cur; } };
+  function prime() { var c = ctx(); if (c && c.state === "suspended") { try { c.resume(); } catch (e) {} } }
+  window.addEventListener("pointerdown", prime, { capture: true });
+  return { play: play, pool: pool, stop: stop, on: function () { return on; }, set: function (v) { on = !!v; try { localStorage.setItem("vhvo", on ? "1" : "0"); } catch (e) {} if (!on) stop(); }, cur: function () { return cur; }, preload: function (names) { names.forEach(function (n) { load(n).catch(function () {}); }); } };
 })();
 
-// ---- what gets said ----
-var VOL = {
-  cave: ["Cold air. Something down here has not seen the sun in a long time.", "Stay close. Caves like this keep what falls into them.", "Mind the floor. Mind the dark. Mind everything.", "I can hear water. And something that is not water."],
-  dungeon: ["Someone built this to keep something in. Or out.", "The air tastes of iron. Old iron, and older blood.", "Every step down here is a step somebody never took back.", "If the lanterns go out, we go out with them. Keep moving."],
-  writ: ["The writ said a hole in the ground with something at the bottom. It did not say how deep.", "Whatever is down here, the town wants it gone. Let us oblige them.", "Contracts. Crowns. And a dark hole. Same as always."],
-  town: ["Markets, gates, and a hundred people who do not know my name yet.", "A town. Walls keep the Void out and the gossip in.", "I used to think places like this would last forever.", "Somebody here will want something from me. Somebody always does."],
-  village: ["Smoke from the chimneys. Bread somewhere. It almost feels like home.", "A village. Thin walls, thick hearts, and never enough grain.", "They look at my column the way a field looks at a hailstorm.", "I grew up in a place like this. Before everything."],
-  castle: ["Stone and silence. A keep remembers every siege it ever took.", "A castle. Whoever holds this holds the road.", "Banners on the wall. Let us see whose, by the end."],
-  home: ["Ashford. The fields look the same. I do not.", "Home. My father's forge smell is still in the coat.", "Every road I walk leads back here, in the end."],
-  level: ["Stronger. Not wiser. Not yet.", "I felt that. Something in me just got harder.", "Another scar that teaches instead of hurts.", "They can cut me now. They cannot stop me."],
-  loot: ["Now that is worth the walk.", "Somebody lost this. Their loss.", "Fine work. Finer than anything I have carried."],
-  hurt: ["Not today.", "Still standing.", "That one I felt."],
-  hello: ["Well met.", "Oh. Hello, stranger.", "Good day to you.", "You look like you have come a long way.", "Aye? What do you need?", "Mind the mud. Welcome.", "Traveller. Welcome.", "Peace on you, captain."],
-  lord: ["Captain. You have my attention.", "Speak. I have a war to get back to.", "I know your banner. Sit.", "You keep interesting company, captain."],
-  boss: ["There you are.", "Come on, then.", "Let us end this."]
-};
-
 (function () {
-  var vhMenuHtml = function () {
-    return '<div class="sec">Voices</div><div class="optrow"><button data-act="vhvo" data-a="1"' + (VO.on() ? ' class="on"' : "") + '>Narrator and voices on</button><button data-act="vhvo" data-a="0"' + (!VO.on() ? ' class="on"' : "") + '>Off</button></div><p class="dim-t">A narrator reads each chapter. Your character and the people you meet speak short lines. Uses the voices built into this phone.</p>';
+  window.vhMenuHtml = function () {
+    return '<div class="sec">Voices</div><div class="optrow"><button data-act="vhvo" data-a="1"' + (VO.on() ? ' class="on"' : "") + '>Voices on</button><button data-act="vhvo" data-a="0"' + (!VO.on() ? ' class="on"' : "") + '>Off</button></div><p class="dim-t">Your character and the people you meet speak short lines.</p>';
   };
   document.addEventListener("click", function (ev) {
     var b = ev.target && ev.target.closest && ev.target.closest('button[data-act="vhvo"]'); if (!b) return;
     ev.stopPropagation(); ev.preventDefault(); VO.set(b.getAttribute("data-a") === "1");
-    if (VO.on()) VO.say("The voices are on.", "narrator", { force: true });
     var row = b.parentNode; Array.prototype.forEach.call(row.children, function (c) { c.classList.toggle("on", c === b); });
   }, true);
-  window.vhMenuHtml = vhMenuHtml;
 })();
 
 function menuSheet() { var h = menuSheetVO0(); return h.replace('<p class="dim-t" style="margin-top:1rem">', vhMenuHtml() + '<p class="dim-t" style="margin-top:1rem">'); }
@@ -13018,16 +13022,13 @@ function menuSheet() { var h = menuSheetVO0(); return h.replace('<p class="dim-t
 function openSheet(kind, id) {
   openSheetVO0(kind, id);
   try {
-    if (kind === "story" && typeof STORY !== "undefined" && STORY[id]) {
-      var d = STORY[id], txt = d.t + ". " + d.body.map(VO.strip).join(" ");
-      VO.say(txt, "narrator", { force: true });
-    } else if (kind === "talk") { VO.pool("lord", VOL.lord, "folk", 4000); }
-    else if (kind === "intro") { var el = document.getElementById("sbody"); if (el) { var ps = el.querySelectorAll("p"); var t = []; for (var i = 0; i < Math.min(3, ps.length); i++) t.push(ps[i].textContent); if (t.length) VO.say(t.join(" "), "narrator", { force: true }); } }
+    if (kind === "story" && typeof STORY !== "undefined" && STORY[id]) { VO.play("narrator_" + id, "narrator", { force: true }); }
+    else if (kind === "talk") { VO.pool("folk", "lord", 4000); }
   } catch (e) {}
 }
 function closeSheet(force) {
   var was = sheet && sheet.kind; closeSheetVO0(force);
-  if (!sheet && (was === "story" || was === "intro")) VO.stop();
+  if (!sheet && was === "story") VO.stop();
 }
 function startArea(id, sx, sy) {
   startAreaVO0(id, sx, sy);
@@ -13037,16 +13038,16 @@ function startArea(id, sx, sy) {
     else if (/^cave\d+$/.test(id) || (sp && sp.th && typeof ATH !== "undefined" && ATH[sp.th] && ATH[sp.th].cave)) key = "cave";
     else if (id === "ashford" || id === "home") key = "home";
     else { var s = site(id); if (s) key = s.type === "town" ? "town" : s.type === "castle" ? "castle" : "village"; else if (sp && sp.safe) key = "village"; else key = "dungeon"; }
-    setTimeout(function () { VO.pool("area:" + key, VOL[key] || VOL.dungeon, "hero", 25000); }, 500);
+    setTimeout(function () { VO.pool("hero", key, 25000); }, 500);
   } catch (e) {}
 }
 function dlgOpen(id) {
   var fresh = !(AR && AR.dlg); dlgOpenVO0(id);
-  try { if (fresh && AR && AR.dlg) { var d = getDlg(id); if (d && d.n && !/^you$/i.test(d.n)) VO.pool("hello", VOL.hello, "folk", 2500); } } catch (e) {}
+  try { if (fresh && AR && AR.dlg) { var d = getDlg(id); if (d && d.n && !/^you$/i.test(d.n)) VO.pool("folk", "hello", 2500); } } catch (e) {}
 }
 function addXp(n) {
   var before = lvl(), r = addXpVO0(n);
-  try { if (lvl() > before) setTimeout(function () { VO.pool("level", VOL.level, "hero", 3000); }, 700); } catch (e) {}
+  try { if (lvl() > before) setTimeout(function () { VO.pool("hero", "level", 3000); }, 700); } catch (e) {}
   return r;
 }
 
