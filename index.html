@@ -1066,8 +1066,8 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
     }
 
     S.nextBandit--;
-    if (S.nextBandit <= 0 && countKind("bandit") < 4) { spawnBandit(); S.nextBandit = rndInt(14, 22); }
-    if (S.day >= 12 && !S.sealed) { S.nextVoid--; if (S.nextVoid <= 0 && countKind("void") < 3) { spawnVoid(); S.nextVoid = rndInt(16, 24); } }
+    if (S.nextBandit <= 0 && countKind("bandit") < 5) { spawnBandit(); S.nextBandit = rndInt(6, 10); }
+    if (S.day >= 12 && !S.sealed) { S.nextVoid--; if (S.nextVoid <= 0 && countKind("void") < 4) { spawnVoid(); S.nextVoid = rndInt(8, 13); } }
 
     if (S.day >= END_DAY && !S.ended) { S.ended = true; save(); openSheet("ending"); }
   }
@@ -1186,7 +1186,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
       B.won = true;
     } else {
       var extra = Math.ceil(T() * 0.25); loseTroops(extra); S.grain = Math.floor(S.grain * 0.7); S.crowns = Math.floor(S.crowns * 0.7);
-      if (e) { e.cool = 6; var dx = S.px - e.x, dy = S.py - e.y, d = Math.hypot(dx, dy) || 1; S.px += dx / d * 45; S.py += dy / d * 45; }
+      if (e) { e.cool = 3; var dx = S.px - e.x, dy = S.py - e.y, d = Math.hypot(dx, dy) || 1; S.px += dx / d * 45; S.py += dy / d * 45; }
       B.out.push("You were driven off. " + (lost + extra) + " men lost, and they took a third of your grain and coin.");
       log("Lost a fight. " + (lost + extra) + " men gone.", "e");
       B.won = false;
@@ -1399,7 +1399,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
       var es = e.n * e.q, dp = dist(e.x, e.y, S.px, S.py), tx = null, ty = null, spd = 50;
       if (e.kind === "bandit") {
         if (e.tut) { tx = S.px; ty = S.py; spd = 36; }
-        else if (dp < 70 && es > ps * 0.85 && e.cool <= 0) { tx = S.px; ty = S.py; spd = 46; }
+        else if (dp < 120 && es > ps * 0.85 && e.cool <= 0) { tx = S.px; ty = S.py; spd = 66; }
         else if (dp < 120 && ps > es * 1.3) { tx = e.x + (e.x - S.px); ty = e.y + (e.y - S.py); spd = 68; }
         else {
           if (!e.dest || dist(e.x, e.y, e.dest.x, e.dest.y) < 14) {
@@ -1411,11 +1411,11 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
       } else if (e.kind === "lord") {
         spd = 44;
         if (e.fac === "metal" && S.mc && S.day < S.mc.start) { if (e.dest) { tx = e.dest.x; ty = e.dest.y; } }
-        else if (S.pwar[e.fac] && dp < (e.fac === "metal" ? 130 : 100) && es > ps * 0.75 && e.cool <= 0) { tx = S.px; ty = S.py; spd = e.fac === "metal" ? 50 : 46; }
+        else if (S.pwar[e.fac] && dp < (e.fac === "metal" ? 200 : 160) && es > ps * 0.75 && e.cool <= 0) { tx = S.px; ty = S.py; spd = e.fac === "metal" ? 62 : 58; }
         else if (e.dest) { tx = e.dest.x; ty = e.dest.y; }
       } else {
         spd = 34;
-        if (dp < 60 && e.cool <= 0) { tx = S.px; ty = S.py; spd = 38; }
+        if (dp < 90 && e.cool <= 0) { tx = S.px; ty = S.py; spd = 50; }
         else {
           var best = null, bd = 1e9;
           S.sites.forEach(function (s) { var d = dist(e.x, e.y, s.x, s.y); if (d < bd) { bd = d; best = s; } });
