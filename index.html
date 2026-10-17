@@ -10649,7 +10649,7 @@ function skUseField() {
       var sw2 = Math.sin(t / 220 + k); ctx.strokeStyle = "#dfe4e8"; ctx.lineWidth = 0.8; ctx.beginPath(); ctx.moveTo(x - 9, y - 2); ctx.lineTo(x - 9 + 4 * sw2, y - 7); ctx.stroke();
     }
   }
-  function ovBldExtras(s, t) {
+  function ovBldExtrasOld(s, t) {
     var h = s.has || {}, vil = s.type === "village", ids, n, i;
     ids = vil ? ["tavern", "smithy", "beacon"] : ["barracks", "market", "tavern", "smithy", "granary", "yard"];
     // the village itself grows with every building raised
@@ -12102,7 +12102,7 @@ function wmTree(g, x, y, s, it) {
   g.fillStyle = "rgba(0,0,0,0.3)"; g.beginPath(); g.ellipse(x + s * 0.3, y + 1, w * 0.4, s * 0.2, 0, 0, 6.283); g.fill();
   g.save(); g.imageSmoothingEnabled = true; g.imageSmoothingQuality = "high"; g.drawImage(im, x - w / 2, y - h + 2, w, h); g.restore(); return true;
 }
-function wmBody(s, t) {
+function wmBodyOld(s, t) {
   if (!wmRdy()) return false;
   var vil = s.type === "village", k = vil ? "obj_village" : "obj_town", im = wmImg(k), w = vil ? 92 : 84, h = w * im.naturalHeight / im.naturalWidth, oc = ownerCol(s);
   ctx.save(); ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = "high";
@@ -12495,6 +12495,52 @@ function ovFigure() {
     return c.toDataURL("image/png");
   } catch (e) { return null; }
 }
+// ---- painted 3/4-view settlements and buildings on the world map (img/map/*.webp) ----
+var WM2 = {};
+function wm2(k) { var im = WM2[k]; if (!im) { im = WM2[k] = new Image(); im.src = "img/map/" + k + ".webp"; } return im.complete && im.naturalWidth ? im : null; }
+try { ["village", "town", "castle", "farm", "mill", "smithy", "granary", "tavern", "barracks", "market", "beacon", "yard"].forEach(wm2); } catch (e) {}
+function wm2Img(g, k, x, y, w, al) {
+  var im = wm2(k); if (!im) return false; var h = w * im.naturalHeight / im.naturalWidth;
+  g.save(); g.imageSmoothingEnabled = true; g.imageSmoothingQuality = "high"; if (al !== undefined) g.globalAlpha = al;
+  g.fillStyle = "rgba(0,0,0,0.28)"; g.beginPath(); g.ellipse(x + w * 0.04, y + 1, w * 0.42, h * 0.16, 0, 0, 6.283); g.fill();
+  g.drawImage(im, x - w / 2, y - h * 0.86, w, h); g.restore(); return true;
+}
+// add-on layout: [key, dx, dy, width]; negative dy sits behind the settlement, drawn first
+var WM2V = { farm: [-72, 26, 58], mill: [66, -12, 36], smithy: [-60, -28, 34], tavern: [64, 26, 36], granary: [38, -44, 28], beacon: [-28, -54, 22] };
+var WM2T = { barracks: [-54, 16, 38], market: [52, 18, 34], tavern: [-50, -18, 30], smithy: [50, -16, 30], granary: [30, -34, 24], yard: [-30, 34, 34] };
+function wm2Extras(s, t, phase) {
+  var h = s.has || {}, vil = s.type === "village", L = vil ? WM2V : WM2T, k;
+  // buildings under construction show faint
+  var bld = s.build && s.build.id;
+  for (k in L) { var q = L[k], on = h[k], ghost = !on && bld === k; if (!on && !ghost) continue; if ((q[1] < 0) !== (phase === 0)) continue; wm2Img(ctx, k, q[0], q[1], q[2], ghost ? 0.45 : 1); }
+  if (phase === 1 && vil && h.palisade) { // ring of posts
+    ctx.save(); ctx.strokeStyle = "#5a3f1e"; ctx.lineWidth = 3; ctx.setLineDash([3, 2.5]); ctx.beginPath(); ctx.ellipse(0, 8, 94, 52, 0, 0, 6.283); ctx.stroke();
+    ctx.strokeStyle = "#8a6a3a"; ctx.lineWidth = 1.2; ctx.setLineDash([3, 2.5]); ctx.lineDashOffset = 0.6; ctx.beginPath(); ctx.ellipse(0, 6.5, 94, 52, 0, 0, 6.283); ctx.stroke(); ctx.restore();
+  }
+  if (phase === 1 && !vil && h.walls) {
+    var wx = 68, wy = 44; ctx.save(); ctx.strokeStyle = "rgba(20,16,10,0.85)"; ctx.lineWidth = 7; ctx.beginPath(); ctx.ellipse(0, 6, wx, wy, 0, 0, 6.283); ctx.stroke();
+    ctx.strokeStyle = "#7d7563"; ctx.lineWidth = 4.5; ctx.beginPath(); ctx.ellipse(0, 5, wx, wy, 0, 0, 6.283); ctx.stroke(); ctx.strokeStyle = "#b3a98e"; ctx.lineWidth = 1; ctx.beginPath(); ctx.ellipse(0, 3, wx, wy, 0, 0, 6.283); ctx.stroke();
+    ctx.setLineDash([2, 2]); ctx.strokeStyle = "rgba(30,24,16,0.8)"; ctx.lineWidth = 2; ctx.beginPath(); ctx.ellipse(0, 2.5, wx, wy, 0, 0, 6.283); ctx.stroke(); ctx.restore();
+  }
+}
+function wmBody(s, t) {
+  var vil = s.type === "village", k = vil ? "village" : s.type === "castle" ? "castle" : "town", im = wm2(k);
+  if (!im) return typeof wmBodyOld === "function" ? wmBodyOld(s, t) : false;
+  var w = vil ? 112 : 84, h = w * im.naturalHeight / im.naturalWidth, oc = ownerCol(s);
+  ctx.save(); ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = "high";
+  // soft light pool and the owner's colour as a thin ground ring
+  var R = w * 0.7, lg = ctx.createRadialGradient(0, 8, R * 0.1, 0, 8, R); lg.addColorStop(0, "rgba(255,236,190,0.5)"); lg.addColorStop(0.6, "rgba(255,226,160,0.2)"); lg.addColorStop(1, "rgba(255,226,160,0)");
+  ctx.fillStyle = lg; ctx.beginPath(); ctx.ellipse(0, 8, R, R * 0.6, 0, 0, 6.283); ctx.fill();
+  wm2Extras(s, t, 0);
+  ctx.fillStyle = "rgba(0,0,0,0.38)"; ctx.beginPath(); ctx.ellipse(2, 12, w * 0.5, h * 0.2, 0, 0, 6.283); ctx.fill();
+  ctx.drawImage(im, -w / 2, -h * 0.78, w, h);
+  wm2Extras(s, t, 1);
+  ctx.lineWidth = 2; ctx.strokeStyle = oc; ctx.globalAlpha = 0.85; ctx.beginPath(); ctx.ellipse(0, h * 0.26, w * 0.58, h * 0.3, 0, 0, 6.283); ctx.stroke();
+  ctx.restore();
+  flagAt(0, -h * 0.72, t, oc); if (s.type !== "village") { flagAt(-w * 0.36, -h * 0.5, t + 300, oc); flagAt(w * 0.36, -h * 0.5, t + 700, oc); }
+  return true;
+}
+function ovBldExtras(s, t) { if (!wm2("village")) return ovBldExtrasOld(s, t); }
 
   // ---- input ----
   (function () {
