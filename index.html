@@ -4902,7 +4902,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
   }
 
   // ---- quest log ----
-  function objective() {
+  function objective0() {
     var f = cp().f;
     if (f.track && f.track.indexOf("rt:") === 0) { var ro = rtObj(f.track.slice(3)); if (ro) return ro; f.track = null; }
     if (f.track && f.track.indexOf("wq:") === 0) { var wo = wildObj(f.track.slice(3)); if (wo) return wo; f.track = null; }
@@ -13707,7 +13707,7 @@ function ovPortalSheet(kind) {
   var c = curCell(), h = '<h2>' + (kind === "gate" ? (ovConts()[c].f ? ovConts()[c].n + " Gate" : "The Silent Gate") : "The Shadow Tunnels") + '</h2>';
   if (kind === "gate") {
     h += '<p class="sub">The old gates remember every realm. ' + (ovGateOpen() ? "They answer you." : "They do not answer you yet.") + '</p>';
-    if (!ovGateOpen()) h += '<p>The arch hums when you touch it, and nothing else. Someone who has walked the Grey Writ to its end, and learned to Gatewalk, could pass. You are not yet that someone.</p><p class="dim-t">Learn <b>Gatewalker</b> in Memory and Spark once Act I is done.</p>';
+    if (!ovGateOpen()) h += '<p>The arch hums when you touch it, and nothing else. Someone carrying the Grey Writ, who has learned to show it, could pass. You are not yet that someone.</p><p class="dim-t">Learn <b>Gatewalker</b> in Memory and Spark once you hold the Grey Writ (The Hollow, Act I).</p>';
     else {
       h += '<p>Each passage costs <b>' + ovGateToll() + ' crowns</b> and a day. The realm on the other side will know a stranger has arrived.</p><div class="sec">Where to</div>';
       for (var i = 0; i < 9; i++) { if (i === c || !S.gates[i]) continue; var f = ovConts()[i].f; h += row(ovConts()[i].n, f ? FAC[f].name + "'s continent." : "No realm holds it. The Void does.", "Pass", "gateto", String(i), "", S.crowns < ovGateToll(), f ? "" : "amber"); }
@@ -13761,10 +13761,10 @@ function renderSheet(just) {
 }
 // Gatewalker: the skill that opens the Realm Gates. Costs a point, and asks for Act I first.
 (function () {
-  var b = skBranch("Memory and Spark"); if (b && !b.items.some(function (i) { return i.id === "ms_gate"; })) b.items.push({ id: "ms_gate", name: "Gatewalker", lv: 1, max: 1, per: "the Realm Gates answer you", desc: "The gates remember every realm that ever raised them. Learn their names and they will remember you.", storyq: "q3done" });
+  var b = skBranch("Memory and Spark"); if (b && !b.items.some(function (i) { return i.id === "ms_gate"; })) b.items.push({ id: "ms_gate", name: "Gatewalker", lv: 1, max: 1, per: "the Realm Gates answer you", desc: "The Grey Writ carries a seal older than any realm. The gates remember it. Learn to show it and they will remember you.", storyq: "q2done" });
 })();
 function skWhy(it) {
-  if (it.storyq && !(S.camp && S.camp.f && S.camp.f[it.storyq])) return "Finish Act I, The Grey Writ, first.";
+  if (it.storyq && !(S.camp && S.camp.f && S.camp.f[it.storyq])) return "Take the Grey Writ from the Hollow first.";
   return skWhy0(it);
 }
 try { if (S && !S.contV) { ovContApply(S); save(); } } catch (e) { if (window.console) console.log("cont", e); }
@@ -13787,6 +13787,13 @@ try { Object.assign(UIPNG, { blades: "ui_blades", mail: "ui_mail", bows: "ui_bow
   } catch (e) { if (window.console) console.log("quietroad", e); }
 })();
 function areaUnlocked(id) { if (id === "unmadecity") return true; return areaUnlocked0(id); }
+
+// the objective says when it lies across the sea
+function objective() {
+  var o = objective0();
+  try { if (o && o.site && S && S.gates) { var s = site(o.site); if (s && cellAt(s.x, s.y) !== curCell() && !/across the sea/.test(o.text)) { o = Object.assign({}, o); o.text += " (" + ovConts()[cellAt(s.x, s.y)].n + ", across the sea: " + (ovGateOpen() ? "use the Realm Gate)" : "you need the Gatewalker skill)"); } } } catch (e) {}
+  return o;
+}
 
   // ---- input ----
   (function () {
