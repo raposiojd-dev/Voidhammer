@@ -6539,9 +6539,9 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
           });
         }
         // grass beside water gets a dark wet bank
-        if (!cave) [[0, -1], [0, 1], [-1, 0], [1, 0]].forEach(function (d, k) { if (T(x + d[0], y + d[1]) !== 3) return; m.fillStyle = "rgba(20,40,20,0.35)"; if (k === 0) m.fillRect(px, py, ATSx, 2); else if (k === 1) m.fillRect(px, py + ATSx - 2, ATSx, 2); else if (k === 2) m.fillRect(px, py, 2, ATSx); else m.fillRect(px + ATSx - 2, py, 2, ATSx); });
+        if (!cave && !sp._pond) [[0, -1], [0, 1], [-1, 0], [1, 0]].forEach(function (d, k) { if (T(x + d[0], y + d[1]) !== 3) return; m.fillStyle = "rgba(20,40,20,0.35)"; if (k === 0) m.fillRect(px, py, ATSx, 2); else if (k === 1) m.fillRect(px, py + ATSx - 2, ATSx, 2); else if (k === 2) m.fillRect(px, py, 2, ATSx); else m.fillRect(px + ATSx - 2, py, 2, ATSx); });
       }
-      if (t === 3) {
+      if (t === 3 && !sp._pond) {
         var deep = T(x - 1, y) === 3 && T(x + 1, y) === 3 && T(x, y - 1) === 3 && T(x, y + 1) === 3;
         m.fillStyle = deep ? "rgba(0,20,70,0.22)" : "rgba(0,30,80,0.08)"; m.fillRect(px, py, ATSx, ATSx);
         [[0, -1], [0, 1], [-1, 0], [1, 0]].forEach(function (d, k) { if (T(x + d[0], y + d[1]) === 3 || T(x + d[0], y + d[1]) === -1) return; m.fillStyle = "rgba(235,250,255,0.34)"; if (k === 0) m.fillRect(px, py, ATSx, 1); else if (k === 1) m.fillRect(px, py + ATSx - 1, ATSx, 1); else if (k === 2) m.fillRect(px, py, 1, ATSx); else m.fillRect(px + ATSx - 1, py, 1, ATSx); });
@@ -6563,7 +6563,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
     var x0 = Math.max(0, Math.floor(cx / ATS)), x1 = Math.min(a.W - 1, Math.ceil((cx + VW) / ATS)), y0 = Math.max(0, Math.floor(cy / ATS)), y1 = Math.min(a.H - 1, Math.ceil((cy + VH) / ATS)), x, y, t = a.t;
     for (y = y0; y <= y1; y++) for (x = x0; x <= x1; x++) {
       if (a.g[y][x] !== 3) continue; var h1 = vh(x, y, 5), h2 = vh(y, x, 9), ph = (t * (0.6 + h1) + h2 * 6) % 3;
-      g.fillStyle = "rgba(255,255,255," + (0.28 * Math.sin(Math.min(1, ph / 3) * 3.1416)).toFixed(3) + ")"; g.fillRect(x * ATS + 2 + ((t * 5 + h1 * 12) % 10), y * ATS + 3 + Math.floor(h2 * 9), 4 + Math.floor(h1 * 3), 1);
+      g.fillStyle = "rgba(220,240,235," + (0.13 * Math.sin(Math.min(1, ph / 3) * 3.1416)).toFixed(3) + ")"; g.fillRect(x * ATS + 2 + ((t * 3 + h1 * 12) % 10), y * ATS + 3 + Math.floor(h2 * 9), 2 + Math.floor(h1 * 2), 1);
       var sp2 = Math.sin(t * 3 + h1 * 40); if (sp2 > 0.97) { g.fillStyle = "rgba(255,255,255,0.8)"; g.fillRect(x * ATS + Math.floor(h2 * 14), y * ATS + Math.floor(h1 * 14), 1, 1); }
     }
   }
@@ -11852,6 +11852,7 @@ function enPaint(m, g, W, H, th, sp) {
     }
     m.restore(); m.globalAlpha = 1;
     sp._hr = HR;
+    enWater(m, g, W, H, sp, cave, tg, T);
     var hsh = function (a, b) { var q = Math.sin(a * 91.7 + b * 47.3 + sp.seed) * 43758.5453; return q - Math.floor(q); };
     trees.forEach(function (q) {
       var x = q[0], y = q[1], v = hsh(x, y), px = x * ATS + 8, py = y * ATS + 17;
@@ -11868,6 +11869,40 @@ function enPaint(m, g, W, H, th, sp) {
 
 function enHousesLate(m, sp) {
   try { if (!sp._hr || !sp.houses) return; var MS = m.canvas._ms || 1; sp.houses.forEach(function (h) { enHouse(m, h, sp, MS); }); } catch (e) { if (window.console) console.log("enHouses", e); }
+}
+
+// natural ponds: ground under, then a blob-union shoreline with a muddy rim, deep water and a light inner edge
+function enWater(m, g, W, H, sp, cave, tg, T) {
+  var x, y, cells = [];
+  for (y = 0; y < H; y++) for (x = 0; x < W; x++) if (g[y][x] === 3) cells.push([x, y]);
+  if (!cells.length) return; sp._pond = 1;
+  var hsh = function (a, b, k) { var q = Math.sin(a * 91.7 + b * 47.3 + k * 13.1 + (sp.seed || 0)) * 43758.5453; return q - Math.floor(q); };
+  m.save();
+  // grass/cave floor under the pond so the edges blend
+  m.save(); m.scale(1 / 3, 1 / 3); m.globalAlpha = 0.85; m.fillStyle = T[tg];
+  cells.forEach(function (c) { m.fillRect(c[0] * ATS * 3, c[1] * ATS * 3, ATS * 3, ATS * 3); }); m.restore();
+  function blob(ex) {
+    m.beginPath();
+    cells.forEach(function (c) { var cx = c[0] * ATS + ATS / 2 + (hsh(c[0], c[1], 1) - 0.5) * 3, cy = c[1] * ATS + ATS / 2 + (hsh(c[0], c[1], 2) - 0.5) * 3, r = ATS * (0.66 + hsh(c[0], c[1], 3) * 0.12) + ex; m.moveTo(cx + r, cy); m.arc(cx, cy, r, 0, 6.2832); });
+  }
+  // rings are union fills at growing radii, so no circle outlines show inside the pond
+  blob(3.2); m.fillStyle = cave ? "rgba(30,26,34,0.75)" : "rgba(74,58,34,0.72)"; m.fill();
+  blob(1.6); m.fillStyle = cave ? "rgba(70,62,78,0.6)" : "rgba(118,100,62,0.7)"; m.fill();
+  blob(0.4); m.fillStyle = "rgba(170,210,200,0.55)"; m.fill();
+  blob(-0.9); m.fillStyle = cave ? "#1a2230" : "#1f3b45"; m.fill();
+  blob(-0.9); m.clip();
+  var gr = m.createLinearGradient(0, 0, 0, H * ATS); gr.addColorStop(0, "rgba(90,150,160,0.22)"); gr.addColorStop(1, "rgba(20,40,60,0.35)"); m.fillStyle = gr; m.fillRect(0, 0, W * ATS, H * ATS);
+  cells.forEach(function (c) { var n = 0, dx, dy; for (dy = -1; dy <= 1; dy++) for (dx = -1; dx <= 1; dx++) { var yy = c[1] + dy, xx = c[0] + dx; if (yy >= 0 && yy < H && xx >= 0 && xx < W && g[yy][xx] === 3) n++; } if (n >= 8) { var rg = m.createRadialGradient(c[0] * ATS + 8, c[1] * ATS + 8, 0, c[0] * ATS + 8, c[1] * ATS + 8, ATS * 1.2); rg.addColorStop(0, "rgba(6,14,24,0.5)"); rg.addColorStop(1, "rgba(6,14,24,0)"); m.fillStyle = rg; m.fillRect(c[0] * ATS - 12, c[1] * ATS - 12, ATS + 24, ATS + 24); } });
+  // soft sky reflection streaks
+  cells.forEach(function (c) { var v = hsh(c[0], c[1], 6); if (v < 0.45) return; m.fillStyle = "rgba(200,230,230," + (0.05 + v * 0.07).toFixed(3) + ")"; m.fillRect(c[0] * ATS + 2 + v * 5, c[1] * ATS + 4 + hsh(c[0], c[1], 7) * 8, 6 + v * 5, 1.2); });
+  m.restore();
+  cells.forEach(function (c) {
+    var v = hsh(c[0], c[1], 4), edge = false, dx, dy; for (dy = -1; dy <= 1; dy++) for (dx = -1; dx <= 1; dx++) { var yy = c[1] + dy, xx = c[0] + dx; if (yy < 0 || yy >= H || xx < 0 || xx >= W || g[yy][xx] !== 3) edge = true; }
+    if (!edge || cave) return;
+    var px = c[0] * ATS + 3 + v * 10, py = c[1] * ATS + 3 + hsh(c[0], c[1], 5) * 10;
+    if (v < 0.3) { m.fillStyle = "rgba(60,110,50,0.9)"; m.beginPath(); m.ellipse(px, py, 2.6, 1.9, 0, 0, 6.3); m.fill(); m.fillStyle = "rgba(120,170,90,0.6)"; m.beginPath(); m.ellipse(px - 0.6, py - 0.5, 1.2, 0.8, 0, 0, 6.3); m.fill(); }
+    else if (v < 0.5) { m.strokeStyle = "rgba(70,96,40,0.9)"; m.lineWidth = 0.7; m.beginPath(); m.moveTo(px, py + 2); m.lineTo(px + 1, py - 5); m.moveTo(px + 2, py + 2); m.lineTo(px + 2.5, py - 4); m.moveTo(px - 1.5, py + 2); m.lineTo(px - 1, py - 3.5); m.stroke(); }
+  });
 }
 // crisp rendering, walk cycle and proper sword
 function ovAsc(VW) { var d = Math.min(window.devicePixelRatio || 1, 2.5); return Math.max(3, Math.min(8, Math.round(innerWidth * d / VW))); }
@@ -11886,7 +11921,7 @@ function ovBlade(g, hx, hy, ang, L, wd, col) {
   if (swi) {
     var T = L * 1.3, Hh = T * swi.naturalHeight / swi.naturalWidth;
     g.save(); g.translate(hx, hy); g.rotate(ang); g.imageSmoothingEnabled = true; g.imageSmoothingQuality = "high";
-    g.drawImage(swi, -T * 0.16, -Hh / 2, T, Hh); g.restore();
+    g.drawImage(swi, -T * 0.1, -Hh / 2, T, Hh); g.restore();
     return [hx + c * L, hy + s * L];
   }
   g.save(); g.translate(hx, hy); g.rotate(ang);
@@ -11906,15 +11941,22 @@ function ovHeldA(g, c, face, sw, kind){
   var AA = typeof AR !== "undefined" && AR;
   if (AA && AA.sp && AA.sp.safe && c.x !== undefined && !(AA.en || []).some(function (e) { return e.hp > 0; })) return;
   if (kind === "axe") return ovHeldA0(g, c, face, sw, kind);
-  var dir = face.x < 0 ? -1 : (face.x > 0 ? 1 : (c._hd || 1)); c._hd = dir;
-  var hx = c.x + dir * 3.2, hy = c.y - 7.5, L = 9, a0, a1, ang, sw1 = sw;
-  var idle = dir > 0 ? -1.15 : Math.PI + 1.15;
-  if (sw >= 0) { a0 = -1.9; a1 = 1.0; var e = 1 - Math.pow(1 - sw1, 2); var raw = a0 + (a1 - a0) * e; ang = dir > 0 ? raw : Math.PI - raw;
-    g.save(); var tr = 7; for (var i = 1; i <= tr; i++) { var q = a0 + (a1 - a0) * Math.max(0, e - i * 0.07), qa = dir > 0 ? q : Math.PI - q; g.globalAlpha = 0.22 * (1 - i / (tr + 1)); g.strokeStyle = kind === "steel" ? "#bfe8ff" : "#fff6dc"; g.lineWidth = 3.2 - i * 0.3; g.lineCap = "round"; g.beginPath(); g.arc(hx, hy, L - 1.5, qa, ang, dir < 0 ? false : false); g.stroke(); }
+  // facing: side (vertical component small) or front/back, like the sprite picks its view
+  var fxv = face.x || 0, fyv = face.y || 0, vert = Math.abs(fyv) > Math.abs(fxv) * 1.1 && Math.abs(fyv) > 0.01;
+  var dir = fxv < 0 ? -1 : (fxv > 0 ? 1 : (c._hd || 1)); c._hd = dir;
+  var vw = vert ? (fyv < 0 ? "b" : "f") : "s", hx, hy, L = 9, fa, sg;
+  if (vw === "s") { hx = c.x + dir * 2.2; hy = c.y - 9.5; fa = dir > 0 ? 0 : Math.PI; sg = dir; }
+  else if (vw === "f") { hx = c.x + 3.6; hy = c.y - 9; fa = Math.PI / 2; sg = 1; }
+  else { hx = c.x - 3.6; hy = c.y - 10.5; fa = -Math.PI / 2; sg = -1; }
+  // raw angle is in a "facing right" frame; map it onto the real facing, mirrored for left/up
+  function A(raw) { return vw === "s" ? (dir > 0 ? raw : Math.PI - raw) : fa + sg * raw; }
+  var ang, a0 = -1.9, a1 = 1.0;
+  if (sw >= 0) { var e = 1 - Math.pow(1 - sw, 2); ang = A(a0 + (a1 - a0) * e);
+    g.save(); var tr = 7; for (var i = 1; i <= tr; i++) { var qa = A(a0 + (a1 - a0) * Math.max(0, e - i * 0.07)); g.globalAlpha = 0.22 * (1 - i / (tr + 1)); g.strokeStyle = kind === "steel" ? "#bfe8ff" : "#fff6dc"; g.lineWidth = 3.2 - i * 0.3; g.lineCap = "round"; g.beginPath(); g.arc(hx, hy, L - 1.5, Math.min(qa, ang), Math.max(qa, ang)); g.stroke(); }
     g.restore();
-  } else ang = idle + Math.sin((c.anim || 0) * 0.5) * 0.05;
+  } else ang = A(-0.6 + Math.sin((c.anim || 0) * 0.5) * 0.05);
   ovBlade(g, hx, hy, ang, L, 1.6, kind === "steel" ? "#bfe0f4" : "#d4dbe2");
-  g.fillStyle = "#c98f66"; g.strokeStyle = "#1a1210"; g.lineWidth = 0.35; g.beginPath(); g.arc(hx, hy, 1.15, 0, 6.283); g.fill(); g.stroke();
+  g.fillStyle = "#a8775a"; g.strokeStyle = "rgba(20,12,8,0.7)"; g.lineWidth = 0.3; g.beginPath(); g.arc(hx, hy, 0.8, 0, 6.283); g.fill(); g.stroke();
 }
 // ---- video-made walk cycles (lazy sheets in wk/) ----
 var WKIM = {};
@@ -12737,18 +12779,32 @@ function ovBfFx(g, t, dt) {
     var s = mac.createBufferSource(), f = mac.createBiquadFilter(), g = mac.createGain(); s.buffer = b; f.type = "highpass"; f.frequency.value = fc; g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.0001, t + dur); s.connect(f); f.connect(g); g.connect(bus); s.start(t);
   }
   function mKick(t) { var o = mac.createOscillator(), g = mac.createGain(); o.type = "triangle"; o.frequency.setValueAtTime(150, t); o.frequency.exponentialRampToValueAtTime(45, t + 0.12); g.gain.setValueAtTime(1, t); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.18); o.connect(g); g.connect(mbus.drum); o.start(t); o.stop(t + 0.2); }
-  // ---- recorded score (files in mus/), falls back to the synth when a file is missing ----
-  var FM = {}, FBAD = {};
-  ["world", "town", "dungeon", "combat", "boss", "title"].forEach(function (k) { var a = new Audio("mus/" + k + ".mp3"); a.loop = true; a.preload = "auto"; a.volume = 0; a.addEventListener("error", function () { FBAD[k] = 1; }); FM[k] = a; });
+  // ---- recorded score: decoded into buffers and looped sample-accurately (no gap), crossfaded between moods ----
+  var FB = {}, FS = {}, FBAD = {}, FMG = null, FLOAD = 0;
+  function mLoadFiles() {
+    if (FLOAD || !mac) return; FLOAD = 1; FMG = mac.createGain(); FMG.gain.value = 0.7; FMG.connect(mac.destination);
+    ["world", "town", "dungeon", "combat", "boss", "title"].forEach(function (k) {
+      try { fetch("mus/" + k + ".mp3").then(function (r) { if (!r.ok) throw 0; return r.arrayBuffer(); }).then(function (ab) { return mac.decodeAudioData(ab); }).then(function (buf) {
+        // trim encoder padding so the loop point is seamless
+        var d = buf.getChannelData(0), n = d.length, s = 0, e = n - 1; while (s < n && Math.abs(d[s]) < 0.004) s++; while (e > s && Math.abs(d[e]) < 0.004) e--;
+        FB[k] = { b: buf, s: s / buf.sampleRate, e: e / buf.sampleRate };
+      }).catch(function () { FBAD[k] = 1; }); } catch (e) { FBAD[k] = 1; }
+    });
+  }
   function mFile(m) {
     var tt = document.getElementById("title"); if (tt && !tt.hidden && m === "world") m = "title";
-    var okm = FM[m] && !FBAD[m] && FM[m].readyState >= 2;
-    Object.keys(FM).forEach(function (k) {
-      var a = FM[k], tg = (mOn && okm && k === m) ? 0.7 : 0, v = a.volume;
-      v = v < tg ? Math.min(tg, v + 0.035) : Math.max(tg, v - 0.035); a.volume = v;
-      if (v > 0 && a.paused) { try { var pr = a.play(); if (pr && pr.catch) pr.catch(function () {}); } catch (e) {} } else if (v === 0 && !a.paused) a.pause();
+    if (!mac) return; mLoadFiles();
+    var okm = !!FB[m], now = mac.currentTime;
+    Object.keys(FB).forEach(function (k) {
+      var on = mOn && okm && k === m, S = FS[k];
+      if (on && !S) { var src = mac.createBufferSource(), g = mac.createGain(); src.buffer = FB[k].b; src.loop = true; src.loopStart = FB[k].s; src.loopEnd = FB[k].e; g.gain.setValueAtTime(0.0001, now); src.connect(g); g.connect(FMG); src.start(now, FB[k].s); S = FS[k] = { src: src, g: g, on: true }; }
+      if (!S) return;
+      if (on && !S.on) { S.on = true; if (S.t) { clearTimeout(S.t); S.t = 0; } }
+      if (on) S.g.gain.setTargetAtTime(1, now, 0.5);
+      else if (S.on) { S.on = false; S.g.gain.setTargetAtTime(0.0001, now, 0.4); S.t = setTimeout(function () { try { S.src.stop(); } catch (e) {} if (FS[k] === S) FS[k] = null; }, 2500); }
     });
-    if (mst) mst.gain.setTargetAtTime(mOn && !okm ? 0.55 : 0, mac.currentTime, 0.4);
+    if (mst) mst.gain.setTargetAtTime(mOn && !okm ? 0.55 : 0, now, 0.4);
+    if (FMG) FMG.gain.setTargetAtTime(mOn ? 0.7 : 0, now, 0.3);
   }
   function mSched() {
     if (!mac || mac.state !== "running") return;
