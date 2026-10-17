@@ -12736,9 +12736,22 @@ function ovBfFx(g, t, dt) {
     var s = mac.createBufferSource(), f = mac.createBiquadFilter(), g = mac.createGain(); s.buffer = b; f.type = "highpass"; f.frequency.value = fc; g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.0001, t + dur); s.connect(f); f.connect(g); g.connect(bus); s.start(t);
   }
   function mKick(t) { var o = mac.createOscillator(), g = mac.createGain(); o.type = "triangle"; o.frequency.setValueAtTime(150, t); o.frequency.exponentialRampToValueAtTime(45, t + 0.12); g.gain.setValueAtTime(1, t); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.18); o.connect(g); g.connect(mbus.drum); o.start(t); o.stop(t + 0.2); }
+  // ---- recorded score (files in mus/), falls back to the synth when a file is missing ----
+  var FM = {}, FBAD = {};
+  ["world", "town", "dungeon", "combat", "boss"].forEach(function (k) { var a = new Audio("mus/" + k + ".mp3"); a.loop = true; a.preload = "auto"; a.volume = 0; a.addEventListener("error", function () { FBAD[k] = 1; }); FM[k] = a; });
+  function mFile(m) {
+    var okm = FM[m] && !FBAD[m] && FM[m].readyState >= 2;
+    Object.keys(FM).forEach(function (k) {
+      var a = FM[k], tg = (mOn && okm && k === m) ? 0.7 : 0, v = a.volume;
+      v = v < tg ? Math.min(tg, v + 0.035) : Math.max(tg, v - 0.035); a.volume = v;
+      if (v > 0 && a.paused) { try { var pr = a.play(); if (pr && pr.catch) pr.catch(function () {}); } catch (e) {} } else if (v === 0 && !a.paused) a.pause();
+    });
+    if (mst) mst.gain.setTargetAtTime(mOn && !okm ? 0.55 : 0, mac.currentTime, 0.4);
+  }
   function mSched() {
     if (!mac || mac.state !== "running") return;
     var m = mDetect(); if (m !== mMood) { mMood = m; mStep = 0; mNext = Math.max(mNext, mac.currentTime + 0.05); }
+    mFile(m);
     var P = MP[m], tr = 1 + 0.06 * (typeof tier === "function" ? tier() : 0), sd = 30 / (P.bpm * tr), wv = mPulse(P.duty), w25 = mPulse(0.25);
     while (mNext < mac.currentTime + 0.6) {
       var t = mNext, s = mStep % 32, bar = s >> 3, e8 = s & 7, ch = P.ch[bar], rt = P.rt[bar], ev = P.ev[s];
