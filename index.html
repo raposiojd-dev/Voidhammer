@@ -4639,7 +4639,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
   function boxFree(a, x, y) { return !solidAt(a, x - 4, y) && !solidAt(a, x + 4, y) && !solidAt(a, x - 4, y - 4) && !solidAt(a, x + 4, y - 4); }
 
   // ---- enter / leave ----
-  function areaUnlocked(id) { var f = cp().f; if (id === "ashford") return true; if (id === "windspire") return !!f.q4done; if (id === "granitekeep") return !!f.q5done; if (id === "luminantc") return !!f.q4; if (id === "ironyard") return !!f.cell; if (id === "foundry") return !!f.q7; if (id === "millroad") return !!f.q1; if (id === "emberfall") return !!f.q1done; if (id === "hollow") return !!f.q2; if (id === "highmarch") return !!f.q2done; if (id === "pass") return !!f.q3; return false; }
+  function areaUnlocked0(id) { var f = cp().f; if (id === "ashford") return true; if (id === "windspire") return !!f.q4done; if (id === "granitekeep") return !!f.q5done; if (id === "luminantc") return !!f.q4; if (id === "ironyard") return !!f.cell; if (id === "foundry") return !!f.q7; if (id === "millroad") return !!f.q1; if (id === "emberfall") return !!f.q1done; if (id === "hollow") return !!f.q2; if (id === "highmarch") return !!f.q2done; if (id === "pass") return !!f.q3; return false; }
   function startAreaVO0(id, sx, sy) { YAWV = YAWS = 0;
     if (!getSpec(id)) return; sfx("door");
     if (sheet) closeSheet(true);
@@ -13768,6 +13768,23 @@ function skWhy(it) {
 try { if (S && !S.contV) { ovContApply(S); save(); } } catch (e) { if (window.console) console.log("cont", e); }
 // painted icons for every kind of loot and kit, and the mill
 try { Object.assign(UIPNG, { blades: "ui_blades", mail: "ui_mail", bows: "ui_bows", kit: "ui_kit", steel: "ui_steel", plate: "ui_plate", longbows: "ui_longbows", shards: "ui_shards", spears: "ui_spears", shields: "ui_shields", axes: "ui_axes", javelins: "ui_javelins", pikes: "ui_pikes", horses: "ui_horses", lances: "ui_lances", destriers: "ui_destriers", mill: "ui_mill" }); } catch (e) {}
+
+// ---- Shadowdeep's side quest: do the Faceless a service and they show you the way under the sea ----
+(function () {
+  try {
+    mkHub("unmadecity", "The Unmade City", "stone", 977, "unmadecity");
+    SITEAREA.unmadecity = "unmadecity"; HUBSITE.unmadecity = "unmadecity"; HUBNAME.unmadecity = "the Unmade City";
+    Q({ opt: 1, id: "quietroad", act: 2, hub: "unmadecity", npc: "faceless", npcDef: { name: "A Faceless Voice", col: "#4a4860", hair: "#2a2838", idle: "You walked through a gate to get here. Loud. We prefer the quiet way. Everyone who takes it owes us something." },
+      name: "The Quiet Road", zone: "quietroad", zname: "The Drowned Tunnel", th: "mine", lv: 3, seed: 913, pal: ["hollowsent", "sealshade"], boss: "deepwarden", obj: "Clear the Deep-Warden from the tunnel under the Unmade City.",
+      gate: "A black mouth under the city, shored with timber. The draught that comes out of it smells of nothing at all.",
+      intro: "Shadowdeep digs. Under the hills, under the sea, under every realm that thinks the water keeps it safe. One tunnel has gone quiet: the Drowned Tunnel, under this city. Something is wearing our Warden's face down there and our own people will not go near it. Clear it. Then we will talk about what you are owed, and what you owe.",
+      yes: "I will clear it.", accept: "Good. The Drowned Tunnel is below the city. Do not trust anything that knows your name.",
+      turn: "The Warden is gone, or whatever was wearing him. The tunnel breathes again. The Faceless Voice does not thank you. It offers, which is more than thanks here.",
+      opts: [{ t: "Show me the tunnels. I will owe Shadowdeep the favour.", reward: { xp: 400 }, set: { tunnels: 1 }, text: "A map that is not a map is pressed into your hand: a feel for the dark. Every shadow tunnel on every coast will know you now. Somewhere, a ledger with no names in it gains a line." },
+        { t: "Keep your tunnels. Pay me in silver.", reward: { xp: 400, crowns: 450, item: 2 }, set: { st_silver: 1 }, text: "Silver, and a look you cannot read because there is no face to read it on. The tunnels stay closed to you. Shadowdeep does not ask twice." }] });
+  } catch (e) { if (window.console) console.log("quietroad", e); }
+})();
+function areaUnlocked(id) { if (id === "unmadecity") return true; return areaUnlocked0(id); }
 
   // ---- input ----
   (function () {
