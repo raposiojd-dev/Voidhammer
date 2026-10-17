@@ -11233,7 +11233,7 @@ function qFinish(q, opt, idx) { qFinish0(q, opt, idx); if (opt && typeof opt.eff
       var U = UPB[st];
       h += '<div class="mkh"><small>STEP ' + (st + 1) + " OF 3</small><h1>" + U.title + "</h1><p>" + U.ask + '</p></div><div class="mkl">';
       U.opts.forEach(function (o, i) {
-        h += '<button class="mkcard' + (MK.pick[st] === o.id ? " on" : "") + '" data-mk="' + o.id + '"><b>' + o.name + '</b><span class="mkd">' + o.line + '</span><span class="mkg"><i>You start with</i> ' + mkUpbText(o) + '</span><span class="mkc"><i>Cost</i> ' + o.cost + "</span></button>";
+        h += '<button class="mkcard' + (MKART[o.id] ? " hasart" : "") + (MK.pick[st] === o.id ? " on" : "") + '" data-mk="' + o.id + '">' + mkArt(o.id) + '<b>' + o.name + '</b><span class="mkd">' + o.line + '</span><span class="mkg"><i>You start with</i> ' + mkUpbText(o) + '</span><span class="mkc"><i>Cost</i> ' + o.cost + "</span></button>";
       });
       h += '</div><div class="mkb"><button id="mkback">Back</button><button id="mknext" class="solid"' + (MK.pick[st] ? "" : " disabled") + ">Next</button></div>";
     } else {
@@ -12416,6 +12416,72 @@ function ovBfFx(g, t, dt) {
   }
   init();
 })();
+// ---- Diablo-style frame skin: dark stone panels, bronze filigree borders, ember highlights ----
+(function () {
+  // 9-slice ornate frame as an SVG border-image (corners get a small flourish)
+  var fr = encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="60" height="60" viewBox="0 0 60 60">' +
+    '<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#e3c27a"/><stop offset=".5" stop-color="#8a6126"/><stop offset="1" stop-color="#e3c27a"/></linearGradient></defs>' +
+    '<rect x="2.5" y="2.5" width="55" height="55" fill="none" stroke="url(#g)" stroke-width="1.6"/>' +
+    '<rect x="5.5" y="5.5" width="49" height="49" fill="none" stroke="#5a3f18" stroke-width=".8" opacity=".9"/>' +
+    '<g fill="none" stroke="url(#g)" stroke-width="1.3" stroke-linecap="round">' +
+    '<path d="M2.5 14 L2.5 2.5 L14 2.5 M8 2.5 Q8 8 2.5 8"/><path d="M46 2.5 L57.5 2.5 L57.5 14 M52 2.5 Q52 8 57.5 8"/>' +
+    '<path d="M2.5 46 L2.5 57.5 L14 57.5 M8 57.5 Q8 52 2.5 52"/><path d="M46 57.5 L57.5 57.5 L57.5 46 M52 57.5 Q52 52 57.5 52"/></g>' +
+    '<g fill="#e3c27a"><circle cx="2.5" cy="2.5" r="2.2"/><circle cx="57.5" cy="2.5" r="2.2"/><circle cx="2.5" cy="57.5" r="2.2"/><circle cx="57.5" cy="57.5" r="2.2"/><circle cx="30" cy="2.5" r="1.3"/><circle cx="30" cy="57.5" r="1.3"/><circle cx="2.5" cy="30" r="1.3"/><circle cx="57.5" cy="30" r="1.3"/></g></svg>');
+  var st = document.createElement("style");
+  st.textContent = [
+    ":root{--d4-bg:#0d0b09;--d4-panel:linear-gradient(180deg,#1c1713,#0f0c0a 60%,#0a0807);--d4-gold:#e3c27a;--d4-gold2:#8a6126;--d4-red:#7a1a14;--d4-text:#e6d8bb;--d4-dim:#9b8b6c}",
+    ".d4{border:14px solid transparent;border-image:url(\"data:image/svg+xml," + fr + "\") 20 / 14px stretch;background:var(--d4-panel) padding-box;box-shadow:0 0 0 1px #2a211a,0 10px 30px rgba(0,0,0,.7),inset 0 0 40px rgba(0,0,0,.6)}",
+    // creator cards
+    "body #mkc .mkcard{border-radius:3px!important;border:1px solid #3d2e18!important;background:linear-gradient(180deg,#1a1510,#0e0b08 70%)!important;box-shadow:inset 0 0 0 1px rgba(227,194,122,.08),0 4px 14px rgba(0,0,0,.6);position:relative;padding:.7rem .9rem .7rem .9rem!important;overflow:hidden}",
+    "body #mkc .mkcard:before{content:'';position:absolute;inset:3px;border:1px solid rgba(227,194,122,.16);pointer-events:none}",
+    "body #mkc .mkcard.on{border-color:#e3c27a!important;box-shadow:inset 0 0 0 1px rgba(227,194,122,.35),0 0 22px rgba(224,160,70,.35)!important;background:linear-gradient(180deg,#2a2014,#14100a 70%)!important}",
+    "body #mkc .mkcard b{font-family:'Cinzel',var(--serif2),Georgia,serif!important;font-weight:600!important;font-size:1rem!important;letter-spacing:.03em!important;color:#efd79a!important}",
+    "body #mkc .mkcard.hasart{padding-left:calc(96px + .9rem)!important;min-height:92px}",
+    "body #mkc .mkcard .mkart{position:absolute;left:0;top:0;bottom:0;width:96px;background-size:cover;background-position:center;border-right:1px solid #3d2e18;box-shadow:inset -14px 0 18px -10px rgba(0,0,0,.9);filter:saturate(.85) contrast(1.08)}",
+    "body #mkc .mkcard .mkart:after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,rgba(0,0,0,0) 60%,#0e0b08)}",
+    "body #mkc h1{font-family:'Cinzel',var(--serif2),Georgia,serif!important;font-weight:700!important;letter-spacing:.06em;text-shadow:0 2px 10px rgba(227,194,122,.25)}",
+    "body #mkc .mkb button{border-radius:3px!important;border:1px solid #4a3a1c!important;background:linear-gradient(180deg,#1f1810,#0f0b08)!important;color:#dcc89a!important;font-family:'Cinzel',Georgia,serif!important;font-weight:700!important;letter-spacing:.14em!important;box-shadow:inset 0 0 0 1px rgba(227,194,122,.1),0 3px 10px rgba(0,0,0,.6)}",
+    "body #mkc .mkb button.solid{border-color:#e3c27a!important;background:linear-gradient(180deg,#5a3d16,#2b1c0b)!important;color:#f6e3b0!important;box-shadow:inset 0 0 0 1px rgba(227,194,122,.35),0 0 18px rgba(224,160,70,.3)!important}",
+    "body #mkc .mkp,body #mkc .mks{border-radius:3px!important;border:1px solid #3d2e18!important;background:linear-gradient(180deg,#1a1510,#0e0b08)!important}",
+    "body #mkc .mkp img{border-radius:3px!important;border:1px solid #6a4f22!important;box-shadow:0 0 14px rgba(224,160,70,.25)}",
+    "body #mkc .mkchip{border-radius:3px!important;border:1px solid #6a4f22!important;background:#15100a!important}",
+    // title
+    "#title .tbtns button{border-radius:3px!important;font-family:'Cinzel',Georgia,serif!important;font-weight:700!important;letter-spacing:.16em!important;border:1px solid #5a4320!important;background:linear-gradient(180deg,#1f1810,#0f0b08)!important;color:#dcc89a!important;box-shadow:inset 0 0 0 1px rgba(227,194,122,.12),0 4px 14px rgba(0,0,0,.6)!important}",
+    "#title .tbtns #tnew,#title .tbtns #tcont{border-color:#e3c27a!important;background:linear-gradient(180deg,#6a4718,#2b1c0b)!important;color:#f8e6b4!important;box-shadow:inset 0 0 0 1px rgba(227,194,122,.4),0 0 24px rgba(224,160,70,.35)!important;text-shadow:0 1px 2px #000}",
+
+    // ---- global sheet / control skin (applies to every menu) ----
+    "body button{border-radius:3px;border:1px solid #4a3a1c;background:linear-gradient(180deg,#221a12,#100c08);color:#dcc89a;box-shadow:inset 0 0 0 1px rgba(227,194,122,.1),0 3px 10px rgba(0,0,0,.6);text-shadow:0 1px 1px #000}",
+    "body button:active:not(:disabled){border-color:#e3c27a;background:#2a2014}",
+    "body .solid,body button.amber,body .row button.amber,body .tabs button.on,body .optrow button.on{border-color:#e3c27a!important;background:linear-gradient(180deg,#6a4718,#2b1c0b)!important;color:#f8e6b4!important;box-shadow:inset 0 0 0 1px rgba(227,194,122,.4),0 0 16px rgba(224,160,70,.3)!important;text-shadow:0 1px 2px #000!important}",
+    "body .sheet{border-radius:6px 6px 0 0;border:1px solid #5a4320;border-bottom:0;background:linear-gradient(180deg,#1c1712,#0e0b09 40%,#090706);box-shadow:0 -14px 50px rgba(0,0,0,.8),inset 0 1px 0 rgba(227,194,122,.25),inset 0 0 60px rgba(0,0,0,.6)}",
+    "body .sheet::before{width:120px;height:3px;border-radius:0;background:linear-gradient(90deg,transparent,#e3c27a,transparent);margin:8px auto 0}",
+    "body .sx{border-radius:3px;font-family:'Cinzel',Georgia,serif;font-weight:700}",
+    "body h2{font-family:'Cinzel',var(--serif2),Georgia,serif;font-weight:700;letter-spacing:.06em;color:#efd79a;text-shadow:0 2px 12px rgba(227,194,122,.25)}",
+    "body .sec{font-family:'Cinzel',Georgia,serif;font-weight:700;color:#d8b464;letter-spacing:.16em}body .sec::after{background:linear-gradient(90deg,rgba(227,194,122,.55),transparent)}body .sec::before{content:'\\25C6';font-size:.55em;color:#e3c27a}",
+    "body .row,body .ocard,body .entry,body .slot,body .warn,body .mkp,body .mks{border-radius:3px;border:1px solid #3d2e18;background:linear-gradient(180deg,#1a1510,#0e0b08 80%);box-shadow:inset 0 0 0 1px rgba(227,194,122,.08),0 3px 12px rgba(0,0,0,.5)}",
+    "body .row button{border-radius:3px;font-family:'Cinzel',Georgia,serif;font-weight:700;font-size:.72rem;letter-spacing:.08em}",
+    "body .ocard.on{border-color:#e3c27a;box-shadow:inset 0 0 0 1px rgba(227,194,122,.35),0 0 22px rgba(224,160,70,.35)}",
+    "body .tabs{border-radius:3px;background:#0a0806;border:1px solid #3d2e18;padding:3px}body .tabs button{border-radius:2px;font-family:'Cinzel',Georgia,serif;font-weight:700;letter-spacing:.08em}",
+    "body .optrow button{border-radius:3px}",
+    "body .ico,body .bch>svg{border-radius:3px;background:radial-gradient(#2a2218,#0a0806);border:1px solid #5a4320}",
+    "body input[type=text],body .bprev input,body input[type=number],body select,body textarea{border-radius:3px;background:#0a0806;border:1px solid #5a4320;color:#efe0bf;box-shadow:inset 0 2px 8px rgba(0,0,0,.8),0 0 0 1px rgba(227,194,122,.08);font-family:var(--serif2),Georgia,serif}",
+    "body input[type=text]:focus,body .bprev input:focus{outline:none;border-color:#e3c27a;box-shadow:inset 0 2px 8px rgba(0,0,0,.8),0 0 12px rgba(224,160,70,.3)}",
+    "body #adlg{border-radius:4px;border:1px solid #5a4320;background:linear-gradient(180deg,#1c1712,#0b0907);box-shadow:0 10px 40px rgba(0,0,0,.8),inset 0 0 0 1px rgba(227,194,122,.12)}",
+    "body #adlg .nm{font-family:'Cinzel',Georgia,serif;font-weight:700;color:#e3c27a}",
+    "body #adlg .ch button{border-radius:3px;background:linear-gradient(180deg,#1f1810,#0f0b08);border:1px solid #4a3a1c}body #adlg .ch button:first-child{border-color:#e3c27a;background:linear-gradient(180deg,#3a2a12,#1a1208)}",
+    "body #adlg .face{border-radius:3px;border:1px solid #e3c27a}",
+    "body .mkchip,body .chip,body .tag{border-radius:3px}",
+    // in-area HUD buttons
+    "body .abtns button,body #abtn button{border-radius:3px;font-family:'Cinzel',Georgia,serif;font-weight:700;letter-spacing:.1em;border:1px solid #6a4f22;background:linear-gradient(180deg,rgba(34,26,18,.92),rgba(12,9,6,.95));box-shadow:inset 0 0 0 1px rgba(227,194,122,.14),0 3px 10px rgba(0,0,0,.7)}",
+    "body #aatk,body #acast,body #abow{font-family:'Cinzel',Georgia,serif;font-weight:700;letter-spacing:.12em}",
+    "body #bfb button{border-radius:3px;font-family:'Cinzel',Georgia,serif;font-weight:700;letter-spacing:.08em;border:1px solid #5a4320}",
+    "body:has(#title:not([hidden])) #savebtn,body:has(#title:not([hidden])) #mptab,body:has(#title:not([hidden])) button[style*='writing-mode']{display:none!important}"
+  ].join("\n");
+  document.head.appendChild(st);
+})();
+// card art for the character creator (mus-free; images in img/mk_<id>.webp)
+var MKART = { farm: 1, wagon: 1, forge: 1, keep: 1, road: 1, archive: 1, hunter: 1, thief: 1, levy: 1, acolyte: 1, caravan: 1, void: 1, sellsword: 1, outlaw: 1, retainer: 1, clerk: 1, journeyman: 1, pilgrim: 1 };
+function mkArt(id) { return MKART[id] ? '<span class="mkart" style="background-image:url(img/mk_' + id + '.webp)"></span>' : ""; }
 
   // ---- input ----
   (function () {
