@@ -11577,13 +11577,13 @@ function qFinish(q, opt, idx) { qFinish0(q, opt, idx); if (opt && typeof opt.eff
   function hkEvDay() {
     if (!S || !S.sites || sheet || B || (typeof mode !== "undefined" && mode !== "map")) return;
     if (AR) return;
-    var e = S.hkEv = S.hkEv || { next: S.day + 4, last: "" };
+    var e = S.hkEv = S.hkEv || { next: S.day + 8, last: "" };
     if (S.day < e.next) return;
     if (Math.random() > 0.6) return;
     var pool = HKEVS.filter(function (v) { return v.id !== e.last && (!v.need || v.need()); }), tot = 0;
     pool.forEach(function (v) { tot += v.w; }); var r = Math.random() * tot, pick = pool[0];
     for (var i = 0; i < pool.length; i++) { r -= pool[i].w; if (r <= 0) { pick = pool[i]; break; } }
-    e.last = pick.id; e.next = S.day + 6 + Math.floor(Math.random() * 5);
+    e.last = pick.id; e.next = S.day + 16 + Math.floor(Math.random() * 12);
     HKEV = { ev: pick, res: null }; openSheet("hkev");
   }
   function hkPick(a) {
