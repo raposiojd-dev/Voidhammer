@@ -12725,7 +12725,7 @@ function writSpec(id) {
     } };
 }
 function writSheet(hub) {
-  var s = site(hub), L = writList(hub), n = (S.writs && S.writs.n) || 0, h = "<h2>Writ board</h2><p class=\"sub\">" + (s ? s.name : hub) + " · " + n + " writs honoured · new writs in " + Math.max(1, Math.ceil(7 - ((S.day || 1) % 7))) + " days</p>";
+  if (!hub) { var bd = 1e9, bs = null; for (var qi = 0; qi < S.sites.length; qi++) { var dq = Math.hypot(S.px - S.sites[qi].x, S.py - S.sites[qi].y); if (dq < bd) { bd = dq; bs = S.sites[qi]; } } hub = bs ? bs.id : "ashford"; } var s = site(hub), L = writList(hub), n = (S.writs && S.writs.n) || 0, h = "<h2>Writ board</h2><p class=\"sub\">" + (s ? s.name : hub) + " · " + n + " writs honoured · new writs in " + Math.max(1, Math.ceil(7 - ((S.day || 1) % 7))) + " days</p>";
   h += '<p class="dim-t">Contracts posted by the town. Each one is a hole in the ground with something at the bottom that wants to stay there. Harder as you grow. Pays crowns, experience and whatever the last room is keeping.</p>';
   L.forEach(function (w) {
     var tag = ["", "Easy", "Fair", "Hard", "Grim", "Deadly", "Mythic"][w.lv] || "Deadly";
@@ -12795,7 +12795,10 @@ function ovFloats(g, a) {
     // battle command buttons and map top bar
     "#bfb button{background:linear-gradient(180deg,#221a12,#0e0a07)!important;color:#dcc89a!important;box-shadow:inset 0 0 0 1px rgba(227,194,122,.12),0 3px 10px rgba(0,0,0,.7)!important}#bfb button.on,#bfb button.solid{border-color:#e3c27a!important;background:linear-gradient(180deg,#6a4718,#2b1c0b)!important;color:#f8e6b4!important}",
     "#mtop button,#mapbar button,.mbtns button{border-radius:3px!important;font-family:'Cinzel',Georgia,serif!important;font-weight:700!important;letter-spacing:.08em!important}",
-    "#bnav button,#bottombar button,.bnav button{font-family:'Cinzel',Georgia,serif!important;font-weight:700!important;letter-spacing:.06em!important}"
+    "#bnav button,#bottombar button,.bnav button{font-family:'Cinzel',Georgia,serif!important;font-weight:700!important;letter-spacing:.06em!important}",
+    // magic buttons: deep violet with a bronze frame instead of flat purple
+    "button.cast,#bfb button.cast{color:#e9ddff!important;border:1px solid #8a6cc0!important;background:linear-gradient(180deg,#2a1d3d,#120b1c)!important;box-shadow:inset 0 0 0 1px rgba(201,162,74,.22),0 0 12px rgba(154,124,208,.28),0 3px 10px #000!important;text-shadow:0 0 6px rgba(190,160,255,.6)!important;animation:none!important}",
+    "button.cast:active{background:linear-gradient(180deg,#3a2a52,#1a1028)!important}"
   ].join("\n");
   document.head.appendChild(st);
 })();
