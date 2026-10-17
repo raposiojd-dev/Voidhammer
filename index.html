@@ -2257,13 +2257,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
     }
 
     ctx.lineCap = "round"; ctx.lineJoin = "round";
-    ROADS.forEach(function (r, idx) {
-      var a = site(r[0]), b = site(r[1]); if (!a || !b) return;
-      var mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2, dx = b.x - a.x, dy = b.y - a.y, l = Math.hypot(dx, dy) || 1, off = (hash(idx, 5) - 0.5) * 36;
-      var cx = mx - dy / l * off, cy = my + dx / l * off;
-      ctx.strokeStyle = "rgba(24,18,10,0.6)"; ctx.lineWidth = 6; ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.quadraticCurveTo(cx, cy, b.x, b.y); ctx.stroke();
-      ctx.strokeStyle = "rgba(112,86,50,0.95)"; ctx.lineWidth = 4.6; ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.quadraticCurveTo(cx, cy, b.x, b.y); ctx.stroke(); ctx.strokeStyle = "rgba(190,160,108,0.95)"; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.quadraticCurveTo(cx, cy, b.x, b.y); ctx.stroke(); ctx.strokeStyle = "rgba(96,72,42,0.55)"; ctx.lineWidth = 0.8; ctx.setLineDash([5, 4]); ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.quadraticCurveTo(cx, cy, b.x, b.y); ctx.stroke(); ctx.setLineDash([]);
-    });
+    ovRoadsDraw();
 
     var order = S.sites.slice().sort(function (p, q) { return p.y - q.y; });
     order.forEach(function (s) { drawSite(s, now); });
@@ -2354,7 +2348,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
   function strHash(s) { var h = 7; for (var i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0; return Math.abs(h); }
 
   // one foot soldier, drawn facing right, origin at his feet
-  function person(x, y, k, dir, phase, o) {
+  function personOld(x, y, k, dir, phase, o) {
     ctx.save(); ctx.translate(x, y); ctx.scale(dir * k, k);
     var sw = Math.sin(phase) * 2.4, bob = Math.abs(Math.cos(phase)) * 0.9;
     if (!o.ghost) { ctx.fillStyle = "rgba(0,0,0,0.3)"; ctx.beginPath(); ctx.ellipse(0, 0.5, 4.2, 1.6, 0, 0, 6.283); ctx.fill(); }
@@ -2378,7 +2372,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
     ctx.restore();
   }
 
-  function horseRider(x, y, dir, phase, moving, t, col) {
+  function horseRiderOld(x, y, dir, phase, moving, t, col) {
     col = col || "#c8873a";
     ctx.save(); ctx.translate(x, y); ctx.scale(dir * 1.25, 1.25);
     var sw = moving ? Math.sin(phase * 1.2) * 3 : 0, bob = moving ? Math.abs(Math.cos(phase * 1.2)) * 0.8 : 0;
@@ -2428,10 +2422,10 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
     all.sort(function (a, b) { return a.y - b.y; });
     var merc = S.from.merc || 0, mcount = Math.round(n * merc / Math.max(1, T()));
     all.forEach(function (a) {
-      if (a.lead) { horseRider(S.px, S.py, dir, phase, moving, now); return; }
+      if (a.lead) { horseRiderNew(S.px, S.py, dir, phase, moving, now); return; }
       var f = a.f, isMerc = f.i < mcount;
       var fdir = dir; var pp = TRAIL[TRAIL.length - 1 - f.i * 4]; var np = TRAIL[TRAIL.length - f.i * 4]; if (pp && np && Math.abs(np.x - pp.x) > 0.2) fdir = np.x > pp.x ? 1 : -1;
-      person(f.x, f.y, 1, fdir, phase + f.i * 0.8, isMerc
+      personNew(f.x, f.y, 1, fdir, phase + f.i * 0.8, isMerc
         ? { body: "#4a4f58", trim: "#c8873a", helm: "#8a9096", spear: false, sword: true, shield: "#6e3a2a" }
         : { body: "#8a6a3a", trim: "#c8873a", helm: "#6b5a3a", spear: true, shield: "#c8873a", legs: "#3a2c1c" });
     });
@@ -6696,7 +6690,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
   }
   // ---- v72: strategic map art: soldiers, riders, towns, castles, fine ground detail ----
   function lg2(x0, y0, x1, y1, stops) { var g = ctx.createLinearGradient(x0, y0, x1, y1); stops.forEach(function (s) { g.addColorStop(s[0], s[1]); }); return g; }
-  function person(x, y, k, dir, phase, o) {
+  function personOld(x, y, k, dir, phase, o) {
     ctx.save(); ctx.translate(x, y); ctx.scale(dir * k, k);
     var sw = Math.sin(phase) * 2.4, bob = Math.abs(Math.cos(phase)) * 0.9, body = o.body || "#6a5a48";
     if (!o.ghost) { ctx.fillStyle = "rgba(0,0,0,0.3)"; ctx.beginPath(); ctx.ellipse(0, 0.5, 4.4, 1.7, 0, 0, 6.283); ctx.fill(); }
@@ -6815,7 +6809,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
     if (k === "voidtouched") { sp.glow = "#b890ff"; sp.eye = "#b890ff"; }
     return faceUrl("o3:" + k, sp);
   }
-  function horseRider(x, y, dir, phase, moving, t, col) {
+  function horseRiderOld(x, y, dir, phase, moving, t, col) {
     if (col) { horseRider0(x, y, dir, phase, moving, t, col); return; }
     var K = 1.18, sw = moving ? Math.sin(phase * 1.2) * 3 : 0, bob = moving ? Math.abs(Math.cos(phase * 1.2)) * 0.8 : 0;
     ctx.save(); ctx.translate(x, y); ctx.scale(K, K);
@@ -12111,6 +12105,51 @@ function titleFrame() {
   ].join("\n");
   document.head.appendChild(st);
 })();
+// medieval roads and painted party on the world map
+var ROADC = {};
+function ovRoadPts(r, idx, a, b) {
+  var k = r[0] + ">" + r[1]; if (ROADC[k]) return ROADC[k];
+  var dx = b.x - a.x, dy = b.y - a.y, l = Math.hypot(dx, dy) || 1, nx = -dy / l, ny = dx / l, N = Math.max(6, Math.round(l / 20)), p1 = hash(idx, 7) * 6.28, p2 = hash(idx, 9) * 6.28, bow = (hash(idx, 5) - 0.5) * 40, pts = [];
+  for (var i = 0; i <= N; i++) {
+    var t = i / N, env = Math.sin(Math.PI * t), o = (bow * env + env * (5.5 * Math.sin(t * l / 38 + p1) + 3 * Math.sin(t * l / 15 + p2)));
+    pts.push({ x: a.x + dx * t + nx * o, y: a.y + dy * t + ny * o });
+  }
+  return (ROADC[k] = pts);
+}
+function ovRoadPath(pts) {
+  ctx.beginPath(); ctx.moveTo(pts[0].x, pts[0].y);
+  for (var i = 1; i < pts.length - 1; i++) { var m = { x: (pts[i].x + pts[i + 1].x) / 2, y: (pts[i].y + pts[i + 1].y) / 2 }; ctx.quadraticCurveTo(pts[i].x, pts[i].y, m.x, m.y); }
+  ctx.lineTo(pts[pts.length - 1].x, pts[pts.length - 1].y);
+}
+function ovRoadsDraw() {
+  ctx.lineCap = "round"; ctx.lineJoin = "round";
+  var P = [];
+  ROADS.forEach(function (r, idx) { var a = site(r[0]), b = site(r[1]); if (a && b) P.push(ovRoadPts(r, idx, a, b)); });
+  var passes = [["rgba(30,40,14,0.4)", 14], ["rgba(70,56,30,0.6)", 11], ["#7a5e36", 8.4], ["#ad8d60", 6.6], ["#c9ac7c", 4.4]];
+  passes.forEach(function (ps) { ctx.strokeStyle = ps[0]; ctx.lineWidth = ps[1]; P.forEach(function (pts) { ovRoadPath(pts); ctx.stroke(); }); });
+  // cart ruts
+  ctx.lineWidth = 0.9; ctx.strokeStyle = "rgba(60,42,20,0.5)";
+  P.forEach(function (pts) { [-1.5, 1.5].forEach(function (o) { var q = pts.map(function (p, i) { var n = pts[Math.min(i + 1, pts.length - 1)], m = pts[Math.max(i - 1, 0)], tx = n.x - m.x, ty = n.y - m.y, tl = Math.hypot(tx, ty) || 1; return { x: p.x - ty / tl * o, y: p.y + tx / tl * o }; }); ovRoadPath(q); ctx.stroke(); }); });
+  // stones and tufts along the verge
+  P.forEach(function (pts, pi) { for (var i = 1; i < pts.length - 1; i++) { var h = hash(pi * 97 + i, 3); if (h < 0.55) continue; var s = h < 0.8 ? -1 : 1, p = pts[i], n = pts[i + 1], tx = n.x - p.x, ty = n.y - p.y, tl = Math.hypot(tx, ty) || 1, off = 7 + hash(i, pi) * 2.2;
+    var qx = p.x - ty / tl * off * s, qy = p.y + tx / tl * off * s; ctx.fillStyle = h > 0.9 ? "rgba(120,116,104,0.9)" : "rgba(58,78,30,0.8)"; ctx.beginPath(); ctx.ellipse(qx, qy, h > 0.9 ? 1.3 : 1.7, 1, 0, 0, 6.283); ctx.fill(); } });
+}
+function personNew(x, y, k, dir, phase, o) {
+  var id = o && o.sword ? "tp_sword" : "tp_spear", im = typeof spImg === "function" && spImg(id);
+  if (!im) return personOld(x, y, k, dir, phase, o);
+  var h = 15 * (k || 1), w = im.naturalWidth / im.naturalHeight * h, bob = -Math.abs(Math.sin(phase)) * 0.9;
+  ctx.save(); ctx.fillStyle = "rgba(0,0,0,0.3)"; ctx.beginPath(); ctx.ellipse(x, y + 1, w * 0.4, 2, 0, 0, 6.283); ctx.fill();
+  ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = "high"; ctx.translate(x, y + bob); if (dir < 0) ctx.scale(-1, 1); ctx.drawImage(im, -w / 2, -h, w, h); ctx.restore();
+}
+function horseRiderNew(x, y, dir, phase, moving, t, col) {
+  var im = !col && typeof spImg === "function" && spImg("tp_knight");
+  if (!im) return horseRiderOld(x, y, dir, phase, moving, t, col);
+  var h = 46, w = im.naturalWidth / im.naturalHeight * h, bob = moving ? -Math.abs(Math.sin(phase)) * 1.6 : 0;
+  ctx.save(); var lg = ctx.createRadialGradient(x, y - 12, 2, x, y - 12, 30); lg.addColorStop(0, "rgba(255,230,160,0.55)"); lg.addColorStop(1, "rgba(255,230,160,0)"); ctx.fillStyle = lg; ctx.beginPath(); ctx.arc(x, y - 12, 30, 0, 6.283); ctx.fill(); ctx.fillStyle = "rgba(0,0,0,0.35)"; ctx.beginPath(); ctx.ellipse(x, y + 1, w * 0.42, 3.2, 0, 0, 6.283); ctx.fill();
+  ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = "high"; ctx.translate(x, y + bob); if (dir < 0) ctx.scale(-1, 1); ctx.drawImage(im, -w / 2, -h, w, h); ctx.restore();
+}
+function horseRider(x,y,dir,phase,moving,t,col){ return horseRiderNew(x, y, dir, phase, moving, t, col); }
+function person(x,y,k,dir,phase,o){ return personNew(x, y, k, dir, phase, o); }
 
   // ---- input ----
   (function () {
