@@ -4755,7 +4755,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
     checkClear();
   }
   function hurtP1(n) {
-    var p = AR.p; if (p.inv > 0) return; n = Math.max(0.25, n * COOP.dm() * (1 - armRed()) * (1 + 0.45 * tier())); if (p.wallT > AR.t) n *= 1 - (p.wallRed || 0.4); n *= 1 - Math.min(0.6, skfx("tough")); if (Math.random() < Math.min(0.5, skfx("dodge"))) { p.inv = 0.5; AR.floats.push({ x: p.x, y: p.y - 16, t: 0.7, s: "dodge", col: "#bfe8ff" }); return; } p.hurtT = AR.t; p.adrT = AR.t + skfx("adren"); p.hp -= n; sfx("hurt"); p.inv = 0.55; p.flash = 0.25;
+    var p = AR.p; if (p.inv > 0) return; n = Math.max(0.25, n * COOP.dm() * (1 - armRed()) * (1 + 0.45 * tier())); if (p.wallT > AR.t) n *= 1 - (p.wallRed || 0.4); n *= 1 - Math.min(0.6, skfx("tough")); if (Math.random() < Math.min(0.5, skfx("dodge"))) { p.inv = 0.5; AR.floats.push({ x: p.x, y: p.y - 16, t: 0.7, s: "dodge", col: "#bfe8ff" }); return; } p.hurtT = AR.t; p.adrT = AR.t + skfx("adren"); p.hp -= n; sfx("hurt"); p.inv = 0.55; p.flash = 0.25; AR.floats.push({ x: p.x + 8, y: p.y - 24, t: 0.9, s: "−" + (Math.round(n * 10) / 10), hurt: 1 });
     if (p.hp <= 0 && (AR.ward || 0) < sk("deathward")) { AR.ward = (AR.ward || 0) + 1; p.hp = p.max * 0.5; p.inv = 2; aToast("The Death-ward holds. You stand."); return; }
     if (p.hp <= 0) { var lose = Math.floor(S.crowns * 0.1); S.crowns -= lose; aToast("You fall. Someone drags you back" + (lose ? " and takes " + lose + " crowns for the trouble." : ".")); p.hp = p.max; p.x = AR.spawn[0]; p.y = AR.spawn[1]; p.inv = 2; AR.proj = []; AR.en.forEach(function (e) { if (!e.dead && !e.gone) { e.x = e.hx; e.y = e.hy; e.hp = e.hpm; e.aggro = false; e.yield = false; } }); }
   }
@@ -4872,7 +4872,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
     if (a.sp.top) a.sp.top(g, a, cx, cy, VW, VH);
     a.proj.forEach(function (q) { ovProjA(g, q, a); });
     ovWaveA(g, a); ovFxA(g, a); ovDiablo(g, a);
-    g.font = "bold 8px monospace"; a.floats.forEach(function (f) { g.fillStyle = f.col || "#ffe08a"; g.fillText(f.s, Math.round(f.x) - 6, Math.round(f.y)); });
+    ovFloats(g, a);
     g.restore(); if (YW) g.restore();
     if (cp().on) drawGuide(g, VW, VH, cx, cy);
     ovMiniTick(a);
@@ -9452,7 +9452,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
     var fr0 = g.fillRect; g.fillRect = function (x, y, w, h) { if (/^rgba\(10, ?8, ?6, ?0\.(78|8|85)\)$/.test(String(this.fillStyle))) return; return fr0.call(this, x, y, w, h); };
     g.fillText = function (t, x, y) {
       var m = this.getTransform(), lw = this.measureText(t).width, fz = /(\d+(?:\.\d+)?)px/.exec(this.font);
-      OVTX.push({ t: String(t), cx: x + lw / 2, y: y, m: m, fz: fz ? +fz[1] : 8, fs: this.fillStyle, al: this.globalAlpha });
+      OVTX.push({ t: String(t), cx: x + lw / 2, y: y, m: m, fz: fz ? +fz[1] : 8, fs: this.fillStyle, al: this.globalAlpha, ft: this.__ft || null });
     };
   }
   function ovTxDraw(gd, W, H, dpr, src) {
@@ -9468,6 +9468,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
       } else { X = ux * k; Y = uy * k; sc = k; }
       if (X < -200 || X > W + 200 || Y < -20 || Y > H + 20) return;
       var px = Math.max(8 * dpr, o.fz * Math.hypot(m.a, m.b) * sc * 0.8);
+      if (o.ft) { var fpx = px * 1.15; gd.font = "700 " + fpx.toFixed(1) + "px 'Cinzel', Georgia, serif"; gd.globalAlpha = o.al; gd.lineWidth = Math.max(2, fpx * 0.16); gd.strokeStyle = o.ft.stroke; gd.strokeText(o.t, X, Y); gd.fillStyle = o.fs; gd.fillText(o.t, X, Y); return; }
       gd.font = "700 " + px.toFixed(1) + "px system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif";
       var tw = gd.measureText(o.t).width, ph = px * 0.5;
       gd.globalAlpha = 1; gd.fillStyle = "rgba(10,8,6,0.72)";
@@ -12756,6 +12757,48 @@ document.addEventListener("click", function (ev) {
   ev.stopPropagation(); ev.preventDefault(); var act = b.getAttribute("data-act"), a = b.getAttribute("data-a");
   if (act === "writs") openSheet("writs", a); else writGo(a);
 }, true);
+// ---- Diablo-style floating combat text and HUD orbs ----
+function ovFloats(g, a) {
+  g.save(); g.textAlign = "center"; g.lineJoin = "round";
+  a.floats.forEach(function (f) {
+    if (f.t0 === undefined) { f.t0 = f.t; f.dx = (Math.random() - 0.5) * 6; }
+    var k = 1 - f.t / f.t0, s = String(f.s), num = /^[−-]?\d+(\.\d+)?$/.test(s), gain = /^\+/.test(s), loss = /^[−-]/.test(s) || f.hurt;
+    var pop = k < 0.18 ? 1.35 - (k / 0.18) * 0.35 : 1, al = k > 0.7 ? 1 - (k - 0.7) / 0.3 : 1;
+    var size, col, stroke = "rgba(0,0,0,0.85)";
+    if (f.hurt) { size = 10 * pop; col = "#ff4a3a"; }
+    else if (num) { var v = parseFloat(s.replace("−", "-")); var crit = v >= 3; size = (crit ? 12 : 9) * pop; col = crit ? "#ffb347" : "#fff2c8"; if (crit) stroke = "rgba(120,30,0,0.9)"; }
+    else if (gain) { size = 8 * pop; col = f.col || "#9fe07a"; }
+    else if (loss) { size = 8 * pop; col = f.col || "#ff7a6a"; }
+    else { size = 6.5; col = f.col || "#e8dcb8"; }
+    g.globalAlpha = al; g.font = (num || f.hurt ? "700 " : "600 ") + size.toFixed(1) + "px 'Cinzel',Georgia,serif";
+    var x = Math.round(f.x + (f.dx || 0)), y = Math.round(f.y - (num ? k * 6 : 0));
+    g.__ft = { stroke: stroke, big: num || f.hurt }; g.fillStyle = col; g.fillText(s, x, y); g.__ft = null;
+  });
+  g.restore();
+}
+(function () {
+  var st = document.createElement("style");
+  st.textContent = [
+    "#aatk,#acast,#abow{border-radius:50%!important;font-family:'Cinzel',Georgia,serif!important;font-weight:700!important;letter-spacing:.1em!important;text-shadow:0 1px 2px #000,0 0 8px rgba(0,0,0,.8)!important}",
+    "#aatk{border:3px solid #c9a24a!important;background:radial-gradient(circle at 38% 30%,#c4452e 0%,#7a1a14 45%,#2a0806 100%)!important;color:#ffe9b8!important;box-shadow:0 0 0 2px #0a0604,0 0 0 4px #5a4320,0 6px 18px rgba(0,0,0,.8),inset 0 -10px 18px rgba(0,0,0,.55),inset 0 6px 10px rgba(255,200,140,.18)!important;animation:none!important}",
+    "#aatk:after,#acast:after,#abow:after{content:'';position:absolute;inset:4px;border-radius:50%;border:1px solid rgba(255,220,160,.25);pointer-events:none}",
+    "#acast{border:3px solid #a99ce8!important;background:radial-gradient(circle at 38% 30%,#6a4fd8 0%,#2a1a6a 50%,#0c0620 100%)!important;color:#efe6ff!important;box-shadow:0 0 0 2px #0a0614,0 0 0 4px #4a3a8a,0 6px 18px rgba(0,0,0,.8),0 0 22px rgba(140,110,255,.35),inset 0 -10px 18px rgba(0,0,0,.55),inset 0 6px 10px rgba(220,200,255,.2)!important}",
+    "#abow{border:3px solid #c9a24a!important;background:radial-gradient(circle at 38% 30%,#8a6a3a 0%,#3a2a14 50%,#120c06 100%)!important;color:#f6e3b0!important;box-shadow:0 0 0 2px #0a0604,0 0 0 4px #5a4320,0 6px 18px rgba(0,0,0,.8),inset 0 -10px 18px rgba(0,0,0,.55),inset 0 6px 10px rgba(255,220,160,.15)!important}",
+    "#aatk:active,#acast:active,#abow:active{transform:scale(.94)!important;filter:brightness(1.3)}",
+    // quest / objective text and toasts
+    "#aobj{font-family:var(--serif2),Georgia,serif;font-size:.8rem;color:#e8d8b4;text-shadow:0 1px 2px #000,0 0 8px #000}#aobj b{font-family:'Cinzel',Georgia,serif;color:#f0cf8a;letter-spacing:.04em}",
+    "#atoast{border-radius:3px!important;border:1px solid #c9a24a!important;background:linear-gradient(180deg,rgba(28,22,16,.96),rgba(10,8,6,.97))!important;box-shadow:0 0 0 1px #0a0604,0 8px 24px rgba(0,0,0,.8),inset 0 0 0 1px rgba(227,194,122,.18)!important;font-family:var(--serif2),Georgia,serif;color:#f2e6c8}",
+    "#atoast:before{content:'\\\\25C6';color:#e3c27a;font-size:.55em;margin-right:.5em;vertical-align:middle}",
+    // side tabs, backup, co-op, walk, music, save buttons
+    "#musbtn,#savebtn,#walkbtn,#mptab,button[style*='writing-mode']{border-radius:3px!important;border:1px solid #6a4f22!important;background:linear-gradient(180deg,#221a12,#0e0a07)!important;color:#dcc89a!important;font-family:'Cinzel',Georgia,serif!important;font-weight:700!important;box-shadow:inset 0 0 0 1px rgba(227,194,122,.12),0 3px 10px rgba(0,0,0,.7)!important}",
+    "#musbtn,#savebtn,#walkbtn{border-radius:50%!important}",
+    // battle command buttons and map top bar
+    "#bfb button{background:linear-gradient(180deg,#221a12,#0e0a07)!important;color:#dcc89a!important;box-shadow:inset 0 0 0 1px rgba(227,194,122,.12),0 3px 10px rgba(0,0,0,.7)!important}#bfb button.on,#bfb button.solid{border-color:#e3c27a!important;background:linear-gradient(180deg,#6a4718,#2b1c0b)!important;color:#f8e6b4!important}",
+    "#mtop button,#mapbar button,.mbtns button{border-radius:3px!important;font-family:'Cinzel',Georgia,serif!important;font-weight:700!important;letter-spacing:.08em!important}",
+    "#bnav button,#bottombar button,.bnav button{font-family:'Cinzel',Georgia,serif!important;font-weight:700!important;letter-spacing:.06em!important}"
+  ].join("\n");
+  document.head.appendChild(st);
+})();
 
   // ---- input ----
   (function () {
