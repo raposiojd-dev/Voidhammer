@@ -3727,14 +3727,14 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
       g.fillStyle = "#1a1208"; g.fillRect(250, 196, 100, 30);
     }
     F.hills.forEach(function (h) { var hg = g.createRadialGradient(h.x, h.y, 4, h.x, h.y, h.rx); hg.addColorStop(0, vd ? "rgba(120,100,180,0.30)" : "rgba(200,220,140,0.30)"); hg.addColorStop(1, "rgba(0,0,0,0)"); g.fillStyle = hg; g.beginPath(); g.ellipse(h.x, h.y, h.rx, h.ry, 0, 0, 6.283); g.fill(); g.strokeStyle = "rgba(230,240,180,0.22)"; g.lineWidth = 1.5; g.beginPath(); g.ellipse(h.x, h.y, h.rx * 0.9, h.ry * 0.9, 0, 0, 6.283); g.stroke(); });
-    F.rocks.forEach(function (r) { g.fillStyle = "rgba(0,0,0,0.3)"; g.beginPath(); g.ellipse(r.x + 3, r.y + 5, r.r, r.r * 0.6, 0, 0, 6.283); g.fill(); g.fillStyle = "#7d7a72"; g.beginPath(); g.moveTo(r.x - r.r, r.y + 3); g.lineTo(r.x - r.r * 0.6, r.y - r.r * 0.8); g.lineTo(r.x + r.r * 0.3, r.y - r.r); g.lineTo(r.x + r.r, r.y - r.r * 0.2); g.lineTo(r.x + r.r * 0.8, r.y + r.r * 0.6); g.lineTo(r.x - r.r * 0.5, r.y + r.r * 0.7); g.closePath(); g.fill(); g.fillStyle = "rgba(255,255,255,0.18)"; g.beginPath(); g.moveTo(r.x - r.r * 0.6, r.y - r.r * 0.8); g.lineTo(r.x + r.r * 0.3, r.y - r.r); g.lineTo(r.x, r.y - r.r * 0.2); g.closePath(); g.fill(); });
+    F.rocks.forEach(function (r) { if (prp(g, 'obj_rock', r.x, r.y + 4, r.r * 2.3)) return; g.fillStyle = "rgba(0,0,0,0.3)"; g.beginPath(); g.ellipse(r.x + 3, r.y + 5, r.r, r.r * 0.6, 0, 0, 6.283); g.fill(); g.fillStyle = "#7d7a72"; g.beginPath(); g.moveTo(r.x - r.r, r.y + 3); g.lineTo(r.x - r.r * 0.6, r.y - r.r * 0.8); g.lineTo(r.x + r.r * 0.3, r.y - r.r); g.lineTo(r.x + r.r, r.y - r.r * 0.2); g.lineTo(r.x + r.r * 0.8, r.y + r.r * 0.6); g.lineTo(r.x - r.r * 0.5, r.y + r.r * 0.7); g.closePath(); g.fill(); g.fillStyle = "rgba(255,255,255,0.18)"; g.beginPath(); g.moveTo(r.x - r.r * 0.6, r.y - r.r * 0.8); g.lineTo(r.x + r.r * 0.3, r.y - r.r); g.lineTo(r.x, r.y - r.r * 0.2); g.closePath(); g.fill(); });
     F.corpses.forEach(function (cp) { g.strokeStyle = cp.v ? "rgba(150,120,210,0.5)" : cp.s === "p" ? "rgba(200,135,58,0.55)" : "rgba(20,10,5,0.6)"; g.lineWidth = 2; g.beginPath(); g.moveTo(cp.x - 4, cp.y - 2); g.lineTo(cp.x + 4, cp.y + 2); g.moveTo(cp.x + 4, cp.y - 2); g.lineTo(cp.x - 4, cp.y + 2); g.stroke(); });
     if (F.hm && !F.over) { g.strokeStyle = "rgba(240,208,96," + (0.5 + 0.4 * Math.sin(t / 150)) + ")"; g.lineWidth = 2; g.beginPath(); g.arc(F.hm.x, F.hm.y, 9, 0, 6.283); g.stroke(); }
     if (F.ht && !F.ht.dead) { g.strokeStyle = "rgba(230,90,60,0.9)"; g.lineWidth = 2; g.beginPath(); g.arc(F.ht.x, F.ht.y, 12, 0, 6.283); g.stroke(); }
     var draw = F.units.filter(function (u) { return !u.dead && !u.gone; }).sort(function (a, b) { return a.y - b.y; });
     draw.forEach(function (u) { fieldSoldier(g, u, t); });
     F.arrows.forEach(function (a) { var k = Math.min(1, a.t / a.dur), x = a.sx + (a.ex - a.sx) * k, y = a.sy + (a.ey - a.sy) * k - Math.sin(k * Math.PI) * 26, dx = a.ex - a.sx, dy = a.ey - a.sy, l = Math.hypot(dx, dy) || 1; g.strokeStyle = a.s === "p" ? "#f0d9a0" : "#e8e0d0"; g.lineWidth = 1.4; g.beginPath(); g.moveTo(x, y); g.lineTo(x - dx / l * 9, y - dy / l * 9); g.stroke(); });
-    F.trees.forEach(function (tr) { g.fillStyle = "rgba(0,0,0,0.25)"; g.beginPath(); g.ellipse(tr.x + 3, tr.y + tr.r * 0.5, tr.r * 1.1, tr.r * 0.5, 0, 0, 6.283); g.fill(); g.fillStyle = "#5a3d22"; g.fillRect(tr.x - 1.5, tr.y - 2, 3, tr.r * 0.7); g.globalAlpha = 0.82; g.fillStyle = vd ? "#3a2f5e" : "#2f5a28"; g.beginPath(); g.arc(tr.x, tr.y - tr.r * 0.55, tr.r, 0, 6.283); g.fill(); g.fillStyle = vd ? "#4a3d78" : "#3d7234"; g.beginPath(); g.arc(tr.x - tr.r * 0.25, tr.y - tr.r * 0.8, tr.r * 0.6, 0, 6.283); g.fill(); g.globalAlpha = 1; });
+    F.trees.forEach(function (tr) { if (prp(g, (tr.r * 7) % 3 < 1 ? 'obj_pine' : 'obj_oak', tr.x, tr.y + tr.r * 0.6, tr.r * 4.4)) return; g.fillStyle = "rgba(0,0,0,0.25)"; g.beginPath(); g.ellipse(tr.x + 3, tr.y + tr.r * 0.5, tr.r * 1.1, tr.r * 0.5, 0, 0, 6.283); g.fill(); g.fillStyle = "#5a3d22"; g.fillRect(tr.x - 1.5, tr.y - 2, 3, tr.r * 0.7); g.globalAlpha = 0.82; g.fillStyle = vd ? "#3a2f5e" : "#2f5a28"; g.beginPath(); g.arc(tr.x, tr.y - tr.r * 0.55, tr.r, 0, 6.283); g.fill(); g.fillStyle = vd ? "#4a3d78" : "#3d7234"; g.beginPath(); g.arc(tr.x - tr.r * 0.25, tr.y - tr.r * 0.8, tr.r * 0.6, 0, 6.283); g.fill(); g.globalAlpha = 1; });
     if (F.wave2) { g.strokeStyle = "rgba(240,208,96," + (1 - F.wave2.r / 160) + ")"; g.lineWidth = 4; g.beginPath(); g.arc(F.wave2.x, F.wave2.y, F.wave2.r, 0, 6.283); g.stroke(); }
     if (F.wave) { var al = Math.max(0, 1 - F.wave.r / 520); g.strokeStyle = "rgba(255,244,200," + al + ")"; g.lineWidth = 10; g.beginPath(); g.arc(F.wave.x, F.wave.y, F.wave.r, 0, 6.283); g.stroke(); g.fillStyle = "rgba(255,240,190," + al * 0.18 + ")"; g.beginPath(); g.arc(F.wave.x, F.wave.y, F.wave.r, 0, 6.283); g.fill(); }
     if (F.over) {
@@ -7406,8 +7406,8 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
     list.sort(ovDepthCmp);
     list.forEach(function (it) {
       if (it.u) { if (it.u.eng) ovEngDraw(g, it.u, t); else ovUp(g, it.u.x, it.u.y, function () { bfSoldier(g, it.u, t, dt); }); }
-      else if (it.tr) { var k = it.tr.r / 9; ovTreeSh(g, it.tr.x, it.tr.y, k); g.save(); ovUpT(g, it.tr.x, it.tr.y); g.translate(it.tr.x - 8 * k, it.tr.y - 14 * k); g.scale(k, k); d2Tree(g, 0, 0, (it.ti * 0.137) % 0.7, G.th); g.restore(); }
-      else { var rk = it.rk, q = rk.r / 8; g.save(); ovUpT(g, rk.x, rk.y); g.translate(rk.x - 8 * q, rk.y - 10 * q); g.scale(q, q); ovCast(g, 8, 14, 12, 9); g.fillStyle = G.th.rock; g.fillRect(2, 5, 12, 8); g.fillRect(4, 3, 8, 3); g.fillStyle = "rgba(255,255,255,0.22)"; g.fillRect(5, 5, 4, 2); g.fillStyle = "rgba(0,0,0,0.25)"; g.fillRect(9, 9, 5, 4); g.restore(); }
+      else if (it.tr) { var k = it.tr.r / 9; if (prp(g, (it.ti % 3 ? 'obj_oak' : 'obj_pine'), it.tr.x, it.tr.y + 2, k * 36)) return; ovTreeSh(g, it.tr.x, it.tr.y, k); g.save(); ovUpT(g, it.tr.x, it.tr.y); g.translate(it.tr.x - 8 * k, it.tr.y - 14 * k); g.scale(k, k); d2Tree(g, 0, 0, (it.ti * 0.137) % 0.7, G.th); g.restore(); }
+      else { var rk = it.rk, q = rk.r / 8; if (prp(g, 'obj_rock', rk.x, rk.y + 4, q * 15)) return; g.save(); ovUpT(g, rk.x, rk.y); g.translate(rk.x - 8 * q, rk.y - 10 * q); g.scale(q, q); ovCast(g, 8, 14, 12, 9); g.fillStyle = G.th.rock; g.fillRect(2, 5, 12, 8); g.fillRect(4, 3, 8, 3); g.fillStyle = "rgba(255,255,255,0.22)"; g.fillRect(5, 5, 4, 2); g.fillStyle = "rgba(0,0,0,0.25)"; g.fillRect(9, 9, 5, 4); g.restore(); }
     });
     ovArrows(g);
     ovWaves(g);
@@ -11875,6 +11875,7 @@ function ovBlade(g, hx, hy, ang, L, wd, col) {
   g.fillStyle = "#5a3a1c"; g.fillRect(-2.2, -0.65, 3.1, 1.3);
   g.fillStyle = "#d8b255"; g.beginPath(); g.arc(-2.6, 0, 0.9, 0, 6.283); g.fill();
   g.restore();
+  return [hx + c * L, hy + s * L];
 }
 function ovHeldA0b(g, c, face, sw, kind) { return ovHeldA0(g, c, face, sw, kind); }
 function ovHeldA(g, c, face, sw, kind){
