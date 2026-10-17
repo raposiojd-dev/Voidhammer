@@ -9285,7 +9285,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
     14: '<path d="M16 6v38" stroke="#d8c8a0" stroke-width="3"/><path d="M17 7c14-3 22 3 20 12-2 7-11 10-20 9 7-5 7-13 0-21z" fill="#fff"/>',
     15: '<path d="M24 4v40" stroke="#d8c8a0" stroke-width="3"/><path d="M23 8q-16 2-16 12t16 10z" fill="#fff"/><path d="M25 8q16 2 16 12t-16 10z" fill="#fff"/>'
   };
-  function tIcon(id, sz) {
+  function tIconOld(id, sz) {
     var T2 = TROOPT[id - 1], C = TCLS[id === 1 ? "levy" : T2.cls] || TCLS.levy, bg = T2.realm ? FAC[T2.realm].col : C.c, ti = tTier(id), base = TICO[id] || TICO[{ sword: 3, spear: 10, axe: 15, ranged: 6, horse: 13 }[T2.cls] || 1], pips = "";
     for (var q = 4; q <= ti; q++) pips += '<circle cx="' + (20 + (q - 4) * 5) + '" cy="45" r="2" fill="#f0d060" stroke="#1a1610" stroke-width=".6"/>';
     if (T2.realm) pips += '<circle cx="38" cy="10" r="4" fill="#fff" stroke="#1a1610" stroke-width="1"/>';
@@ -12520,6 +12520,26 @@ function ic(k, sz) {
   if (BIC[k]) return '<svg viewBox="0 0 48 48" width="' + sz + '" height="' + sz + '" aria-hidden="true">' + BIC[k] + "</svg>";
   return ICONS[k] ? '<svg viewBox="0 0 48 48" width="' + sz + '" height="' + sz + '" aria-hidden="true">' + ICONS[k] + "</svg>" : "";
 }
+// painted troop busts for the troop cards (falls back to the drawn badge until the sprite has loaded)
+var TPB = {}, TPMAP = { 1: "tp_levy", 2: "tp_sword", 3: "tp_sword", 4: "tp_champ", 5: "tp_archer", 6: "tp_xbow", 7: "tp_mage", 8: "tp_mage", 9: "tp_spear", 10: "tp_pike", 11: "tp_jav", 12: "tp_horse", 13: "tp_knight", 14: "tp_axe", 15: "tp_axe" };
+function tIconOld2() {}
+function tIcon(id, sz) {
+  try {
+    sz = sz || 40; var T2 = TROOPT[id - 1], cls = id === 1 ? "levy" : T2.cls, key = TPMAP[id] || ({ sword: "tp_sword", spear: "tp_pike", axe: "tp_axe", ranged: "tp_archer", horse: "tp_knight" })[cls] || "tp_levy";
+    var im = spImg(key); if (!im) return tIconOld(id, sz);
+    var ck = id + ":" + sz; if (!TPB[ck]) {
+      var S2 = 96, c = document.createElement("canvas"); c.width = S2; c.height = S2; var g = c.getContext("2d"), col = T2.realm ? FAC[T2.realm].col : (TCLS[cls] || TCLS.levy).c;
+      g.beginPath(); g.arc(S2 / 2, S2 / 2, S2 / 2 - 2, 0, 6.283); g.closePath(); g.save(); g.clip();
+      var gr = g.createRadialGradient(S2 / 2, S2 * 0.4, 4, S2 / 2, S2 / 2, S2 * 0.7); gr.addColorStop(0, "#3a2e1e"); gr.addColorStop(1, "#0b0907"); g.fillStyle = gr; g.fillRect(0, 0, S2, S2);
+      var k = (S2 * 1.9) / im.naturalHeight, dw = im.naturalWidth * k, dh = im.naturalHeight * k; g.imageSmoothingQuality = "high"; g.drawImage(im, (S2 - dw) / 2, S2 * 0.06, dw, dh); g.restore();
+      g.lineWidth = 3; g.strokeStyle = col; g.beginPath(); g.arc(S2 / 2, S2 / 2, S2 / 2 - 2.5, 0, 6.283); g.stroke(); g.lineWidth = 1; g.strokeStyle = "rgba(0,0,0,.8)"; g.beginPath(); g.arc(S2 / 2, S2 / 2, S2 / 2 - 4.5, 0, 6.283); g.stroke();
+      var ti = tTier(id); for (var q = 2; q <= ti; q++) { g.fillStyle = "#f0d060"; g.strokeStyle = "#1a1610"; g.beginPath(); g.arc(S2 / 2 + (q - 2 - (ti - 2) / 2) * 9, S2 - 9, 3.2, 0, 6.283); g.fill(); g.stroke(); }
+      TPB[ck] = c.toDataURL("image/png");
+    }
+    return '<img src="' + TPB[ck] + '" width="' + sz + '" height="' + sz + '" style="display:block;border-radius:50%;box-shadow:0 2px 8px rgba(0,0,0,.6)" alt="">';
+  } catch (e) { return tIconOld(id, sz); }
+}
+try { ["tp_levy", "tp_sword", "tp_champ", "tp_archer", "tp_xbow", "tp_mage", "tp_spear", "tp_pike", "tp_jav", "tp_horse", "tp_knight", "tp_axe"].forEach(function (k) { spImg(k); }); } catch (e) {}
 // ---- painted 3/4-view settlements and buildings on the world map (img/map/*.webp) ----
 var WM2 = {};
 function wm2(k) { var im = WM2[k]; if (!im) { im = WM2[k] = new Image(); im.src = "img/map/" + k + ".webp"; } return im.complete && im.naturalWidth ? im : null; }
