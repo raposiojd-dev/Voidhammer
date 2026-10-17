@@ -2259,6 +2259,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
     ctx.lineCap = "round"; ctx.lineJoin = "round";
     ovRoadsDraw();
 
+    wmCaves(now);
     var order = S.sites.slice().sort(function (p, q) { return p.y - q.y; });
     order.forEach(function (s) { drawSite(s, now); });
 
@@ -4576,6 +4577,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
     (sp.npcs || []).forEach(function (n) { clr(n.x, n.y, 1); }); (sp.chests || []).forEach(function (n) { clr(n[0], n[1], 1); });
     (sp.enemies || []).forEach(function (n) { clr(n[1], n[2], 2); });
     (sp.clearR || []).forEach(function (q) { for (var yy = q[1]; yy < q[1] + q[3]; yy++) for (var xx = q[0]; xx < q[0] + q[2]; xx++) keep[xx + "," + yy] = 1; });
+    ovExitsIn(sp, g, W, H);
     (sp.exits || []).forEach(function (e) { clr(e.x + (e.w >> 1), e.y + (e.h >> 1), 3); });
     var tries = 0, n = 0;
     while (n < (sp.trees || 0) && tries++ < 3000) { x = 1 + Math.floor(r() * (W - 2)); y = 1 + Math.floor(r() * (H - 2)); if (g[y][x] === 0 && !keep[x + "," + y]) { g[y][x] = 2; n++; } }
@@ -4853,6 +4855,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
     ovMcDraw(g, a, cx, cy, VW, VH, mw, mh, YW);
     g.save(); g.translate(-cx, -cy); waterAnim(g, a, cx, cy, VW, VH);
     (a.sp.exits || []).forEach(function (e) { if (e.lock && e.lock()) return; g.fillStyle = "rgba(255,240,170," + (0.12 + 0.08 * Math.sin(a.t * 3)) + ")"; g.fillRect(e.x * ATS, e.y * ATS, e.w * ATS, e.h * ATS); if (a.sp.th === "cave") { for (var sk2 = 1; sk2 <= 3; sk2++) { g.fillStyle = "rgba(255,240,170," + (0.3 - 0.07 * sk2 + 0.05 * Math.sin(a.t * 3)) + ")"; g.fillRect(e.x * ATS, (e.y - sk2) * ATS, e.w * ATS, ATS); } g.fillStyle = "rgba(255,255,255,0.7)"; g.fillRect(e.x * ATS + 1, e.y * ATS + 1, e.w * ATS - 2, 2); } });
+    ovGateArt(g, a);
     a.items.forEach(function (it) { if (it.t === "item") { var ic = RAR[it.item.rar].c, ib = Math.round(Math.sin(a.t * 4 + it.x) * 1.5), ix = Math.round(it.x), iy = Math.round(it.y - 5 + ib); itemDrop(g, ix, iy, ic, ib, a.t, it); if (Math.hypot(it.x - AR.p.x, it.y - AR.p.y) < 60) { g.font = "bold 7px monospace"; var nw = g.measureText(it.item.name).width; g.fillStyle = "rgba(10,8,6,0.85)"; g.fillRect(ix - nw / 2 - 3, iy - 36, nw + 6, 10); g.fillStyle = ic; g.fillText(it.item.name, ix - nw / 2, iy - 28); } return; }
       if (it.t === "arrow") { g.fillStyle = "#e8d8a8"; g.fillRect(Math.round(it.x) - 3, Math.round(it.y), 7, 1); g.fillStyle = "#a07030"; g.fillRect(Math.round(it.x) + 3, Math.round(it.y) - 1, 2, 3); return; } g.fillStyle = "#e84a5a"; var bx = Math.round(it.x), by = Math.round(it.y - 4 + Math.sin(a.t * 5) * 1.2); g.fillRect(bx - 3, by - 3, 3, 3); g.fillRect(bx, by - 3, 3, 3); g.fillRect(bx - 2, by, 5, 2); g.fillRect(bx - 1, by + 2, 3, 1); });
     ovDecals(g, a);
@@ -12541,6 +12544,67 @@ function wmBody(s, t) {
   return true;
 }
 function ovBldExtras(s, t) { if (!wm2("village")) return ovBldExtrasOld(s, t); }
+// ---- painted entrances (cave mouths, dungeon gates, town gates) and caves on the world map ----
+function ovGateKind(e) {
+  if (!e || !e.to) return null; var to = e.to;
+  if (/^cave\d+$/.test(to)) return "cave_mouth";
+  if (to === "world" || to === "overland" || (typeof to === "string" && to.indexOf("yard:") === 0)) return null;
+  var sp2 = null; try { sp2 = getSpec(to); } catch (x) {}
+  if (!sp2) return null; var th = sp2.th; if (th === "cave" || (typeof ATH !== "undefined" && ATH[th] && ATH[th].cave)) return "dungeon_gate";
+  return "town_gate";
+}
+function ovGateArt(g, a) {
+  try {
+    (a.sp.exits || []).forEach(function (e) {
+      var k = ovGateKind(e); if (!k) return; if (k === "town_gate" && (a.sp.th === "cave" || (ATH[a.sp.th] && ATH[a.sp.th].cave))) k = "cave_mouth"; var im = wm2(k); if (!im) return;
+      var cx = (e.x + e.w / 2) * ATS, by = (e.y + e.h) * ATS + 3, w = k === "cave_mouth" ? 58 : k === "dungeon_gate" ? 48 : 52, h = w * im.naturalHeight / im.naturalWidth;
+      if (e.x === 0) cx = Math.max(cx, w * 0.42); if (e.x >= a.W - 1) cx = Math.min(cx, a.W * ATS - w * 0.42);
+      if (e.y === 0) by = Math.max(by, h * 0.92);
+      var locked = e.lock && e.lock();
+      g.save(); g.imageSmoothingEnabled = true; g.imageSmoothingQuality = "high"; g.globalAlpha = locked ? 0.7 : 1;
+      g.fillStyle = "rgba(0,0,0,0.35)"; g.beginPath(); g.ellipse(cx, by - 1, w * 0.42, 4, 0, 0, 6.283); g.fill();
+      g.drawImage(im, cx - w / 2, by - h, w, h);
+      if (!locked) { var pu = 0.35 + 0.2 * Math.sin(a.t * 2.5), gr = g.createRadialGradient(cx, by - h * 0.35, 1, cx, by - h * 0.35, w * 0.45); gr.addColorStop(0, "rgba(" + (k === "cave_mouth" ? "120,90,200" : "255,180,80") + "," + pu.toFixed(2) + ")"); gr.addColorStop(1, "rgba(0,0,0,0)"); g.globalCompositeOperation = "lighter"; g.fillStyle = gr; g.fillRect(cx - w, by - h - 10, w * 2, h + 20); }
+      g.restore();
+    });
+  } catch (x) {}
+}
+var CAVN = -1, CAVB = null;
+function wmCaves(now) {
+  try {
+    var P = ovPoi(); if (!P || !P.caves) return; var best = -1, bd = 1e9;
+    P.caves.forEach(function (cv, k) {
+      var x = cv.x * OT, y = cv.y * OT; wm2Img(ctx, "cave", x, y, 44);
+      var d = Math.hypot(S.px - x, S.py - y); if (d < bd) { bd = d; best = k; }
+      ctx.save(); ctx.font = "italic 9px 'IM Fell English',Georgia,serif"; ctx.textAlign = "center"; ctx.lineWidth = 3; ctx.strokeStyle = "rgba(10,8,6,0.85)"; ctx.strokeText(cv.name, x, y + 14); ctx.fillStyle = "#d8c8a8"; ctx.fillText(cv.name, x, y + 14); ctx.restore();
+    });
+    CAVN = bd < 18 ? best : -1;
+  } catch (x) {}
+}
+(function () {
+  function init() {
+    if (!document.body) return setTimeout(init, 200);
+    CAVB = document.createElement("button"); CAVB.id = "cavebtn"; CAVB.textContent = "Enter cave";
+    CAVB.style.cssText = "position:fixed;left:50%;transform:translateX(-50%);bottom:calc(96px + env(safe-area-inset-bottom,0px));z-index:61;display:none;padding:.7rem 1.2rem;font-family:'Cinzel',Georgia,serif;font-weight:700;letter-spacing:.12em;border:1px solid #b89cff;background:linear-gradient(180deg,#2a1f4a,#120c22);color:#e6dcff;box-shadow:0 0 18px rgba(150,110,255,.4)";
+    CAVB.addEventListener("click", function (e) { e.stopPropagation(); if (AR || B || CAVN < 0) return; var cv = ovPoi().caves[CAVN]; S.speed = 0; S.target = null; startArea("cave" + CAVN); aToast(cv.name + ". Watch the side tunnels."); });
+    document.body.appendChild(CAVB);
+    setInterval(function () { var ti = document.getElementById("title"), show = !(AR || B || typeof S === "undefined" || !S || sheet || (ti && !ti.hidden)) && CAVN >= 0; CAVB.style.display = show ? "block" : "none"; if (show) { var cv = ovPoi().caves[CAVN]; CAVB.textContent = "Enter " + cv.name; } }, 300);
+  }
+  init();
+})();
+
+// top-edge gates sat under the HUD: pull cave / dungeon / town entrances a few tiles into the map and cut a path to them
+function ovExitsIn(sp, g, W, H) {
+  try {
+    if (sp.over || sp._exin) return; sp._exin = 1;
+    (sp.exits || []).forEach(function (e) {
+      if (!ovGateKind(e)) return;
+      var x, y;
+      if (e.y === 0 && e.h <= 2) { e.y = 6; for (y = 0; y <= 7; y++) for (x = e.x - 1; x <= e.x + e.w; x++) if (x >= 0 && x < W) g[y][x] = y < 5 ? 2 : (y >= 6 && x >= e.x && x < e.x + e.w ? 0 : 1); }
+      else if (e.y + e.h >= H && e.h <= 2) { e.y = H - 4; for (y = H - 5; y < H; y++) for (x = e.x - 1; x <= e.x + e.w; x++) if (x >= 0 && x < W) g[y][x] = y < H - 2 && x >= e.x && x < e.x + e.w ? 0 : (y >= H - 2 ? 2 : 1); }
+    });
+  } catch (x) {}
+}
 
   // ---- input ----
   (function () {
