@@ -6924,11 +6924,11 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
     giantslayer: '<path d="M24 8l5 14h-10z"/><path d="M24 22v16M18 38h12"/>',
     tempo: '<path d="M11 13l11 11-11 11M24 13l11 11-11 11"/>'
   };
-  function skIcon(id, sz) {
+  function skIconOld(id, sz) {
     var c = skCol(id), g = SKG[id] || '<path d="M24 10l4 9 10 1-7.5 7 2 10L24 31l-8.5 6 2-10L10 20l10-1z"/>';
     return '<svg viewBox="0 0 48 48" width="' + sz + '" height="' + sz + '" aria-hidden="true"><defs><radialGradient id="sk_' + id + '" cx=".35" cy=".3" r=".9"><stop offset="0" stop-color="' + c + '"/><stop offset="1" stop-color="#14100a"/></radialGradient></defs><circle cx="24" cy="24" r="22" fill="url(#sk_' + id + ')" stroke="#e8c75a" stroke-width="1.6"/><circle cx="24" cy="24" r="19" fill="none" stroke="rgba(246,226,168,.25)" stroke-width=".8"/><g fill="none" stroke="#f6e2a8" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">' + g + '</g></svg>';
   }
-  function ic(k, sz) {
+  function icOld(k, sz) {
     sz = sz || 50;
     if (k && k.indexOf("sk:") === 0) return skIcon(k.slice(3), sz);
     if (BIC[k]) return '<svg viewBox="0 0 48 48" width="' + sz + '" height="' + sz + '" aria-hidden="true">' + BIC[k] + "</svg>";
@@ -12500,6 +12500,25 @@ function ovFigure() {
     var k = (H * 0.88) / im.naturalHeight, dw = im.naturalWidth * k, dh = im.naturalHeight * k; g.imageSmoothingQuality = "high"; g.drawImage(im, (W - dw) / 2, H * 0.05, dw, dh);
     return c.toDataURL("image/png");
   } catch (e) { return null; }
+}
+// painted skill icons (img/sk/<id>.webp) with the drawn glyph as fallback
+window.SKPNG = window.SKPNG || {}; var SKPNG = window.SKPNG;
+function skIconOld2() {}
+function skIcon(id, sz) {
+  var c = skCol(id), g = SKG[id] || '<path d="M24 10l4 9 10 1-7.5 7 2 10L24 31l-8.5 6 2-10L10 20l10-1z"/>';
+  var svg = '<svg viewBox="0 0 48 48" width="' + sz + '" height="' + sz + '" aria-hidden="true"><defs><radialGradient id="sk_' + id + '" cx=".35" cy=".3" r=".9"><stop offset="0" stop-color="' + c + '"/><stop offset="1" stop-color="#0a0806"/></radialGradient></defs><rect x="2" y="2" width="44" height="44" rx="6" fill="url(#sk_' + id + ')" stroke="#5a4320"/><g fill="none" stroke="#f6e2a8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' + g + "</g></svg>";
+  if (SKPNG[id] === 0) return svg;
+  return '<span class="skp" style="display:inline-block;width:' + sz + 'px;height:' + sz + 'px;border-radius:3px;overflow:hidden;box-shadow:inset 0 0 0 1px rgba(227,194,122,.25),0 2px 6px rgba(0,0,0,.6);vertical-align:middle"><img src="img/sk/' + id + '.webp" width="' + sz + '" height="' + sz + '" style="display:block;width:100%;height:100%;object-fit:cover" alt="" onerror="window.SKPNG[\'' + id + '\']=0;this.parentNode.outerHTML=' + JSON.stringify(svg).replace(/"/g, "&quot;") + '"></span>';
+}
+// painted row icons (buildings, goods, troops) from the same icon sheets; drawn svg stays as fallback
+var UIPNG = { grain: "ui_grain", crowns: "ui_crowns", farm: "ui_farm", hoe: "ui_hoe", merc: "ui_merc", troop: "ui_troop", market: "ui_market", tavern: "ui_tavern", walls: "ui_walls", yard: "ui_yard", granary: "ui_granary", smithy: "ui_smithy", beacon: "ui_beacon", palisade: "ui_palisade", barracks: "ui_troop", forge: "ui_smithy" };
+function icOld2() {}
+function ic(k, sz) {
+  sz = sz || 50;
+  if (k && k.indexOf("sk:") === 0) return skIcon(k.slice(3), sz);
+  var u = UIPNG[k]; if (u && u.indexOf("sk:") !== 0 && window.SKPNG[u] !== 0) return skIcon(u, sz);
+  if (BIC[k]) return '<svg viewBox="0 0 48 48" width="' + sz + '" height="' + sz + '" aria-hidden="true">' + BIC[k] + "</svg>";
+  return ICONS[k] ? '<svg viewBox="0 0 48 48" width="' + sz + '" height="' + sz + '" aria-hidden="true">' + ICONS[k] + "</svg>" : "";
 }
 // ---- painted 3/4-view settlements and buildings on the world map (img/map/*.webp) ----
 var WM2 = {};
