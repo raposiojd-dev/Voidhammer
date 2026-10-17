@@ -1803,7 +1803,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
       body: ["A survivor from the fallen realm sits in the road and will not move. She says the Dominion’s armies were not what broke the walls.", "“He walked up alone. Not tall. The Iron Wraiths stopped when he stopped. Every wall that was ever blessed with our magic let go, one after another, as if someone had called it by name. He has a spark from every Realm in him, and every one of them answered.”", "Whoever he is, he is spending the whole world to win it."],
       ok: "Go on" },
     b3: { t: "The captured dispatches", sub: "Chapter III", cond: function () { return S.mc.defeats >= 1; },
-      body: ["Among a beaten lord’s baggage is a case of orders in a cipher the Dominion forgot to change. Your clerk breaks it by evening.", "They are not orders to hold land. They are orders to collect: every Full Spark, every Half-Spark, every bloodline that can still do any magic. All of it goes north, to the spark-reactors. All of it goes to Valek.", "You can send riders to warn the Realm courts, which is costly. Or you can say nothing and keep the case close, to learn from it."],
+      body: ["Among a beaten lord’s baggage is a case of orders in a cipher the Dominion forgot to change. Your clerk breaks it by evening.", "They are not orders to hold land. They are orders to collect: every Full Spark, every Half-Spark, every bloodline that can still do any magic. All of it goes north, to the spark-reactors. All of it goes to Valek. One page is different: a requisition in Chief Engineer Solvane’s hand for a thing he calls the Iron Reaper, a gun that fires compressed sparks, and a note that it must be fed or it eats its own crew.", "You can send riders to warn the Realm courts, which is costly. Or you can say nothing and keep the case close, to learn from it."],
       choices: [{ k: "warn", t: "Send riders to every court. (80 crowns)", fx: function () { S.crowns = Math.max(0, S.crowns - 80); news("Riders from a column in the field warn every court: the Dominion is collecting sparks, not land."); } },
                 { k: "keep", t: "Keep the case. Tell no one what is in it.", fx: function () { news("A case of Dominion orders has gone missing from the field."); } }] },
     b4: { t: "The Twin-Spark Child", sub: "Chapter IV", cond: function () { return mcFellCount() >= 2 || S.mc.defeats >= 2 || mcPower() >= 1.8; },
@@ -1822,6 +1822,9 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
     ss: { t: "The Lanterns go out", sub: "Interlude", cond: function () { return !!(S.mc.fell.spirit); },
       body: ["Spiritveil kept the world’s memory, and the Dominion took the archive.", "One page survives, carried out by a scout. In the Lantern Codex the entry for the Twin-Spark child has not been erased. It has been written over, again and again, by a hand that is also his. Each version is a little less certain of its own name."],
       ok: "Go on" },
+    sv: { t: "The Harrowed King", sub: "Interlude", cond: function () { return S.voidR < 1150 || (S.rifts && S.rifts.length >= 3); },
+      body: ["Word comes up the Ember road with the refugees, and none of them will say it the same way twice. The king of Flameborne did not die when the Void came to the Ember Throne. It did something worse. It let him keep his face.", "He sits where he sat. The fire around him is black and gives no light, and it does not burn flesh first. It burns meaning. Men kneel to him and slowly forget why they came, and their banners go grey in their hands, and then they are simply not there.", "The Lantern Council has a name for what he is now. The Harrowed King. The first general of the Void. He remembers being a king, and that memory hurts him more than anything the Void has done to him. That is why he serves it: it is the only thing that still gives him a purpose.", "The Void is not trying to win. It is trying to go back to the silence before anything was lost. He is how it walks."],
+      ok: "Go on" },
     sh: { t: "The quiet knife", sub: "Interlude", cond: function () { return !!(S.mc.fell.shadow); },
       body: ["Shadowdeep always expected betrayal. It spent a thousand years making itself too quiet to be worth the trouble, and the Dominion came anyway.", "A Nightblade’s last message reaches you in a dead drop, unsigned: the Dominion does not find its spark-bearers by force. It finds them by what they have forgotten they are."],
       ok: "Go on" },
@@ -1839,7 +1842,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
   function storyQueue() {
     var st = S.story; if (!storyOn() || sheet || S.intro || S.ended) return;
     if (st.cur) return;
-    var order = ["p0", "b1", "b2", "b3", "b4", "b5", "sf", "ss", "sh", "b6"];
+    var order = ["p0", "b1", "b2", "b3", "b4", "b5", "sf", "ss", "sh", "sv", "b6"];
     for (var i = 0; i < order.length; i++) {
       var id = order[i];
       if (st.seen[id]) continue;
@@ -10992,7 +10995,7 @@ function qFinish(q, opt, idx) { qFinish0(q, opt, idx); if (opt && typeof opt.eff
   ch({ id: "voyagerpast", opt: 0, act: 6, hub: "granitekeep", npc: "voyager", need: m("silence1"), name: "What the Voyager Will Not Say", zone: "voyagerroad", zname: "The Road He Walked", th: "cave", lv: 4, seed: 452, pal: ["hollowsent", "frostshade"], boss: "voidmirror", obj: "Follow the Voyager down the road he never describes.",
     gate: "A road of grey stone under a grey sky. Everything is exactly where it was left, forever.",
     intro: function () { return "You have asked me twice why I do not use magic, and I told you to stop asking. " + (F().v6_pity ? "You said the Void is afraid, and that is true. " : "You said the Void must be stopped, and you might be right. ") + "There is a road I walked once, to a place where a man made a bargain with it. I think it is time you saw it. I will not narrate. I will only walk."; },
-    turn: "You saw it. You saw him, the man I was, making the bargain. He asked the Void to let him not feel the loss of everyone he loved. It said yes. He has not felt anything since. That is why I cannot die, and why I cannot use magic, and why I follow you. It is the only thing that still feels like a choice.",
+    turn: "You saw it. You saw him, the man I was, making the bargain. He asked the Void to let him not feel the loss of everyone he loved. It said yes. He has not felt anything since. That is why I cannot die, and why I cannot use magic, and why I follow you. It is the only thing that still feels like a choice.” He touches the sliver of dull starmetal he wears on a cord. It is warm when nothing else is. “This remembered me when I could not. It is the only thing the Void never managed to finish.",
     opts: [{ t: "“You can still choose who you are. Starting now.”", reward: { xp: 600, perm: "pts" }, set: { v6_choose: 1 }, text: "The Voyager breathes out slowly. A single tear tracks down his cheek, as though he has forgotten how. “I would like that,” he says. “I would like that very much.”" },
       { t: "“Then we finish what you started. Together.”", reward: { xp: 600, crowns: 500, item: 3 }, set: { v6_together: 1 }, text: "“Together,” he says, and the word has weight. “Yes. That may be what I was waiting for.”" }] });
   ch({ id: "unmaderoad", opt: 0, act: 6, hub: "windspire", npc: "aeris", need: m("voyagerpast"), name: "The Unmade Road", zone: "unmaderoad", zname: "The Unmade Road", th: "pass", lv: 4, seed: 453, pal: ["wraith", "hollowsent"], boss: "unmade", obj: "Hold the Unmade Road until the Realms arrive.",
@@ -12801,6 +12804,68 @@ function ovFloats(g, a) {
     "button.cast:active{background:linear-gradient(180deg,#3a2a52,#1a1028)!important}"
   ].join("\n");
   document.head.appendChild(st);
+})();
+// ---- ovVID: title screen motion loop + short story clips ----
+(function () {
+  var VIDBASE = "vid/";
+  var st = document.createElement("style");
+  st.textContent = [
+    "#tvw{position:absolute;left:-3%;right:-3%;top:-3%;height:76%;z-index:0;overflow:hidden;background:#08060c}",
+    "#tvw video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center 34%;opacity:0;transition:opacity .9s linear}",
+    "#tvw video.on{opacity:1}",
+    "body.tvid #title::before{display:none}",
+    ".svidw{position:relative;margin:-.2rem 0 .9rem;border:1px solid #6a4f22;border-radius:3px;overflow:hidden;background:#000;box-shadow:0 0 0 1px rgba(227,194,122,.12),0 8px 24px #000;aspect-ratio:16/9}",
+    ".svidw video{display:block;width:100%;height:100%;object-fit:cover}",
+    ".svidw:after{content:'';position:absolute;inset:0;pointer-events:none;background:linear-gradient(180deg,rgba(0,0,0,.18),rgba(0,0,0,0) 30%,rgba(0,0,0,0) 70%,rgba(0,0,0,.35));}",
+    ".svidw[hidden]{display:none}"
+  ].join("\n");
+  document.head.appendChild(st);
+
+  // --- title: two layers, crossfade before the end so the loop never snaps ---
+  function titleVideo() {
+    var t = document.getElementById("title"); if (!t || document.getElementById("tvw")) return;
+    var w = document.createElement("div"); w.id = "tvw";
+    var A = document.createElement("video"), B = document.createElement("video");
+    [A, B].forEach(function (v) { v.muted = true; v.playsInline = true; v.setAttribute("playsinline", ""); v.setAttribute("muted", ""); v.preload = "auto"; v.innerHTML = '<source src="' + VIDBASE + 'title.mp4" type="video/mp4"><source src="' + VIDBASE + 'title.webm" type="video/webm">'; w.appendChild(v); });
+    t.insertBefore(w, t.firstChild);
+    var cur = A, nxt = B, fading = false, dead = false;
+    function fail() { dead = true; w.remove(); document.body.classList.remove("tvid"); }
+    A.onerror = fail; B.onerror = fail; A.lastElementChild.onerror = fail;
+    A.addEventListener("loadeddata", function () {
+      if (dead) return; document.body.classList.add("tvid"); A.classList.add("on");
+      A.play().catch(function () {});
+    });
+    function tick() {
+      if (dead) return;
+      var d = cur.duration;
+      if (d && !fading && cur.currentTime > d - 1.0) {
+        fading = true; nxt.currentTime = 0;
+        nxt.play().then(function () { nxt.classList.add("on"); cur.classList.remove("on"); }).catch(function () {});
+        setTimeout(function () { cur.pause(); var tmp = cur; cur = nxt; nxt = tmp; fading = false; }, 1000);
+      }
+      requestAnimationFrame(tick);
+    }
+    requestAnimationFrame(tick);
+    // resume after the tab/app comes back
+    document.addEventListener("visibilitychange", function () { if (!document.hidden && !dead && !t.hidden) cur.play().catch(function () {}); });
+    var mo = new MutationObserver(function () { if (!t.hidden && !dead) cur.play().catch(function () {}); else if (t.hidden) { A.pause(); B.pause(); } });
+    mo.observe(t, { attributes: true, attributeFilter: ["hidden"] });
+  }
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", titleVideo); else titleVideo();
+
+  // --- story clips: a muted looping short at the top of each chapter ---
+  window.VIDS = { p0: 1, b1: 1, b2: 1, b3: 1, b4: 1, b5: 1, b6: 1, sf: 1, ss: 1, sh: 1, sv: 1, fin: 1 };
+  window.storyVid = function (id) {
+    if (!VIDS[id]) return "";
+    return '<div class="svidw"><video autoplay muted loop playsinline preload="auto" onerror="this.parentNode.hidden=1"><source src="' + VIDBASE + id + '.mp4" type="video/mp4"><source src="' + VIDBASE + id + '.webm" type="video/webm" onerror="this.parentNode.parentNode.hidden=1"></video></div>';
+  };
+  if (typeof storySheet === "function") {
+    var storySheetOld = storySheet;
+    storySheet = function (id) {
+      var h = storySheetOld(id);
+      return h.replace(/(<p class="sub">[^<]*<\/p>)/, "$1" + storyVid(id));
+    };
+  }
 })();
 
   // ---- input ----
