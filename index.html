@@ -3345,7 +3345,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
       if (it) return '<div data-act="invsel" data-a="eq:' + sl + '" style="width:62px;border:2px solid ' + RAR[it.rar].c + ';background:#14110c;border-radius:4px;padding:3px;' + (sel ? "outline:2px solid #fff;" : "") + (it.rar >= 2 ? "box-shadow:0 0 8px " + RAR[it.rar].c + "88;" : "") + 'cursor:pointer"><div style="font:8px monospace;opacity:.6;text-transform:uppercase">' + SLOTN[sl] + "</div>" + invImg(it, 52) + "</div>";
       var k = eKey(sl); return '<div style="width:62px;border:2px dashed #4a4236;border-radius:4px;padding:3px;opacity:.75"><div style="font:8px monospace;opacity:.6;text-transform:uppercase">' + SLOTN[sl] + '</div><div style="height:52px;display:flex;align-items:center;justify-content:center;font:9px monospace;text-align:center;color:#8f8672">' + (k ? LOOT[k].name.split(" ")[0] : "empty") + "</div></div>";
     };
-    h += '<div style="display:flex;justify-content:center;align-items:center;gap:8px;margin:.4rem 0"><div style="display:flex;flex-direction:column;gap:6px">' + slotsHtml("w") + slotsHtml("r") + '</div><div style="background:#0e0c09;border:1px solid #3a3226;border-radius:6px;padding:6px"><img src="' + figureUrl() + '" width="110" height="154" style="image-rendering:auto;display:block"></div><div style="display:flex;flex-direction:column;gap:6px">' + slotsHtml("a") + slotsHtml("k") + "</div></div>";
+    h += '<div style="display:flex;justify-content:center;align-items:center;gap:8px;margin:.4rem 0"><div style="display:flex;flex-direction:column;gap:6px">' + slotsHtml("w") + slotsHtml("r") + '</div><div style="background:#0e0c09;border:1px solid #3a3226;border-radius:6px;padding:6px"><img src="' + (ovFigure() || figureUrl()) + '" width="110" height="154" style="image-rendering:auto;display:block"></div><div style="display:flex;flex-direction:column;gap:6px">' + slotsHtml("a") + slotsHtml("k") + "</div></div>";
     h += '<p class="dim-t" style="text-align:center;margin:.2rem 0">Strike ' + atkDmg().toFixed(1) + " · blocks " + Math.round(armRed() * 100) + "% · hearts " + maxHp() + " · gear power " + Math.round(gearEff() * 100) + "%</p>";
     h += setPanel();
     var pack = items.filter(function (it) { return e[it.slot] !== "#" + it.uid; }).sort(function (a, b) { return b.rar - a.rar || (b.t || 0) - (a.t || 0); });
@@ -12482,6 +12482,18 @@ function ovBfFx(g, t, dt) {
 // card art for the character creator (mus-free; images in img/mk_<id>.webp)
 var MKART = { farm: 1, wagon: 1, forge: 1, keep: 1, road: 1, archive: 1, hunter: 1, thief: 1, levy: 1, acolyte: 1, caravan: 1, void: 1, sellsword: 1, outlaw: 1, retainer: 1, clerk: 1, journeyman: 1, pilgrim: 1 };
 function mkArt(id) { return MKART[id] ? '<span class="mkart" style="background-image:url(img/mk_' + id + '.webp)"></span>' : ""; }
+// painted full-figure portrait for the inventory paper doll (falls back to the drawn figure until the sprite loads)
+function figureUrlOld2() { return ""; }
+function ovFigure() {
+  try {
+    var id = spId({ sp: "hero" }), im = spImg(id); if (!im) return null;
+    var W = 240, H = 336, c = document.createElement("canvas"); c.width = W; c.height = H; var g = c.getContext("2d");
+    var gr = g.createRadialGradient(W / 2, H * 0.45, 10, W / 2, H * 0.5, H * 0.7); gr.addColorStop(0, "#3a2e1e"); gr.addColorStop(1, "#0b0907"); g.fillStyle = gr; g.fillRect(0, 0, W, H);
+    g.fillStyle = "rgba(0,0,0,0.45)"; g.beginPath(); g.ellipse(W / 2, H * 0.93, W * 0.3, 12, 0, 0, 6.3); g.fill();
+    var k = (H * 0.88) / im.naturalHeight, dw = im.naturalWidth * k, dh = im.naturalHeight * k; g.imageSmoothingQuality = "high"; g.drawImage(im, (W - dw) / 2, H * 0.05, dw, dh);
+    return c.toDataURL("image/png");
+  } catch (e) { return null; }
+}
 
   // ---- input ----
   (function () {
