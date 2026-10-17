@@ -12718,6 +12718,7 @@ function ovBfFx(g, t, dt) {
   }
   function mDetect() {
     var now = Date.now() / 1000;
+    if (typeof F !== "undefined" && F && !F.over) { mFightT = now; return "combat"; }
     if (typeof AR !== "undefined" && AR) {
       var fight = false, boss = false; AR.en.forEach(function (e) { if (!e.dead && !e.gone && e.aggro) { fight = true; if (e.d.boss) boss = true; } });
       if (boss) { mFightT = now; return "boss"; } if (fight) { mFightT = now; return "combat"; }
