@@ -12625,18 +12625,53 @@ function ovGateKind(e) {
   if (!sp2) return null; var th = sp2.th; if (th === "cave" || (typeof ATH !== "undefined" && ATH[th] && ATH[th].cave)) return "dungeon_gate";
   return "town_gate";
 }
+var GATEC = {};
+// despill the magenta fringe and fade the hard cut edges so every gate melts into the ground
+function gateImgP(k, im) {
+  if (GATEC[k]) return GATEC[k];
+  try {
+    var c = document.createElement("canvas"); c.width = im.naturalWidth; c.height = im.naturalHeight; var x = c.getContext("2d"); x.drawImage(im, 0, 0);
+    var d = x.getImageData(0, 0, c.width, c.height), p = d.data, W = c.width, H = c.height, i, xx, yy;
+    var fx = k === "cave_mouth" ? 0.2 : k === "town_gate" ? 0.14 : 0.06, ft = k === "cave_mouth" ? 0.22 : 0, fb = 0.04;
+    function sm(t) { t = Math.max(0, Math.min(1, t)); return t * t * (3 - 2 * t); }
+    for (yy = 0; yy < H; yy++) for (xx = 0; xx < W; xx++) {
+      i = (yy * W + xx) * 4; var r = p[i], gg = p[i + 1], b = p[i + 2], al = p[i + 3];
+      if (al > 0) {
+        var pur = Math.min(r, b) - gg;
+        if (pur > 14) { var f = Math.min(1, (pur - 14) / 50); p[i + 3] = al * (1 - 0.85 * f); p[i] = r * (1 - 0.7 * f); p[i + 2] = b * (1 - 0.7 * f); }
+        var u = xx / W, v = yy / H, m = sm(u / fx) * sm((1 - u) / fx) * (ft ? sm(v / ft) : 1);
+        if (k === "town_gate") { var ey = sm((1 - v) / 0.1); m = Math.min(m, 1); }
+        p[i + 3] = p[i + 3] * m;
+      }
+    }
+    x.putImageData(d, 0, 0); GATEC[k] = c; return c;
+  } catch (e) { GATEC[k] = im; return im; }
+}
 function ovGateArt(g, a) {
   try {
     (a.sp.exits || []).forEach(function (e) {
-      var k = ovGateKind(e); if (!k) return; if (k === "town_gate" && (a.sp.th === "cave" || (ATH[a.sp.th] && ATH[a.sp.th].cave))) k = "cave_mouth"; var im = wm2(k); if (!im) return;
-      var cx = (e.x + e.w / 2) * ATS, by = (e.y + e.h) * ATS + 3, w = k === "cave_mouth" ? 58 : k === "dungeon_gate" ? 48 : 52, h = w * im.naturalHeight / im.naturalWidth;
+      var k = ovGateKind(e); if (!k) return; if (k === "town_gate" && (a.sp.th === "cave" || (ATH[a.sp.th] && ATH[a.sp.th].cave))) k = "cave_mouth"; var im0 = wm2(k); if (!im0) return; var im = gateImgP(k, im0);
+      var cx = (e.x + e.w / 2) * ATS, by = (e.y + e.h) * ATS + 3, w = k === "cave_mouth" ? 64 : k === "dungeon_gate" ? 52 : 60, h = w * im0.naturalHeight / im0.naturalWidth;
       if (e.x === 0) cx = Math.max(cx, w * 0.42); if (e.x >= a.W - 1) cx = Math.min(cx, a.W * ATS - w * 0.42);
       if (e.y === 0) by = Math.max(by, h * 0.92);
-      var locked = e.lock && e.lock();
-      g.save(); g.imageSmoothingEnabled = true; g.imageSmoothingQuality = "high"; g.globalAlpha = locked ? 0.7 : 1;
-      g.fillStyle = "rgba(0,0,0,0.35)"; g.beginPath(); g.ellipse(cx, by - 1, w * 0.42, 4, 0, 0, 6.283); g.fill();
-      g.drawImage(im, cx - w / 2, by - h, w, h);
-      if (!locked) { var pu = 0.35 + 0.2 * Math.sin(a.t * 2.5), gr = g.createRadialGradient(cx, by - h * 0.35, 1, cx, by - h * 0.35, w * 0.45); gr.addColorStop(0, "rgba(" + (k === "cave_mouth" ? "120,90,200" : "255,180,80") + "," + pu.toFixed(2) + ")"); gr.addColorStop(1, "rgba(0,0,0,0)"); g.globalCompositeOperation = "lighter"; g.fillStyle = gr; g.fillRect(cx - w, by - h - 10, w * 2, h + 20); }
+      var locked = e.lock && e.lock(), i, hs = function (n) { var q = Math.sin(n * 91.7 + e.x * 13.1 + e.y * 7.3) * 43758.5453; return q - Math.floor(q); };
+      g.save(); g.imageSmoothingEnabled = true; g.imageSmoothingQuality = "high";
+      // worn earth and long soft shadow under the structure
+      var ap = g.createRadialGradient(cx, by - 2, 2, cx, by - 2, w * 0.75); ap.addColorStop(0, "rgba(58,40,26,0.55)"); ap.addColorStop(0.6, "rgba(58,40,26,0.22)"); ap.addColorStop(1, "rgba(58,40,26,0)");
+      g.save(); g.translate(cx, by - 2); g.scale(1, 0.34); g.translate(-cx, -(by - 2)); g.fillStyle = ap; g.beginPath(); g.arc(cx, by - 2, w * 0.75, 0, 6.283); g.fill(); g.restore();
+      g.fillStyle = "rgba(0,0,0,0.34)"; g.beginPath(); g.ellipse(cx, by - 1, w * 0.46, 5, 0, 0, 6.283); g.fill();
+      // scattered pebbles behind
+      for (i = 0; i < 9; i++) { var px = cx + (hs(i + 1) - 0.5) * w * 1.25, py = by - 2 + (hs(i + 20) - 0.3) * 8, rr = 1 + hs(i + 40) * 2; g.fillStyle = "rgba(" + (80 + hs(i + 60) * 40 | 0) + "," + (74 + hs(i + 61) * 30 | 0) + ",68,0.85)"; g.beginPath(); g.ellipse(px, py, rr * 1.3, rr * 0.8, 0, 0, 6.283); g.fill(); }
+      g.globalAlpha = locked ? 0.7 : 1; g.drawImage(im, cx - w / 2, by - h, w, h); g.globalAlpha = 1;
+      // base melts into the ground: dark contact + moss
+      var bg = g.createLinearGradient(0, by - h * 0.22, 0, by + 2); bg.addColorStop(0, "rgba(20,24,14,0)"); bg.addColorStop(1, "rgba(20,24,14,0.38)"); g.fillStyle = bg; g.fillRect(cx - w * 0.5, by - h * 0.22, w, h * 0.22 + 2);
+      // foreground tufts, rubble and ferns overlap the foot of the sprite
+      for (i = 0; i < 14; i++) {
+        var tx = cx + (hs(i + 80) - 0.5) * w * 1.15, ty = by + (hs(i + 100) - 0.55) * 5, kind = hs(i + 120);
+        if (kind < 0.55) { g.strokeStyle = kind < 0.25 ? "rgba(70,96,44,0.9)" : "rgba(54,78,38,0.9)"; g.lineWidth = 1; for (var bl = -1; bl <= 1; bl++) { g.beginPath(); g.moveTo(tx + bl, ty); g.lineTo(tx + bl * 2.4 + (hs(i * 3 + bl) - 0.5) * 2, ty - 3 - hs(i + 140 + bl) * 4); g.stroke(); } }
+        else { var rs = 1.5 + hs(i + 160) * 2.4; g.fillStyle = "rgba(" + (96 + hs(i) * 30 | 0) + "," + (90 + hs(i) * 24 | 0) + ",84,0.95)"; g.beginPath(); g.ellipse(tx, ty, rs * 1.3, rs * 0.85, 0, 0, 6.283); g.fill(); g.fillStyle = "rgba(0,0,0,0.3)"; g.fillRect(tx - rs, ty + rs * 0.5, rs * 2.2, 1); }
+      }
+      if (!locked) { var pu = 0.3 + 0.18 * Math.sin(a.t * 2.5), gr = g.createRadialGradient(cx, by - h * 0.35, 1, cx, by - h * 0.35, w * 0.4); gr.addColorStop(0, "rgba(" + (k === "cave_mouth" ? "120,90,200" : "255,180,80") + "," + pu.toFixed(2) + ")"); gr.addColorStop(1, "rgba(0,0,0,0)"); g.globalCompositeOperation = "lighter"; g.fillStyle = gr; g.beginPath(); g.arc(cx, by - h * 0.35, w * 0.4, 0, 6.283); g.fill(); }
       g.restore();
     });
   } catch (x) {}
@@ -12668,13 +12703,38 @@ function wmCaves(now) {
 // top-edge gates sat under the HUD: pull cave / dungeon / town entrances a few tiles into the map and cut a path to them
 function ovExitsIn(sp, g, W, H) {
   try {
-    if (sp.over || sp._exin) return; sp._exin = 1;
+    if (sp.over) return;
     (sp.exits || []).forEach(function (e) {
       if (!ovGateKind(e)) return;
-      var x, y;
-      if (e.y === 0 && e.h <= 2) { e.y = 6; for (y = 0; y <= 7; y++) for (x = e.x - 1; x <= e.x + e.w; x++) if (x >= 0 && x < W) g[y][x] = y < 5 ? 2 : (y >= 6 && x >= e.x && x < e.x + e.w ? 0 : 1); }
-      else if (e.y + e.h >= H && e.h <= 2) { e.y = H - 4; for (y = H - 5; y < H; y++) for (x = e.x - 1; x <= e.x + e.w; x++) if (x >= 0 && x < W) g[y][x] = y < H - 2 && x >= e.x && x < e.x + e.w ? 0 : (y >= H - 2 ? 2 : 1); }
+      var x, y; if (e._y0 === undefined) e._y0 = e.y; e.y = e._y0;
+      var hv = function (x, y) { var q = Math.sin(x * 127.1 + y * 311.7 + e.x * 17.3) * 43758.5453; return q - Math.floor(q); };
+      var put = function (x, y, v) { if (x < 0 || x >= W || y < 0 || y >= H) return; var o = g[y][x]; if (o === 3 || o === 4 || o === 5 || o === 6 || o === 9) return; g[y][x] = v; };
+      var dxo = function (x) { return x < e.x ? e.x - x : x >= e.x + e.w ? x - (e.x + e.w - 1) : 0; };
+      if (e.y === 0 && e.h <= 2) {
+        e.y = 6;
+        for (y = 0; y <= 9; y++) for (x = e.x - 5; x <= e.x + e.w + 4; x++) {
+          var d = dxo(x), h = hv(x, y);
+          if (y <= 4) put(x, y, d <= 3 ? 2 : h < 0.45 ? 2 : (h < 0.6 ? 7 : 0));
+          else if (y === 5) put(x, y, d === 0 ? 0 : d === 1 ? 0 : h < 0.6 ? 7 : 0);
+          else if (d === 0) put(x, y, y <= 8 || h < 0.5 ? 1 : 0);
+          else if (d >= 2 && y <= 7 && h < 0.5) put(x, y, 7);
+          else if (d >= 2 && y <= 7) put(x, y, 0);
+        }
+      }
+      else if (e.y + e.h >= H && e.h <= 2) {
+        e.y = H - 4;
+        for (y = H - 10; y < H; y++) for (x = e.x - 5; x <= e.x + e.w + 4; x++) {
+          var d2 = dxo(x), h2 = hv(x, y);
+          if (y >= H - 2) put(x, y, d2 <= 3 ? 2 : h2 < 0.45 ? 2 : 0);
+          else if (y >= H - 4) put(x, y, d2 === 0 ? 0 : d2 === 1 ? 0 : h2 < 0.55 ? 7 : 0);
+          else if (d2 === 0 && y >= H - 8) put(x, y, 1);
+          else if (d2 >= 2 && y >= H - 5 && h2 < 0.4) put(x, y, 7);
+        }
+      }
     });
+    // never leave the arrival point inside the walls carved around a gate
+    var sx = sp.spawn && sp.spawn[0], sy = sp.spawn && sp.spawn[1];
+    if (sp.spawn && g[sy] && (g[sy][sx] === 1 || g[sy][sx] === 2)) { var yy = sy; while (yy > 2 && (g[yy][sx] === 1 || g[yy][sx] === 2)) yy--; sp.spawn = [sx, yy]; }
   } catch (x) {}
 }
 // ---- THE WRIT BOARD: endless scaling contracts posted in every town. New writs every seven days. ----
