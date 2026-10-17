@@ -4614,8 +4614,8 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
     }
     enPaint(m, g, W, H, th, sp);
     if (sp.paint) sp.paint(m, g);
-    ovTownPaint(m, sp, th);
-    terrainEnhance(m, g, W, H, th, sp);
+    if (!sp._hr) ovTownPaint(m, sp, th);
+    terrainEnhance(m, sp._hr ? ovGMask(g) : g, W, H, th, sp);
     d2Decor(m, g, W, H, th, sp);
     enHousesLate(m, sp);
     m.save(); m.setTransform(1, 0, 0, 1, 0, 0); ovGround(mc, th); m.restore();
@@ -4860,13 +4860,13 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
     g.fillStyle = "#0b0912"; g.fillRect(0, 0, VW, VH); var YW = ovYaw(); if (YW) { g.save(); g.translate(p.x - cx, p.y - cy); g.rotate(YW); g.translate(cx - p.x, cy - p.y); } if (P3 && a.th && a.th.g) ovOutside(g, a, cx, cy, VW, VH);
     ovMcDraw(g, a, cx, cy, VW, VH, mw, mh, YW);
     g.save(); g.translate(-cx, -cy); waterAnim(g, a, cx, cy, VW, VH);
-    (a.sp.exits || []).forEach(function (e) { if (e.lock && e.lock()) return; g.fillStyle = "rgba(255,240,170," + (0.12 + 0.08 * Math.sin(a.t * 3)) + ")"; g.fillRect(e.x * ATS, e.y * ATS, e.w * ATS, e.h * ATS); if (a.sp.th === "cave") { for (var sk2 = 1; sk2 <= 3; sk2++) { g.fillStyle = "rgba(255,240,170," + (0.3 - 0.07 * sk2 + 0.05 * Math.sin(a.t * 3)) + ")"; g.fillRect(e.x * ATS, (e.y - sk2) * ATS, e.w * ATS, ATS); } g.fillStyle = "rgba(255,255,255,0.7)"; g.fillRect(e.x * ATS + 1, e.y * ATS + 1, e.w * ATS - 2, 2); } });
+    (a.sp.exits || []).forEach(function (e) { if (e.lock && e.lock()) return; if (typeof ovGateKind === "function" && ovGateKind(e)) return; g.fillStyle = "rgba(255,240,170," + (0.12 + 0.08 * Math.sin(a.t * 3)) + ")"; g.fillRect(e.x * ATS, e.y * ATS, e.w * ATS, e.h * ATS); if (a.sp.th === "cave") { for (var sk2 = 1; sk2 <= 3; sk2++) { g.fillStyle = "rgba(255,240,170," + (0.3 - 0.07 * sk2 + 0.05 * Math.sin(a.t * 3)) + ")"; g.fillRect(e.x * ATS, (e.y - sk2) * ATS, e.w * ATS, ATS); } g.fillStyle = "rgba(255,255,255,0.7)"; g.fillRect(e.x * ATS + 1, e.y * ATS + 1, e.w * ATS - 2, 2); } });
     ovGateArt(g, a);
     a.items.forEach(function (it) { if (it.t === "item") { var ic = RAR[it.item.rar].c, ib = Math.round(Math.sin(a.t * 4 + it.x) * 1.5), ix = Math.round(it.x), iy = Math.round(it.y - 5 + ib); itemDrop(g, ix, iy, ic, ib, a.t, it); if (Math.hypot(it.x - AR.p.x, it.y - AR.p.y) < 60) { g.font = "bold 7px monospace"; var nw = g.measureText(it.item.name).width; g.fillStyle = "rgba(10,8,6,0.85)"; g.fillRect(ix - nw / 2 - 3, iy - 36, nw + 6, 10); g.fillStyle = ic; g.fillText(it.item.name, ix - nw / 2, iy - 28); } return; }
       if (it.t === "arrow") { g.fillStyle = "#e8d8a8"; g.fillRect(Math.round(it.x) - 3, Math.round(it.y), 7, 1); g.fillStyle = "#a07030"; g.fillRect(Math.round(it.x) + 3, Math.round(it.y) - 1, 2, 3); return; } g.fillStyle = "#e84a5a"; var bx = Math.round(it.x), by = Math.round(it.y - 4 + Math.sin(a.t * 5) * 1.2); g.fillRect(bx - 3, by - 3, 3, 3); g.fillRect(bx, by - 3, 3, 3); g.fillRect(bx - 2, by, 5, 2); g.fillRect(bx - 1, by + 2, 3, 1); });
     ovDecals(g, a);
     var list = [];
-    a.npcs.forEach(function (n) { if (n.vis && !n.vis()) return; list.push({ x: n.px, y: n.py, f: function () { if (n.cell) { ovCast(g, n.px, n.py, 14, 17); g.fillStyle = "#4a4a56"; g.fillRect(n.px - 7, n.py - 18, 14, 17); g.fillStyle = "#1e1e26"; g.fillRect(n.px - 5, n.py - 16, 10, 15); g.fillStyle = "#8a8a96"; g.fillRect(n.px - 3, n.py - 14, 1, 11); g.fillRect(n.px + 2, n.py - 14, 1, 11); } else if (n.gate) { ovCast(g, n.px, n.py, 18, 17); g.fillStyle = "#5a5466"; g.fillRect(n.px - 9, n.py - 17, 18, 4); g.fillRect(n.px - 9, n.py - 14, 4, 13); g.fillRect(n.px + 5, n.py - 14, 4, 13); g.fillStyle = "#0e0c14"; g.fillRect(n.px - 5, n.py - 14, 10, 13); g.fillStyle = "rgba(154,127,214," + (0.35 + 0.2 * Math.sin(a.t * 3)) + ")"; g.fillRect(n.px - 3, n.py - 10, 6, 9); } else if (n.draw) { n.draw(g, n.px, n.py, a.t); } else if (n.chest) ovChest(g, n); else drawChar(g, n.px, n.py, { sp: "npc:" + n.id, nm: n.name, col: n.col, hair: n.hair, face: { x: 0, y: 1 }, small: n.small, big: false }); if (n.mk && n.mk()) { var mq = n.mk(), my = n.py - 20 + Math.round(Math.sin(a.t * 4)); g.font = "bold 12px monospace"; g.fillStyle = "#1a1209"; g.fillText(mq === 1 ? "!" : "?", n.px - 3, my + 1); g.fillText(mq === 1 ? "!" : "?", n.px - 5, my); g.fillStyle = mq === 1 ? "#ffd84a" : "#9fd8ff"; g.fillText(mq === 1 ? "!" : "?", n.px - 4, my); } } }); });
+    a.npcs.forEach(function (n) { if (n.vis && !n.vis()) return; list.push({ x: n.px, y: n.py, f: function () { if (n.cell) { ovCast(g, n.px, n.py, 14, 17); g.fillStyle = "#4a4a56"; g.fillRect(n.px - 7, n.py - 18, 14, 17); g.fillStyle = "#1e1e26"; g.fillRect(n.px - 5, n.py - 16, 10, 15); g.fillStyle = "#8a8a96"; g.fillRect(n.px - 3, n.py - 14, 1, 11); g.fillRect(n.px + 2, n.py - 14, 1, 11); } else if (n.gate) { if (typeof ovGateNpc === "function") return ovGateNpc(g, n, a); ovCast(g, n.px, n.py, 18, 17); g.fillStyle = "#5a5466"; g.fillRect(n.px - 9, n.py - 17, 18, 4); g.fillRect(n.px - 9, n.py - 14, 4, 13); g.fillRect(n.px + 5, n.py - 14, 4, 13); g.fillStyle = "#0e0c14"; g.fillRect(n.px - 5, n.py - 14, 10, 13); g.fillStyle = "rgba(154,127,214," + (0.35 + 0.2 * Math.sin(a.t * 3)) + ")"; g.fillRect(n.px - 3, n.py - 10, 6, 9); } else if (n.draw) { n.draw(g, n.px, n.py, a.t); } else if (n.chest) ovChest(g, n); else drawChar(g, n.px, n.py, { sp: "npc:" + n.id, nm: n.name, col: n.col, hair: n.hair, face: { x: 0, y: 1 }, small: n.small, big: false }); if (n.mk && n.mk()) { var mq = n.mk(), my = n.py - 20 + Math.round(Math.sin(a.t * 4)); g.font = "bold 12px monospace"; g.fillStyle = "#1a1209"; g.fillText(mq === 1 ? "!" : "?", n.px - 3, my + 1); g.fillText(mq === 1 ? "!" : "?", n.px - 5, my); g.fillStyle = mq === 1 ? "#ffd84a" : "#9fd8ff"; g.fillText(mq === 1 ? "!" : "?", n.px - 4, my); } } }); });
     a.en.forEach(function (e) { if (e.dead || e.gone) return; list.push({ x: e.x, y: e.y, f: function () { drawChar(g, e.x, e.y, { sp: e.type, col: e.d.col, band: e.d.band, hair: "#2a1a14", face: { x: Math.sign(p.x - e.x), y: 1 }, big: e.d.big, walk: e.aggro && !e.yield, anim: a.t * 8, flash: e.flash > 0 }); if (!e.sp) ovHeldE(g, e); if (e.hp < e.hpm || e.d.boss) { g.fillStyle = "#000"; g.fillRect(e.x - 6, e.y - 19, 12, 2); g.fillStyle = e.yield ? "#e0d070" : "#d4562c"; g.fillRect(e.x - 6, e.y - 19, Math.max(0, Math.round(12 * e.hp / e.hpm)), 2); } if (e.yield) { g.fillStyle = "#ffd84a"; g.fillRect(e.x - 1, e.y - 27, 2, 5); g.fillRect(e.x - 1, e.y - 21, 2, 2); } } }); });
     list.push({ x: p.x, y: p.y, f: function () { if (p.inv > 0 && Math.floor(a.t * 20) % 2) return; drawChar(g, p.x, p.y, { sp: "hero", atk: p.atk, col: eqq().a === "plate" ? "#c9d2e0" : eqq().a === "mail" ? "#8a8f9c" : eqq().k ? "#a8743c" : pLook().cloak, hair: pLook().hair, skin: pLook().skin, hat: pLook().hat, hatc: pLook().hatc, band: pLook().band, face: p.face, walk: (aInput()[0] || aInput()[1]), anim: p.anim, flash: p.flash > 0.12 }); ovHeldA(g, p, p.face, p.atk > 0 ? 1 - p.atk / 0.2 : -1, eqq().w === "steel" ? "steel" : "iron"); if (p.atk > 0) drawSlash(g, p); } });
     COOP.draw(a, list, g);
@@ -11842,8 +11842,8 @@ function enPaint(m, g, W, H, th, sp) {
   try {
     if (typeof END === "undefined" || !enRdy("tex_grass") || !enRdy("obj_oak")) return;
     var tn = sp.th, cave = !!th.cave, x, y, T = {};
-    var tg = cave ? "tex_cave" : tn === "ember" ? "tex_ember" : tn === "pass" ? "tex_cave" : "tex_grass";
-    var tp = cave ? "tex_slab" : "tex_dirt", tz = cave ? "tex_slab" : "tex_cobble", tw = "tex_wood", tr = "tex_roof", tk = "tex_rockwall";
+    var tg = cave ? "tex_cave" : tn === "ember" ? "tex_ember" : tn === "pass" ? "tex_cave" : tn === "stone" ? "tex_slab" : "tex_grass";
+    var tp = cave ? "tex_slab" : tn === "stone" ? "tex_cobble" : "tex_dirt", tz = cave ? "tex_slab" : "tex_cobble", tw = "tex_wood", tr = "tex_roof", tk = "tex_rockwall";
     var names = [tg, tp, tz, tw, tr, tk];
     names.forEach(function (n) { if (!T[n]) T[n] = m.createPattern(ENI[n], "repeat"); });
     var MS = m.canvas._ms || 1; m.save(); m.scale(1 / 3, 1 / 3);
@@ -11855,9 +11855,9 @@ function enPaint(m, g, W, H, th, sp) {
       if (t === 0 || t === 8) fill(tg, px, py, 0.8);
       else if (t === 1) fill(tp, px, py, 0.85);
       else if (t === 9) fill(tz, px, py, 0.85);
-      else if (t === 4) fill(HR ? tg : tr, px, py, HR ? 0.8 : 0.85);
-      else if (t === 5) fill(HR ? tg : tw, px, py, HR ? 0.8 : 0.55);
-      else if (t === 6 && HR) fill(tp, px, py, 0.85);
+      else if (t === 4) fill(HR ? tg : tr, px, py, HR ? 1 : 0.85);
+      else if (t === 5) fill(HR ? tg : tw, px, py, HR ? 1 : 0.55);
+      else if (t === 6 && HR) fill(tg, px, py, 1);
       else if (t === 2) { if (cave) fill(tk, px, py, 0.8); else { fill(tg, px, py, 0.85); trees.push([x, y]); } }
       else if (t === 7) { fill(tg, px, py, 0.8); trees.push([x, y]); }
     }
@@ -11868,7 +11868,7 @@ function enPaint(m, g, W, H, th, sp) {
     trees.forEach(function (q) {
       var x = q[0], y = q[1], v = hsh(x, y), px = x * ATS + 8, py = y * ATS + 17;
       if (g[y][x] === 7) { var rs = enSprite("obj_rock", 22, MS); if (rs) m.drawImage(rs, px - rs.width / MS / 2, py - rs.height / MS + 2, rs.width / MS, rs.height / MS); return; }
-      var k = tn === "ember" ? (v < 0.55 ? "obj_dead" : "obj_oak") : tn === "pass" ? (v < 0.7 ? "obj_pine" : "obj_dead") : (v < 0.15 ? "obj_pine" : "obj_oak");
+      var k = tn === "stone" ? (v < 0.5 ? "obj_rock" : "obj_pine") : tn === "ember" ? (v < 0.55 ? "obj_dead" : "obj_oak") : tn === "pass" ? (v < 0.7 ? "obj_pine" : "obj_dead") : (v < 0.15 ? "obj_pine" : "obj_oak");
       var hh = Math.round(32 + v * 8), s = enSprite(k, hh, MS); if (!s) return; var sw = s.width / MS, sh = s.height / MS;
       try { var sl = spSil(s); m.save(); m.globalAlpha = 0.34; m.translate(px, py - 1); m.transform(1, 0, -0.58, -0.24, 0, 0); m.drawImage(sl, -sw / 2, -sh, sw, sh); m.restore(); } catch (e) {}
       m.save(); m.globalAlpha = 1; if (v > 0.5) { m.translate(px, 0); m.scale(-1, 1); m.translate(-px, 0); }
@@ -12623,7 +12623,10 @@ function ovBldExtras(s, t) { if (!wm2("village")) return ovBldExtrasOld(s, t); }
 function ovGateKind(e) {
   if (!e || !e.to) return null; var to = e.to;
   if (/^cave\d+$/.test(to)) return "cave_mouth";
-  if (to === "world" || to === "overland" || (typeof to === "string" && to.indexOf("yard:") === 0)) return null;
+  if (to === "world" || to === "overland" || (typeof to === "string" && to.indexOf("yard:") === 0)) {
+    try { var cur = AR && AR.sp; if (cur && (cur.th === "cave" || (typeof ATH !== "undefined" && ATH[cur.th] && ATH[cur.th].cave))) return "cave_mouth"; } catch (x) {}
+    return "town_gate";
+  }
   var sp2 = null; try { sp2 = getSpec(to); } catch (x) {}
   if (!sp2) return null; var th = sp2.th; if (th === "cave" || (typeof ATH !== "undefined" && ATH[th] && ATH[th].cave)) return "dungeon_gate";
   return "town_gate";
@@ -12962,6 +12965,23 @@ function ovProjA(g, q, a) {
   if (q.own && !q.bolt) ovArrowShape(g, q.x, q.y, ux, uy, 10, true);
   else if (q.bolt) ovOrb(g, q.x, q.y, ux, uy, 3, "150,110,255", t);
   else ovFireball(g, q, t, !!q.boss);
+}
+
+// ground under painted houses is treated as plain ground by the terrain pass (no old house footprint)
+function ovGMask(g) { return g.map(function (row) { return row.map(function (t) { return (t === 4 || t === 5 || t === 6) ? 0 : t; }); }); }
+
+// quest entrances inside towns and villages: painted gate art instead of the old pixel doorway
+function ovGateNpc(g, n, a) {
+  var to = n.gate, k = "dungeon_gate";
+  try { var sp2 = typeof to === "string" ? getSpec(to) : null; if (sp2 && (sp2.th === "cave" || (ATH[sp2.th] && ATH[sp2.th].cave))) k = "cave_mouth"; else if (/^cave\d+$/.test(String(to))) k = "cave_mouth"; } catch (x) {}
+  var im = wm2(k); if (!im) { ovCast(g, n.px, n.py, 18, 17); g.fillStyle = "#2a2430"; g.fillRect(n.px - 9, n.py - 17, 18, 17); return; }
+  var w = k === "cave_mouth" ? 34 : 30, h = w * im.naturalHeight / im.naturalWidth, by = n.py + 2;
+  g.save(); g.imageSmoothingEnabled = true; g.imageSmoothingQuality = "high";
+  g.fillStyle = "rgba(0,0,0,0.38)"; g.beginPath(); g.ellipse(n.px, by - 1, w * 0.4, 3.5, 0, 0, 6.283); g.fill();
+  g.drawImage(im, n.px - w / 2, by - h, w, h);
+  var pu = 0.3 + 0.18 * Math.sin(a.t * 2.5), gr = g.createRadialGradient(n.px, by - h * 0.35, 1, n.px, by - h * 0.35, w * 0.4);
+  gr.addColorStop(0, "rgba(" + (k === "cave_mouth" ? "120,170,255" : "190,140,255") + "," + pu.toFixed(2) + ")"); gr.addColorStop(1, "rgba(120,80,200,0)");
+  g.globalCompositeOperation = "lighter"; g.fillStyle = gr; g.fillRect(n.px - w / 2, by - h, w, h); g.restore();
 }
 // ---- ovVO: voice-over from pre-rendered files (vo/<who>_<key>_<n>.mp3). Hero and folk lines now; narrator later. ----
 var VO = (function () {
