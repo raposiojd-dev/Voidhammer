@@ -950,9 +950,10 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
     S.enemies.push({ id: S.eid++, kind: "bandit", x: v.x + Math.cos(a) * r, y: v.y + Math.sin(a) * r, n: Math.round((rndInt(8, 16) + Math.floor(S.day / 12)) * DF.en * (1 + 0.05 * (lvl() - 1))), q: 0.95, cool: 0, dest: null });
   }
   function spawnVoid() {
+    if (!S.rifts.some(function (r) { return r.c === curCell(); })) return;
     var a = rnd(0, 6.283), r = S.voidR - 8, cx = ccx(S.px), cy = ccy(S.py);
-    if (S.rifts.length) { var rf = S.rifts[rndInt(0, S.rifts.length - 1)], p = riftPos(rf); cx = p.x; cy = p.y; r = 0; }
-    S.enemies.push({ id: S.eid++, kind: "void", x: cx + Math.cos(a) * (r || 22), y: cy + Math.sin(a) * (r || 22), n: Math.round((14 + Math.floor(S.day / 6)) * DF.en * (1 + 0.05 * (lvl() - 1))), q: 1.35, cool: 0, dest: null });
+    var _lr = S.rifts.filter(function (r) { return r.c === curCell(); }); if (_lr.length) { var rf = _lr[rndInt(0, _lr.length - 1)], p = riftPos(rf); cx = p.x; cy = p.y; r = 0; }
+    S.enemies.push({ id: S.eid++, kind: "void", x: cx + Math.cos(a) * (r || 22), y: cy + Math.sin(a) * (r || 22), n: Math.round((14 + Math.floor(S.day / 6)) * DF.en * (1 + 0.05 * (lvl() - 1)) * ovVStr()), q: 1.35, cool: 0, dest: null });
     toast("Something has walked out of the Void.");
   }
   function countKind(k) { return S.enemies.filter(function (e) { return e.kind === k; }).length; }
@@ -1248,7 +1249,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
   }
   function hostileSite(s) { return !!(s && s.owner && s.owner !== "player" && (s.owner === "rebel" || S.pwar[s.owner])); }
   function news(t) { S.news.push({ d: dayN(), t: t }); if (S.news.length > 14) S.news.shift(); }
-  function sealVoid() {
+  function sealVoid0() {
     S.sealed = true; S.voidR = VOIDMAX; S.rifts = [];
     S.enemies = S.enemies.filter(function (e) { return e.kind !== "void"; });
     toast("The Void is sealed. The edge is gone."); news("The Void was driven off the continent and sealed. No Rift will open again while you hold the line.");
@@ -1270,7 +1271,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
     var bx = 0; Object.keys(s.has || {}).forEach(function (k) { var b = HOLDB[k]; if (b) bx += (b.inc || 0) - b.upkeep; });
     var iv = (base + vs * 2) / (1 + 0.25 * Math.max(0, nh - 1)) - 0.3 * s.gar + bx; return iv > 0 ? iv * (1 + 0.1 * sk("steward")) : iv;
   }
-  function captureSite(s, f) {
+  function captureSite0(s, f) {
     if (f === "player" && S.dip && S.dip.vas) { vassalCapture(s); return; }
     var old = s.owner; s.owner = f; if (f === "player" && FAC[old]) { S.realmU = S.realmU || {}; S.realmU[old] = 1; }
     S.sites.forEach(function (v) { if (v.seat === s.id) v.owner = f; });
@@ -1284,7 +1285,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
       toast("The banner of " + FAC.player.name + " flies over " + s.name + "."); news(FAC.player.name + " took " + s.name + " from " + FAC[old].name + ".");
       addXp(70);
     } else {
-      s.gar = 20; s.unrest = 0; if (s.stock < 30) s.stock = 30; news(old === "rebel" ? FAC[f].name + " crushed the rebels in " + s.name + "." : s.name + " has fallen to " + FAC[f].name + ".");
+      s.gar = 20; s.unrest = 0; if (s.stock < 30) s.stock = 30; news(old === "rebel" ? FAC[f].name + (s.vh ? " drove the Void out of " : " crushed the rebels in ") + s.name + "." : s.name + " has fallen to " + FAC[f].name + ".");
       if (old === "player") { toast("You lost " + s.name + "."); log(s.name + " fell to " + FAC[f].name + ".", "e"); }
     }
   }
@@ -1315,7 +1316,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
     else e.dest = null;
   }
   function tBuyPrice(t) { return t.gb * (1 - 0.05 * ((S.skills && S.skills.haggler) || 0) - 0.06 * sk("bulkdeal")) * (1.25 - 0.5 * Math.min(1, t.stock / t.cap)); }
-  function aiDay() {
+  function aiDay0() {
     S.sites.forEach(function (s) {
       if (s.type === "village") return;
       var sup = ovSupply(s) + (s.owner !== "player" && s.owner !== "rebel" ? 0.8 : 0);
@@ -1388,8 +1389,8 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
     if (S.sieging) { var ss = site(S.sieging); if (ss && dist(S.px, S.py, ss.x, ss.y) < 60) ss.gar *= 0.965; }
     dominionDay(); allyDay(); S.enemies = S.enemies.filter(function (e) { return !e.dead; });
     // rifts
-    if (!S.sealed && S.rifts.length < 3 && S.day >= S.nextRift) { S.rifts.push({ id: S.eid++, a: rnd(0, 6.283), cool: 0, c: rndInt(0, 7) }); S.nextRift = S.day + 25; toast("A new Rift has torn open at the edge."); news("A new Rift opened at the edge of the Void."); }
-    if (!S.sealed && !noVoid() && S.riftBack && S.riftBack.length) { var rdue = S.riftBack.filter(function (d) { return S.day >= d; }); if (rdue.length) { S.riftBack = S.riftBack.filter(function (d) { return S.day < d; }); S.pushes = Math.max(0, S.pushes - rdue.length); rdue.forEach(function () { S.rifts.push({ id: S.eid++, a: rnd(0, 6.283), cool: 0, c: rndInt(0, 7) }); }); toast("A Rift you closed has torn open again. Seal progress " + S.pushes + " of " + SEAL_AT + "."); news("A closed Rift reopened. The Void is pushing back."); } }
+    if (false) { S.rifts.push(ovNewRift()); S.nextRift = S.day + 25; toast("A new Rift has torn open at the edge."); news("A new Rift opened at the edge of the Void."); }
+    if (!S.sealed && !noVoid() && S.riftBack && S.riftBack.length) { var rdue = S.riftBack.filter(function (d) { return S.day >= d; }); if (rdue.length) { S.riftBack = S.riftBack.filter(function (d) { return S.day < d; }); S.pushes = Math.max(0, S.pushes - rdue.length); rdue.forEach(function () { S.rifts.push(ovNewRift()); }); toast("A Rift you closed has torn open again. Seal progress " + S.pushes + " of " + SEAL_AT + "."); news("A closed Rift reopened. The Void is pushing back."); } }
   }
 
   function moveEnemies(dd) {
@@ -1439,7 +1440,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
       var r = S.rifts[j], p = riftPos(r);
       if ((r.cool || 0) <= S.day && dist(p.x, p.y, S.px, S.py) < 22) {
         r.cool = S.day + 4;
-        var rm = Math.min(8, Math.pow(2, S.pushes || 0)); startBattle({ id: -2, kind: "rift", title: "The Rift" + (rm > 1 ? " (" + rm + "x strength)" : ""), n: 34 + Math.floor(S.day / 3), q: 1.5 * rm, riftId: r.id });
+        var rm = Math.min(8, Math.pow(2, S.pushes || 0)); startBattle({ id: -2, kind: "rift", title: "The Rift" + (rm > 1 ? " (" + rm + "x strength)" : ""), n: 34 + Math.floor(S.day / 3), q: 1.5 * rm * ovVStr(), riftId: r.id });
         return;
       }
     }
@@ -2298,21 +2299,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
     for (var i = Math.floor((x0 - off) / 600); i <= Math.floor((x0 + vw - off) / 600); i++) for (var j = Math.floor((y0 - off * 0.4) / 600); j <= Math.floor((y0 + vh - off * 0.4) / 600); j++) ctx.drawImage(CLOUD, i * 600 + off, j * 600 + off * 0.4);
     ctx.globalAlpha = 1;
 
-    ctx.save(); ctx.translate(cellOrg(curCell())[0], cellOrg(curCell())[1]);
-    var R0 = S.voidR, gl = ctx.createRadialGradient(CX, CY, Math.max(1, R0 - 120), CX, CY, R0);
-    gl.addColorStop(0, "rgba(154,136,196,0)"); gl.addColorStop(1, "rgba(154,136,196,0.28)");
-    ctx.fillStyle = gl; ctx.beginPath(); ctx.arc(CX, CY, R0, 0, 6.283); ctx.fill();
-    ctx.fillStyle = "rgba(6,5,10,0.95)"; ctx.beginPath(); ctx.rect(-400, -400, WORLD + 800, WORLD + 800); ctx.closePath(); ctx.moveTo(CX + R0, CY); ctx.arc(CX, CY, R0, 0, 6.283, false); ctx.closePath(); ctx.fill("evenodd");
-    ctx.strokeStyle = "rgba(190,175,225,0.7)"; ctx.lineWidth = 2; ctx.setLineDash([3, 7]); ctx.lineDashOffset = -now / 60;
-    ctx.beginPath(); ctx.arc(CX, CY, R0, 0, 6.283); ctx.stroke(); ctx.setLineDash([]);
-    ctx.fillStyle = "rgba(170,150,215,0.55)";
-    for (var n = 0; n < STATIC.length; n++) {
-      if (Math.random() < 0.55) continue;
-      var p = STATIC[n], rr = R0 + 4 + p.o;
-      ctx.fillRect(CX + Math.cos(p.a) * rr, CY + Math.sin(p.a) * rr, 1.8, 1.8);
-    }
-    ctx.restore();
-
+    
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     var vg = ctx.createRadialGradient(cv.width / 2, cv.height * 0.45, Math.min(cv.width, cv.height) * 0.3, cv.width / 2, cv.height * 0.45, Math.max(cv.width, cv.height) * 0.78);
     vg.addColorStop(0, "rgba(6,5,3,0)"); vg.addColorStop(1, "rgba(6,5,3,0.62)");
@@ -3056,7 +3043,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
   }
   function siegeBodyOld(s) {
     var f = FAC[s.owner], reb = s.owner === "rebel", eff = Math.round(s.gar * s.wall * ovDefAdv(s)), my = Math.round(pStrength());
-    var h = '<div class="warn"><b>' + (reb ? "The rebels hold " : f.name + " hold ") + s.name + '.</b> ' + (reb ? "The people rose when the grain ran out. Any lord may take it back." : "You are at war. The gates are shut to you.") + "</div>";
+    var h = '<div class="warn"><b>' + (reb ? (s.vh ? "The Void holds " : "The rebels hold ") : f.name + " hold ") + s.name + '.</b> ' + (reb ? (s.vh ? "It came out of a Rift and it stayed. Any lord may take it back, and it grows harder with every hold the Void keeps." : "The people rose when the grain ran out. Any lord may take it back.") : "You are at war. The gates are shut to you.") + "</div>";
     h += "<p>The garrison is about " + Math.round(s.gar / 2) * 2 + " men behind " + (s.type === "castle" ? "high walls" : "walls") + ", worth about " + eff + " in a fight. Your column is worth about " + my + ".</p>";
     h += '<p class="dim-t">' + (my > eff * 1.15 ? "You are strong enough to try the walls." : my > eff * 0.7 ? "It would be close. Starve them first." : "Do not assault. You would be cut down.") + "</p>";
     h += row("Assault the walls", "You will lose more men than in the open. Win, and the place is yours.", "Assault", "assault", s.id, "", T() < 3, "amber");
@@ -3113,7 +3100,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
     if (noVoid()) h += "<p><b>There is no Void in this world.</b> Only the realms remain.</p>";
     else if (S.sealed) h += "<p><b>The Void is sealed.</b> The edge is gone and no Rift can open. Keep the realms at peace and it stays that way.</p>";
     else h += '<p>Seal progress: ' + S.pushes + ' of ' + SEAL_AT + ' Rifts closed. Close ' + SEAL_AT + ' and the Void is driven off the map for good. Closed Rifts can tear open again after two or three months, so do not take too long. Each Rift you close makes the next one twice as strong (up to 8x). When closed ones return, the Rifts get weaker again. The next Rift is ' + Math.min(8, Math.pow(2, S.pushes || 0)) + 'x strength. The last three Rifts hold amazing treasure, and the final one always holds a Mythic (purple) item.' + (S.riftBack && S.riftBack.length ? ' The soonest may return in about ' + Math.max(1, Math.min.apply(null, S.riftBack) - S.day) + ' days.' : '') + '</p>';
-    if (!S.sealed && !noVoid()) h += "<p>The edge is " + Math.round(S.voidR) + " from the heart and closes about " + voidRate().toFixed(1) + " a day. " + S.rifts.length + " Rift" + (S.rifts.length === 1 ? "" : "s") + " open. You are " + dc + " from the heart.</p>";
+    if (!S.sealed && !noVoid()) h += ovVSummary() + S.rifts.length + " Rift" + (S.rifts.length === 1 ? "" : "s") + " open.</p>";
     if (!S.sealed) h += '<p class="dim-t">Push it back: close a Rift at the edge (large fight, +80), kill Void-touched bands (+14 each), build Ward-lanterns in villages, and keep the realms at peace. Wars make it hungrier.</p>';
     if (S.news.length) {
       h += '<div class="sec">News</div>';
@@ -8341,13 +8328,13 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
   function ovEngOf(id) { if (!S.eng) S.eng = {}; return S.eng[id] || (S.eng[id] = { lad: 0, ram: 0, twr: 0, cat: 0 }); }
   function ovSgN(st) { return st && (st.type === "castle" || st.id === "irontown") ? 3 : 2; }
   function ovFoes() { try { return Math.round(realmList().length / 3) + (S.pwar && S.pwar.metal ? 1 : 0); } catch (er) { return 1; } }
-  function ovGM(s) { return s.gmax * (s.owner === "player" ? 1.5 : s.owner === "metal" && s.type !== "village" && s.id !== "irontown" ? 1.5 + 0.05 * ovFoes() : 1); }
+  function ovGM0(s) { return s.gmax * (s.owner === "player" ? 1.5 : s.owner === "metal" && s.type !== "village" && s.id !== "irontown" ? 1.5 + 0.05 * ovFoes() : 1); }
   function ovCapK(st) { if (!st || st.id !== "irontown" || st.owner !== "metal") return 0; return S.sites.filter(function (q) { return q.owner === "metal" && q.id !== "irontown" && q.type !== "village"; }).length; }
   function ovCapMul(st) { return st && st.id === "irontown" ? 1.4 * (1 + 0.5 * ovCapK(st)) : 1; }
   function ovDefAdv(st) { return (1.35 + 0.1 * (ovSgN(st) - 1)) * ovCapMul(st); }
   function siegeBody(s) {
     var f = FAC[s.owner], reb = s.owner === "rebel", n = ovSgN(s), eff = Math.round(s.gar * s.wall * ovDefAdv(s)), my = Math.round(pStrength()), e = ovEngOf(s.id), k;
-    var h = '<div class="warn"><b>' + (reb ? "The rebels hold " : f.name + " hold ") + s.name + '.</b> ' + (reb ? "The people rose when the grain ran out. Any lord may take it back." : "You are at war. The gates are shut to you.") + "</div>";
+    var h = '<div class="warn"><b>' + (reb ? (s.vh ? "The Void holds " : "The rebels hold ") : f.name + " hold ") + s.name + '.</b> ' + (reb ? (s.vh ? "It came out of a Rift and it stayed. Any lord may take it back, and it grows harder with every hold the Void keeps." : "The people rose when the grain ran out. Any lord may take it back.") : "You are at war. The gates are shut to you.") + "</div>";
     h += "<p>The garrison is about " + Math.round(s.gar / 2) * 2 + " men behind " + n + " layers of wall (" + (n === 3 ? "outer wall, inner wall and keep" : "outer wall and inner ward") + "), worth about " + eff + " in a fight with the defenders' advantage. Your column is worth about " + my + ".</p>" + (s.id === "irontown" && s.owner === "metal" ? '<p class="dim-t"><b>The Dominion feeds its heart.</b> ' + ovCapK(s) + " other holdings send men, iron and grain to the Iron Throne, adding " + Math.round(ovCapK(s) * 50) + "% to its defence. Its walls are the strongest in the Realms even with none. Take their other towns and castles first, then come with everything you have.</p>" : "");
     h += '<p class="dim-t">' + (my > eff * 1.15 ? "You are strong enough to try the walls." : my > eff * 0.7 ? "It would be close. Build engines and starve them first." : "Do not assault. You would be cut down.") + " Ready: " + e.lad + " ladders, " + e.ram + " rams, " + e.twr + " towers, " + e.cat + " catapults. Without any, your men carry two rough ladders per wall.</p>";
     h += row("Make camp and build siege engines", "Choose what to build and watch it go up. Your army eats and the garrison starves while you work. A relief army may come.", "Make camp", "sgcamp", s.id, "", T() < 1, "amber");
@@ -13654,7 +13641,7 @@ function ovRoadsDraw() {
   // grass over the verges and the odd stone
   P.forEach(function (pts, pi) { for (var i = 1; i < pts.length - 1; i++) { var h = hash(pi * 97 + i, 3); if (h < 0.6) continue; var p = pts[i], n = pts[i + 1], tx = n.x - p.x, ty = n.y - p.y, l = Math.hypot(tx, ty) || 1, sd = h < 0.8 ? -1 : 1, ox = -ty / l * sd * 4.2, oy = tx / l * sd * 4.2; ctx.fillStyle = h > 0.93 ? "rgba(120,112,96,0.7)" : "rgba(60,96,40,0.45)"; ctx.beginPath(); ctx.ellipse(p.x + ox, p.y + oy, h > 0.93 ? 1.3 : 2.6, h > 0.93 ? 0.9 : 1.4, 0, 0, 6.283); ctx.fill(); } });
   ctx.restore();
-  try { ovDrawPortals(); } catch (e) {}
+  try { ovDrawVoid(); ovDrawPortals(); } catch (e) {}
 }
 // one path: the first origin tree you put a point in is yours; the others close
 function skPathChosen() { var o = null, best = 0; SKILLS.forEach(function (b) { if (!b.origin) return; var n = 0; b.items.forEach(function (it) { n += sk(it.id); }); if (n > best) { best = n; o = b.origin; } }); return o; }
@@ -13666,9 +13653,7 @@ function drawMini() {
   g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, N, N);
   g.drawImage(TERR, 0, 0, N, N);
   if (TERRI) g.drawImage(TERRI, 0, 0, N, N);
-  g.fillStyle = "rgba(6,5,10,0.88)"; g.beginPath(); g.rect(0, 0, N, N); g.moveTo(CX * k + S.voidR * k, CY * k); g.arc(CX * k, CY * k, S.voidR * k, 0, 6.283, false); g.fill("evenodd");
-  g.strokeStyle = "rgba(190,175,225,0.8)"; g.lineWidth = 1; g.beginPath(); g.arc(CX * k, CY * k, S.voidR * k, 0, 6.283); g.stroke();
-  S.sites.forEach(function (s) { if (cellAt(s.x, s.y) !== cc) return; g.fillStyle = s.owner && FAC[s.owner] ? FAC[s.owner].col : "#ccc"; var r = s.type === "village" ? 1.8 : s.type === "castle" ? 3 : 3.6; g.fillRect((s.x - o[0]) * k - r, (s.y - o[1]) * k - r, r * 2, r * 2); g.strokeStyle = "#000"; g.lineWidth = 0.6; g.strokeRect((s.x - o[0]) * k - r, (s.y - o[1]) * k - r, r * 2, r * 2); });
+  S.sites.forEach(function (s) { if (cellAt(s.x, s.y) !== cc) return; g.fillStyle = s.vh ? "#8a5ad0" : s.owner && FAC[s.owner] ? FAC[s.owner].col : "#ccc"; var r = s.type === "village" ? 1.8 : s.type === "castle" ? 3 : 3.6; g.fillRect((s.x - o[0]) * k - r, (s.y - o[1]) * k - r, r * 2, r * 2); g.strokeStyle = "#000"; g.lineWidth = 0.6; g.strokeRect((s.x - o[0]) * k - r, (s.y - o[1]) * k - r, r * 2, r * 2); });
   var gt = S.gates && S.gates[cc], tn = S.tunnels && S.tunnels[cc];
   if (gt) { g.fillStyle = "#e8d8ff"; g.beginPath(); g.arc((gt.x - o[0]) * k, (gt.y - o[1]) * k, 3, 0, 6.283); g.fill(); g.strokeStyle = "#6a4aa0"; g.lineWidth = 1; g.stroke(); }
   if (tn && ovTunnelsOpen()) { g.fillStyle = "#2a2232"; g.beginPath(); g.arc((tn.x - o[0]) * k, (tn.y - o[1]) * k, 2.6, 0, 6.283); g.fill(); g.strokeStyle = "#9a8ab8"; g.lineWidth = 0.8; g.stroke(); }
@@ -13822,6 +13807,154 @@ function objective() {
   return o;
 }
 
+// ---- ovVOID: no circle. Once the gates open the Void tears Rifts on every continent and consumes the holds one by one. ----
+function ovVD() { return S.vd || (S.vd = { on: 0, nr: 0, g: {}, fell: {}, hn: 12 }); }
+function ovVCells() { var o = {}; S.sites.forEach(function (s) { o[cellAt(s.x, s.y)] = 1; }); return Object.keys(o).map(Number); }
+function ovVHeld() { var n = 0; S.sites.forEach(function (s) { if (s.vh) n += s.type === "village" ? 0.35 : 1; }); return n; }
+function ovVStr() { return Math.min(3.2, 1 + 0.1 * ovVHeld()); }
+function ovGM(s) { var b = ovGM0(s); return s.vh ? b * ovVStr() : b; }
+function ownerCol(s) { return s && s.vh ? "#8a5ad0" : s && s.owner && FAC[s.owner] ? FAC[s.owner].col : "#c8873a"; }
+function voidRate() { return 0; }
+function daysToFall(s) { return 99999; }
+function riftPos(r) {
+  if (r.x === undefined) {
+    var c = r.c === undefined ? 4 : r.c, o = cellOrg(c), a = r.a || 0, rr = 700, x, y;
+    for (; rr > 150; rr -= 50) { x = o[0] + CX + Math.cos(a) * rr; y = o[1] + CY + Math.sin(a) * rr; if (landOk(x, y)) break; }
+    r.x = x; r.y = y;
+  }
+  return { x: r.x, y: r.y };
+}
+function ovNewRift(c) {
+  var cells = ovVCells();
+  if (c === undefined || c === null) {
+    if (!ovGateOpen()) c = 4;
+    else {
+      var best = 99, pool = [];
+      cells.forEach(function (k) { var n = S.rifts.filter(function (r) { return r.c === k; }).length; if (n < best) { best = n; pool = [k]; } else if (n === best) pool.push(k); });
+      c = pool.length ? pool[Math.floor(Math.random() * pool.length)] : 4;
+    }
+  }
+  var o = cellOrg(c), x = o[0] + CX, y = o[1] + CY, a = Math.random() * 6.283;
+  for (var t = 0; t < 90; t++) {
+    var aa = Math.random() * 6.283, rr = 260 + Math.random() * 620, px = o[0] + CX + Math.cos(aa) * rr, py = o[1] + CY + Math.sin(aa) * rr;
+    if (!landOk(px, py)) continue;
+    var ok = true;
+    S.sites.forEach(function (s) { if (Math.hypot(s.x - px, s.y - py) < 150) ok = false; });
+    S.rifts.forEach(function (r) { var p = riftPos(r); if (Math.hypot(p.x - px, p.y - py) < 260) ok = false; });
+    if (ok) { x = px; y = py; a = aa; break; }
+  }
+  return { id: S.eid++, a: a, cool: 0, c: c, x: x, y: y };
+}
+function ovVSummary() {
+  var v = S.vd; if (!v || !v.on) return "<p>The Void is still at the shore. It will not stay there.</p>";
+  var tw = S.sites.filter(function (s) { return s.vh && s.type !== "village"; }).length, vl = S.sites.filter(function (s) { return s.vh && s.type === "village"; }).length;
+  return "<p>The Void holds " + tw + " town" + (tw === 1 ? "" : "s") + " and " + vl + " village" + (vl === 1 ? "" : "s") + ". Its strength is ×" + ovVStr().toFixed(1) + " and grows with every hold it keeps. ";
+}
+function ovVTake(s, why) {
+  var old = s.owner; s.vo = old; s.vh = 1; s.owner = "rebel"; s.unrest = 0;
+  S.sites.forEach(function (q) { if (q.seat === s.id) { q.vo = q.owner; q.vh = 1; q.owner = "rebel"; } });
+  s.gar = Math.max(s.gar, ovGM(s) * 0.8);
+  if (S.sieging === s.id) S.sieging = null;
+  TERRDIRTY = true;
+  var nm = old === "player" ? "your" : FAC[old] ? FAC[old].name : "the";
+  news(s.name + " has been taken by the Void.");
+  if (old === "player") { toast("The Void has taken " + s.name + "."); log("The Void took " + s.name + ".", "e"); }
+  else if (cellAt(s.x, s.y) === curCell()) toast("The Void has taken " + s.name + ".");
+  var v = ovVD();
+  if (FAC[old] && FAC[old].cap && !v.fell[old] && holdings(old).length === 0) {
+    v.fell[old] = 1; var t = FAC[old].name + " is gone. The last hold fell to the Void, and no one is left to write it down.";
+    news(t); toast(FAC[old].name + " has been consumed."); log(t, "e");
+  }
+}
+function ovVRelease(s) {
+  var v = ovVD();
+  [s].concat(S.sites.filter(function (q) { return q.seat === s.id; })).forEach(function (q) { q.vh = 0; delete q.vo; });
+  TERRDIRTY = true;
+}
+function captureSite(s, f) {
+  var was = !!s.vh, nm = FAC.rebel.name;
+  if (was) FAC.rebel.name = "the Void";
+  try { captureSite0(s, f); } finally { FAC.rebel.name = nm; }
+  if (was) { ovVRelease(s); news(s.name + " was torn back from the Void."); if (f === "player") { toast("You drove the Void out of " + s.name + "."); } }
+}
+function sealVoid() {
+  sealVoid0();
+  S.sites.forEach(function (s) { if (s.vh) { s.owner = s.vo || "rebel"; } });
+  S.sites.filter(function (s) { return s.vh && s.type !== "village"; }).forEach(function (s) { ovVRelease(s); });
+  S.sites.forEach(function (s) { if (s.vh) { s.vh = 0; delete s.vo; } });
+  TERRDIRTY = true; news("Every hold the Void kept crumbles back into the hands that held it.");
+}
+function aiDay() { aiDay0(); try { ovVoidDay(); } catch (e) { if (window.console) console.error(e); } }
+function ovVoidDay() {
+  if (!S || S.ended) return;
+  S.voidR = VOIDMAX; var v = ovVD();
+  if (noVoid() || S.sealed) return;
+  SEAL_AT = v.on ? 9 : 5;
+  if (!v.mig) { v.mig = 1; if (!ovGateOpen()) S.rifts.forEach(function (r) { r.c = 4; delete r.x; delete r.y; }); }
+  if (!ovGateOpen() && !v.on) {
+    var want = S.day >= 60 ? 3 : S.day >= 35 ? 2 : S.day >= 10 ? 1 : 0, pend = (S.riftBack || []).length;
+    if (S.rifts.length + pend < want && S.day >= (S.nextRift || 0)) { S.rifts.push(ovNewRift(4)); S.nextRift = S.day + 12; toast("A Rift has torn open on the Flameborne shore."); news("A Rift has torn open on the Flameborne shore."); }
+    return;
+  }
+  if (!v.on) {
+    v.on = 1; v.t0 = S.day; v.nr = S.day + 22;
+    var t = "The Gates are open and the Void has felt them. It does not need a road. Rifts will open on every shore, and each place it takes makes it stronger.";
+    news(t); log(t, "e");
+  }
+  var cells = ovVCells();
+  if (S.day >= v.nr) {
+    if (S.rifts.length + (S.riftBack || []).length < cells.length * 4) {
+      var r = ovNewRift(); S.rifts.push(r); news("A Rift has opened on the " + ovConts()[r.c].n + " coast.");
+      if (r.c === curCell()) toast("A new Rift has torn open on this continent.");
+    }
+    v.nr = S.day + Math.max(26, 48 - Math.floor(S.rifts.length * 0.6));
+  }
+  cells.forEach(function (c) {
+    var rs = S.rifts.filter(function (r) { return r.c === c; }); if (!rs.length) return;
+    var g = v.g[c] || (v.g[c] = { due: S.day + 70, tgt: null, at: 0 });
+    if (!g.tgt && S.day >= g.due) {
+      var best = null, bd = 1e9;
+      S.sites.forEach(function (s) {
+        if (s.type === "village" || s.vh || cellAt(s.x, s.y) !== c) return;
+        rs.forEach(function (r) { var p = riftPos(r), d = Math.hypot(p.x - s.x, p.y - s.y); if (d < bd) { bd = d; best = s; } });
+      });
+      if (best) { g.tgt = best.id; g.at = S.day + 6; news("The Void is closing on " + best.name + "."); if (best.owner === "player") toast("The Void is closing on " + best.name + ". You have days."); else if (c === curCell()) toast("The Void is closing on " + best.name + "."); }
+      else g.due = S.day + 20;
+    }
+    if (g.tgt && S.day >= g.at) {
+      var s2 = site(g.tgt), held = 0; S.sites.forEach(function (q) { if (q.vh && cellAt(q.x, q.y) === c) held++; });
+      g.tgt = null;
+      if (s2 && !s2.vh) {
+        var atk = (32 + 0.22 * (S.day - (v.t0 || S.day))) * ovVStr() * (1 + 0.3 * rs.length), def = s2.gar * s2.wall;
+        S.enemies.forEach(function (e) { if (e.kind === "lord" && e.fac === s2.owner && Math.hypot(e.x - s2.x, e.y - s2.y) < 90) def += e.n * e.q * 0.8; });
+        if (Math.hypot(S.px - s2.x, S.py - s2.y) < 90) def += pStrength() * 0.8;
+        S.allies.forEach(function (h) { if (!h.away && Math.hypot(h.x - s2.x, h.y - s2.y) < 90) def += allyStr(h) * 0.6; });
+        if (def > atk) { news("The Void broke on the walls of " + s2.name + " and fell back."); if (s2.owner === "player" || c === curCell()) toast("The Void broke on the walls of " + s2.name + "."); s2.gar = Math.max(4, s2.gar * 0.7); g.due = S.day + 24; return; }
+        ovVTake(s2);
+      }
+      g.due = S.day + Math.max(30, Math.round(95 / Math.pow(rs.length, 0.55) * (1 - Math.min(0.5, 0.06 * held))));
+    }
+  });
+  Object.keys(v.fell).forEach(function (f) { if (v.fell[f] && holdings(f).length > 0) { delete v.fell[f]; news(FAC[f].name + " stands again."); toast(FAC[f].name + " stands again."); } });
+  if (!v.lost && !sheet) {
+    var rl = realmList(), allGone = rl.length && rl.every(function (f) { return v.fell[f] || (S.mc && S.mc.fell && S.mc.fell[f]); }) && Object.keys(v.fell).length;
+    if (allGone) { v.lost = 1; S.ended = true; save(); openSheet("ending"); }
+  }
+}
+// the haze around a Void-held place
+function ovDrawVoid() {
+  if (!S || !S.sites) return; var cc = curCell(), now = performance.now();
+  S.sites.forEach(function (s) {
+    if (!s.vh || cellAt(s.x, s.y) !== cc) return;
+    var R = s.type === "village" ? 70 : 130, p = 1 + 0.06 * Math.sin(now / 500 + s.x);
+    var g = ctx.createRadialGradient(s.x, s.y, 8, s.x, s.y, R * p);
+    g.addColorStop(0, "rgba(40,18,70,0.55)"); g.addColorStop(0.6, "rgba(70,40,120,0.28)"); g.addColorStop(1, "rgba(60,30,110,0)");
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(s.x, s.y, R * p, 0, 6.283); ctx.fill();
+    ctx.strokeStyle = "rgba(190,170,240,0.35)"; ctx.lineWidth = 1.4;
+    for (var i = 0; i < 3; i++) { var a = now / 1400 + i * 2.094 + s.y; ctx.beginPath(); ctx.arc(s.x, s.y, (R * 0.55) * p, a, a + 1.2); ctx.stroke(); }
+  });
+}
+
   // ---- input ----
   (function () {
     window.addEventListener("keydown", function (e) { if (!AR) return; var k = e.key.length === 1 ? e.key.toLowerCase() : e.key; akeys[k] = true; if (k === " " || k === "Enter" || k === "j") { e.preventDefault(); aPress = true; } if (k === "k") aShootP = true; if (k === "l") aCastP = true; });
@@ -13860,7 +13993,7 @@ function objective() {
     });
     var soon = null;
     S.sites.forEach(function (s) { if (!soon || daysToFall(s) < daysToFall(soon)) soon = s; });
-    if (soon && !S.sealed) out.push("A rider says the edge could reach " + soon.name + " in about " + daysToFall(soon) + " days, if nothing there moves.");
+    if (soon && !S.sealed && daysToFall(soon) < 9000) out.push("A rider says the edge could reach " + soon.name + " in about " + daysToFall(soon) + " days, if nothing there moves.");
     var b = S.enemies.filter(function (e) { return e.kind === "bandit"; })[0];
     if (b) out.push("A band of about " + Math.round(b.n / 2) * 2 + " is working the roads.");
     return out.slice(0, 3);
