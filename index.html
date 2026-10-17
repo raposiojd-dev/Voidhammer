@@ -13149,6 +13149,38 @@ function useLabel(tk) {
   var n = tk.npc; if (n.chest) return "Open"; if (n.gate) return "Enter"; if (n.cell) return "Open"; return "Talk";
 }
 
+// ---- painted action buttons: the art is the button, the label sits in a small pill under it ----
+(function () {
+  var st = document.createElement("style");
+  var base = "{background:none!important;border:0!important;box-shadow:none!important;border-radius:0!important;animation:none!important;display:flex!important;flex-direction:column;align-items:center;justify-content:flex-end;padding:0 0 .05rem!important;color:#f3e6c6!important;font-family:'Cinzel',Georgia,serif!important;font-weight:700!important;font-size:.56rem!important;letter-spacing:.08em!important;line-height:1!important;text-shadow:0 1px 2px #000!important;filter:drop-shadow(0 6px 10px rgba(0,0,0,.75))}";
+  var ring = "{content:'';position:absolute;left:0;top:0;width:100%;aspect-ratio:1/1;background:var(--bimg) center/contain no-repeat;transition:transform .08s}";
+  st.textContent = [
+    "#aatk" + base, "#acast" + base, "#abow" + base, "#ause" + base,
+    "#aatk:before" + ring, "#acast:before" + ring, "#abow:before" + ring, "#ause:before" + ring,
+    "#aatk:after,#acast:after,#abow:after,#ause:after{display:none!important}",
+    "#aatk{--bimg:url(img/btn_strike.webp);width:5.6rem!important;height:6.6rem!important;right:1rem!important;bottom:calc(1.6rem + env(safe-area-inset-bottom,0px))!important}",
+    "#acast{--bimg:url(img/btn_cast.webp);width:4.2rem!important;height:5.1rem!important;right:1.7rem!important;bottom:calc(8.5rem + env(safe-area-inset-bottom,0px))!important}",
+    "#abow{--bimg:url(img/btn_shoot.webp);width:4.2rem!important;height:5.1rem!important;right:7rem!important;bottom:calc(1.6rem + env(safe-area-inset-bottom,0px))!important}",
+    "#ause{--bimg:url(img/btn_use.webp);width:4.2rem!important;height:5.1rem!important;right:7rem!important;bottom:calc(6.9rem + env(safe-area-inset-bottom,0px))!important}",
+    "#abow small{display:inline!important;font-size:.56rem!important;opacity:1!important;margin-left:.25em}",
+    "#aatk>span.lb,#acast>span.lb,#abow>span.lb,#ause>span.lb{display:inline-block;padding:.12rem .45rem;border-radius:2px;background:rgba(10,7,4,.78);border:1px solid rgba(201,162,74,.45)}",
+    "#aatk:active:before,#acast:active:before,#abow:active:before,#ause:active:before{transform:scale(.93);filter:brightness(1.35)}",
+    "#aatk:active,#acast:active,#abow:active,#ause:active{transform:none!important;filter:drop-shadow(0 2px 4px rgba(0,0,0,.75))!important}"
+  ].join("\n");
+  document.head.appendChild(st);
+  // wrap the label text in a pill whenever the game rewrites it
+  function pill(el) {
+    if (!el) return; var raw = el.innerHTML; if (raw.indexOf('class="lb"') >= 0) return;
+    el.innerHTML = '<span class="lb">' + raw + "</span>";
+  }
+  var ids = ["aatk", "acast", "abow", "ause"];
+  var mo = new MutationObserver(function () { ids.forEach(function (i) { pill(document.getElementById(i)); }); });
+  function arm() { ids.forEach(function (i) { var el = document.getElementById(i); if (el) { pill(el); mo.observe(el, { childList: true, characterData: true, subtree: true }); } }); }
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", arm); else arm();
+  setTimeout(arm, 1500);
+  ["btn_strike", "btn_cast", "btn_shoot", "btn_use"].forEach(function (k) { var im = new Image(); im.src = "img/" + k + ".webp"; });
+})();
+
   // ---- input ----
   (function () {
     window.addEventListener("keydown", function (e) { if (!AR) return; var k = e.key.length === 1 ? e.key.toLowerCase() : e.key; akeys[k] = true; if (k === " " || k === "Enter" || k === "j") { e.preventDefault(); aPress = true; } if (k === "k") aShootP = true; if (k === "l") aCastP = true; });
