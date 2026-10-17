@@ -2883,6 +2883,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
     else if (sheet.kind === "tutorial") h = tutSheet();
     else if (sheet.kind === "quest") h = questSheet();
     else if (sheet.kind === "skills") h = skillsSheet();
+    else if (sheet.kind === "deep") h = deepSheet();
     else if (sheet.kind === "hkev") h = hkEvSheet();
     else if (sheet.kind === "ledger") h = ledgerSheet(just);
     else if (sheet.kind === "record") h = recordSheet();
@@ -3888,7 +3889,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
   function dropAtP(it) { if (AR) AR.items.push({ x: AR.p.x + 6, y: AR.p.y + 2, t: "item", item: it }); }
   function sellValue(it) { return Math.max(1, Math.round(itemValue(it) * 0.2 * (1 + 0.12 * sk("quickcoin") + 0.15 * sk("fence") + 0.2 * sk("forgeheat")))); }
   function itemValue(it) { return Math.round(LOOT[it.base].base * [1, 2.6, 5.5, 11, 14, 45][it.rar] * 1.8 * (1 + 0.3 * ((it.t || 1) - 1))); }
-  function itemTxt(it) {
+  function itemTxt0(it) {
     var t = []; if (it.slot === "w") t.push("strike +" + it.wb.toFixed(1)); else if (it.slot === "r") t.push(it.bw ? "arrow " + it.bw.dmg.toFixed(1) + " · draw " + it.bw.cd.toFixed(2) + "s" : (it.base === "longbows" ? "longbow" : "bow") + (it.bd ? ", +" + it.bd.toFixed(1) + " dmg" : "")); else t.push("blocks " + Math.round(it.ar * 100) + "%");
     Object.keys(it.aff).forEach(function (k) { t.push(affTxt(k, it.aff[k])); }); if (it.who) t.push(ovWhoTxt(it)); if (it.set) t.push(SETS[it.set].n + " set (" + (setAgg().cnt[it.set] || 0) + "/4 worn)"); return t.join(" · ");
   }
@@ -11455,7 +11456,7 @@ function qFinish(q, opt, idx) { qFinish0(q, opt, idx); if (opt && typeof opt.eff
     HK.c = 0; hkDraw();
   }
   function killEn0(e) { killEn00(e); try { hkKill(e); } catch (er) {} }
-  function hurtP(n) { var hp0 = AR && AR.p ? AR.p.hp : 0, r = hurtP1.apply(this, arguments); try { if (AR && AR.p && AR.p.hp < hp0 - 0.01) hkEnd("hit"); } catch (er) {} return r; }
+  function hurtP(n) { var hp0 = AR && AR.p ? AR.p.hp : 0, a0 = [].slice.call(arguments), r; a0[0] = a0[0] * deepMul(); r = hurtP1.apply(this, a0); try { if (AR && AR.p && AR.p.hp < hp0 - 0.01) hkEnd("hit"); } catch (er) {} return r; }
   function giveItem(it, silent) {
     var r = giveItem1(it, silent);
     try { if (r && it && it.rar >= 2 && !silent) { var h = hkS(); if (it.rar >= 3) h.leg++; else h.rare++; hkBanner(it.rar >= 3 ? "LEGENDARY FIND" : "RARE FIND", it.name, RAR[it.rar].n + " · " + itemTxt(it)); } } catch (er) {}
@@ -11590,6 +11591,108 @@ function qFinish(q, opt, idx) { qFinish0(q, opt, idx); if (opt && typeof opt.eff
   })();
 
   function dailyTick() { dailyTick1(); try { hkEvDay(); } catch (e) {} }
+// ---- legendary powers: every named relic bends your build, and charges for it ----
+var POW = {
+  "Cinderbrand": { fx: { dmg: 0.16, regen: -0.4 }, t: "Burns hot: +16% damage, but you mend slower" },
+  "The Quiet Hours": { fx: { dodge: 0.08, dmg: -0.06 }, t: "Hushed steps: +8% dodge, -6% damage" },
+  "Lanternblade": { fx: { regen: 0.8, speed: -0.04 }, t: "Lantern light mends you, but you move heavier" },
+  "Valek’s Regret": { fx: { dmg: 0.2, tough: -0.1 }, t: "+20% damage, but you bleed easier" },
+  "Dawnsplitter": { fx: { bossdmg: 0.3, speed: -0.05 }, t: "+30% damage to bosses, but slower" },
+  "Voidcutter": { fx: { dmg: 0.22, loot: -0.1 }, t: "+22% damage; the Void eats some of your loot" },
+  "The Last Verdict": { fx: { bossdmg: 0.4, dodge: -0.05 }, t: "+40% boss damage, -5% dodge" },
+  "Mantle of the First Forge": { fx: { tough: 0.14, speed: -0.05 }, t: "+14% toughness, a little slower" },
+  "Ashfall Harness": { fx: { tough: 0.1, regen: 0.5 }, t: "Ash seals wounds: tougher and mending, but no dodging" },
+  "The Unbroken Coat": { fx: { tough: 0.18, aspd: -0.05 }, t: "+18% toughness, -5% attack speed" },
+  "Plate of the Nine": { fx: { tough: 0.24, speed: -0.09 }, t: "+24% toughness, heavy to move in" },
+  "Stormreach Wail": { fx: { aspd: 0.12, tough: -0.06 }, t: "+12% attack speed, thinner defence" },
+  "Kaelren’s Last Arrow": { fx: { dmg: 0.14, hearts: 0 }, t: "+14% damage, spent in sacrifice" },
+  "Wyrm’s Breath": { fx: { dmg: 0.2, aspd: -0.06 }, t: "+20% damage, slower draw" },
+  "Elyndra’s Remembrance Cloak": { fx: { xp: 0.12, dmg: -0.04 }, t: "+12% experience: you remember more, strike less" },
+  "Boots of the Long Road": { fx: { speed: 0.1, escape: 0.08, tough: -0.04 }, t: "+10% speed and escape, thinner defence" },
+  "Cloak of Quiet Steps": { fx: { dodge: 0.1, escape: 0.1, dmg: -0.05 }, t: "+10% dodge and escape, -5% damage" },
+  "Voidhammer": { fx: { dmg: 0.3, bossdmg: 0.3, regen: -0.8 }, t: "+30% damage and boss damage; the hammer drinks your healing" },
+  "Worldsplitter": { fx: { dmg: 0.26, speed: -0.08 }, t: "+26% damage, slow as continents" },
+  "The Verdict of Nine": { fx: { bossdmg: 0.5, loot: -0.12 }, t: "+50% boss damage, -12% loot" },
+  "Aegis of the Shattered Realms": { fx: { tough: 0.3, speed: -0.1 }, t: "+30% toughness, -10% speed" },
+  "Nine-Realm Bulwark": { fx: { tough: 0.26, dodge: -0.08 }, t: "+26% toughness, -8% dodge" },
+  "Lastlight": { fx: { dmg: 0.24, aspd: 0.08, tough: -0.1 }, t: "+24% damage, +8% speed of fire, fragile" },
+  "The Unmaking Arc": { fx: { dmg: 0.3, loot: -0.15 }, t: "+30% damage; what it kills leaves less behind" },
+  "Mantle of Broken Stillness": { fx: { dodge: 0.14, regen: 0.6, dmg: -0.08 }, t: "+14% dodge, mending, -8% damage" },
+  "Shroud of Nine Names": { fx: { dodge: 0.12, escape: 0.14, xp: 0.1, tough: -0.08 }, t: "Hard to hold, harder to know: dodge, escape, xp, but fragile" }
+};
+function powOf(it) { return it && it.name ? POW[it.name] || null : null; }
+function powSig() { var s = ""; ["w", "a", "r", "k"].forEach(function (sl) { var it = eIt(sl); if (it && POW[it.name]) s += it.name + ";"; }); return s; }
+function powFx(k) { var t = 0; ["w", "a", "r", "k"].forEach(function (sl) { var it = eIt(sl), p = powOf(it); if (p && p.fx[k]) t += p.fx[k]; }); return t; }
+function skfx(k) {
+  var now = Date.now(), key = skOrigin() + "|" + spent() + "|" + powSig();
+  if (now - SGC.t > 400 || SGC.k !== key) { SGC = { t: now, k: key, v: {} }; }
+  if (SGC.v[k] !== undefined) return SGC.v[k];
+  var t = 0; SKILLS.forEach(function (b) { b.items.forEach(function (it) { if (it.fx && it.fx[k] && S.skills && S.skills[it.id]) t += it.fx[k] * S.skills[it.id] * sgBias(it, k); }); });
+  t += powFx(k);
+  if (k === "regen" || k === "speed" || k === "aspd") t = Math.max(k === "regen" ? 0 : -0.3, t);
+  return (SGC.v[k] = t);
+}
+function itemTxt(it) { var s = itemTxt0(it), p = powOf(it); return p ? s + " · ✦ " + p.t : s; }
+// ---- THE DEEP: an endless descent. Every floor is harder, pays better, and heals nothing. ----
+var DPK = [
+  { n: "Ember Depths", th: "ember", pal: ["cinderling", "slagimp"], boss: "hammerghost" },
+  { n: "Frozen Gallery", th: "pass", pal: ["frostshade", "inkling"], boss: "stillseer" },
+  { n: "Stone Vault", th: "stone", pal: ["golem", "golem"], boss: "colossus" },
+  { n: "Hollow Reach", th: "cave", pal: ["hollowsent", "hollowsent"], boss: "orrick" },
+  { n: "Drowned Echo", th: "cave", pal: ["echo", "echo"], boss: "ysen" },
+  { n: "Glass Warren", th: "cave", pal: ["glasswraith", "knife"], boss: "maren" }
+];
+function deepS() { if (!S.deep) S.deep = { best: 0, runs: 0 }; return S.deep; }
+function deepNum() { return AR && AR.id && /^deep\d+$/.test(AR.id) ? parseInt(AR.id.slice(4), 10) : 0; }
+function deepMul() { var n = deepNum(); return n ? 1 + 0.07 * n : 1; }
+function deepToll(n) { return 25 * n; }
+function deepEnter(n) {
+  var c = cp(), pk = DPK[(n - 1) % DPK.length], id = "deep" + n, g = null;
+  Object.keys(c.f || {}).forEach(function (k) { if (k.indexOf("chest:deep") === 0) delete c.f[k]; });
+  delete AREAS[id]; if (c.cleared) delete c.cleared[id]; if (c.rs) delete c.rs[id];
+  (AREAS.ashford.npcs || []).forEach(function (o) { if (o.id === "gate_den") g = o; });
+  var q = { seed: 7000 + n * 31 + (deepS().runs % 5) * 7, pal: pk.pal, boss: pk.boss, lv: 1 + Math.round(n * 0.7), zone: id, zname: "The Deep · Floor " + n, th: pk.th, hub: "ashford" };
+  mkZoneV(q, g ? g.x : 16, g ? g.y : 5, "ashford");
+  AREAS[id].clear = function () { deepClear(n); };
+  startArea(id);
+  aToast("Floor " + n + " · " + pk.n + ". Foes hit " + Math.round((deepMul() - 1) * 100) + "% harder. Nothing heals here.");
+}
+function deepClear(n) {
+  var d = deepS(); if (n > d.best) d.best = n; if (n === 1) d.runs++;
+  var cr = 30 * n, xp = 25 * n; S.crowns += cr; addXp(xp);
+  var rar = n % 10 === 0 ? 5 : n % 5 === 0 ? 3 : (n >= 3 && Math.random() < 0.4 ? 2 : 1);
+  var it = genItem(rar, null, n, rar >= 3);
+  if (!giveItem(it, false)) dropAtP(it);
+  try { showAlert("FLOOR " + n + " CLEARED", "+" + cr + " crowns · " + it.name, "menu"); } catch (e) {}
+  setTimeout(function () { if (AR && AR.id === "deep" + n) dlgOpen("deep_next"); }, 1400);
+}
+DLG["deep_next"] = {
+  n: "The Rift Below", t: function () { var n = deepNum(); return "Floor " + n + " is quiet. Below you the dark goes on, and the Void is stronger down there. Your wounds stay with you. Your best is floor " + deepS().best + "."; },
+  c: function () {
+    var n = deepNum() + 1;
+    return [{ t: "Descend to floor " + n + " (" + deepToll(n) + " crowns)", cost: deepToll(n), fn: function () { deepEnter(n); } }, { t: "Climb out with your spoils.", fn: function () { leaveArea(); } }];
+  }
+};
+function deepSheet() {
+  var d = deepS(), n = d.best + 1, h = "<h2>The Deep</h2><p class=\"sub\">Floors cleared: " + d.best + "</p>";
+  h += "<p>A crack under Ashford that does not end. Every floor is a new dungeon, tougher than the last. Foes hit harder, your wounds stay with you, and each descent has a toll. Every fifth floor holds a legendary. Every tenth, a mythic.</p>";
+  h += row("Start at floor 1. Climb out any time you clear a floor.", "Foes +7% damage per floor", "Descend", "deepgo", 1, "", S.crowns < deepToll(1));
+  if (d.best >= 1) h += row("Pick up where you left off.", "Toll " + deepToll(n) + " crowns", "Floor " + n, "deepgo", n, "", S.crowns < deepToll(n));
+  return h;
+}
+DEEDS.push(
+  { id: "dp5", name: "Into the Deep", d: "Clear 5 floors of the Deep.", n: 5, v: function () { return deepS().best; }, xp: 150, cr: 100 },
+  { id: "dp10", name: "Below the Foundations", d: "Clear 10 floors of the Deep.", n: 10, v: function () { return deepS().best; }, xp: 400, cr: 300 },
+  { id: "dp20", name: "Where the Light Ends", d: "Clear 20 floors of the Deep.", n: 20, v: function () { return deepS().best; }, xp: 1200, cr: 800 }
+);
+(function () {
+  try {
+    var bar = document.getElementById("bar"); if (!bar || bar.querySelector('[data-a="deep"]')) return;
+    var b = document.createElement("button"); b.setAttribute("data-act", "menu"); b.setAttribute("data-a", "deep");
+    b.innerHTML = '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v14M6 12l6 6 6-6M5 21h14"/></svg><span>Deep</span>';
+    bar.appendChild(b);
+  } catch (e) {}
+})();
 
   // ---- input ----
   (function () {
@@ -11704,6 +11807,7 @@ function qFinish(q, opt, idx) { qFinish0(q, opt, idx); if (opt && typeof opt.eff
       case "sparkno": sparkPick = 0; break;
       case "gunequip": if (GEARB[x]) { var mv2 = Math.min(5, S.gear[x] || 0); if (mv2 > 0) { S.gear[x] -= mv2; S.loot[x] = (S.loot[x] || 0) + mv2; S.salvage = lootCount(); } } break;
       case "hkpick": hkPick(x); break;
+      case "deepgo": closeSheet(true); deepEnter(parseInt(x, 10)); break;
       case "learn":
         (function () {
           var it = null; SKILLS.forEach(function (b) { b.items.forEach(function (i) { if (i.id === x) it = i; }); });
