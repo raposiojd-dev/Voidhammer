@@ -4939,7 +4939,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
     return null;
   }
   function targetPos() {
-    var o = objective(), a = AR; if (a.sp.over && o.wild) return o.wild; if (a.sp.over) { var oq = o.site && a.sp.byId[o.site]; return oq ? { x: oq.cx * ATS + 8, y: oq.cy * ATS, lab: oq.s.name } : null; } if (!o.area) return null;
+    var o = objective(), a = AR; if (a.sp.writ) { var wb = a.en.filter(function (e) { return e.d && e.d.boss && !e.dead && !e.gone; })[0]; var ww = writById(a.sp.writ); if (wb) return { x: wb.x, y: wb.y, lab: ww ? ww.nm : "Target" }; var wx = a.sp.exits[0]; return { x: (wx.x + 1) * ATS, y: wx.y * ATS, lab: "Out" }; } if (a.sp.over && o.wild) return o.wild; if (a.sp.over) { var oq = o.site && a.sp.byId[o.site]; return oq ? { x: oq.cx * ATS + 8, y: oq.cy * ATS, lab: oq.s.name } : null; } if (!o.area) return null;
     if (a.id === o.area) {
       var best = null, bd = 1e9;
       if (o.npc) a.npcs.forEach(function (n) { if (n.id === o.npc) best = { x: n.px, y: n.py - 8, lab: n.name }; });
@@ -12717,8 +12717,8 @@ function writSpec(id) {
   return { name: w.title, th: w.k === "lamp" ? "cave" : "cave", w: W, h: H, seed: w.seed, safe: 0, lv: lv, spawn: [f.cx, f.y + 1], enemies: en, chests: ch, trees: 0, exits: [ex], writ: w.id,
     pre: function (g) {
       var x, y; for (y = 0; y < H; y++) for (x = 0; x < W; x++) g[y][x] = 2;
-      rooms.forEach(function (o) { for (y = o.y; y < o.y + o.h; y++) for (x = o.x; x < o.x + o.w; x++) g[y][x] = 0; });
-      function corr(x0, y0, x1, y1) { var x = x0, y = y0; while (x !== x1) { g[y][x] = 0; g[y + 1][x] = 0; x += x1 > x ? 1 : -1; } while (y !== y1) { g[y][x] = 0; g[y][x + 1] = 0; y += y1 > y ? 1 : -1; } }
+      rooms.forEach(function (o) { for (y = o.y; y < o.y + o.h; y++) for (x = o.x; x < o.x + o.w; x++) g[y][x] = (x === o.x || y === o.y || x === o.x + o.w - 1 || y === o.y + o.h - 1) ? 0 : 1; });
+      function corr(x0, y0, x1, y1) { var x = x0, y = y0; while (x !== x1) { g[y][x] = 1; g[y + 1][x] = 1; x += x1 > x ? 1 : -1; } while (y !== y1) { g[y][x] = 1; g[y][x + 1] = 1; y += y1 > y ? 1 : -1; } }
       for (var q = 0; q < rooms.length - 1; q++) corr(rooms[q].cx, rooms[q].cy, rooms[q + 1].cx, rooms[q + 1].cy);
       pil.forEach(function (q) { g[q[1]][q[0]] = 7; });
     } };
