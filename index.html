@@ -3940,7 +3940,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
           return;
         }
         if (k === "pack") { var pl = cp().packup || 0; if (pl < 3) { var pc = [90, 200, 360][pl]; out.push({ t: "Bigger satchel: " + packCap() + " to " + (packCap() + 4) + " pack slots · " + pc + " crowns", cost: pc, fn: function () { cp().packup = pl + 1; aToast("Pack size " + packCap() + "."); }, go: id }); } return; }
-        if (k === "bread") { out.push({ t: "Bread · 10 crowns (heals you fully)", cost: 10, fn: function () { AR.p.hp = AR.p.max; }, go: id }); return; }
+        if (k === "bread") { out.push({ t: "Loaf of bread · 8 crowns (eat it in a fight to heal)", cost: 8, fn: function () { cp().bread = Math.min(9, (cp().bread || 0) + 1); }, go: id }); return; }
         if (k === "sell") { var val = 0; ["blades", "mail", "bows", "kit"].forEach(function (q) { val += Math.floor((S.loot[q] || 0) * lootPrice(q, st)); }); if (val > 0) out.push({ t: "Sell spare swords, mail, bows and boots · about " + val + " crowns", fn: function () { var g = 0; ["blades", "mail", "bows", "kit"].forEach(function (q) { g += Math.floor((S.loot[q] || 0) * lootPrice(q, st)); S.loot[q] = 0; }); S.crowns += g; S.salvage = lootCount(); aToast("Sold for " + g + " crowns."); }, go: id }); return; }
         if (k === "arrows") { out.push({ t: "10 arrows · 8 crowns", cost: 8, fn: function () { cp().arrows = (cp().arrows || 0) + 10; }, go: id }); return; }
         if (k === "shards") { var pg = Math.round(LOOT.shards.base * 2.2); out.push({ t: "Void-glass (spell fuel) · " + pg + " crowns", cost: pg, fn: function () { S.loot.shards = (S.loot.shards || 0) + 1; S.salvage = lootCount(); }, go: id }); return; }
@@ -3979,7 +3979,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
       out.push({ t: "Drop it for good.", fn: function () { cp().items = cp().items.filter(function (q) { return q !== it; }); }, go: "gear" });
       out.push({ t: "Back.", go: "gear" }); return out; } };
   }
-  function getDlg(id) {
+  function getDlg0(id) {
     if (DLG[id]) return DLG[id]; if (id.indexOf("wq:") === 0) return wqNode(id.slice(3)); if (id.indexOf("rt:") === 0) return rtNode(id.slice(3)); if (id.indexOf("stash:") === 0) return stashNode(id); if (id.indexOf("plot:") === 0) return plotNode(id); if (id.indexOf("fore:") === 0) return foreNode(id.slice(5)); if (id.indexOf("estgate:") === 0) return gateNode(id.slice(8)); var m = id.split(":"), st = m[1] && site(m[1]); if (!st && m[0] !== "chestloot" && m[0] !== "item") return null; if (m[0] === "item") return itemNode(m[1]); var town = st && st.type !== "village", nm = TNAMES[nhash(id) % TNAMES.length];
     if (m[0] === "chestloot") { var cid = m[1], cix = +m[2]; return { n: "Chest", t: "A weathered chest, unlocked. Something glints inside.", c: [{ t: "Open it.", fn: function () {
       var lv = (AR.sp.chests[cix] && AR.sp.chests[cix][2]) || AR.sp.lv || 1; lv = Math.min(4, lv + Math.floor((lvl() - 1) / 5)); cp().f["chest:" + cid + ":" + cix] = 1;
@@ -3987,7 +3987,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
       for (i = 0; i < n; i++) { var x = Math.random(), tb = lv >= 3 ? [0, 0.2, 0.75] : lv === 2 ? [0.05, 0.5, 0.9] : [0.2, 0.75, 0.97], rr = x < tb[0] ? 0 : x < tb[1] ? 1 : x < tb[2] ? 2 : 3; if (lv >= 2 && Math.random() < 0.012 * lv) rr = 4; if (i === 0 && lv >= 2 && rr < 1) rr = 1; AR.items.push({ x: AR.p.x + (i - (n - 1) / 2) * 11, y: AR.p.y + 3 + (i % 2) * 4, t: "item", item: genItem(rr, null, lv) }); }
       if (lv >= 2) { cp().arrows = (cp().arrows || 0) + 6; } if (Math.random() < 0.5) { S.loot.shards = (S.loot.shards || 0) + 1; S.salvage = lootCount(); }
       AR.floats.push({ x: AR.p.x, y: AR.p.y - 18, t: 1.2, s: "+" + cr });
-      if (Math.random() < 0.3) { var hurt = AR.p.hp < AR.p.max - 0.01; if (hurt) { AR.p.hp = AR.p.max; AR.floats.push({ x: AR.p.x, y: AR.p.y - 30, t: 1.6, s: "bread: full health" }); aToast("Bread in the chest. Still warm. You eat it and feel whole again.", "#e8d08a"); } else { aToast("Bread in the chest. You are not hurt, so you leave it for another day.", "#e8d08a"); } } } }] }; }
+      if (Math.random() < 0.3) { cp().bread = Math.min(9, (cp().bread || 0) + 1); AR.floats.push({ x: AR.p.x, y: AR.p.y - 30, t: 1.6, s: "+1 bread", col: "#e8d08a" }); aToast("Bread in the chest. Still warm. You tuck it away for a fight.", "#e8d08a"); } } }] }; }
     if (m[0] === "shop") return (DLG[id] = shopNode(id, st.id, town ? ["longbows", "bows", "kit", "arrows", "shards", "bread", "pack", "sell"] : ["bows", "kit", "arrows", "bread", "pack", "sell"], nm + ", trader of " + st.name, "“Bread, arrows, boots, and whatever you are carrying that I can use. Prices are what they are.”"));
     if (m[0] === "wares") return (DLG[id] = shopNode(id, st.id, town ? ["special", "steel", "blades", "plate", "mail"] : ["special", "blades", "mail"], nm + "'s wares", "“Iron and mail. Not pretty. It holds.”"));
     if (m[0] === "smith") return (DLG[id] = smithNode(id, st.id, TNAMES[(nhash(id) + 3) % TNAMES.length] + ", smith of " + st.name, town ? "“A real forge. Bring me salvage and crowns and I will make your kit better than it was.”" : "“A village forge. I can do the simple work: sharpen, rivet, patch.”", town ? 5 : 3, "wares:" + st.id));
@@ -4548,7 +4548,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
   function aToast(m, col) { var el = $("atoast"); if (!el) return; el.textContent = m; el.style.color = col || ""; el.style.borderColor = col || ""; el.hidden = false; aToastT = 3; }
 
   // ---- build ----
-  function buildArea(id, sx, sy) {
+  function buildArea0(id, sx, sy) {
     var sp = getSpec(id), W = sp.w, H = sp.h, r = arng(sp.seed), g = [], x, y, i;
     for (y = 0; y < H; y++) { g.push([]); for (x = 0; x < W; x++) g[y].push(0); }
     var keep = {};
@@ -5260,7 +5260,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
   function ovLv(tx, ty) {
     var bd = 1e9, ow = "ember"; ovLocalSites().forEach(function (s) { var d = Math.hypot(s.x / OT - tx, s.y / OT - ty); if (d < bd) { bd = d; ow = s.owner; } }); return OREG[ow] || 2;
   }
-  function ovPoi() {
+  function ovPoi0() {
     var c = cp(); if (c["ovpoi" + curCell()] && c["ovpoi" + curCell()].v === 2 && c["ovpoi" + curCell()].rt) return c["ovpoi" + curCell()];
     var r = arng(nhash("ovpoi2") + curCell() * 7919), P = { v: 2, caves: [], camps: [], chests: [], wf: [], qc: [] }, all = [], sp = ovLocalSites().map(function (s) { return [s.x / OT, s.y / OT]; });
     function okTile(tx, ty, mind, msite) {
@@ -5335,7 +5335,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
     if (!any) h += '<p class="dim-t">Wayfarers on the overland roads offer work. Press Walk on the map to go and find them.</p>';
     return h;
   }
-  function caveSpec(id) {
+  function caveSpec0(id) {
     var n = +id.slice(4), P = ovPoi(), cv = P.caves[n]; if (!cv) return null;
     var r = arng(nhash("cave" + n)), W = 46 + (n % 3) * 10, H = 34 + (n % 2) * 8, rooms = [], tries = 0, i, lv = cv.lv, T = Math.min(3, lv - 1 + (n > 5 ? 1 : 0)), tp = ETIER[T], bp = BTIER[T];
     while (rooms.length < 6 + (n % 4) + (n % 3 === 2 ? 1 : 0) && tries++ < 600) {
@@ -5471,7 +5471,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
         var fx = cm.x * ATS + 6, fy = (cm.y + 1) * ATS + 4; m.fillStyle = "#4a3a30"; m.fillRect(fx - 3, fy + 5, 12, 3); m.fillStyle = "#e86a2a"; m.fillRect(fx, fy, 6, 6); m.fillStyle = "#ffd84a"; m.fillRect(fx + 1, fy + 2, 4, 3);
       });
       P.caves.forEach(function (cv) {
-        var px = cv.x * ATS, py = (cv.y - 1) * ATS; m.fillStyle = "#050308"; m.fillRect(px + 2, py + 8, 28, 24); m.fillRect(px + 5, py + 3, 22, 6); m.fillStyle = "#14101c"; m.fillRect(px + 6, py + 12, 20, 20);
+        var px = cv.x * ATS, py = (cv.y - 1) * ATS; if (cv.lair) { m.fillStyle = "rgba(120,30,10,0.35)"; m.beginPath(); m.arc(px + 16, py + 18, 34, 0, 6.283); m.fill(); m.fillStyle = "#3a2a20"; m.fillRect(px - 9, py + 14, 6, 16); m.fillRect(px + 35, py + 14, 6, 16); m.fillStyle = "#ff7a2a"; m.fillRect(px - 10, py + 8, 8, 7); m.fillRect(px + 34, py + 8, 8, 7); m.fillStyle = "#ffd84a"; m.fillRect(px - 8, py + 10, 4, 4); m.fillRect(px + 36, py + 10, 4, 4); m.fillStyle = "#cfc6b0"; m.fillRect(px - 3, py - 5, 38, 3); m.fillRect(px - 3, py - 5, 3, 10); m.fillRect(px + 32, py - 5, 3, 10); } m.fillStyle = "#050308"; m.fillRect(px + 2, py + 8, 28, 24); m.fillRect(px + 5, py + 3, 22, 6); m.fillStyle = "#14101c"; m.fillRect(px + 6, py + 12, 20, 20);
         m.fillStyle = "#8a8a92"; m.fillRect(px, py + 4, 3, 28); m.fillRect(px + 29, py + 4, 3, 28); m.fillRect(px + 3, py, 26, 4);
       });
     };
@@ -5489,7 +5489,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
           ids.forEach(function (k, ix) { var bid = pl[k], st = bState(q.s, bid), tb = bTable(q.s); if (st.s === "build" && Math.floor(a.t * 3) % 2) return; RR(g, "rgba(0,0,0,0.6)", bx + ix * 10 - 1, (q.cy - 5) * ATS - 20, 9, 8); RR(g, st.s === "done" ? BPAL[bid].r : "#c09450", bx + ix * 10, (q.cy - 5) * ATS - 19, 7, 6); });
         }
       });
-      P.caves.forEach(function (cv) { lab(cv.name, cv.x * ATS + 16, (cv.y - 2) * ATS - 2, "#b8a8e0"); });
+      P.caves.forEach(function (cv) { lab(cv.name + (cv.lair ? " · Lair Lv " + cv.lv : ""), cv.x * ATS + 16, (cv.y - 2) * ATS - 2, cv.lair ? "#ff9a3c" : "#b8a8e0"); });
     };
     return sp;
   }
@@ -5535,7 +5535,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
     var show = !!(a.sp.over && a.mm && !a.dlg); if (omEl.hidden !== !show) omEl.hidden = !show; if (!show) return;
     var g = omEl.getContext("2d"), k = 140 / ON; g.drawImage(a.mm, 0, 0);
     a.sp.SP.forEach(function (q) { var s2 = q.s.type === "village" ? 3 : 5; g.fillStyle = "#000"; g.fillRect(q.cx * k - s2 / 2 - 1, q.cy * k - s2 / 2 - 1, s2 + 2, s2 + 2); g.fillStyle = FAC[q.s.owner] ? FAC[q.s.owner].col : "#ccc"; g.fillRect(q.cx * k - s2 / 2, q.cy * k - s2 / 2, s2, s2); });
-    a.sp.P.caves.forEach(function (cv) { g.fillStyle = "#1a1020"; g.fillRect(cv.x * k - 2, cv.y * k - 2, 4, 4); g.fillStyle = "#b8a8e0"; g.fillRect(cv.x * k - 1, cv.y * k - 1, 2, 2); });
+    a.sp.P.caves.forEach(function (cv) { g.fillStyle = "#1a1020"; g.fillRect(cv.x * k - 2, cv.y * k - 2, 4, 4); g.fillStyle = cv.lair ? "#ff7a2a" : "#b8a8e0"; g.fillRect(cv.x * k - 1, cv.y * k - 1, 2, 2); });
     var pulse = Math.floor(a.t * 3) % 2;
     a.npcs.forEach(function (n) { if (n.mk) { var mq = n.mk(); if (mq && pulse) { g.fillStyle = mq === 1 ? "#ffd84a" : "#9fd8ff"; g.fillRect(n.x * k - 2, n.y * k - 2, 4, 4); } } });
     var o = objective(), tq = o.site && a.sp.byId[o.site]; if (tq && pulse) { g.fillStyle = "#fff"; g.fillRect(tq.cx * k - 4, tq.cy * k - 4, 8, 2); g.fillRect(tq.cx * k - 4, tq.cy * k + 3, 8, 2); }
@@ -7723,7 +7723,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
     var o = ORIGINS[it.who]; if (!o) return "";
     return it.who === ovWho() ? "forged for the " + o.name + " (yours: +35% power)" : "forged for the " + o.name + " (not your path: 60% power)";
   }
-  function killEn(e) {
+  function killEn1(e) {
     if (!e.rp) return killEn0(e);
     var t = e.type; e.type = "rp_" + t; killEn0(e); e.type = t;
     if (e.d.boss) ovBossDrop(e, t);
@@ -13953,6 +13953,157 @@ function ovDrawVoid() {
     ctx.strokeStyle = "rgba(190,170,240,0.35)"; ctx.lineWidth = 1.4;
     for (var i = 0; i < 3; i++) { var a = now / 1400 + i * 2.094 + s.y; ctx.beginPath(); ctx.arc(s.x, s.y, (R * 0.55) * p, a, a + 1.2); ctx.stroke(); }
   });
+}
+
+// ---- ovLAIR: boss lairs (repeatable, rarely the best loot) and bread (eat it mid-fight) ----
+var LAIRS = {
+  ember: [{ n: "The Ashen Maw", b: "Kragh, the Slag-Mother" }, { n: "Furnace of Teeth", b: "Vorr the Unburnt" }],
+  frost: [{ n: "The Glass Throat", b: "Isenmaw" }, { n: "Hollow of Winters", b: "The Prophet Unseen" }],
+  storm: [{ n: "Thunder Hollow", b: "Stormcaller Ruk" }, { n: "The Gale Warren", b: "Old Skyrend" }],
+  stone: [{ n: "The Living Quarry", b: "Granitoth" }, { n: "Deepvein Halls", b: "The Petrified Senator" }],
+  light: [{ n: "The Unlit Vault", b: "Warden Nothing" }, { n: "Cistern of Ash", b: "The Forgetting" }],
+  spirit: [{ n: "The Drowned Choir", b: "Mother Echo" }, { n: "Candlewake Barrow", b: "The Last Lantern" }],
+  shadow: [{ n: "The Unmade Cellar", b: "Faceless Ibb" }, { n: "Whisper Pits", b: "The Name-Eater" }],
+  metal: [{ n: "The Slag Cathedral", b: "Overseer Prime" }, { n: "Iron Warren", b: "The Engine That Wept" }]
+};
+var oldPoi = null;
+function ovPoi() {
+  var P = ovPoi0();
+  if (!P.lz) { P.lz = 1; try { ovPlaceLairs(P); } catch (e) { if (window.console) console.error(e); } }
+  return P;
+}
+function ovPlaceLairs(P) {
+  var cell = curCell(), cf = ovConts()[cell].f, defs = cf && LAIRS[cf]; if (!defs) return;
+  var r = arng(nhash("lairs") + cell * 131), sp = ovLocalSites().map(function (s) { return [s.x / OT, s.y / OT]; }), tk = [], o = cellOrg(cell);
+  function add(q) { if (q) tk.push([q.x, q.y]); }
+  P.caves.forEach(add); P.camps.forEach(add); P.chests.forEach(add); (P.rt || []).forEach(function (q) { add(q.g); add(q.a); }); (P.wf || []).forEach(add);
+  defs.forEach(function (d, i) {
+    for (var t = 0; t < 6000; t++) {
+      var tx = 16 + Math.floor(r() * (ON - 32)), ty = 16 + Math.floor(r() * (ON - 32)), ok = true, j;
+      var e = elevAtW(tx * OT + 8 + o[0], ty * OT + 8 + o[1]); if (e < 0.4 || e > 0.6) continue;
+      for (j = 0; j < sp.length && ok; j++) if (Math.hypot(sp[j][0] - tx, sp[j][1] - ty) < 14) ok = false;
+      for (j = 0; j < tk.length && ok; j++) if (Math.hypot(tk[j][0] - tx, tk[j][1] - ty) < (j < 0 ? 0 : 15)) ok = false;
+      if (!ok) continue;
+      var q = { x: tx, y: ty, lv: ovLv(tx, ty), lair: 1, name: d.n, boss: d.b }; P.caves.push(q); tk.push([tx, ty]); return;
+    }
+  });
+}
+function ovLairIx(id) { var m = /^cave(\d+)$/.exec(id || ""); if (!m) return null; var P = ovPoi(), cv = P.caves[+m[1]]; return cv && cv.lair ? { n: +m[1], cv: cv } : null; }
+function ovLairSt(n) { var c = cp(); c.lair = c.lair || {}; var k = curCell() + ":" + n; return c.lair[k] || (c.lair[k] = { n: 0 }); }
+function ovLairDepth(st) { return Math.min(6, 1 + Math.floor(st.n / 2)); }
+function caveSpec(id) { var li = ovLairIx(id); if (li) return ovLairSpec(li.n, li.cv); return caveSpec0(id); }
+function ovLairSpec(n, cv) {
+  var cell = curCell(), st = ovLairSt(n), depth = ovLairDepth(st), r = arng(nhash("lair" + cell + "_" + n)), W = 74, H = 56, rooms = [], tries = 0, i;
+  var lv = Math.min(6, Math.max(1, cv.lv) + depth - 1), T = Math.min(3, 1 + Math.floor(depth / 2)), tp = ETIER[T], bp = BTIER[T], bb = BTIER[3];
+  while (rooms.length < 12 && tries++ < 1500) {
+    var rw = 7 + Math.floor(r() * 5), rh = 6 + Math.floor(r() * 4), rx = 2 + Math.floor(r() * (W - rw - 4)), ry = 2 + Math.floor(r() * (H - rh - 4)), ok = true;
+    rooms.forEach(function (o) { if (rx < o.x + o.w + 3 && rx + rw + 3 > o.x && ry < o.y + o.h + 3 && ry + rh + 3 > o.y) ok = false; });
+    if (ok) rooms.push({ x: rx, y: ry, w: rw, h: rh, cx: rx + (rw >> 1), cy: ry + (rh >> 1) });
+  }
+  rooms.sort(function (a, b) { return a.cx - b.cx; });
+  var en = [], ch = [], f = rooms[0], last = rooms[rooms.length - 1], m1 = Math.floor(rooms.length / 3), m2 = Math.floor(rooms.length * 2 / 3), k;
+  function spot(o) { return [o.x + 1 + Math.floor(r() * (o.w - 2)), o.y + 1 + Math.floor(r() * (o.h - 2))]; }
+  for (k = 1; k < rooms.length - 1; k++) {
+    var cnt = 4 + Math.floor(r() * 3) + Math.floor(depth / 2); for (i = 0; i < cnt; i++) { var sp = spot(rooms[k]); en.push([tp[Math.floor(r() * tp.length)], sp[0], sp[1], lv]); }
+    if (k === m1 || k === m2) en.push([bp[Math.floor(r() * bp.length)], rooms[k].cx, rooms[k].cy, lv, undefined, undefined, 1.4, { lm: 1, name: k === m1 ? "Lair Warden" : "Lair Champion" }]);
+    else if (r() < 0.5) { var cs = spot(rooms[k]); ch.push([cs[0], cs[1], Math.min(4, 1 + Math.floor(lv / 2))]); }
+  }
+  en.push([bb[Math.floor(r() * bb.length)], last.cx, last.cy, lv + 1, undefined, undefined, 1.8 + 0.15 * depth, { lb: 1, name: cv.boss }]);
+  for (i = 0; i < 4 + Math.floor(depth / 2); i++) { var gs = spot(last); if (Math.abs(gs[0] - last.cx) + Math.abs(gs[1] - last.cy) > 3) en.push([tp[Math.floor(r() * tp.length)], gs[0], gs[1], lv]); }
+  [[last.x + 1, last.y + 1], [last.x + last.w - 2, last.y + 1], [last.x + 1, last.y + last.h - 2], [last.x + last.w - 2, last.y + last.h - 2]].forEach(function (p) { ch.push([p[0], p[1], 4, "L"]); });
+  var pil = []; rooms.forEach(function (o, ix) { if (ix === 0) return; for (var p = 0; p < 3; p++) { var sx = o.x + 1 + Math.floor(r() * (o.w - 2)), sy = o.y + 1 + Math.floor(r() * (o.h - 2)), bad = Math.abs(sx - o.cx) + Math.abs(sy - o.cy) <= 3; en.forEach(function (q) { if (Math.abs(q[1] - sx) + Math.abs(q[2] - sy) < 3) bad = true; }); ch.forEach(function (q) { if (Math.abs(q[0] - sx) + Math.abs(q[1] - sy) < 3) bad = true; }); if (!bad) pil.push([sx, sy]); } });
+  var ex = { x: f.cx - 1, y: f.y + f.h - 1, w: 2, h: 1 }; Object.defineProperty(ex, "to", { get: function () { return "world"; }, enumerable: true });
+  var ex2 = { x: last.cx - 1, y: last.y + last.h - 1, w: 2, h: 1 }; Object.defineProperty(ex2, "to", { get: function () { return "world"; }, enumerable: true });
+  return { dung: 1, lair: n, name: cv.name + (depth > 1 ? " · Depth " + depth : ""), th: "cave", w: W, h: H, seed: nhash("lr" + cell + n) % 9999, safe: 0, lv: Math.min(4, lv), spawn: [f.cx, f.y + 1], enemies: en, chests: ch, trees: 0, exits: [ex, ex2],
+    pre: function (g) {
+      var x, y; for (y = 0; y < H; y++) for (x = 0; x < W; x++) g[y][x] = 2;
+      rooms.forEach(function (o) { for (y = o.y; y < o.y + o.h; y++) for (x = o.x; x < o.x + o.w; x++) g[y][x] = 0; });
+      function corr(x0, y0, x1, y1) { var x = x0, y = y0; while (x !== x1) { g[y][x] = 0; g[y + 1][x] = 0; x += x1 > x ? 1 : -1; } while (y !== y1) { g[y][x] = 0; g[y][x + 1] = 0; y += y1 > y ? 1 : -1; } }
+      for (var q = 0; q < rooms.length - 1; q++) corr(rooms[q].cx, rooms[q].cy, rooms[q + 1].cx, rooms[q + 1].cy);
+      corr(rooms[2].cx, rooms[2].cy, rooms[rooms.length - 3].cx, rooms[rooms.length - 3].cy);
+      pil.forEach(function (q) { g[q[1]][q[0]] = 7; });
+    } };
+}
+// every visit to a lair is a fresh one: the boss is back, the hoard is full again
+function buildArea(id, sx, sy) {
+  var li = ovLairIx(id);
+  if (li) { var c = cp(); delete AREAS[id]; if (c.cleared) delete c.cleared[id]; if (c.rs) delete c.rs[id]; Object.keys(c.f || {}).forEach(function (k) { if (k.indexOf("chest:" + id + ":") === 0) delete c.f[k]; }); }
+  var A = buildArea0(id, sx, sy);
+  if (li) {
+    var st = ovLairSt(li.n); A.lair = { n: li.n, st: st, cv: li.cv };
+    setTimeout(function () { if (AR && AR.id === id) aToast(li.cv.name + " · Depth " + ovLairDepth(st) + (st.n ? " · cleared " + st.n + " time" + (st.n === 1 ? "" : "s") : " · never cleared"), "#ff9a3c"); }, 1400);
+  }
+  return A;
+}
+// the odds: the best treasure is rare on purpose, and a little likelier the deeper you go and the more you come back
+function ovLairRar(st, mult) {
+  var d = ovLairDepth(st), r = Math.random(), pM = (0.004 + 0.0007 * d + Math.min(0.012, 0.0004 * st.n)) * mult, pS = (0.03 + 0.004 * d) * mult, pL = (0.1 + 0.012 * d) * mult;
+  if (r < pM) return 5; if (r < pM + pS) return 4; if (r < pM + pS + pL) return 3; return Math.random() < 0.55 ? 2 : 1;
+}
+function ovLairDrop(x, y, mult, rolls) {
+  var A = AR; if (!A || !A.lair) return; var st = A.lair.st, d = ovLairDepth(st), lvb = (A.lair.cv.lv || 1) + d, best = 0;
+  for (var i = 0; i < rolls; i++) { var rar = ovLairRar(st, mult), it = genItem(rar, null, lvb); best = Math.max(best, it.rar); A.items.push({ x: x + (i - (rolls - 1) / 2) * 11, y: y + 3 + (i % 2) * 4, t: "item", item: it }); }
+  if (best >= 4) setTimeout(function () { if (AR) aToast(best === 5 ? "A MYTHIC treasure." : "A set piece.", RAR[best].c); }, 700);
+  return best;
+}
+function ovLairChestNode(id, ix) {
+  var ch = AR.sp.chests[ix], key = "chest:" + id + ":" + ix;
+  return { n: "Hoard", t: "A lair hoard. Whatever it kept, it kept for something worth killing.", c: [{ t: "Open it.", fn: function () {
+    cp().f[key] = 1; var d = ovLairDepth(AR.lair.st), cr = 90 + d * 60 + Math.floor(Math.random() * 70 * d); S.crowns += cr;
+    ovLairDrop(AR.p.x, AR.p.y, 1, 1);
+    if (Math.random() < 0.4) { cp().bread = Math.min(9, (cp().bread || 0) + 1); AR.floats.push({ x: AR.p.x, y: AR.p.y - 30, t: 1.4, s: "+1 bread", col: "#e8d08a" }); }
+    if (Math.random() < 0.5) { S.loot.shards = (S.loot.shards || 0) + 1; S.salvage = lootCount(); }
+    AR.floats.push({ x: AR.p.x, y: AR.p.y - 18, t: 1.2, s: "+" + cr });
+  } }] };
+}
+function getDlg(id) {
+  if (id.indexOf("chestloot:") === 0 && AR && AR.lair) { var m = id.split(":"), ix = +m[2], ch = AR.sp.chests[ix]; if (ch && ch[3] === "L") return ovLairChestNode(m[1], ix); }
+  return getDlg0(id);
+}
+function killEn(e) {
+  killEn1(e);
+  try {
+    if (!AR || !e || !e.d) return;
+    if (AR.lair && e.d.lb) {
+      var st = AR.lair.st; ovLairDrop(e.x, e.y, 1.6, 2); S.crowns += 150 + 80 * ovLairDepth(st); st.n++;
+      var c = cp(); c.lairBest = Math.max(c.lairBest || 0, ovLairDepth(st));
+      setTimeout(function () { if (AR) aToast(AR.lair.cv.boss + " falls. The lair will fill again. Come back for more.", "#ff9a3c"); }, 600);
+    } else if (AR.lair && e.d.lm) ovLairDrop(e.x, e.y, 0.5, 1);
+    else if (!e.d.boss && !e.yield && Math.random() < 0.04) { var cc = cp(); if ((cc.bread || 0) < 9) { cc.bread = (cc.bread || 0) + 1; AR.floats.push({ x: e.x, y: e.y - 14, t: 1.3, s: "+1 bread", col: "#e8d08a" }); } }
+  } catch (er) { if (window.console) console.error(er); }
+}
+
+// ---- bread ----
+(function () {
+  var st = document.createElement("style");
+  st.textContent = "#abread{position:absolute;right:11.6rem;bottom:calc(1.6rem + env(safe-area-inset-bottom,0px));width:4.2rem;height:5.1rem;background:none;border:0;box-shadow:none;padding:0 0 .05rem;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;font-family:'Cinzel',Georgia,serif;font-weight:700;font-size:.62rem;letter-spacing:.08em;color:#f4e2b8;text-shadow:0 1px 2px #000;touch-action:none;z-index:3}"
+    + "#abread:before{content:'';position:absolute;left:0;top:0;width:100%;aspect-ratio:1/1;background:url(img/btn_bread.webp) center/contain no-repeat;transition:transform .08s}"
+    + "#abread:active:before{transform:scale(.93);filter:brightness(1.35)}#abread[hidden]{display:none}"
+    + "#abread span{position:relative;display:inline-block;padding:.12rem .45rem;border-radius:2px;background:rgba(10,7,4,.78);border:1px solid rgba(201,162,74,.45)}#abread.cd{filter:grayscale(.8) brightness(.7)}";
+  document.head.appendChild(st);
+  var im = new Image(); im.src = "img/btn_bread.webp";
+  var btn = document.createElement("button"); btn.id = "abread"; btn.hidden = true; btn.innerHTML = "<span>Bread</span>";
+  function mount() { var a = document.getElementById("area"); if (a && !btn.parentNode) a.appendChild(btn); }
+  mount(); document.addEventListener("DOMContentLoaded", mount); setTimeout(mount, 1000);
+  btn.addEventListener("pointerdown", function (e) { e.stopPropagation(); e.preventDefault(); ovEatBread(); });
+  window.addEventListener("keydown", function (e) { if (AR && !AR.dlg && !sheet && (e.key === "b" || e.key === "B")) ovEatBread(); });
+  setInterval(function () {
+    try {
+      if (!S || !AR) { btn.hidden = true; return; }
+      var c = cp(); if (!c.f.breadgift) { c.f.breadgift = 1; c.bread = (c.bread || 0) + 3; setTimeout(function () { if (AR) aToast("You have 3 loaves of bread. Eat one mid-fight to heal.", "#e8d08a"); }, 2200); }
+      mount(); var n = c.bread || 0, show = !AR.dlg && !AR.sp.over ? true : !AR.dlg; btn.hidden = !show;
+      var lab = "Bread " + n; var sp = btn.firstChild; if (sp && sp.textContent !== lab) sp.textContent = lab;
+      btn.classList.toggle("cd", n < 1 || (AR.breadCd || 0) > AR.t);
+    } catch (e) {}
+  }, 200);
+})();
+function ovEatBread() {
+  if (!AR || AR.dlg || !S) return; var c = cp(), p = AR.p;
+  if (!((c.bread || 0) > 0)) { aToast("No bread. Buy it from any trader, or find it in chests.", "#e8d08a"); return; }
+  if ((AR.breadCd || 0) > AR.t) return;
+  if (p.hp >= p.max - 0.01) { aToast("You are not hurt. Keep it.", "#e8d08a"); return; }
+  var h = Math.max(2, Math.round(p.max * 0.4 * 2) / 2); c.bread--; p.hp = Math.min(p.max, p.hp + h); AR.breadCd = AR.t + 4;
+  AR.floats.push({ x: p.x, y: p.y - 22, t: 1.3, s: "+" + h + " ♥", col: "#e8d08a" }); try { sfx("pickup"); } catch (e) {}
 }
 
   // ---- input ----
