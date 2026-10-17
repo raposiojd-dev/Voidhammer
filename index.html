@@ -5275,7 +5275,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
   }
   function ovPoi() {
     var c = cp(); if (c["ovpoi" + curCell()] && c["ovpoi" + curCell()].v === 2 && c["ovpoi" + curCell()].rt) return c["ovpoi" + curCell()];
-    var r = arng(nhash("ovpoi2")), P = { v: 2, caves: [], camps: [], chests: [], wf: [], qc: [] }, all = [], sp = ovLocalSites().map(function (s) { return [s.x / OT, s.y / OT]; });
+    var r = arng(nhash("ovpoi2") + curCell() * 7919), P = { v: 2, caves: [], camps: [], chests: [], wf: [], qc: [] }, all = [], sp = ovLocalSites().map(function (s) { return [s.x / OT, s.y / OT]; });
     function okTile(tx, ty, mind, msite) {
       if (tx < 8 || ty < 8 || tx > ON - 9 || ty > ON - 9) return false; var e = elevAtW(tx * OT + 8 + cellOrg(curCell())[0], ty * OT + 8 + cellOrg(curCell())[1]); if (e < 0.375 || e > 0.62) return false;
       var i; for (i = 0; i < sp.length; i++) if (Math.hypot(sp[i][0] - tx, sp[i][1] - ty) < msite) return false;
@@ -12269,7 +12269,7 @@ function ovRoadPath(pts) {
 function ovRoadsDraw0() {
   ctx.lineCap = "round"; ctx.lineJoin = "round";
   var P = [];
-  ROADS.forEach(function (r, idx) { var a = site(r[0]), b = site(r[1]); if (a && b) P.push(ovRoadPts(r, idx, a, b)); });
+  ROADS.forEach(function (r, idx) { var a = site(r[0]), b = site(r[1]); if (a && b && sameCell(a, b)) P.push(ovRoadPts(r, idx, a, b)); });
   var passes = [["rgba(30,40,14,0.4)", 14], ["rgba(70,56,30,0.6)", 11], ["#7a5e36", 8.4], ["#ad8d60", 6.6], ["#c9ac7c", 4.4]];
   passes.forEach(function (ps) { ctx.strokeStyle = ps[0]; ctx.lineWidth = ps[1]; P.forEach(function (pts) { ovRoadPath(pts); ctx.stroke(); }); });
   // cart ruts
@@ -13546,7 +13546,9 @@ function ovCellSync() {
   TERR = TERRC[c] || null; TERRI = null; TERRDIRTY = true; TERRL = TERRLC[c] || null;
   try { if (typeof WMC !== "undefined") WMC = null; } catch (e) {}
 }
-function buildTerrain() { ovCellSync(); var c = curCell(); if (TERRC[c]) return TERRC[c]; TORG = cellOrg(c); try { var t = buildTerrain1(); } finally { TORG = [0, 0]; } TERRC[c] = t; var keys = Object.keys(TERRC); if (keys.length > 3) delete TERRC[keys[0]]; return t; }
+var TINTS = { frost: [["#cfe6f2", "multiply", 0.4], ["#ffffff", "screen", 0.32]], ember: [["#d8713c", "multiply", 0.28], ["#3a1a08", "overlay", 0.22]], shadow: [["#4a3c70", "multiply", 0.45], ["#000010", "overlay", 0.15]], spirit: [["#8fd0c8", "multiply", 0.22], ["#c8e8ff", "screen", 0.12]], stone: [["#9aa0a8", "multiply", 0.32]], storm: [["#79b4c8", "multiply", 0.26], ["#dff4ff", "screen", 0.08]], light: [["#f0d890", "multiply", 0.26], ["#fff2c0", "screen", 0.14]], metal: [["#8a8690", "multiply", 0.38], ["#c23d78", "overlay", 0.08]], none: [["#6a6a6a", "multiply", 0.45], ["#000000", "overlay", 0.25]] };
+function ovTint(cv, c) { try { var f = cellFac(c) || "none", L = TINTS[f] || [], g = cv.getContext("2d"); g.save(); g.setTransform(1, 0, 0, 1, 0, 0); L.forEach(function (t) { g.globalCompositeOperation = t[1]; g.globalAlpha = t[2]; g.fillStyle = t[0]; g.fillRect(0, 0, cv.width, cv.height); }); g.restore(); } catch (e) {} }
+function buildTerrain() { ovCellSync(); var c = curCell(); if (TERRC[c]) return TERRC[c]; TORG = cellOrg(c); try { var t = buildTerrain1(); } finally { TORG = [0, 0]; } ovTint(t, c); TERRC[c] = t; var keys = Object.keys(TERRC); if (keys.length > 3) delete TERRC[keys[0]]; return t; }
 function buildClouds() { TORG = cellOrg(curCell()); try { return buildClouds0(); } finally { TORG = [0, 0]; } }
 function buildTerritory() { var c = curCell(); TORG = cellOrg(c); try { var t = buildTerritory0(); } finally { TORG = [0, 0]; } TERRLC[c] = TERRL; return t; }
 
