@@ -12739,8 +12739,9 @@ function ovBfFx(g, t, dt) {
   function mKick(t) { var o = mac.createOscillator(), g = mac.createGain(); o.type = "triangle"; o.frequency.setValueAtTime(150, t); o.frequency.exponentialRampToValueAtTime(45, t + 0.12); g.gain.setValueAtTime(1, t); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.18); o.connect(g); g.connect(mbus.drum); o.start(t); o.stop(t + 0.2); }
   // ---- recorded score (files in mus/), falls back to the synth when a file is missing ----
   var FM = {}, FBAD = {};
-  ["world", "town", "dungeon", "combat", "boss"].forEach(function (k) { var a = new Audio("mus/" + k + ".mp3"); a.loop = true; a.preload = "auto"; a.volume = 0; a.addEventListener("error", function () { FBAD[k] = 1; }); FM[k] = a; });
+  ["world", "town", "dungeon", "combat", "boss", "title"].forEach(function (k) { var a = new Audio("mus/" + k + ".mp3"); a.loop = true; a.preload = "auto"; a.volume = 0; a.addEventListener("error", function () { FBAD[k] = 1; }); FM[k] = a; });
   function mFile(m) {
+    var tt = document.getElementById("title"); if (tt && !tt.hidden && m === "world") m = "title";
     var okm = FM[m] && !FBAD[m] && FM[m].readyState >= 2;
     Object.keys(FM).forEach(function (k) {
       var a = FM[k], tg = (mOn && okm && k === m) ? 0.7 : 0, v = a.volume;
