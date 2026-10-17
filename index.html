@@ -6303,17 +6303,19 @@ var BIMG_SRC={"farm": "data:image/webp;base64,UklGRqyAAABXRUJQVlA4WAoAAAAQAAAAZw
   function vstHide() { if (vstEl) vstEl.style.display = "none"; }
   function stickBind(el, mode, onTap) {
     el.addEventListener("pointerdown", function (e) {
+      if (VST.on && performance.now() - (VST.t || 0) > 700) { VST.on = false; VST.drag = false; VST.dx = VST.dy = 0; try { vstHide(); } catch (x) {} }
       if (VST.on || (mode === "map" && (sheet || AR)) || (mode === "field" && (!F || F.over || F.deploy))) return;
-      VST.on = true; VST.id = e.pointerId; VST.ox = e.clientX; VST.oy = e.clientY; VST.dx = VST.dy = 0; VST.drag = false; VST.mode = mode; VST.ev = e;
+      VST.t = performance.now(); VST.on = true; VST.id = e.pointerId; VST.ox = e.clientX; VST.oy = e.clientY; VST.dx = VST.dy = 0; VST.drag = false; VST.mode = mode; VST.ev = e;
       try { el.setPointerCapture(e.pointerId); } catch (x) {}
     });
     el.addEventListener("pointermove", function (e) {
       if (!VST.on || e.pointerId !== VST.id || VST.mode !== mode) return;
-      var dx = e.clientX - VST.ox, dy = e.clientY - VST.oy, l = Math.hypot(dx, dy), m = 46;
-      if (!VST.drag) { if (l < 12) return; VST.drag = true; vstShow(VST.ox, VST.oy); if (mode === "map" && S.speed === 0 && !sheet) S.speed = 3; }
+      VST.t = performance.now(); var dx = e.clientX - VST.ox, dy = e.clientY - VST.oy, l = Math.hypot(dx, dy), m = 40;
+      if (l > m * 1.4 && VST.drag) { var kf = (l - m * 1.4) / l; VST.ox += dx * kf; VST.oy += dy * kf; dx = e.clientX - VST.ox; dy = e.clientY - VST.oy; l = Math.hypot(dx, dy); }
+      if (!VST.drag) { if (l < 6) return; VST.drag = true; vstShow(VST.ox, VST.oy); if (mode === "map" && S.speed === 0 && !sheet) S.speed = 3; }
       if (l > m) { dx = dx / l * m; dy = dy / l * m; l = m; }
       vknob.style.transform = "translate(" + dx + "px," + dy + "px)";
-      VST.dx = l < 8 ? 0 : dx / m; VST.dy = l < 8 ? 0 : dy / m;
+      VST.dx = l < 4 ? 0 : Math.min(1, dx / (m * 0.8)); VST.dy = l < 4 ? 0 : Math.min(1, dy / (m * 0.8));
       if (mode === "field" && F && !F.over && !F.hero.dead) { var q = Math.hypot(VST.dx, VST.dy); if (q > 0) { F.ht = null; F.hm = { x: Math.max(14, Math.min(FW - 14, F.hero.x + VST.dx / q * 40)), y: Math.max(40, Math.min(FH - 20, F.hero.y + VST.dy / q * 40)) }; } else F.hm = { x: F.hero.x, y: F.hero.y }; }
     });
     function up(e) {
@@ -6323,7 +6325,7 @@ var BIMG_SRC={"farm": "data:image/webp;base64,UklGRqyAAABXRUJQVlA4WAoAAAAQAAAAZw
       if (mode === "field" && F && !F.over && !F.hero.dead) F.hm = { x: F.hero.x, y: F.hero.y };
       if (mode === "map" && !sheet) { var best = null, bd = 22; S.sites.forEach(function (s) { var d = dist(S.px, S.py, s.x, s.y); if (d < bd) { bd = d; best = s; } }); if (best) { S.px = best.x; S.py = best.y; arrive(best.id); } }
     }
-    el.addEventListener("pointerup", up); el.addEventListener("pointercancel", up);
+    el.addEventListener("pointerup", up); el.addEventListener("pointercancel", up); window.addEventListener("pointerup", function (e) { if (VST.on && e.pointerId === VST.id && VST.mode === mode) up(e); });
   }
   function mapStickMove(dd) {
     if (!(VST.on && VST.drag && VST.mode === "map") || sheet) return false;
@@ -9552,18 +9554,20 @@ var BIMG_SRC={"farm": "data:image/webp;base64,UklGRqyAAABXRUJQVlA4WAoAAAAQAAAAZw
   function stickBind(el, mode, onTap) {
     el.addEventListener("pointerdown", function (e) {
       if (mode === "field" && F && !F.over && !F.deploy && ovPanOn(e) && !PAN.on) { PAN.ev = e; ovPanStart(e, el); return; }
+      if (VST.on && performance.now() - (VST.t || 0) > 700) { VST.on = false; VST.drag = false; VST.dx = VST.dy = 0; try { vstHide(); } catch (x) {} }
       if (VST.on || (mode === "map" && (sheet || AR)) || (mode === "field" && (!F || F.over || F.deploy))) return;
-      VST.on = true; VST.id = e.pointerId; VST.ox = e.clientX; VST.oy = e.clientY; VST.dx = VST.dy = 0; VST.drag = false; VST.mode = mode; VST.ev = e;
+      VST.t = performance.now(); VST.on = true; VST.id = e.pointerId; VST.ox = e.clientX; VST.oy = e.clientY; VST.dx = VST.dy = 0; VST.drag = false; VST.mode = mode; VST.ev = e;
       try { el.setPointerCapture(e.pointerId); } catch (x) {}
     });
     el.addEventListener("pointermove", function (e) {
       if (mode === "field" && ovPanMove(e)) return;
       if (!VST.on || e.pointerId !== VST.id || VST.mode !== mode) return;
-      var dx = e.clientX - VST.ox, dy = e.clientY - VST.oy, l = Math.hypot(dx, dy), m = 46;
-      if (!VST.drag) { if (l < 12) return; VST.drag = true; vstShow(VST.ox, VST.oy); if (mode === "map" && S.speed === 0 && !sheet) S.speed = 3; }
+      VST.t = performance.now(); var dx = e.clientX - VST.ox, dy = e.clientY - VST.oy, l = Math.hypot(dx, dy), m = 40;
+      if (l > m * 1.4 && VST.drag) { var kf = (l - m * 1.4) / l; VST.ox += dx * kf; VST.oy += dy * kf; dx = e.clientX - VST.ox; dy = e.clientY - VST.oy; l = Math.hypot(dx, dy); }
+      if (!VST.drag) { if (l < 6) return; VST.drag = true; vstShow(VST.ox, VST.oy); if (mode === "map" && S.speed === 0 && !sheet) S.speed = 3; }
       if (l > m) { dx = dx / l * m; dy = dy / l * m; l = m; }
       vknob.style.transform = "translate(" + dx + "px," + dy + "px)";
-      VST.dx = l < 8 ? 0 : dx / m; VST.dy = l < 8 ? 0 : dy / m;
+      VST.dx = l < 4 ? 0 : Math.min(1, dx / (m * 0.8)); VST.dy = l < 4 ? 0 : Math.min(1, dy / (m * 0.8));
       if (mode === "field" && F && !F.over && !F.hero.dead) { var q = Math.hypot(VST.dx, VST.dy); if (q > 0) { var wv = ovUnrot(VST.dx / q, VST.dy / q); F.ht = null; F.hm = { x: Math.max(14, Math.min(FW - 14, F.hero.x + wv[0] * 40)), y: Math.max(40, Math.min(FH - 20, F.hero.y + wv[1] * 40)) }; } else F.hm = { x: F.hero.x, y: F.hero.y }; }
     });
     function up(e) {
@@ -9574,7 +9578,7 @@ var BIMG_SRC={"farm": "data:image/webp;base64,UklGRqyAAABXRUJQVlA4WAoAAAAQAAAAZw
       if (mode === "field" && F && !F.over && !F.hero.dead) F.hm = { x: F.hero.x, y: F.hero.y };
       if (mode === "map" && !sheet) { var best = null, bd = 22; S.sites.forEach(function (s) { var d = dist(S.px, S.py, s.x, s.y); if (d < bd) { bd = d; best = s; } }); if (best) { S.px = best.x; S.py = best.y; arrive(best.id); } }
     }
-    el.addEventListener("pointerup", up); el.addEventListener("pointercancel", up);
+    el.addEventListener("pointerup", up); el.addEventListener("pointercancel", up); window.addEventListener("pointerup", function (e) { if (VST.on && e.pointerId === VST.id && VST.mode === mode) up(e); });
   }
 
   // ---- experience belongs to each troop type: it is earned by those who fight, and spent on their promotion ----
@@ -14197,16 +14201,17 @@ function ovEatBread() {
     window.addEventListener("keyup", function (e) { var k = e.key.length === 1 ? e.key.toLowerCase() : e.key; akeys[k] = false; });
     var ar = document.getElementById("area");
     ar.addEventListener("pointerdown", function (e) {
-      if (!AR || AR.dlg || e.target.closest("button")) return;
+      if (!AR || AR.dlg || e.target.closest("button") || (astick.on && performance.now() - (astick.t || 0) < 700) || (astick.t = performance.now(), false)) return;
       if (ovPanStart(e, ar)) return;
       astick.on = false;
       if (true) { astick.on = true; astick.id = e.pointerId; astick.ox = e.clientX; astick.oy = e.clientY; astick.dx = astick.dy = 0; var b = $("astick"); b.style.left = e.clientX + "px"; b.style.top = e.clientY + "px"; b.hidden = false; $("aknob").style.transform = "translate(0,0)"; try { ar.setPointerCapture(e.pointerId); } catch (x) {} }
     });
     ar.addEventListener("pointermove", function (e) {
       if (ovPanMove(e)) return;
-      if (!astick.on || e.pointerId !== astick.id) return; var dx = e.clientX - astick.ox, dy = e.clientY - astick.oy, l = Math.hypot(dx, dy), m = 46;
+      if (!astick.on || e.pointerId !== astick.id) return; var dx = e.clientX - astick.ox, dy = e.clientY - astick.oy, l = Math.hypot(dx, dy), m = 40; astick.t = performance.now();
+      if (l > m * 1.4) { var kf = (l - m * 1.4) / l; astick.ox += dx * kf; astick.oy += dy * kf; dx = e.clientX - astick.ox; dy = e.clientY - astick.oy; l = Math.hypot(dx, dy); }
       if (l > m) { dx = dx / l * m; dy = dy / l * m; l = m; } $("aknob").style.transform = "translate(" + dx + "px," + dy + "px)";
-      astick.dx = l < 8 ? 0 : dx / m; astick.dy = l < 8 ? 0 : dy / m;
+      astick.dx = l < 4 ? 0 : Math.min(1, dx / (m * 0.8)); astick.dy = l < 4 ? 0 : Math.min(1, dy / (m * 0.8));
     });
     function up(e) { ovPanEnd(e, null); if (e.pointerId === astick.id) { astick.on = false; astick.dx = astick.dy = 0; $("astick").hidden = true; } }
     function stickReset() { astick.on = false; astick.id = -1; astick.dx = astick.dy = 0; var sb = $("astick"); if (sb) sb.hidden = true; }
