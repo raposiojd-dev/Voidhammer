@@ -1066,8 +1066,8 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
     }
 
     S.nextBandit--;
-    if (S.nextBandit <= 0 && countKind("bandit") < 5) { spawnBandit(); S.nextBandit = rndInt(6, 10); }
-    if (S.day >= 12 && !S.sealed) { S.nextVoid--; if (S.nextVoid <= 0 && countKind("void") < 4) { spawnVoid(); S.nextVoid = rndInt(8, 13); } }
+    if (S.nextBandit <= 0 && countKind("bandit") < 4) { spawnBandit(); S.nextBandit = rndInt(14, 22); }
+    if (S.day >= 12 && !S.sealed) { S.nextVoid--; if (S.nextVoid <= 0 && countKind("void") < 3) { spawnVoid(); S.nextVoid = rndInt(16, 24); } }
 
     if (S.day >= END_DAY && !S.ended) { S.ended = true; save(); openSheet("ending"); }
   }
@@ -1186,7 +1186,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
       B.won = true;
     } else {
       var extra = Math.ceil(T() * 0.25); loseTroops(extra); S.grain = Math.floor(S.grain * 0.7); S.crowns = Math.floor(S.crowns * 0.7);
-      if (e) { e.cool = 3; var dx = S.px - e.x, dy = S.py - e.y, d = Math.hypot(dx, dy) || 1; S.px += dx / d * 45; S.py += dy / d * 45; }
+      if (e) { e.cool = 6; var dx = S.px - e.x, dy = S.py - e.y, d = Math.hypot(dx, dy) || 1; S.px += dx / d * 45; S.py += dy / d * 45; }
       B.out.push("You were driven off. " + (lost + extra) + " men lost, and they took a third of your grain and coin.");
       log("Lost a fight. " + (lost + extra) + " men gone.", "e");
       B.won = false;
@@ -1399,7 +1399,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
       var es = e.n * e.q, dp = dist(e.x, e.y, S.px, S.py), tx = null, ty = null, spd = 50;
       if (e.kind === "bandit") {
         if (e.tut) { tx = S.px; ty = S.py; spd = 36; }
-        else if (dp < 120 && es > ps * 0.85 && e.cool <= 0) { tx = S.px; ty = S.py; spd = 66; }
+        else if (dp < 70 && es > ps * 0.85 && e.cool <= 0) { tx = S.px; ty = S.py; spd = 46; }
         else if (dp < 120 && ps > es * 1.3) { tx = e.x + (e.x - S.px); ty = e.y + (e.y - S.py); spd = 68; }
         else {
           if (!e.dest || dist(e.x, e.y, e.dest.x, e.dest.y) < 14) {
@@ -1411,11 +1411,11 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
       } else if (e.kind === "lord") {
         spd = 44;
         if (e.fac === "metal" && S.mc && S.day < S.mc.start) { if (e.dest) { tx = e.dest.x; ty = e.dest.y; } }
-        else if (S.pwar[e.fac] && dp < (e.fac === "metal" ? 200 : 160) && es > ps * 0.75 && e.cool <= 0) { tx = S.px; ty = S.py; spd = e.fac === "metal" ? 62 : 58; }
+        else if (S.pwar[e.fac] && dp < (e.fac === "metal" ? 130 : 100) && es > ps * 0.75 && e.cool <= 0) { tx = S.px; ty = S.py; spd = e.fac === "metal" ? 50 : 46; }
         else if (e.dest) { tx = e.dest.x; ty = e.dest.y; }
       } else {
         spd = 34;
-        if (dp < 90 && e.cool <= 0) { tx = S.px; ty = S.py; spd = 50; }
+        if (dp < 60 && e.cool <= 0) { tx = S.px; ty = S.py; spd = 38; }
         else {
           var best = null, bd = 1e9;
           S.sites.forEach(function (s) { var d = dist(e.x, e.y, s.x, s.y); if (d < bd) { bd = d; best = s; } });
@@ -13374,11 +13374,12 @@ function skillsSheet() {
     h += '<p class="dim-t" style="margin:.3rem 0 .5rem">' + (P ? "You have points to spend. Disciplines with a gold mark have something you can learn now." : "Earn experience to gain points. Each level is one point; every discipline runs to level 18.") + "</p>";
     SKUI_GROUPS.forEach(function (g) {
       var list = g[1].map(function (i) { return byI[i]; }).filter(Boolean); if (!list.length) return;
-      h += '<div class="sec">' + g[0] + '</div><div class="sku-grid">';
+      h += '<div class="sec">' + g[0] + (g[0] === "Paths" ? (typeof skPathChosen === "function" && skPathChosen() ? " · yours is chosen" : " · choose one, the rest close") : "") + '</div><div class="sku-grid">';
       list.forEach(function (s) {
         var got = 0, tot = 0, acts = 0; s.items.forEach(function (it) { got += sk(it.id); tot += skMax(it); if (it.active) acts++; });
-        var ready = P > 0 && skuReady(s.items), ic = SKUI_ICON[s.name] || (s.items[0] && s.items[0].id);
-        h += '<button class="sku-c' + (got ? " has" : "") + (ready ? " ready" : "") + '" data-skc="' + s.i + '">' + skIcon(ic, 48) + '<b>' + s.name + "</b><span>" + s.items.length + " skills" + (acts ? " · " + acts + " battle" : "") + "</span><em>" + got + "/" + tot + "</em>" + (ready ? '<i class="sku-dot"></i>' : "") + "</button>";
+        var ready = P > 0 && skuReady(s.items), ic = SKUI_ICON[s.name] || (s.items[0] && s.items[0].id), chosen = typeof skPathChosen === "function" ? skPathChosen() : null, isPath = s.items[0] && s.items[0].origin, off = isPath && chosen && s.items[0].origin !== chosen;
+        if (off) ready = false;
+        h += '<button class="sku-c' + (got ? " has" : "") + (ready ? " ready" : "") + (off ? " off" : "") + '" data-skc="' + s.i + '">' + skIcon(ic, 48) + '<b>' + s.name + "</b><span>" + s.items.length + " skills" + (acts ? " · " + acts + " battle" : "") + "</span><em>" + got + "/" + tot + "</em>" + (ready ? '<i class="sku-dot"></i>' : "") + "</button>";
       });
       h += "</div>";
     });
@@ -13401,7 +13402,7 @@ function skillsSheet() {
     ".sku-c{position:relative;display:flex;flex-direction:column;align-items:center;gap:3px;padding:.55rem .25rem .45rem;border:1px solid #4a3a20;border-radius:5px;background:linear-gradient(#1c160d,#0d0a06);color:#a89468;text-align:center;box-shadow:inset 0 0 14px rgba(0,0,0,.6),0 2px 6px #000;min-width:0;touch-action:manipulation}",
     ".sku-c .skp{border-radius:50%!important;box-shadow:0 0 0 2px #0a0806,0 0 0 3px #5a4424,0 3px 8px #000!important;filter:saturate(.7) brightness(.8)}.sku-c.has .skp{filter:none}.sku-c.ready .skp{box-shadow:0 0 0 2px #0a0806,0 0 0 3px #e0bc6a,0 0 14px rgba(224,188,106,.5)!important;filter:none}",
     ".sku-c b{display:block;max-width:100%;font:500 .78rem var(--serif2);color:#e8cc84;line-height:1.15;margin-top:2px}.sku-c span{font:500 .5rem var(--mono);letter-spacing:.06em;text-transform:uppercase;color:#7a6a48;white-space:nowrap}.sku-c em{font:600 .62rem var(--mono);font-style:normal;color:#d8b868}",
-    ".sku-c.has{border-color:#7a5a2a}.sku-c.ready{border-color:#c8a050;animation:skp 2.4s ease-in-out infinite}.sku-dot{position:absolute;top:6px;right:6px;width:8px;height:8px;border-radius:50%;background:#f2d88c;box-shadow:0 0 8px #e0b050}",
+    ".sku-c.off{opacity:.42;filter:grayscale(1)}.sku-c.off .skp{filter:grayscale(1) brightness(.6)!important}.sku-c.has{border-color:#7a5a2a}.sku-c.ready{border-color:#c8a050;animation:skp 2.4s ease-in-out infinite}.sku-dot{position:absolute;top:6px;right:6px;width:8px;height:8px;border-radius:50%;background:#f2d88c;box-shadow:0 0 8px #e0b050}",
     ".sku-bar{display:flex;align-items:center;gap:.6rem;margin:.4rem 0 .1rem}.sku-bar b{flex:1;font:500 1.15rem var(--serif2);color:#e8cc84;font-weight:500}.sku-bar em{font:600 .66rem var(--mono);font-style:normal;color:#d8b868}.sku-back{padding:.35rem .6rem;border:1px solid #6a5028;border-radius:3px;background:linear-gradient(#2a2012,#120d07);color:#e0c888;font:500 .62rem var(--mono);letter-spacing:.06em;text-transform:uppercase}",
     ".sku-bl{margin:0 0 .4rem;font-size:.88rem}",
     ".sku-tree{position:relative;border:1px solid #4a3a20;border-radius:5px;background:radial-gradient(120% 80% at 50% 0%,rgba(150,100,40,.16),rgba(0,0,0,0) 60%),repeating-linear-gradient(45deg,rgba(255,255,255,.012) 0 3px,rgba(0,0,0,.05) 3px 6px),#0c0a07;box-shadow:inset 0 0 24px #000,0 0 0 1px #000;padding:6px 4px 2px}",
@@ -13616,22 +13617,47 @@ function ovNavMove(o, kx, ky, tx, ty, step) {
   if (here !== cur || there !== cur) { var dx = tx - x, dy = ty - y, d = Math.hypot(dx, dy) || 1, m = Math.min(step, d); try { NVM.delete(o); } catch (e) {} return [x + dx / d * m, y + dy / d * m]; }
   return ovNavMove0(o, kx, ky, tx, ty, step);
 }
-// roads never cross the sea
+// roads: on each island one trunk joins the towns and castles, and every village has a single lane to the nearest of them. Nothing crosses the sea.
 function rdLink() {
-  var ids = S.sites, n = ids.length, par = ids.map(function (_, i) { return i; });
-  function f(i) { while (par[i] !== i) { par[i] = par[par[i]]; i = par[i]; } return i; }
-  function idx(id) { for (var i = 0; i < n; i++) if (ids[i].id === id) return i; return -1; }
-  var has = {}; ROADS.forEach(function (r) { var a = idx(r[0]), b = idx(r[1]); if (a < 0 || b < 0 || !sameCell(ids[a], ids[b])) return; has[Math.min(a, b) + "_" + Math.max(a, b)] = 1; par[f(a)] = f(b); });
-  var pairs = []; for (var i = 0; i < n; i++) for (var j = i + 1; j < n; j++) if (sameCell(ids[i], ids[j])) pairs.push([i, j, Math.hypot(ids[i].x - ids[j].x, ids[i].y - ids[j].y)]);
-  pairs.sort(function (p, q) { return p[2] - q[2]; });
-  pairs.forEach(function (p) { if (f(p[0]) !== f(p[1])) { par[f(p[0])] = f(p[1]); if (!has[p[0] + "_" + p[1]]) ROADS.push([ids[p[0]].id, ids[p[1]].id]); has[p[0] + "_" + p[1]] = 1; } });
-  for (i = 0; i < n; i++) {
-    var deg = 0; ROADS.forEach(function (r) { if (r[0] === ids[i].id || r[1] === ids[i].id) { var a = idx(r[0]), b = idx(r[1]); if (a >= 0 && b >= 0 && sameCell(ids[a], ids[b])) deg++; } });
-    if (deg >= 2) continue;
-    for (var k = 0; k < pairs.length; k++) { var p = pairs[k]; if ((p[0] === i || p[1] === i) && !has[p[0] + "_" + p[1]] && p[2] < 620) { ROADS.push([ids[p[0]].id, ids[p[1]].id]); has[p[0] + "_" + p[1]] = 1; break; } }
+  var sig = S.sites.length + ":" + Math.round(S.sites.reduce(function (a, s) { return a + s.x * 3 + s.y; }, 0));
+  if (ROADS.__sig === sig) return;
+  ROADS.length = 0; ROADS.__sig = sig;
+  for (var c = 0; c < 9; c++) {
+    var all = S.sites.filter(function (s) { return cellAt(s.x, s.y) === c; }), maj = all.filter(function (s) { return s.type !== "village" || !all.some(function (q) { return q.type !== "village"; }); });
+    if (!all.length) continue;
+    // Prim's tree over the major sites
+    var inT = [maj[0]], out = maj.slice(1);
+    while (out.length) {
+      var bi = -1, bj = -1, bd = 1e9;
+      for (var i = 0; i < inT.length; i++) for (var j = 0; j < out.length; j++) { var d = Math.hypot(inT[i].x - out[j].x, inT[i].y - out[j].y); if (d < bd) { bd = d; bi = i; bj = j; } }
+      ROADS.push([inT[bi].id, out[bj].id]); inT.push(out[bj]); out.splice(bj, 1);
+    }
+    // each village: one lane to its seat if it is here, else to the nearest major site
+    all.forEach(function (v) {
+      if (maj.indexOf(v) >= 0) return; var best = null, d0 = 1e9;
+      maj.forEach(function (m) { var d = Math.hypot(m.x - v.x, m.y - v.y); if (v.seat === m.id) d *= 0.6; if (d < d0) { d0 = d; best = m; } });
+      if (best) ROADS.push([v.id, best.id]);
+    });
   }
 }
-function ovRoadsDraw() { ovRoadsDraw0(); try { ovDrawPortals(); } catch (e) {} }
+// dirt tracks: soft brown earth, worn pale in the middle, two faint wheel ruts, grass creeping over the edges
+function ovRoadsDraw() {
+  try { rdLink(); } catch (e) {}
+  ctx.save(); ctx.lineCap = "round"; ctx.lineJoin = "round";
+  var P = [];
+  ROADS.forEach(function (r, idx) { var a = site(r[0]), b = site(r[1]); if (a && b && sameCell(a, b)) P.push(ovRoadPts(r, idx, a, b)); });
+  var passes = [["rgba(26,20,10,0.22)", 11], ["rgba(96,70,40,0.72)", 7.2], ["rgba(128,98,58,0.8)", 4.8], ["rgba(160,130,86,0.5)", 2.2]];
+  passes.forEach(function (ps) { ctx.strokeStyle = ps[0]; ctx.lineWidth = ps[1]; P.forEach(function (pts) { ovRoadPath(pts); ctx.stroke(); }); });
+  ctx.setLineDash([5, 7]); ctx.lineWidth = 0.9; ctx.strokeStyle = "rgba(52,36,18,0.5)";
+  P.forEach(function (pts) { [-1.7, 1.7].forEach(function (o) { var q = pts.map(function (p, i) { var n = pts[Math.min(i + 1, pts.length - 1)], m = pts[Math.max(i - 1, 0)], tx = n.x - m.x, ty = n.y - m.y, l = Math.hypot(tx, ty) || 1; return { x: p.x - ty / l * o, y: p.y + tx / l * o }; }); ovRoadPath(q); ctx.stroke(); }); });
+  ctx.setLineDash([]);
+  // grass over the verges and the odd stone
+  P.forEach(function (pts, pi) { for (var i = 1; i < pts.length - 1; i++) { var h = hash(pi * 97 + i, 3); if (h < 0.6) continue; var p = pts[i], n = pts[i + 1], tx = n.x - p.x, ty = n.y - p.y, l = Math.hypot(tx, ty) || 1, sd = h < 0.8 ? -1 : 1, ox = -ty / l * sd * 4.2, oy = tx / l * sd * 4.2; ctx.fillStyle = h > 0.93 ? "rgba(120,112,96,0.7)" : "rgba(60,96,40,0.45)"; ctx.beginPath(); ctx.ellipse(p.x + ox, p.y + oy, h > 0.93 ? 1.3 : 2.6, h > 0.93 ? 0.9 : 1.4, 0, 0, 6.283); ctx.fill(); } });
+  ctx.restore();
+  try { ovDrawPortals(); } catch (e) {}
+}
+// one path: the first origin tree you put a point in is yours; the others close
+function skPathChosen() { var o = null, best = 0; SKILLS.forEach(function (b) { if (!b.origin) return; var n = 0; b.items.forEach(function (it) { n += sk(it.id); }); if (n > best) { best = n; o = b.origin; } }); return o; }
 
 // ---- the minimap shows the continent you stand on ----
 function drawMini() {
@@ -13764,6 +13790,7 @@ function renderSheet(just) {
   var b = skBranch("Memory and Spark"); if (b && !b.items.some(function (i) { return i.id === "ms_gate"; })) b.items.push({ id: "ms_gate", name: "Gatewalker", lv: 1, max: 1, per: "the Realm Gates answer you", desc: "The Grey Writ carries a seal older than any realm. The gates remember it. Learn to show it and they will remember you.", storyq: "q2done" });
 })();
 function skWhy(it) {
+  if (it.origin) { var ch = skPathChosen(); if (ch && ch !== it.origin && sk(it.id) === 0) return "Not your path. You walk " + (skBranch(SKILLS.filter(function (b) { return b.origin === ch; })[0].branch) || {}).branch + "."; }
   if (it.storyq && !(S.camp && S.camp.f && S.camp.f[it.storyq])) return "Take the Grey Writ from the Hollow first.";
   return skWhy0(it);
 }
@@ -13912,7 +13939,7 @@ function objective() {
       case "learn":
         (function () {
           var it = null; SKILLS.forEach(function (b) { b.items.forEach(function (i) { if (i.id === x) it = i; }); });
-          if (it && points() > 0 && sk(x) < skMax(it) && (!it.req || sk(it.req)) && (!it.need || beatN() >= it.need) && (!it.lv || lvl() >= it.lv) && !(it.storyq && !(cp().f || {})[it.storyq])) S.skills[x] = sk(x) + 1;
+          if (it && points() > 0 && sk(x) < skMax(it) && (!it.req || sk(it.req)) && (!it.need || beatN() >= it.need) && (!it.lv || lvl() >= it.lv) && !(it.storyq && !(cp().f || {})[it.storyq]) && !(it.origin && skPathChosen() && skPathChosen() !== it.origin)) S.skills[x] = sk(x) + 1;
         })(); break;
       case "skbr": skOpen[x] = !skOpen[x]; break;
       case "sktab": skTab = +x; skSel = null; break;
