@@ -1671,6 +1671,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
       if (HEROES[id].fac !== "free" && realmList().indexOf(HEROES[id].fac) < 0) return;
       var d = HEROES[id], a = allyById(id), fc = d.fac === "free" ? "" : (FAC[d.fac] ? FAC[d.fac].name : "");
       h += '<div class="sec" style="color:' + d.col + '">' + d.name + "</div>";
+      h += heroFace(id, 72);
       h += '<p class="dim-t" style="margin:0">' + d.title + (fc ? " · " + fc : "") + "</p>";
       h += "<p><i>" + d.wound + "</i></p><p class=\"dim-t\">" + d.trait + "</p>";
       if (a) {
@@ -5750,7 +5751,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
     if (s.hat === "bandana") { px(s.hatc, 4, 2, 8, 2); px(s.hatc, 11, 3, 2, 2); }
     return (faceCache[key] = c.toDataURL());
   }
-  function playerFace() {
+  function playerFaceOld() {
     var o = (S && S.opt && S.opt.origin) || "wanderer", P = PORT[o] || PORT.wanderer;
     var sp = { skin: P.skin, hair: P.hair, cloth: P.cloak, trim: P.trim, bg: P.bg, style: o === "outlaw" ? "hood" : "short" };
     if (o === "farmer") { sp.hat = "straw"; sp.hatc = "#d8c070"; }
@@ -5770,7 +5771,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
     "Noctis": { skin: "#8a8e98", hair: "#4a4a52", style: "short", hat: "helm", hatc: "#5a5e68", eye: "#ff3a3a", glow: "#ff3a3a", cloth: "#3a3a44", bg: "#201418" },
     "Dravik": { skin: "#c8a07a", hair: "#2a2a30", style: "short", hat: "helm", hatc: "#6a6a78", scar: 1, cloth: "#4a2a38", eye: "#ff3a5a", bg: "#2a1420" }
   };
-  function npcFace(name) {
+  function npcFaceOld(name) {
     var base = String(name).split(",")[0].replace(/<[^>]*>/g, "").trim(), key = "n:" + base;
     if (faceCache[key]) return faceCache[key];
     var sp = null; Object.keys(NPCSP).forEach(function (k) { if (base.indexOf(k) >= 0) sp = Object.assign({}, NPCSP[k]); });
@@ -12540,6 +12541,34 @@ function tIcon(id, sz) {
   } catch (e) { return tIconOld(id, sz); }
 }
 try { ["tp_levy", "tp_sword", "tp_champ", "tp_archer", "tp_xbow", "tp_mage", "tp_spear", "tp_pike", "tp_jav", "tp_horse", "tp_knight", "tp_axe"].forEach(function (k) { spImg(k); }); } catch (e) {}
+// painted hero portraits in the Heroes sheet (img/face/<id>.webp; companions use their painted sprite)
+var HFACE = { sera: 1, tamsin: 1, orrin: 1, aldreth: 1, varyn: 1, talla: 1, whisper: 1, jorren: "comp_jorren", noctis: "comp_noctis" };
+function heroFace(id, sz) {
+  sz = sz || 64; var f = HFACE[id]; if (!f) return "";
+  if (f === 1) return '<img src="img/face/' + id + '.webp" width="' + sz + '" height="' + sz + '" style="float:left;margin:.1rem .7rem .3rem 0;border-radius:3px;border:1px solid #6a4f22;box-shadow:0 3px 10px rgba(0,0,0,.6)" alt="" onerror="this.remove()">';
+  var u = ovBust(f, 128); return u ? '<img src="' + u + '" width="' + sz + '" height="' + sz + '" style="float:left;margin:.1rem .7rem .3rem 0;border-radius:3px;border:1px solid #6a4f22;box-shadow:0 3px 10px rgba(0,0,0,.6)" alt="">' : "";
+}
+// painted dialogue faces: the same painted figure the NPC walks around as, cropped to a bust (heroes and lords get their portraits)
+var NFACE = {}, NFACEN = { "Elder Mara": "mara", "Lord Vashen": "vashen", "Sera Ironvow": "sera", "Tamsin Ashveil": "tamsin", "Orrin Gale": "orrin", "Aldreth Veil": "aldreth", "Elder Varyn": "varyn", "Talla": "talla", "Whisper": "whisper" };
+function npcFaceOld2() {}
+function npcFace(name) {
+  try {
+    var base = String(name).split(",")[0].replace(/<[^>]*>/g, "").trim();
+    if (NFACE[base]) return NFACE[base];
+    for (var k in NFACEN) if (base.indexOf(k) === 0) { if (window.NFACEBAD && window.NFACEBAD[k]) break; return (NFACE[base] = "img/face/" + NFACEN[k] + ".webp"); }
+    if (/^(The Voyager|Voyager)/.test(base)) return (NFACE[base] = ovBust("comp_voyager", 128) || npcFaceOld(name));
+    if (/^Kaelren/.test(base)) return (NFACE[base] = ovBust("comp_kaelren", 128) || npcFaceOld(name));
+    if (/^Elyndra/.test(base)) return (NFACE[base] = ovBust("comp_elyndra", 128) || npcFaceOld(name));
+    if (/^Jorren/.test(base)) return (NFACE[base] = ovBust("comp_jorren", 128) || npcFaceOld(name));
+    if (/^(Noctis|The Iron Shade)/.test(base)) return (NFACE[base] = ovBust("comp_noctis", 128) || npcFaceOld(name));
+    var id = spId({ sp: "npc:x", nm: base }); if (!id) return npcFaceOld(name);
+    var u = ovBust(id, 128); if (!u) return npcFaceOld(name);
+    return (NFACE[base] = u);
+  } catch (e) { return npcFaceOld(name); }
+}
+function playerFaceOld2() {}
+function playerFace() { try { var u = ovBust(spId({ sp: "hero" }), 128); if (u) return u; } catch (e) {} return playerFaceOld(); }
+try { ["npc_child", "npc_elder", "npc_farmer", "npc_guard", "npc_inn", "npc_merchant", "npc_noble", "npc_priest", "npc_scholar", "npc_smith", "comp_voyager", "comp_kaelren", "comp_elyndra", "comp_jorren", "comp_noctis"].forEach(function (k) { spImg(k); }); } catch (e) {}
 // ---- painted 3/4-view settlements and buildings on the world map (img/map/*.webp) ----
 var WM2 = {};
 function wm2(k) { var im = WM2[k]; if (!im) { im = WM2[k] = new Image(); im.src = "img/map/" + k + ".webp"; } return im.complete && im.naturalWidth ? im : null; }
