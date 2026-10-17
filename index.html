@@ -12607,7 +12607,7 @@ function wm2Extras(s, t, phase) {
 function wmBody(s, t) {
   var vil = s.type === "village", k = vil ? "village" : s.type === "castle" ? "castle" : "town", im = wm2(k);
   if (!im) return typeof wmBodyOld === "function" ? wmBodyOld(s, t) : false;
-  var w = vil ? 112 : 84, h = w * im.naturalHeight / im.naturalWidth, oc = ownerCol(s);
+  var w = vil ? 78 : 84, h = w * im.naturalHeight / im.naturalWidth, oc = ownerCol(s);
   ctx.save(); ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = "high";
   // soft light pool and the owner's colour as a thin ground ring
   var R = w * 0.7, lg = ctx.createRadialGradient(0, 8, R * 0.1, 0, 8, R); lg.addColorStop(0, "rgba(255,236,190,0.5)"); lg.addColorStop(0.6, "rgba(255,226,160,0.2)"); lg.addColorStop(1, "rgba(255,226,160,0)");
@@ -13180,6 +13180,35 @@ function useLabel(tk) {
   setTimeout(arm, 1500);
   ["btn_strike", "btn_cast", "btn_shoot", "btn_use"].forEach(function (k) { var im = new Image(); im.src = "img/" + k + ".webp"; });
 })();
+// ---- ovSPREAD: breathe room into the world map. Satellite villages sit further from their town, and nothing sits closer than ~140 units. ----
+function wmSpread() {
+  try {
+    if (window.__nospread || !S || !S.sites || S.spreadV === 3) return;
+    var W = (typeof WORLD !== "undefined" ? WORLD : 2800), M = 70, by = {}; S.sites.forEach(function (s) { by[s.id] = s; });
+    // satellites: push out along the same bearing from their town
+    S.sites.forEach(function (s) {
+      var m = /^(.+)_vf\d$/.exec(s.id); if (!m || !by[m[1]]) return; var t = by[m[1]], dx = s.x - t.x, dy = s.y - t.y, d = Math.hypot(dx, dy) || 1, R = 215;
+      s.x = t.x + dx / d * R; s.y = t.y + dy / d * R;
+    });
+    // relax: any two sites closer than MIN get pushed apart (villages move, towns and castles stay put when they can)
+    var MIN = 175, it, i, j;
+    for (it = 0; it < 24; it++) {
+      var moved = false;
+      for (i = 0; i < S.sites.length; i++) for (j = i + 1; j < S.sites.length; j++) {
+        var a = S.sites[i], b = S.sites[j], dx = b.x - a.x, dy = b.y - a.y, d = Math.hypot(dx, dy) || 0.01; if (d >= MIN) continue;
+        var push = (MIN - d) / 2 + 0.5, ux = dx / d, uy = dy / d, wa = a.type === "village" ? 1 : 0.25, wb = b.type === "village" ? 1 : 0.25, tw = wa + wb;
+        a.x -= ux * push * 2 * wa / tw; a.y -= uy * push * 2 * wa / tw; b.x += ux * push * 2 * wb / tw; b.y += uy * push * 2 * wb / tw; moved = true;
+      }
+      S.sites.forEach(function (s) { s.x = Math.max(M, Math.min(W - M, s.x)); s.y = Math.max(M, Math.min(W - M, s.y)); });
+      if (!moved) break;
+    }
+    S.spreadV = 3; try { var cc = cp(); if (cc && cc.ovpoi) cc.ovpoi = null; } catch (e) {}
+    // anything cached from the old positions
+    try { if (typeof WMC !== "undefined") WMC = null; } catch (e) {}
+    try { if (typeof wmRdy === "function" && window.__wmInval) window.__wmInval(); } catch (e) {}
+  } catch (e) { if (window.console) console.log("spread", e); }
+}
+setInterval(wmSpread, 400);
 
   // ---- input ----
   (function () {
