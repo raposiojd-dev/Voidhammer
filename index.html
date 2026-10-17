@@ -10363,7 +10363,7 @@ function skSpend(pp, fld) {
   var c = pp.c; if (c.cr) S.crowns -= c.cr; if (c.gr) S.grain -= c.gr;
   if (c.hp) { if (fld) F.hero.hp = Math.max(1, F.hero.hp - F.hero.hpm * (c.hp / pp.mh)); else AR.p.hp = Math.max(0.1, AR.p.hp - c.hp); }
 }
-function skUseArea() {
+function skUseArea0() {
   var id = skActId(); if (!id || !AR || !AR.p || sheet || AR.dlg) return; var p = AR.p, r = sk(id), A = SKACT[id];
   SKT.a = SKT.a || {}; if ((SKT.a[id] || 0) > AR.t) return;
   var pp = skPay(id, r, false); if (typeof pp === "string") { aToast(pp); return; }
@@ -10393,7 +10393,7 @@ function skUseArea() {
     p.inv = Math.max(p.inv, 0.5); AR.fx.push({ x: p.x, y: p.y - 8, t: 0.3 }); aToast("Hollow Step.", "#e0bc6a");
   }
 }
-function skUseField() {
+function skUseField0() {
   var id = skActId(); if (!id || !F || F.over || F.deploy || !F.hero || F.hero.dead) return; var u = F.hero, r = sk(id), A = SKACT[id];
   SKT.f = SKT.f || {}; if ((SKT.f[id] || 0) > F.t) return;
   var pp = skPay(id, r, true); if (typeof pp === "string") { fieldMsg(pp); return; }
@@ -13209,6 +13209,224 @@ function wmSpread() {
   } catch (e) { if (window.console) console.log("spread", e); }
 }
 setInterval(wmSpread, 400);
+// ---- ovSKUI: the skill book, Diablo-style. Pick a discipline, see its tiers, learn. Plus 21 new skills so every tree runs to level 18. ----
+(function () {
+  // --- new skills ---
+  function add(branch, sp, shared) {
+    var b = skBranch(branch); if (!b) return; if (b.items.some(function (i) { return i.id === sp.id; })) return;
+    if (shared) sgItem(sp, 1); b.items.push(sp);
+  }
+  function lift(id, row) { var it = skFind(id); if (it && it.pos) it.pos = [row, it.pos[1]]; }
+  // shared trees: a level-9 battle skill either side, the old capstone moves to level 12's row, a level-18 passive closes the tree
+  lift("sv_slayer", 4); lift("wf_lord", 4); lift("wf_siege", 4); lift("wy_master", 4);
+  add("Survival", { id: "sv_roll", name: "Tumble", pos: [3, 1], lv: 9, req: "sv_evasion", max: 3, active: 1, desc: "Down, over and up again somewhere the blade is not." }, 1);
+  add("Survival", { id: "sv_iron", name: "Iron Constitution", pos: [5, 2], lv: 18, req: "sv_slayer", max: 2, fx: { hearts: 1 }, desc: "The body remembers every wound and builds around it." }, 1);
+  add("Warfare", { id: "wf_bash", name: "Shield Bash", pos: [3, 1], lv: 9, req: "wf_shield", max: 3, active: 1, desc: "The shield is also a weapon. Most people forget that until it hits them." }, 1);
+  add("Warfare", { id: "wf_veteran", name: "Old Guard", pos: [5, 2], lv: 18, req: "wf_lord", max: 3, fx: { army: 0.03, deaths: 0.03 }, desc: "The men who have been with you longest teach the ones who have not." }, 1);
+  add("Wayfaring", { id: "wy_wind", name: "Second Wind", pos: [3, 3], lv: 9, req: "wy_scout", max: 3, active: 1, desc: "One deep breath of road air and the legs come back." }, 1);
+  add("Wayfaring", { id: "wy_horizon", name: "Far Horizon", pos: [5, 2], lv: 18, req: "wy_master", max: 3, fx: { speed: 0.03, escape: 0.03 }, desc: "You have seen the edge of the map. It is further than they think." }, 1);
+  // the trades: an active in the middle, a passive at the top
+  add("Command", { id: "cmd_cry", name: "War Horn", lv: 9, req: "rally", max: 3, active: 1, per: "a horn that lifts your men and shakes theirs", desc: "One long note. Every man on the field knows whose it is." });
+  add("Command", { id: "cmd_legion", name: "Legion", lv: 15, req: "marshal", max: 3, per: "+4% army strength", fx: { army: 0.04 }, desc: "Not a warband any more. An army, with everything that word costs." });
+  add("Warrior", { id: "wr_bulwark", name: "Bulwark", lv: 6, req: "ironhide", max: 3, per: "−4% damage taken", fx: { tough: 0.04 }, desc: "Plant your feet. Let them come to you." });
+  add("Warrior", { id: "wr_whirl", name: "Whirlwind", lv: 9, req: "blademaster", max: 3, active: 1, per: "a spinning cut through everything around you", desc: "Stop choosing a target. Hit all of them." });
+  add("Warrior", { id: "wr_fury", name: "Battle Fury", lv: 15, req: "wr_whirl", max: 3, per: "+5% your damage, +3% speed in dungeons", fx: { dmg: 0.05, aspd: 0.03 }, desc: "The red comes up behind your eyes and your arms stop asking permission." });
+  add("Archery", { id: "ar_volley", name: "Volley", lv: 9, req: "heavydraw", max: 3, active: 1, per: "a fan of arrows, all at once", desc: "Empty the quiver into the air and let the sky sort them." });
+  add("Archery", { id: "ar_eagle", name: "Eagle Eye", lv: 15, req: "steadyaim", max: 3, per: "+5% damage by your archers", fx: { tarch: 0.05 }, desc: "You see the gap in the armour from the far side of the field." });
+  add("Trade and Land", { id: "tr_coin", name: "Coin Toss", lv: 9, req: "scavenger", max: 3, active: 1, per: "a thrown fistful of crowns that stops a fight", desc: "Men who will kill for coin will stoop for it, too." });
+  add("Trade and Land", { id: "tr_tithe", name: "Tithe", lv: 15, req: "steward", max: 3, per: "+4% when selling loot, +5% crowns from kills", fx: { sell: 0.04, loot: 0.05 }, desc: "A tenth of everything that passes your gate." });
+  add("Politics", { id: "po_parley", name: "Parley", lv: 9, req: "diplomat", max: 3, active: 1, per: "a white flag that buys a long breath", desc: "Even a cutthroat will listen for a moment. A moment is all you need." });
+  add("Politics", { id: "po_envoy", name: "Envoy", lv: 15, req: "renown", max: 3, per: "−5% chance your men break", fx: { morale: 0.05 }, desc: "Your seal on a letter means a promise kept. Your men know it too." });
+  add("Road and Siege", { id: "rs_caltrops", name: "Caltrops", lv: 9, req: "sapper", max: 3, active: 1, per: "a scatter of iron that stalls everything near you", desc: "Four points. One always faces up." });
+  add("Road and Siege", { id: "rs_engineer", name: "Engineer", lv: 15, req: "voidward", max: 3, per: "−5% enemy strength in sieges", fx: { siege: 0.05 }, desc: "You see the wall the way its builder did, and the way its builder was lazy." });
+  add("Memory and Spark", { id: "ms_flare", name: "Spark Flare", lv: 9, req: "remembrance", max: 3, active: 1, per: "a burst of radiance from your open hand", desc: "Burn a little of yourself. It lights up everything that was hiding." });
+  add("Memory and Spark", { id: "ms_keeper", name: "Keeper", lv: 15, req: "sparkcaller", max: 3, per: "heal faster when out of reach", fx: { regen: 0.02 }, desc: "What you hold on to holds you together." });
+
+  Object.assign(SKACT, {
+    sv_roll: { cd: 8, cost: function () { return { gr: 1 }; }, txt: "1 grain", eff: function (r) { return "Roll " + (44 + 8 * r) + " paces the way you face. Nothing can hurt you for " + (0.6 + 0.15 * r).toFixed(2) + " seconds."; } },
+    wf_bash: { cd: 12, cost: function () { return { cr: 4 }; }, txt: "4 crowns", eff: function (r) { return "Everything close in front of you is thrown back, stunned for " + (1 + 0.3 * r).toFixed(1) + " seconds and takes " + Math.round((0.6 + 0.2 * r) * 100) + "% of a strike."; } },
+    wy_wind: { cd: 30, cost: function () { return { gr: 2 }; }, txt: "2 grain", eff: function (r) { return "Heal " + (0.8 + 0.4 * r).toFixed(1) + " hearts on the spot. In a battle your men near you take heart as well."; } },
+    cmd_cry: { cd: 30, cost: function (r) { return { cr: 10 + 5 * r }; }, txt: "10 crowns plus 5 per rank", eff: function (r) { return "You strike 30% harder for " + (5 + r) + " seconds and enemies near you flinch. In a battle your men rally for " + (5 + 2 * r) + " seconds."; } },
+    wr_whirl: { cd: 10, cost: function () { return { hp: 0.5 }; }, txt: "half a heart", eff: function (r) { return "Everything around you takes " + Math.round((1.5 + 0.4 * r) * 100) + "% of a strike and is thrown back."; } },
+    ar_volley: { cd: 14, cost: function () { return { cr: 4 }; }, txt: "4 crowns (the arrows are free)", eff: function (r) { return "Loose " + (5 + r) + " arrows in a wide fan, each for " + Math.round((0.8 + 0.1 * r) * 100) + "% of a shot. Needs a bow."; } },
+    tr_coin: { cd: 16, cost: function (r) { return { cr: 5 + 5 * r }; }, txt: "5 crowns plus 5 per rank", eff: function (r) { return "Enemies near you stop to grab for the coin for " + (2 + 0.5 * r).toFixed(1) + " seconds. Bosses do not stoop."; } },
+    po_parley: { cd: 45, cost: function () { return { cr: 15 }; }, txt: "15 crowns", eff: function (r) { return "Everyone near you lowers their weapon for " + (4 + r) + " seconds. In a battle, " + (2 + r) + " of them walk away for good."; } },
+    rs_caltrops: { cd: 18, cost: function () { return { cr: 6 }; }, txt: "6 crowns", eff: function (r) { return "Everything near you is stalled for " + (2 + 0.4 * r).toFixed(1) + " seconds and takes " + Math.round((0.4 + 0.15 * r) * 100) + "% of a strike."; } },
+    ms_flare: { cd: 12, cost: function () { return { hp: 1 }; }, txt: "a full heart", eff: function (r) { return "A burst of radiance: everything near you takes " + Math.round((1.8 + 0.5 * r) * 100) + "% of a strike and is dazed for " + (0.6 + 0.2 * r).toFixed(1) + " seconds."; } }
+  });
+})();
+
+var SKUI_NEW = { sv_roll: 1, wf_bash: 1, wy_wind: 1, cmd_cry: 1, wr_whirl: 1, ar_volley: 1, tr_coin: 1, po_parley: 1, rs_caltrops: 1, ms_flare: 1 };
+function skUseArea() {
+  var id = skActId(); if (!id || !SKUI_NEW[id]) return skUseArea0();
+  if (!AR || !AR.p || sheet || AR.dlg) return; var p = AR.p, r = sk(id), A = SKACT[id];
+  SKT.a = SKT.a || {}; if ((SKT.a[id] || 0) > AR.t) return;
+  if (id === "ar_volley" && !curBow()) { aToast("Needs a bow."); return; }
+  var pp = skPay(id, r, false); if (typeof pp === "string") { aToast(pp); return; }
+  skSpend(pp, false); SKT.a[id] = AR.t + A.cd; p.atk = 0.3;
+  var live = AR.en.filter(function (e) { return !e.dead && !e.gone && !e.yield; });
+  function near(R) { return live.filter(function (e) { return Math.hypot(e.x - p.x, e.y - p.y) < R; }); }
+  function stun(e, t) { e.stun = Math.max(e.stun || 0, e.d.boss ? t * 0.35 : t); e.cd = Math.max(e.cd, 0.4); }
+  function ring() { AR.wave = { x: p.x, y: p.y - 6, t: 0.5 }; }
+  var dm = atkDmg(), G = "#e0bc6a";
+  if (id === "sv_roll") { var k, st = 4, D = 44 + 8 * r; for (k = 0; k < D; k += st) { var nx = p.x + p.face.x * st, ny = p.y + p.face.y * st; if (!boxFree(AR, nx, ny)) break; p.x = nx; p.y = ny; } p.inv = Math.max(p.inv, 0.6 + 0.15 * r); AR.fx.push({ x: p.x, y: p.y - 8, t: 0.3 }); aToast("Tumble.", G); }
+  else if (id === "wf_bash") { ring(); near(36).forEach(function (e) { var dx = e.x - p.x, dy = e.y - p.y, d = Math.hypot(dx, dy) || 1; if ((dx * p.face.x + dy * p.face.y) / d < 0.2) return; dmgEn(e, dm * (0.6 + 0.2 * r), dx, dy, 240); stun(e, 1 + 0.3 * r); }); aToast("Shield Bash!", G); }
+  else if (id === "wy_wind") { p.hp = Math.min(p.max, p.hp + 0.8 + 0.4 * r); p.inv = Math.max(p.inv, 0.3); ring(); aToast("Second wind.", G); }
+  else if (id === "cmd_cry") { p.buffT = AR.t + 5 + r; ring(); near(60).forEach(function (e) { stun(e, 0.6); }); aToast("The horn sounds.", G); }
+  else if (id === "wr_whirl") { ring(); near(30 + 3 * r).forEach(function (e) { dmgEn(e, dm * (1.5 + 0.4 * r), e.x - p.x, e.y - p.y, 170); }); aToast("Whirlwind!", G); }
+  else if (id === "ar_volley") {
+    var bw = curBow(), aim = ovAim(p, bw), n = 5 + r, base = { life: bw.life, own: 1, dmg: (bw.dmg + 0.3 * sk("fletcher")) * (0.8 + 0.1 * r) * (0.55 + 0.45 * gearEff()) };
+    for (var i = 0; i < n; i++) { var a = (i - (n - 1) / 2) * 0.16, c = Math.cos(a), s = Math.sin(a), vx = aim.x * c - aim.y * s, vy = aim.x * s + aim.y * c; AR.proj.push(Object.assign({}, base, { x: p.x + vx * 6 / bw.sp, y: p.y - 6 + vy * 6 / bw.sp, vx: vx * bw.sp, vy: vy * bw.sp })); }
+    p.atk2 = 0.2; try { sfx("shoot"); } catch (e) {} aToast("Volley!", G);
+  }
+  else if (id === "tr_coin") { near(60).forEach(function (e) { if (e.d.boss) return; stun(e, 2 + 0.5 * r); }); AR.floats.push({ x: p.x, y: p.y - 18, t: 1, s: "−" + A.cost(r).cr, col: "#e8d08a" }); aToast("They stoop for the coin.", G); }
+  else if (id === "po_parley") { near(80).forEach(function (e) { if (e.d.boss) return; stun(e, 4 + r); e.aggro = false; }); aToast("A white flag. For now.", G); }
+  else if (id === "rs_caltrops") { ring(); near(40 + 4 * r).forEach(function (e) { dmgEn(e, dm * (0.4 + 0.15 * r), e.x - p.x, e.y - p.y, 40); stun(e, 2 + 0.4 * r); }); aToast("Caltrops!", G); }
+  else if (id === "ms_flare") { ring(); AR.fx.push({ x: p.x, y: p.y - 10, t: 0.5 }); near(44 + 4 * r).forEach(function (e) { dmgEn(e, dm * (1.8 + 0.5 * r), e.x - p.x, e.y - p.y, 120); stun(e, 0.6 + 0.2 * r); }); aToast("Spark Flare!", "#f6e6b4"); }
+}
+function skUseField() {
+  var id = skActId(); if (!id || !SKUI_NEW[id]) return skUseField0();
+  if (!F || F.over || F.deploy || !F.hero || F.hero.dead) return; var u = F.hero, r = sk(id), A = SKACT[id];
+  SKT.f = SKT.f || {}; if ((SKT.f[id] || 0) > F.t) return;
+  var pp = skPay(id, r, true); if (typeof pp === "string") { fieldMsg(pp); return; }
+  var foes = F.units.filter(function (e) { return e.s === "e" && !e.dead && !e.gone && !e.eng; });
+  function near(R) { return foes.filter(function (e) { return dist(u.x, u.y, e.x, e.y) < R; }); }
+  function ring() { F.wave2 = { x: u.x, y: u.y, r: 0 }; }
+  var did = true;
+  if (id === "sv_roll") { var nn = near(200).sort(function (a, b) { return dist(u.x, u.y, a.x, a.y) - dist(u.x, u.y, b.x, b.y); })[0]; if (nn) { var dx = u.x - nn.x, dy = u.y - nn.y, d = Math.hypot(dx, dy) || 1; u.x += dx / d * 60; u.y += dy / d * 60; } u.cd = 0; F.hm = null; fieldMsg("Tumble."); }
+  else if (id === "wf_bash") { ring(); near(50 + 5 * r).forEach(function (e) { fieldHit(u, e, 0.8 + 0.2 * r); e.cd = Math.max(e.cd || 0, 1.5 + 0.4 * r); }); fieldMsg("Shield Bash!"); }
+  else if (id === "wy_wind") { F.units.forEach(function (q) { if (q.s === "p" && !q.dead && !q.gone && dist(u.x, u.y, q.x, q.y) < 150) q.hp = Math.min(q.hpm, q.hp + q.hpm * (0.12 + 0.04 * r)); }); u.hp = Math.min(u.hpm, u.hp + u.hpm * (0.2 + 0.06 * r)); ring(); fieldMsg("Second wind."); }
+  else if (id === "cmd_cry") { F.cry = Math.max(F.cry || 0, 5 + 2 * r); near(200).forEach(function (e) { e.cd = Math.max(e.cd || 0, 1); }); ring(); fieldMsg("The horn sounds. Your men answer."); }
+  else if (id === "wr_whirl") { ring(); near(56 + 6 * r).forEach(function (e) { fieldHit(u, e, 1.4 + 0.4 * r); }); fieldMsg("Whirlwind!"); }
+  else if (id === "ar_volley") { var ts = near(260).sort(function (a, b) { return dist(u.x, u.y, a.x, a.y) - dist(u.x, u.y, b.x, b.y); }).slice(0, 5 + r); if (!ts.length) { fieldMsg("Nothing in range."); did = false; } else { ts.forEach(function (e) { fieldHit(u, e, 0.8 + 0.1 * r); }); fieldMsg("Volley!"); } }
+  else if (id === "tr_coin") { near(120).forEach(function (e) { e.cd = Math.max(e.cd || 0, 2 + 0.5 * r); }); fieldMsg("They stoop for the coin."); }
+  else if (id === "po_parley") { var ns = near(160).sort(function (a, b) { return dist(u.x, u.y, a.x, a.y) - dist(u.x, u.y, b.x, b.y); }).slice(0, 2 + r); ns.forEach(function (e) { e.rout = true; }); near(160).forEach(function (e) { e.cd = Math.max(e.cd || 0, 2); }); fieldMsg(ns.length + " of them took the flag and went home."); }
+  else if (id === "rs_caltrops") { ring(); near(70 + 6 * r).forEach(function (e) { fieldHit(u, e, 0.4 + 0.15 * r); e.cd = Math.max(e.cd || 0, 2 + 0.4 * r); }); fieldMsg("Caltrops!"); }
+  else if (id === "ms_flare") { ring(); near(70 + 6 * r).forEach(function (e) { fieldHit(u, e, 1.6 + 0.4 * r); e.cd = Math.max(e.cd || 0, 0.8); }); fieldMsg("Spark Flare!"); }
+  if (did) { skSpend(pp, true); SKT.f[id] = F.t + A.cd; try { sfx("hit"); } catch (e) {} }
+}
+
+// --- the book ---
+var SKUI = { cat: null };
+var SKUI_GROUPS = [["Every captain", [0, 1, 2]], ["Trades", [3, 4, 5, 6, 7, 8, 9]], ["Paths", [10, 11, 12, 13, 14, 15, 16, 17]], ["Forbidden", [18]]];
+var SKUI_ICON = { Survival: "x_wolf", Warfare: "wf_drill", Wayfaring: "x_road", Command: "banners", Warrior: "blademaster", Archery: "fletcher", "Trade and Land": "haggler", Politics: "x_oath", "Road and Siege": "x_gate", "Memory and Spark": "x_star", "Dark Arts": "x_skull" };
+function skuTierOf(it, items) {
+  if (it.lv) return it.lv;
+  var d = 0, p = it; while (p && p.req) { p = items.filter(function (q) { return q.id === p.req; })[0]; if (p) d++; if (d > 8) break; }
+  return [1, 3, 6, 9, 12, 15, 18][d] || 1;
+}
+function skuSec(i) { return skSecs().filter(function (s) { return s.i === i; })[0]; }
+function skuReady(items) { return items.some(function (it) { return !skWhy(it); }); }
+function skuDetail(it) {
+  var rk = sk(it.id), mx = skMax(it), why = skWhy(it), pips = "", i; for (i = 0; i < mx; i++) pips += i < rk ? "●" : "○";
+  var ac = SKACT[it.id], h = '<div class="skd sku-d">' + '<div class="sku-dh">' + skIcon(it.id, 44) + '<div><div class="skdt"><b>' + it.name + '</b><span class="skdp">' + pips + "</span></div>";
+  h += '<div class="skdk">' + (ac ? "Battle skill" : "Passive") + (it.lv ? " · Level " + it.lv : "") + (it.req ? " · After " + skName(it.req) : "") + "</div></div></div>";
+  h += '<p class="skdd">' + it.desc + "</p>";
+  if (ac) {
+    h += '<p class="skde"><b>Cost:</b> ' + ac.txt + " · <b>Cooldown:</b> " + ac.cd + " seconds</p>";
+    if (rk > 0) h += '<p class="skde"><b>Now (rank ' + rk + "):</b> " + ac.eff(rk) + "</p>";
+    if (rk < mx) h += '<p class="skde"><b>Next (rank ' + (rk + 1) + "):</b> " + ac.eff(rk + 1) + "</p>";
+    h += '<p class="skde dim-t">One battle skill is on your button at a time.' + (rk > 0 && skActId() === it.id ? " This one is equipped." : "") + "</p>";
+  } else h += '<p class="skde"><b>' + it.per + "</b> per rank." + (rk > 0 ? " Now: rank " + rk + "." : "") + "</p>";
+  h += '<div class="skdb">' + (why && rk < mx ? '<span class="dim-t">' + why + "</span>" : "<span></span>") + "<span>";
+  if (ac && rk > 0 && skActId() !== it.id) h += '<button class="sk-eq" data-skq="' + it.id + '">Equip</button> ';
+  h += '<button class="' + (!why ? "solid" : "") + '" data-act="learn" data-a="' + it.id + '"' + (why ? " disabled" : "") + ">" + (rk >= mx ? "Max" : "Learn") + "</button></span></div></div>";
+  return h;
+}
+function skuTree(sc) {
+  var tiers = {}, L = lvl();
+  sc.items.forEach(function (it) { var t = skuTierOf(it, sc.items); (tiers[t] = tiers[t] || []).push(it); });
+  var keys = Object.keys(tiers).map(Number).sort(function (a, b) { return a - b; }), h = '<div class="sku-tree" id="skutree">';
+  keys.forEach(function (t) {
+    var locked = L < t, arr = tiers[t];
+    h += '<div class="sku-tier' + (locked ? " lock" : "") + '"><div class="sku-tl"><span>' + (t <= 1 ? "Start" : "Level " + t) + "</span>" + (locked ? "<em>" + (t - L) + " more level" + (t - L === 1 ? "" : "s") + "</em>" : "") + '</div><div class="sku-row">';
+    arr.forEach(function (it) {
+      var rk = sk(it.id), mx = skMax(it), why = skWhy(it), can = !why;
+      var cls = "sku-n" + (rk > 0 ? " got" : "") + (rk >= mx ? " max" : "") + (can ? " can" : "") + (why && rk === 0 ? " lock" : "") + (it.active ? " act" : "") + (skSel === it.id ? " sel" : "");
+      h += '<div class="sku-cell"><button class="' + cls + '" data-act="sksel" data-a="' + it.id + '" data-req="' + (it.req || "") + '" data-sid="' + it.id + '" aria-label="' + it.name + '">' + skIcon(it.id, 56) + '<span class="skr">' + rk + "/" + mx + "</span>" + (it.active ? '<span class="ska">◆</span>' : "") + '</button><span class="sku-nn">' + it.name + "</span></div>";
+    });
+    h += "</div></div>";
+  });
+  return h + '<svg class="sku-lines" aria-hidden="true"></svg></div>';
+}
+function skuLines() {
+  var w = document.getElementById("skutree"); if (!w) return; var svg = w.querySelector(".sku-lines"); if (!svg) return;
+  var R = w.getBoundingClientRect(), out = "", by = {};
+  w.querySelectorAll("[data-sid]").forEach(function (b) { by[b.getAttribute("data-sid")] = b; });
+  w.querySelectorAll("[data-req]").forEach(function (b) {
+    var r = b.getAttribute("data-req"), a = r && by[r]; if (!a) return;
+    var A = a.getBoundingClientRect(), B = b.getBoundingClientRect();
+    var x1 = A.left + A.width / 2 - R.left, y1 = A.bottom - R.top - 4, x2 = B.left + B.width / 2 - R.left, y2 = B.top - R.top + 4, my = (y1 + y2) / 2;
+    out += '<path d="M' + x1 + " " + y1 + " C" + x1 + " " + my + "," + x2 + " " + my + "," + x2 + " " + y2 + '" class="' + (sk(r) > 0 ? "lit" : "") + '"/>';
+  });
+  svg.setAttribute("viewBox", "0 0 " + w.clientWidth + " " + w.clientHeight); svg.style.height = w.clientHeight + "px"; svg.innerHTML = out;
+}
+function skillsSheet() {
+  var L = lvl(), xp = S.xp || 0, lo = 25 * (L - 1) * (L - 1), hi = 25 * L * L, pc = Math.max(0, Math.min(100, Math.round(100 * (xp - lo) / (hi - lo)))), P = points(), secs = skSecs(), byI = {};
+  secs.forEach(function (s) { byI[s.i] = s; });
+  var h = '<div class="skt sku"><div class="skh"><div><h2>Skills</h2><p class="sub" style="margin:0">' + (S.pname || "You") + " · Level " + L + '</p></div><div class="skpts"><b>' + P + "</b><span>point" + (P === 1 ? "" : "s") + "</span></div></div>";
+  h += '<div class="skxp"><i style="width:' + pc + '%"></i></div>';
+  var sc = SKUI.cat !== null ? byI[SKUI.cat] : null;
+  if (!sc) {
+    SKUI.cat = null;
+    h += '<p class="dim-t" style="margin:.3rem 0 .5rem">' + (P ? "You have points to spend. Disciplines with a gold mark have something you can learn now." : "Earn experience to gain points. Each level is one point; every discipline runs to level 18.") + "</p>";
+    SKUI_GROUPS.forEach(function (g) {
+      var list = g[1].map(function (i) { return byI[i]; }).filter(Boolean); if (!list.length) return;
+      h += '<div class="sec">' + g[0] + '</div><div class="sku-grid">';
+      list.forEach(function (s) {
+        var got = 0, tot = 0, acts = 0; s.items.forEach(function (it) { got += sk(it.id); tot += skMax(it); if (it.active) acts++; });
+        var ready = P > 0 && skuReady(s.items), ic = SKUI_ICON[s.name] || (s.items[0] && s.items[0].id);
+        h += '<button class="sku-c' + (got ? " has" : "") + (ready ? " ready" : "") + '" data-skc="' + s.i + '">' + skIcon(ic, 48) + '<b>' + s.name + "</b><span>" + s.items.length + " skills" + (acts ? " · " + acts + " battle" : "") + "</span><em>" + got + "/" + tot + "</em>" + (ready ? '<i class="sku-dot"></i>' : "") + "</button>";
+      });
+      h += "</div>";
+    });
+    h += '<div class="sec">Forget</div>' + row("Unlearn everything", "Costs 100 crowns. You keep what your upbringing gave you. Everything has a price, even changing who you are.", "Respec", "respec", "", "", spent() < 1 || S.crowns < 100, "amber");
+    return h + "</div>";
+  }
+  var got = 0, tot = 0; sc.items.forEach(function (it) { got += sk(it.id); tot += skMax(it); });
+  if (!skSel || !sc.items.some(function (it) { return it.id === skSel; })) { var first = sc.items.filter(function (it) { return !skWhy(it); })[0] || sc.items[0]; skSel = first && first.id; }
+  h += '<div class="sku-bar"><button class="sku-back" data-skback="1">‹ All disciplines</button><b>' + sc.name + '</b><em>' + got + "/" + tot + "</em></div>";
+  h += '<p class="dim-t sku-bl">' + sc.blurb + "</p>";
+  h += skuTree(sc);
+  var it = skFind(skSel); if (it) h += skuDetail(it);
+  setTimeout(skuLines, 0); setTimeout(skuLines, 250);
+  return h + "</div>";
+}
+(function () {
+  var s = document.createElement("style");
+  s.textContent = [
+    ".sku-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin:.2rem 0 .6rem}",
+    ".sku-c{position:relative;display:flex;flex-direction:column;align-items:center;gap:3px;padding:.55rem .25rem .45rem;border:1px solid #4a3a20;border-radius:5px;background:linear-gradient(#1c160d,#0d0a06);color:#a89468;text-align:center;box-shadow:inset 0 0 14px rgba(0,0,0,.6),0 2px 6px #000;min-width:0;touch-action:manipulation}",
+    ".sku-c .skp{border-radius:50%!important;box-shadow:0 0 0 2px #0a0806,0 0 0 3px #5a4424,0 3px 8px #000!important;filter:saturate(.7) brightness(.8)}.sku-c.has .skp{filter:none}.sku-c.ready .skp{box-shadow:0 0 0 2px #0a0806,0 0 0 3px #e0bc6a,0 0 14px rgba(224,188,106,.5)!important;filter:none}",
+    ".sku-c b{display:block;max-width:100%;font:500 .78rem var(--serif2);color:#e8cc84;line-height:1.15;margin-top:2px}.sku-c span{font:500 .5rem var(--mono);letter-spacing:.06em;text-transform:uppercase;color:#7a6a48;white-space:nowrap}.sku-c em{font:600 .62rem var(--mono);font-style:normal;color:#d8b868}",
+    ".sku-c.has{border-color:#7a5a2a}.sku-c.ready{border-color:#c8a050;animation:skp 2.4s ease-in-out infinite}.sku-dot{position:absolute;top:6px;right:6px;width:8px;height:8px;border-radius:50%;background:#f2d88c;box-shadow:0 0 8px #e0b050}",
+    ".sku-bar{display:flex;align-items:center;gap:.6rem;margin:.4rem 0 .1rem}.sku-bar b{flex:1;font:500 1.15rem var(--serif2);color:#e8cc84;font-weight:500}.sku-bar em{font:600 .66rem var(--mono);font-style:normal;color:#d8b868}.sku-back{padding:.35rem .6rem;border:1px solid #6a5028;border-radius:3px;background:linear-gradient(#2a2012,#120d07);color:#e0c888;font:500 .62rem var(--mono);letter-spacing:.06em;text-transform:uppercase}",
+    ".sku-bl{margin:0 0 .4rem;font-size:.88rem}",
+    ".sku-tree{position:relative;border:1px solid #4a3a20;border-radius:5px;background:radial-gradient(120% 80% at 50% 0%,rgba(150,100,40,.16),rgba(0,0,0,0) 60%),repeating-linear-gradient(45deg,rgba(255,255,255,.012) 0 3px,rgba(0,0,0,.05) 3px 6px),#0c0a07;box-shadow:inset 0 0 24px #000,0 0 0 1px #000;padding:6px 4px 2px}",
+    ".sku-lines{position:absolute;left:0;top:0;width:100%;pointer-events:none;z-index:0}.sku-lines path{fill:none;stroke:#3a2e1a;stroke-width:3;stroke-linecap:round}.sku-lines path.lit{stroke:#c8943a;filter:drop-shadow(0 0 3px rgba(224,160,60,.6))}",
+    ".sku-tier{position:relative;z-index:1;padding:4px 0 8px;border-top:1px dashed rgba(120,96,56,.25)}.sku-tier:first-child{border-top:0}.sku-tier.lock{opacity:.78}",
+    ".sku-tl{display:flex;justify-content:space-between;align-items:baseline;padding:0 4px 2px;font:500 .54rem var(--mono);letter-spacing:.14em;text-transform:uppercase;color:#8a7a54}.sku-tl em{font-style:normal;color:#6a5a3a;letter-spacing:.06em;text-transform:none}.sku-tier.lock .sku-tl span{color:#6a5a3a}",
+    ".sku-row{display:flex;justify-content:space-around;align-items:flex-start;gap:4px}",
+    ".sku-cell{display:flex;flex-direction:column;align-items:center;gap:3px;width:25%;min-width:0}.sku-nn{font:500 .58rem var(--mono);color:#a89468;text-align:center;line-height:1.15;max-width:100%}.sku-cell .sku-n.got+.sku-nn{color:#e8cc84}.sku-cell .sku-n.lock+.sku-nn{color:#6a5a3a}",
+    ".sku-n{position:relative;width:62px;height:62px;padding:0;border-radius:8px;border:2px solid #4a3a22;background:#14100a;box-shadow:0 3px 6px #000,inset 0 0 10px rgba(0,0,0,.7);display:grid;place-items:center;filter:grayscale(.85) brightness(.55);touch-action:manipulation}",
+    ".sku-n .skp{border-radius:5px!important}.sku-n.act{border-radius:50%}.sku-n.act .skp{border-radius:50%!important}",
+    ".sku-n.can{filter:none;border-color:#9a7a3a;animation:skp 2.4s ease-in-out infinite}.sku-n.got{filter:none;border-color:#d8b050;box-shadow:0 3px 6px #000,0 0 12px rgba(216,176,80,.45),inset 0 0 8px rgba(0,0,0,.5)}.sku-n.max{border-color:#f6dc8c;box-shadow:0 3px 6px #000,0 0 16px rgba(246,220,140,.7)}",
+    ".sku-n.sel{outline:2px solid #f6e6b4;outline-offset:2px}",
+    ".sku-d{position:sticky;bottom:-1px;z-index:6;margin-top:.6rem;padding:.5rem .7rem!important;background:linear-gradient(#1f180e,#100c07);box-shadow:0 -8px 14px rgba(0,0,0,.7),inset 0 0 18px rgba(0,0,0,.6)}.sku-dh{display:flex;gap:.6rem;align-items:center}.sku-dh>div{flex:1;min-width:0}.sku-d .skdd,.sku-d .skde{margin:0 0 .2rem;font-size:.85rem}.sku-d .skdk{margin:0}"
+  ].join("\n");
+  document.head.appendChild(s);
+  document.addEventListener("click", function (e) {
+    var t = e.target.closest && e.target.closest("[data-skc],[data-skback]"); if (!t || !sheet || sheet.kind !== "skills") return;
+    e.stopPropagation(); e.preventDefault();
+    if (t.hasAttribute("data-skback")) { SKUI.cat = null; } else { SKUI.cat = +t.getAttribute("data-skc"); skSel = null; }
+    renderSheet(); var sh = document.getElementById("sheet"); if (sh) sh.scrollTop = 0;
+  }, true);
+  window.addEventListener("resize", skuLines);
+  // keep the lines in step with learn / select re-renders
+  var mo = new MutationObserver(function () { if (document.getElementById("skutree")) skuLines(); });
+  function arm() { var sh = document.getElementById("sheet"); if (sh) mo.observe(sh, { childList: true }); else setTimeout(arm, 500); }
+  arm();
+})();
 
   // ---- input ----
   (function () {
