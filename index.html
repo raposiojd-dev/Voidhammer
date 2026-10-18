@@ -15385,7 +15385,7 @@ var ALLYS = [
     body: ["Noctis stands before the whole army, and the army goes quiet. He is the one every NPC fears.", "“I was a weapon,” he says. “People used me. I was never chosen.” He kneels, and it is the most unsettling and moving thing in the world. “I am choosing now.”", "Nobody in the camp looks away. Nobody says a word. Somewhere at the back a hard old sergeant starts, quietly, to weep."],
     ok: "Raise him up.", fx: function () { cp().qpts = (cp().qpts || 0) + 3; S.from.ashford = (S.from.ashford || 0) + 30; log("Noctis chose his side.", "e"); } }
 ];
-function allyCard(a) { STORY["ally_" + a.id] = { t: a.t, sub: a.sub, body: a.body, choices: [{ k: "ok", t: a.ok, fx: a.fx }], bk: 0 }; return "ally_" + a.id; }
+function allyCard(a) { STORY["ally_" + a.id] = { t: a.t, sub: a.sub, body: a.body, choices: a.ch || [{ k: "ok", t: a.ok, fx: a.fx }], bk: 0 }; return "ally_" + a.id; }
 function allyTick() {
   var st = S.story; if (!st || sheet || S.intro || S.ended || st.cur || !cp().on) return;
   S.ally = S.ally || { seen: {}, last: -9 }; var today = Math.floor(S.day);
@@ -15473,6 +15473,71 @@ function ovGateOpening() {
   save();
   return '<h2>The Gate Wakes</h2><p class="sub">The Realm Gate · Flameborne coast</p><p>You hold up the Grey Writ and the arch drinks the light off the seal. Stones that have sat silent for a hundred years begin to hum, one note at a time, until the whole coast is singing.</p><p>A column of pale light stands in the arch. On the other side you can hear a city, faint as a memory: bells, wheels, a crowd.</p><p>It is open. Not only for you. Caravans will use it, and lords, and every column that dares. The world just got a great deal smaller, and a great deal more dangerous.</p><p class="dim-t">+160 xp, +100 crowns. You can now cross to any realm: ' + ovGateToll() + ' crowns and a day each way.</p><div class="btns"><button class="solid" data-act="close">Step through</button></div>';
 }
+// ---- ovLORD: fourteen private scenes with the people who rule the realms. Each has a wound, and each asks you for something. ----
+(function () {
+  function L(id, name, day, t, sub, body, a, ra, fa, b, rb, fb) {
+    ALLYS.push({ id: "lo_" + id, name: name, cond: function (f) { return f.q3done; }, day: day, t: t, sub: sub, body: body,
+      ch: [{ k: "a", t: a, fx: function () { try { fa(); } catch (e) {} log(ra, "e"); } }, { k: "b", t: b, fx: function () { try { fb(); } catch (e) {} log(rb, "e"); } }] });
+  }
+  function px(n) { cp().qpts = (cp().qpts || 0) + n; }
+  function tr(n) { S.from.ashford = (S.from.ashford || 0) + n; }
+  L("vashen", "Lord Vashen", 22, "The General Who Wants To Be Boring", "Flameborne · Lord Vashen",
+    ["Lord Vashen is polishing his own boots at midnight, because he cannot sleep and the servants are asleep.", "“I have won eleven wars,” he says, not looking up. “The songs call me fearless. I am afraid of my daughter’s temper. She has my fire and none of my practice. I would give every victory for one morning where she is not the most dangerous person in the room.”", "He puts down the boot. “Teach her to hold it. You are the only one I know who has not let it use you.”"],
+    "Teach her.", "You spend a week with the girl. She burns one barn and learns what a barn is worth. Vashen watches from the wall and does not say anything for a long time.", function () { px(2); S.crowns -= 50; },
+    "Tell him the fire is hers to master.", "Vashen nods, stiffly. “Then she will do it badly, and alone. That is how we all do it.”", function () { S.crowns += 150; });
+  L("cinder", "Lady Cinder", 29, "The Village She Burned", "Flameborne · Lady Cinder",
+    ["Lady Cinder is sitting on a charred doorstep in a village that has no houses.", "“I burned this in a rage when I was nineteen,” she says. “They were rude to my mother. Forty people. Everyone says it was an accident and an age. Everyone is kind. I would like one person to say the word.”", "She looks up. Her eyes are very dry. “Say it.”"],
+    "“You murdered them.”", "She closes her eyes. “Thank you,” she says. “I needed to hear it from someone who would not flinch.” She rebuilds the village board by board, over a year, with her own hands.", function () { px(2); },
+    "“You were a child, and you are not one now.”", "Cinder is silent. “That is kinder,” she says. “I do not know whether it is better.”", function () { S.crowns += 120; });
+  L("brannoch", "Lord Brannoch", 36, "A Father's Ledger", "Stonehold · Lord Brannoch",
+    ["Lord Brannoch keeps two ledgers. One is for the realm. The other is a list of the days since his son stopped writing.", "“Four hundred and eleven,” he says. “He joined the Dominion for the pay. He believes I would be ashamed. I would be ashamed of nothing but this silence.”", "He hands you a letter, sealed in plain wax. “If you ever cross the Iron Throne, give him this. Do not tell him how you came by it.”"],
+    "Take the letter.", "You carry it north. The sealed wax is soft with being handled. You have no idea yet what it says.", function () { px(1); cp().f.lo_letter = 1; },
+    "Tell him to write it himself.", "Brannoch looks at the pen on his desk for a long moment. “Yes,” he says. “Yes. A man should deliver his own apology.”", function () { S.crowns += 100; });
+  L("hald", "Lord Hald", 44, "The Mason's Oath", "Stonehold · Lord Hald",
+    ["Lord Hald has swollen knuckles and a mason's calluses, though he has been a lord thirty years.", "“I laid the first stone of Highmarch's wall,” he says. “I swore, on my knees, that no army would ever pass it. Last month a child walked through the postern gate with a basket of bread. Nobody stopped her. I wept in the privy for an hour. My oath is still sound. I do not know what it is for.”"],
+    "“Keep it for the day it matters.”", "Hald nods slowly. “A wall that is never tested is still a wall,” he says. He mortars the postern gate himself, and leaves a small hole at the base for a cat.", function () { px(1); },
+    "“Let the oath change. Walls can have doors.”", "Hald stares at you, and then laughs, a rusty bark. By autumn, there are seven new gates in Highmarch's wall, and he is very proud of all of them.", function () { S.crowns += 100; tr(8); });
+  L("ysolde", "Lady Ysolde", 52, "One Last Flight", "Stormreach · Lady Ysolde",
+    ["Lady Ysolde is grey at the temples, though she is thirty-one. Every casting takes a year.", "“I have spent forty years of my life on the wind,” she says. “I have forty more, if I stop. I want to fly once, properly, over the Spire at dawn, with nothing to prove. I am afraid it will take ten.”", "She meets your eye. “Tell me not to. Or tell me to. I cannot decide.”"],
+    "“Fly. Dawn is worth ten years.”", "She flies. It takes her thirteen. She lands laughing, white-haired, with grass in her hair, and the whole Spire is watching, and nobody says a word.", function () { px(2); },
+    "“Stay. Hold onto the years.”", "Ysolde nods. She watches the dawn from the balcony instead, with her hand on the rail. “Next year,” she says. She does not mean it.", function () { S.crowns += 150; });
+  L("kerrin", "Lord Kerrin", 58, "The Man Who Always Lost the Vote", "Stormreach · Lord Kerrin",
+    ["Lord Kerrin has voted against the majority at every session of the Free Assembly for nineteen years.", "“I am never right,” he says cheerfully. “But someone has to say no. Last week I voted no on feeding the poor, to see if anyone would object. Nobody did. I was horrified. I have been awake since.”", "He holds a scrap of paper. “If I stop saying no, who will?”"],
+    "“You do. And you pick better no's.”", "Kerrin sits up very straight. “Better no's,” he says. “I like that.” Within a season he has stopped three bad laws and nobody has stopped him.", function () { px(1); },
+    "“Let someone else say it for a while.”", "Kerrin looks stricken, then relieved. “Oh,” he says. “Oh, I could just... stop.” He sleeps for two days.", function () { S.crowns += 120; });
+  L("aurel", "Lord Aurel", 64, "The Verdict He Forgot", "Lightforge · Lord Aurel",
+    ["Lord Aurel is sitting in an empty courtroom with a verdict he cannot read.", "“I wrote this,” he says, holding up the page. “It's in my hand. A man was condemned. I do not remember the man, the crime, or the sentence. They say I was fair. I would like to believe it. I would like to know.”", "His voice breaks. “Read it. Tell me whether I should be proud.”"],
+    "Read it aloud, kindly.", "It is a death sentence for a thief who stole bread. You read it as a mercy that was misapplied. Aurel nods, grey. “Then it is my fault,” he says. “Thank you for telling me gently.”", function () { px(1); },
+    "Read it honestly.", "You read all of it, including the line where he hesitates. “Oh,” he says. “I knew him. I remember now.” He is silent for a long time. He walks to the prison.", function () { px(2); S.crowns -= 60; });
+  L("maren", "Lady Maren", 70, "The Collector of Names", "Lightforge · Lady Maren",
+    ["Lady Maren has a room with ten thousand slips of paper, each bearing one name.", "“Every person who forgot their own name in the Radiant Forge,” she says. “I wrote them down. When they ask, I tell them. It is not much of a title. Collector of Names. But I would not trade it.”", "She hands you a slip. “This one has been waiting a long time. It is yours.”"],
+    "Read it.", "It is your name, in a hand you do not recognise, with a date from before you were born. Maren is smiling. “Some names find their people,” she says.", function () { px(2); cp().f.lo_name = 1; },
+    "Give it back. “I'd rather not know.”", "Maren tucks it into her sleeve. “It will keep,” she says. “Names do.”", function () { S.crowns += 150; });
+  L("lyriel", "Lyriel Frostwraith", 76, "Strike Me", "Frostgrave · Lyriel Frostwraith",
+    ["Lyriel stands in the Still City's courtyard in her shirtsleeves, in the snow, and does not shiver.", "“I haven't felt cold in six years,” she says. “I have not felt much. I have heard that pain remembers what pleasure forgets. I would like you to strike me. Not hard. Just enough to see.”", "Her hands are open. Her eyes are very calm. “I am asking as a friend.”"],
+    "Refuse. “Not like this.”", "Lyriel nods slowly. “Then I will go on knowing it from the outside,” she says. She asks, instead, for you to sit with her in the snow. You do. After an hour she says, very quietly: “It's cold.”", function () { px(2); },
+    "Strike her, gently.", "She gasps. It is the first sound she has made in a year. She sits down in the snow and starts, quite suddenly, to laugh, and then to cry, and you are not sure which is worse for her.", function () { px(1); S.crowns += 100; });
+  L("vaelith", "High Seer Vaelith", 82, "Her Husband's Echo", "Spiritveil · High Seer Vaelith",
+    ["High Seer Vaelith sets two cups on the table every evening. She fills both.", "“He died thirty years ago,” she says. “His echo sits across from me, and says what he would say. I know it is not him. I know. But the cup is warm, and I have forgotten what the other thing is like.”", "She looks at you steadily. “The Parliament wants me to release him. I would like you to tell me whether I may keep him.”"],
+    "“Keep him. Love is allowed to be strange.”", "She nods, and fills the second cup again. “Strange,” she says. “Yes. I will have him for my life, and then I will go and find the real one.”", function () { px(1); },
+    "“Release him. He deserves rest.”", "Vaelith is silent. The next evening she sets one cup. The echo does not appear. She sits for a long time looking at the empty chair, and then drinks the tea.", function () { px(2); S.crowns -= 50; });
+  L("whisper", "Whisper", 88, "The Spy Who Wants To Be Known", "Shadowdeep · Whisper",
+    ["A voice at your shoulder, in a crowded market, with no face to go with it.", "“You have a rare quality,” it says. “You have not once asked what I want. I am Whisper. I have lived in the walls of the Faceless Council for twelve years. Nobody has ever said my name to my face. I would like to hear it, once. Do not turn around.”", "A pause. “Say it. Say it as though I were a person.”"],
+    "“Whisper. Thank you for everything you've done.”", "A long, trembling breath. “I did not expect that,” the voice says. “I did not expect to want it so badly.” A folded note appears in your coat pocket, a map of the Council's secret ways.", function () { px(2); },
+    "“I won't say it. It is safer for you.”", "“Of course,” says Whisper, after a moment. “Yes. That is why I trusted you.” There is no note. There is, later, a small kindness: the Order leaves you alone for a season.", function () { S.crowns += 200; });
+  L("sable", "Warden Sable", 94, "The Pass She Held", "Metalcrown · Warden Sable",
+    ["Warden Sable has been brought to your camp in irons. She did not resist. She is asking to speak to you.", "“You beat me at Greywater,” she says. “I held that pass nineteen years. I did not lose it to your army. I lost it because I was tired, and I was glad when you came, and I have been ashamed of that gladness ever since.”", "She raises her chained hands. “What do you do with a warden who wanted to be defeated?”"],
+    "Free her, unconditionally.", "Sable is silent for a long time. “I'll hold a different pass,” she says at last. “Somewhere with no one coming.” She leaves at dawn. She sends you a pressed flower in the spring.", function () { px(2); },
+    "Free her, in your service.", "She salutes. It is the first salute you have seen her give without irony. Thirty of her veterans arrive within a week.", function () { tr(30); });
+  L("quill", "Overseer Quill", 100, "The Clerk Who Counted Mercy", "Metalcrown · Overseer Quill",
+    ["Overseer Quill has a ledger with a column no Dominion ledger should have. The column is headed Mercy.", "“Efficiency requires accuracy,” he says, defensively. “I have been counting every time an order was bent. Twelve thousand times, in eleven years. If I did not know it was wrong, I would not have kept the column.”", "He closes the book. “Do you want it? Or do I burn it?”"],
+    "“Burn it. It will get you killed.”", "Quill sets the ledger on the fire with a pair of tongs. He watches every page. “Twelve thousand,” he says. “I'll remember.” He does, and writes none of it down.", function () { px(1); S.crowns += 100; },
+    "“Keep it. Someone should know.”", "He takes the ledger back and clutches it like a child. Years later, in the Dominion's fall, it will be the only record of a thousand small decencies.", function () { px(2); });
+  L("voss", "Magistrate Voss", 106, "The Court With No Law", "Metalcrown · Magistrate Voss",
+    ["Magistrate Voss sits in a courtroom with the law-books removed. The shelves are bare.", "“I read every statute of the Dominion twice,” she says. “They contradict each other in nine hundred places. I have been judging from conscience for a month. Nobody has appealed. Nobody has noticed. I do not know if that is a triumph or a failure of the whole idea of law.”", "She looks at you. “What would you do?”"],
+    "“Keep judging from conscience.”", "Voss sits very still. “Conscience,” she says. “It's heavy.” She does not put the books back. Her verdicts, for the next decade, are quoted in taverns.", function () { px(2); },
+    "“Write a new law, and write it well.”", "Voss takes up a pen. It takes her six years. When she finishes, it is thirty pages long, and children can recite it.", function () { px(1); S.crowns += 150; });
+})();
 // ---- ovFIX: a quest is not offered until you can actually reach the person who gives it. ----
 (function () {
   QS.forEach(function (q) {
