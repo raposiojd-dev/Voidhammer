@@ -11859,6 +11859,29 @@ function enSprite(k, h0, ms) {
   while (hh > h * 1.8) { var n = document.createElement("canvas"); n.width = Math.round(w / 2); n.height = Math.round(hh / 2); n.getContext("2d").drawImage(c, 0, 0, n.width, n.height); c = n; w = n.width; hh = n.height; }
   var o = document.createElement("canvas"); o.height = h; o.width = Math.round(w * h / hh); o.getContext("2d").drawImage(c, 0, 0, o.width, o.height); return (ENS[key] = o);
 }
+// ground types meet in ragged, organic seams instead of ruler-straight tile edges
+function enFeather(m, g, W, H, T, tg, tp, tz, tk, cave, seed) {
+  var hh = function (a, b, c) { var q = Math.sin(a * 91.7 + b * 47.3 + c * 13.1 + seed) * 43758.5453; return q - Math.floor(q); };
+  function tex(t) { return t === 1 ? tp : t === 9 ? tz : (t === 2 && cave) ? tk : tg; }
+  function cls(t) { return t === 1 ? 1 : t === 9 ? 2 : (t === 2 && cave) ? 3 : (t === 0 || t === 8 || t === 7 || t === 2) ? 0 : -1; }
+  m.save(); m.scale(1 / 3, 1 / 3);
+  function blob(n, x, y, r, a, rot) { if (!T[n]) return; m.globalAlpha = a; m.fillStyle = T[n]; m.beginPath(); m.ellipse(x * 3, y * 3, r * 3, r * 2.1 * 3, rot, 0, 6.283); m.fill(); }
+  for (var y = 0; y < H; y++) for (var x = 0; x < W; x++) {
+    var t = g[y][x], c = cls(t); if (c < 0) continue;
+    [[1, 0], [0, 1]].forEach(function (d, di) {
+      var x2 = x + d[0], y2 = y + d[1]; if (x2 >= W || y2 >= H) return; var t2 = g[y2][x2], c2 = cls(t2); if (c2 < 0 || c2 === c) return;
+      // tile-class order: the higher class (path, plaza, rock) bleeds into the lower and the lower grows a little back
+      for (var i = 0; i < 4; i++) {
+        var f = (i + 0.5 + (hh(x, y, i + di * 9) - 0.5) * 0.8) / 4, bx = d[0] ? (x + 1) * ATS : (x + f) * ATS, by = d[1] ? (y + 1) * ATS : (y + f) * ATS;
+        var j = (hh(x + i, y, di + 3) - 0.5) * 5, r = 2.6 + hh(x, y + i, di + 5) * 3.2, rot = hh(i, x + y, di) * 3;
+        var ox = d[0] ? j * 0.6 : 0, oy = d[1] ? j * 0.6 : 0;
+        blob(tex(t), bx + ox + (d[0] ? -1.5 : 0), by + oy + (d[1] ? -1.5 : 0), r, 0.9, rot);
+        blob(tex(t2), bx - ox + (d[0] ? 1.5 : 0), by - oy + (d[1] ? 1.5 : 0), r * 0.8, 0.9, rot + 1);
+      }
+    });
+  }
+  m.restore(); m.globalAlpha = 1;
+}
 function enPaint(m, g, W, H, th, sp) {
   try {
     if (typeof END === "undefined" || !enRdy("tex_grass") || !enRdy("obj_oak")) return;
@@ -11883,6 +11906,7 @@ function enPaint(m, g, W, H, th, sp) {
       else if (t === 7) { fill(tg, px, py, 0.8); trees.push([x, y]); }
     }
     m.restore(); m.globalAlpha = 1;
+    try { enFeather(m, g, W, H, T, tg, tp, tz, tk, cave, sp.seed); } catch (e) { if (window.console) console.log('feather', e); }
     sp._hr = HR;
     enWater(m, g, W, H, sp, cave, tg, T);
     var hsh = function (a, b) { var q = Math.sin(a * 91.7 + b * 47.3 + sp.seed) * 43758.5453; return q - Math.floor(q); };
@@ -12671,7 +12695,7 @@ function gateImgP(k, im) {
         p[i + 3] = p[i + 3] * m;
       }
     }
-    x.putImageData(d, 0, 0); GATEC[k] = c; return c;
+    x.putImageData(d, 0, 0); c.__gk = k; GATEC[k] = c; return c;
   } catch (e) { GATEC[k] = im; return im; }
 }
 function ovGateArt(g, a) {
