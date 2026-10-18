@@ -14149,6 +14149,17 @@ function ovFloodN(A, x, y, cap) {
   while (q.length && n < cap) { var c = q.pop(); n++; [[1, 0], [-1, 0], [0, 1], [0, -1]].forEach(function (d) { var i = c[0] + d[0], j = c[1] + d[1], k = i + "," + j; if (seen[k] || i < 1 || j < 1 || i * st > A.W * 16 - 8 || j * st > A.H * 16 - 8) return; if (!boxFree(A, i * st, j * st)) return; seen[k] = 1; q.push([i, j]); }); }
   return n;
 }
+// you always arrive on the inside of a gate or door: a few steps in, facing away from it, never on the outer side
+function ovInside(A) {
+  if (!A || !A.p || (A.sp && A.sp.over) || !A.sp.exits || !A.sp.exits.length) return;
+  var px = A.p.x / 16, py = A.p.y / 16, best = null, bd = 1e9;
+  A.sp.exits.forEach(function (e) { var ex = e.x + e.w / 2, ey = e.y + e.h / 2, d = Math.hypot(px - ex, py - ey); if (d < bd) { bd = d; best = e; } });
+  if (!best || bd > 7) return;
+  var ex = best.x + best.w / 2, ey = best.y + best.h / 2, dx = A.W / 2 - ex, dy = A.H / 2 - ey, dir = Math.abs(dx) > Math.abs(dy) ? [dx > 0 ? 1 : -1, 0] : [0, dy > 0 ? 1 : -1];
+  if ((px - ex) * dir[0] + (py - ey) * dir[1] >= 4.5) return;
+  var k, x, y;
+  for (k = 5; k <= 11; k++) { x = (ex + dir[0] * k) * 16 + 8; y = (ey + dir[1] * k) * 16 + 8; if (x > 16 && y > 16 && x < A.W * 16 - 16 && y < A.H * 16 - 16 && boxFree(A, x, y) && ovFloodN(A, x, y, 260) >= 260) { A.p.x = x; A.p.y = y + 6; A.p.face = { x: dir[0], y: dir[1] }; return; } }
+}
 function ovUnstick(A) {
   if (!A || !A.p || A.over || (A.sp && A.sp.over)) return;
   if (boxFree(A, A.p.x, A.p.y) && ovFloodN(A, A.p.x, A.p.y, 260) >= 260) return;
@@ -14164,6 +14175,7 @@ function buildArea(id, sx, sy) {
   var li = ovLairIx(id);
   if (li) { var c = cp(); delete AREAS[id]; if (c.cleared) delete c.cleared[id]; if (c.rs) delete c.rs[id]; Object.keys(c.f || {}).forEach(function (k) { if (k.indexOf("chest:" + id + ":") === 0) delete c.f[k]; }); }
   var A = buildArea0(id, sx, sy);
+  try { ovInside(A); } catch (er) { if (window.console) console.error(er); }
   try { ovUnstick(A); } catch (er) { if (window.console) console.error(er); }
   if (li) {
     var st = ovLairSt(li.n); A.lair = { n: li.n, st: st, cv: li.cv };
