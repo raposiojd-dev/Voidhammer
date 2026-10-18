@@ -15104,6 +15104,42 @@ function ovSilSec() {
   });
 })();
 function areaUnlocked(id) { if (id === "unmadecity" || id === "lanterncity" || id === "stillcity") return true; return areaUnlocked0(id); }
+// ---- ovNGP: New Game+. Begin again carrying a Legacy. The world remembers, and it is harder. ----
+function ngpCyc() { try { var L = JSON.parse(localStorage.getItem("vh_legacy") || "null"); return (L && L.cyc) || 0; } catch (e) { return 0; } }
+function ngpMine() { return (S && S.ngp) || 0; }
+var endingSheetNGP = endingSheet;
+endingSheet = function () {
+  var h = endingSheetNGP(); var n = ngpMine() + 1;
+  return h.replace('<button data-act="again">Begin again</button>', '<button data-act="ngplus">New Game+ ' + n + '</button><button data-act="again">Begin again</button>') +
+    '<p class="dim-t">New Game+ keeps your name, not your army. You start with ' + (3 * n) + ' skill points and ' + (400 * n) + ' crowns. In return, the Void is ' + (25 * n) + '% stronger and every Realm crisis has already come ' + n + (n === 1 ? " time" : " times") + ' before.</p>';
+};
+document.addEventListener("click", function (ev) {
+  var b = ev.target && ev.target.closest && ev.target.closest('button[data-act="ngplus"]'); if (!b) return;
+  ev.stopPropagation(); ev.preventDefault();
+  try { localStorage.setItem("vh_legacy", JSON.stringify({ cyc: ngpMine() + 1 })); } catch (e) {}
+  NG = null; showTitle();
+}, true);
+document.addEventListener("click", function (ev) {
+  var b = ev.target && ev.target.closest && ev.target.closest('button[data-act="again"]'); if (!b) return;
+  try { localStorage.removeItem("vh_legacy"); } catch (e) {}
+}, true);
+var freshNGP = fresh;
+fresh = function () { var NS = freshNGP(); try { NS.ngp = ngpCyc(); } catch (e) {} return NS; };
+var ovVStrNGP = ovVStr;
+ovVStr = function () { return ovVStrNGP() * (1 + 0.25 * ngpMine()); };
+var crStateNGP = crState;
+crState = function () {
+  var fresh0 = !S.crisis, c = crStateNGP();
+  if (fresh0 && ngpMine()) Object.keys(c).forEach(function (k) { c[k].cyc = ngpMine(); });
+  return c;
+};
+setInterval(function () {
+  try {
+    if (!S || !S.ngp || S.ngpDone || !cp() || !cp().on) return;
+    S.ngpDone = 1; var n = S.ngp; cp().qpts = (cp().qpts || 0) + 3 * n; S.crowns += 400 * n;
+    toast("Legacy " + n + ": +" + 3 * n + " skill points, +" + 400 * n + " crowns."); log("You begin again, and the world is not the same one. Legacy " + n + ".", "e"); save();
+  } catch (e) {}
+}, 1500);
 
   // ---- input ----
   (function () {
