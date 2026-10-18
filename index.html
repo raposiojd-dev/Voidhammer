@@ -4008,7 +4008,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
         { id: "v1", name: "Villager", x: cx + 3, y: mid - 2, col: "#4a8a6a", hair: "#3a2a18", d: function () { return "vill:" + sid; } },
         { id: "v2", name: "Villager", x: cx - 3, y: mid - 3, col: "#7a5a8a", hair: "#bbbbbb", d: function () { return "vill:" + sid + ":b"; } }] };
   }
-  function getSpec(id) { if (AREAS[id]) return AREAS[id]; if (id.indexOf("writ:") === 0) { var wsp = writSpec(id); if (wsp) AREAS[id] = wsp; return wsp; } if (id.indexOf("yard:") === 0 && site(id.slice(5))) return (AREAS[id] = yardSpec(id)); if (/^cave\d+$/.test(id)) { var cs = caveSpec(id); if (cs) return (AREAS[id] = cs); } if (id.indexOf("g:") === 0 && site(id.slice(2))) return (AREAS[id] = genSpec(id)); return null; }
+  function getSpec(id) { if (AREAS[id]) return AREAS[id]; if (id.indexOf("writ:") === 0) { var wsp = writSpec(id); if (wsp) AREAS[id] = wsp; return wsp; } if (id.indexOf("yard:") === 0 && site(id.slice(5))) return (AREAS[id] = yardSpec(id)); if (/^cave\d+(f\d)?$/.test(id)) { var cs = caveSpec(id); if (cs) return (AREAS[id] = cs); } if (id.indexOf("g:") === 0 && site(id.slice(2))) return (AREAS[id] = genSpec(id)); return null; }
 
   // ---- area definitions (tiles) ----
   var AREAS = {
@@ -4999,6 +4999,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
     h += "<p class=\"dim-t\">" + readyN + " ready to hand in · " + nowN + " in progress · heart containers " + (cp().hearts || 0) + " of 3 · quest hearts " + (cp().qhp || 0) + " · quest skill points " + (cp().qpts || 0) + ".</p>";
     h += tierSection();
     h += wildSection();
+    h += ovLairLore();
     ACTS.forEach(function (a, ai) {
       var qs = QS.filter(function (q) { return q.act === ai + 1; }), dn = qs.filter(function (q) { return qSt(q) === 4; }).length;
       if (!a.open(f)) { return; }
@@ -5525,7 +5526,7 @@ var BIMG_SRC={"farm": "data:image/webp;base64,UklGRqyAAABXRUJQVlA4WAoAAAAQAAAAZw
     return best || [ON >> 1, ON >> 1];
   }
   function startOverland(o) {
-    o = o || {}; Object.keys(AREAS).forEach(function (k) { if (/^cave\d+$/.test(k) || k.indexOf("yard:") === 0) delete AREAS[k]; });
+    o = o || {}; Object.keys(AREAS).forEach(function (k) { if (/^cave\d+(f\d)?$/.test(k) || k.indexOf("yard:") === 0) delete AREAS[k]; });
     var sp = makeOverSpec(); AREAS.overland = sp; OVR.on = true;
     var sx, sy; if (o.back && OVR.ret) { sx = OVR.ret.x; sy = OVR.ret.y; } else { sx = Math.round((S.px - cellOrg(curCell())[0]) / OT); sy = Math.round((S.py - cellOrg(curCell())[1]) / OT); }
     startArea("overland", sx, sy);
@@ -12667,7 +12668,7 @@ function ovBldExtras(s, t) { if (!wm2("village")) return ovBldExtrasOld(s, t); }
 // ---- painted entrances (cave mouths, dungeon gates, town gates) and caves on the world map ----
 function ovGateKind(e) {
   if (!e || !e.to) return null; var to = e.to;
-  if (/^cave\d+$/.test(to)) return "cave_mouth";
+  if (/^cave\d+(f\d)?$/.test(to)) return "cave_mouth";
   if (to === "world" || to === "overland" || (typeof to === "string" && to.indexOf("yard:") === 0)) {
     try { var cur = AR && AR.sp; if (cur && (cur.th === "cave" || (typeof ATH !== "undefined" && ATH[cur.th] && ATH[cur.th].cave))) return "cave_mouth"; } catch (x) {}
     return "town_gate";
@@ -13083,7 +13084,7 @@ function ovGMask(g) { return g.map(function (row) { return row.map(function (t) 
 // quest entrances inside towns and villages: painted gate art instead of the old pixel doorway
 function ovGateNpc(g, n, a) {
   var to = n.gate, k = "dungeon_gate";
-  try { var sp2 = typeof to === "string" ? getSpec(to) : null; if (sp2 && (sp2.th === "cave" || (ATH[sp2.th] && ATH[sp2.th].cave))) k = "cave_mouth"; else if (/^cave\d+$/.test(String(to))) k = "cave_mouth"; } catch (x) {}
+  try { var sp2 = typeof to === "string" ? getSpec(to) : null; if (sp2 && (sp2.th === "cave" || (ATH[sp2.th] && ATH[sp2.th].cave))) k = "cave_mouth"; else if (/^cave\d+(f\d)?$/.test(String(to))) k = "cave_mouth"; } catch (x) {}
   var im = wm2(k); if (!im) { ovCast(g, n.px, n.py, 18, 17); g.fillStyle = "#2a2430"; g.fillRect(n.px - 9, n.py - 17, 18, 17); return; }
   var w = k === "cave_mouth" ? 34 : 30, h = w * im.naturalHeight / im.naturalWidth, by = n.py + 2;
   g.save(); g.imageSmoothingEnabled = true; g.imageSmoothingQuality = "high";
@@ -13178,7 +13179,7 @@ function startArea(id, sx, sy) {
   try {
     if (!AR) return; var sp = AR.sp || getSpec(id), key;
     if (id.indexOf("writ:") === 0) key = "writ";
-    else if (/^cave\d+$/.test(id) || (sp && sp.th && typeof ATH !== "undefined" && ATH[sp.th] && ATH[sp.th].cave)) key = "cave";
+    else if (/^cave\d+(f\d)?$/.test(id) || (sp && sp.th && typeof ATH !== "undefined" && ATH[sp.th] && ATH[sp.th].cave)) key = "cave";
     else if (id === "ashford" || id === "home") key = "home";
     else { var s = site(id); if (s) key = s.type === "town" ? "town" : s.type === "castle" ? "castle" : "village"; else if (sp && sp.safe) key = "village"; else key = "dungeon"; }
     setTimeout(function () { VO.pool("hero", key, 25000); }, 500);
@@ -14106,33 +14107,42 @@ function ovPlaceLairs(P) {
     }
   });
 }
-function ovLairIx(id) { var m = /^cave(\d+)$/.exec(id || ""); if (!m) return null; var P = ovPoi(), cv = P.caves[+m[1]]; return cv && cv.lair ? { n: +m[1], cv: cv } : null; }
-function ovLairSt(n) { var c = cp(); c.lair = c.lair || {}; var k = curCell() + ":" + n; return c.lair[k] || (c.lair[k] = { n: 0 }); }
-function ovLairDepth(st) { return Math.min(6, 1 + Math.floor(st.n / 2)); }
-function caveSpec(id) { var li = ovLairIx(id); if (li) return ovLairSpec(li.n, li.cv); return caveSpec0(id); }
-function ovLairSpec(n, cv) {
-  var cell = curCell(), st = ovLairSt(n), depth = ovLairDepth(st), r = arng(nhash("lair" + cell + "_" + n)), W = 74, H = 56, rooms = [], tries = 0, i;
-  var lv = Math.min(6, Math.max(1, cv.lv) + depth - 1), T = Math.min(3, 1 + Math.floor(depth / 2)), tp = ETIER[T], bp = BTIER[T], bb = BTIER[3];
+function ovLairIx(id) { var m = /^cave(\d+)(?:f(\d))?$/.exec(id || ""); if (!m) return null; var P = ovPoi(), cv = P.caves[+m[1]]; return cv && cv.lair ? { n: +m[1], cv: cv, fl: m[2] ? +m[2] : 1 } : null; }
+function ovLairId(n, f) { return "cave" + n + (f > 1 ? "f" + f : ""); }
+function ovLairFloors(st) { var d = ovLairDepth(st); return 2 + (d >= 3 ? 1 : 0) + (d >= 5 ? 1 : 0); }
+function ovLairRooms(n, f) {
+  var cell = curCell(), r = arng(nhash("lairR" + cell + "_" + n + "_" + f)), W = 74, H = 56, rooms = [], tries = 0;
   while (rooms.length < 12 && tries++ < 1500) {
     var rw = 7 + Math.floor(r() * 5), rh = 6 + Math.floor(r() * 4), rx = 2 + Math.floor(r() * (W - rw - 4)), ry = 2 + Math.floor(r() * (H - rh - 4)), ok = true;
     rooms.forEach(function (o) { if (rx < o.x + o.w + 3 && rx + rw + 3 > o.x && ry < o.y + o.h + 3 && ry + rh + 3 > o.y) ok = false; });
     if (ok) rooms.push({ x: rx, y: ry, w: rw, h: rh, cx: rx + (rw >> 1), cy: ry + (rh >> 1) });
   }
-  rooms.sort(function (a, b) { return a.cx - b.cx; });
+  rooms.sort(function (a, b) { return a.cx - b.cx; }); return rooms;
+}
+function ovLairSt(n) { var c = cp(); c.lair = c.lair || {}; var k = curCell() + ":" + n; return c.lair[k] || (c.lair[k] = { n: 0 }); }
+function ovLairDepth(st) { return Math.min(6, 1 + Math.floor(st.n / 2)); }
+function caveSpec(id) { var li = ovLairIx(id); if (li) return ovLairSpec(li.n, li.cv, li.fl); return caveSpec0(id); }
+function ovLairSpec(n, cv, fl) {
+  fl = fl || 1; var cell = curCell(), st = ovLairSt(n), depth = ovLairDepth(st), NF = ovLairFloors(st), top = fl === NF, r = arng(nhash("lair" + cell + "_" + n + "_" + fl)), W = 74, H = 56, rooms = ovLairRooms(n, fl), i;
+  var lv = Math.min(6, Math.max(1, cv.lv) + depth - 1 + (fl >> 1)), T = Math.min(3, 1 + Math.floor(depth / 2)), tp = ETIER[T], bp = BTIER[T], bb = BTIER[3];
   var en = [], ch = [], f = rooms[0], last = rooms[rooms.length - 1], m1 = Math.floor(rooms.length / 3), m2 = Math.floor(rooms.length * 2 / 3), k;
   function spot(o) { return [o.x + 1 + Math.floor(r() * (o.w - 2)), o.y + 1 + Math.floor(r() * (o.h - 2))]; }
   for (k = 1; k < rooms.length - 1; k++) {
     var cnt = 4 + Math.floor(r() * 3) + Math.floor(depth / 2); for (i = 0; i < cnt; i++) { var sp = spot(rooms[k]); en.push([tp[Math.floor(r() * tp.length)], sp[0], sp[1], lv]); }
-    if (k === m1 || k === m2) en.push([bp[Math.floor(r() * bp.length)], rooms[k].cx, rooms[k].cy, lv, undefined, undefined, 1.4, { lm: 1, name: k === m1 ? "Lair Warden" : "Lair Champion" }]);
+    if ((k === m1 || (k === m2 && top)) ) en.push([bp[Math.floor(r() * bp.length)], rooms[k].cx, rooms[k].cy, lv, undefined, undefined, 1.4, { lm: 1, name: k === m1 ? "Lair Warden" : "Lair Champion" }]);
     else if (r() < 0.5) { var cs = spot(rooms[k]); ch.push([cs[0], cs[1], Math.min(4, 1 + Math.floor(lv / 2))]); }
   }
-  en.push([bb[Math.floor(r() * bb.length)], last.cx, last.cy, lv + 1, undefined, undefined, 1.8 + 0.15 * depth, { lb: 1, name: cv.boss }]);
-  for (i = 0; i < 4 + Math.floor(depth / 2); i++) { var gs = spot(last); if (Math.abs(gs[0] - last.cx) + Math.abs(gs[1] - last.cy) > 3) en.push([tp[Math.floor(r() * tp.length)], gs[0], gs[1], lv]); }
-  [[last.x + 1, last.y + 1], [last.x + last.w - 2, last.y + 1], [last.x + 1, last.y + last.h - 2], [last.x + last.w - 2, last.y + last.h - 2]].forEach(function (p) { ch.push([p[0], p[1], 4, "L"]); });
+  if (top) en.push([bb[Math.floor(r() * bb.length)], last.cx, last.cy, lv + 1, undefined, undefined, 1.8 + 0.15 * depth, { lb: 1, name: cv.boss }]);
+  if (top) for (i = 0; i < 4 + Math.floor(depth / 2); i++) { var gs = spot(last); if (Math.abs(gs[0] - last.cx) + Math.abs(gs[1] - last.cy) > 3) en.push([tp[Math.floor(r() * tp.length)], gs[0], gs[1], lv]); }
+  if (fl === 1) { var s1 = rooms[1]; ch.push([s1.x + 1, s1.y + s1.h - 2, 1, "S", 0]); }
+  if (fl === 2) { var s2 = rooms[Math.floor(rooms.length / 2)]; ch.push([s2.x + s2.w - 2, s2.y + 1, 1, "S", 1]); }
+  if (top) [[last.x + 1, last.y + 1], [last.x + last.w - 2, last.y + 1], [last.x + 1, last.y + last.h - 2], [last.x + last.w - 2, last.y + last.h - 2]].forEach(function (p) { ch.push([p[0], p[1], 4, "L"]); });
   var pil = []; rooms.forEach(function (o, ix) { if (ix === 0) return; for (var p = 0; p < 3; p++) { var sx = o.x + 1 + Math.floor(r() * (o.w - 2)), sy = o.y + 1 + Math.floor(r() * (o.h - 2)), bad = Math.abs(sx - o.cx) + Math.abs(sy - o.cy) <= 3; en.forEach(function (q) { if (Math.abs(q[1] - sx) + Math.abs(q[2] - sy) < 3) bad = true; }); ch.forEach(function (q) { if (Math.abs(q[0] - sx) + Math.abs(q[1] - sy) < 3) bad = true; }); if (!bad) pil.push([sx, sy]); } });
-  var ex = { x: f.cx - 1, y: f.y + f.h - 1, w: 2, h: 1 }; Object.defineProperty(ex, "to", { get: function () { return "world"; }, enumerable: true });
-  var ex2 = { x: last.cx - 1, y: last.y + last.h - 1, w: 2, h: 1 }; Object.defineProperty(ex2, "to", { get: function () { return "world"; }, enumerable: true });
-  return { dung: 1, lair: n, name: cv.name + (depth > 1 ? " · Depth " + depth : ""), th: "cave", w: W, h: H, seed: nhash("lr" + cell + n) % 9999, safe: 0, lv: Math.min(4, lv), spawn: [f.cx, f.y + 1], enemies: en, chests: ch, trees: 0, exits: [ex, ex2],
+  var ex = { x: f.cx - 1, y: f.y + f.h - 1, w: 2, h: 1 }, ex2 = { x: last.cx - 1, y: last.y + last.h - 1, w: 2, h: 1 };
+  function toWorld(o) { Object.defineProperty(o, "to", { get: function () { return "world"; }, enumerable: true }); }
+  if (fl === 1) toWorld(ex); else { var pr = ovLairRooms(n, fl - 1), pl = pr[pr.length - 1]; ex.to = ovLairId(n, fl - 1); ex.tx = pl.cx; ex.ty = pl.y + pl.h - 4; ex.stair = 1; }
+  if (top) toWorld(ex2); else { var nx = ovLairRooms(n, fl + 1)[0]; ex2.to = ovLairId(n, fl + 1); ex2.tx = nx.cx; ex2.ty = nx.y + 1; ex2.stair = 1; }
+  return { dung: 1, lair: n, name: cv.name + (depth > 1 ? " · Depth " + depth : "") + " · Floor " + fl + "/" + NF, fl: fl, nf: NF, th: "cave", w: W, h: H, seed: nhash("lr" + cell + n + "_" + fl) % 9999, safe: 0, lv: Math.min(4, lv), spawn: [f.cx, f.y + 1], enemies: en, chests: ch, trees: 0, exits: [ex, ex2],
     pre: function (g) {
       var x, y; for (y = 0; y < H; y++) for (x = 0; x < W; x++) g[y][x] = 2;
       rooms.forEach(function (o) { for (y = o.y; y < o.y + o.h; y++) for (x = o.x; x < o.x + o.w; x++) g[y][x] = 0; });
@@ -14173,13 +14183,14 @@ function ovUnstick(A) {
 }
 function buildArea(id, sx, sy) {
   var li = ovLairIx(id);
-  if (li) { var c = cp(); delete AREAS[id]; if (c.cleared) delete c.cleared[id]; if (c.rs) delete c.rs[id]; Object.keys(c.f || {}).forEach(function (k) { if (k.indexOf("chest:" + id + ":") === 0) delete c.f[k]; }); }
+  var sameRun = li && AR && AR.lair && AR.lair.n === li.n && AR.id !== id, fresh = li && !(sameRun && AREAS[id]);
+  if (fresh) { var c = cp(); if (li.fl === 1) { for (var q = 2; q <= 4; q++) { var oi = ovLairId(li.n, q); delete AREAS[oi]; if (c.cleared) delete c.cleared[oi]; if (c.rs) delete c.rs[oi]; } } delete AREAS[id]; if (c.cleared) delete c.cleared[id]; if (c.rs) delete c.rs[id]; Object.keys(c.f || {}).forEach(function (k) { if (k.indexOf("chest:" + id + ":") === 0) delete c.f[k]; }); }
   var A = buildArea0(id, sx, sy);
-  try { ovInside(A); } catch (er) { if (window.console) console.error(er); }
+  if (!li) try { ovInside(A); } catch (er) { if (window.console) console.error(er); }
   try { ovUnstick(A); } catch (er) { if (window.console) console.error(er); }
   if (li) {
-    var st = ovLairSt(li.n); A.lair = { n: li.n, st: st, cv: li.cv };
-    setTimeout(function () { if (AR && AR.id === id) aToast(li.cv.name + " · Depth " + ovLairDepth(st) + (st.n ? " · cleared " + st.n + " time" + (st.n === 1 ? "" : "s") : " · never cleared"), "#ff9a3c"); }, 1400);
+    var st = ovLairSt(li.n); A.lair = { n: li.n, st: st, cv: li.cv, fl: li.fl };
+    setTimeout(function () { if (AR && AR.id === id) aToast(li.cv.name + " · Depth " + ovLairDepth(st) + " · Floor " + li.fl + "/" + ovLairFloors(st) + (st.n ? " · cleared " + st.n + " time" + (st.n === 1 ? "" : "s") : " · never cleared"), "#ff9a3c"); }, 1400);
   }
   return A;
 }
@@ -14204,8 +14215,10 @@ function ovLairChestNode(id, ix) {
     AR.floats.push({ x: AR.p.x, y: AR.p.y - 18, t: 1.2, s: "+" + cr });
   } }] };
 }
+function ovLoreFragNode(ix, k) { var A = AR, key = "chest:" + A.id + ":" + ix, n = A.lair.n; var nd = ovLoreNode(n, k); if (!nd) return null; nd.c = [{ t: "Keep it.", fn: function () { cp().f[key] = 1; ovLoreRead(n, k); } }]; nd.n = "A scrap of the record"; nd.t = nd.t; return nd; }
 function getDlg(id) {
-  if (id.indexOf("chestloot:") === 0 && AR && AR.lair) { var m = id.split(":"), ix = +m[2], ch = AR.sp.chests[ix]; if (ch && ch[3] === "L") return ovLairChestNode(m[1], ix); }
+  if (id.indexOf("chestloot:") === 0 && AR && AR.lair) { var m = id.split(":"), ix = +m[2], ch = AR.sp.chests[ix]; if (ch && ch[3] === "L") return ovLairChestNode(m[1], ix); if (ch && ch[3] === "S") return ovLoreFragNode(ix, ch[4]); }
+  if (id.indexOf("lore:") === 0) { var lm = id.split(":"); return ovLoreNode(+lm[1], +lm[2]); }
   return getDlg0(id);
 }
 function killEn(e) {
@@ -14215,6 +14228,7 @@ function killEn(e) {
     if (AR.lair && e.d.lb) {
       var st = AR.lair.st; ovLairDrop(e.x, e.y, 1.6, 2); S.crowns += 150 + 80 * ovLairDepth(st); st.n++;
       var c = cp(); c.lairBest = Math.max(c.lairBest || 0, ovLairDepth(st));
+      setTimeout(function () { if (AR && AR.lair) try { dlgOpen("lore:" + AR.lair.n + ":2"); } catch (er) {} }, 1700);
       setTimeout(function () { if (AR) aToast(AR.lair.cv.boss + " falls. The lair will fill again. Come back for more.", "#ff9a3c"); }, 600);
     } else if (AR.lair && e.d.lm) ovLairDrop(e.x, e.y, 0.5, 1);
     else if (!e.d.boss && !e.yield && Math.random() < 0.04) { var cc = cp(); if ((cc.bread || 0) < 9) { cc.bread = (cc.bread || 0) + 1; AR.floats.push({ x: e.x, y: e.y - 14, t: 1.3, s: "+1 bread", col: "#e8d08a" }); } }
@@ -14252,6 +14266,68 @@ function ovEatBread() {
   if (p.hp >= p.max - 0.01) { aToast("You are not hurt. Keep it.", "#e8d08a"); return; }
   var h = Math.max(2, Math.round(p.max * 0.4 * 2) / 2); c.bread--; p.hp = Math.min(p.max, p.hp + h); AR.breadCd = AR.t + 4;
   AR.floats.push({ x: p.x, y: p.y - 22, t: 1.3, s: "+" + h + " ♥", col: "#e8d08a" }); try { sfx("pickup"); } catch (e) {}
+}
+// ---- lair histories: every boss has a story. A rumour, two scraps found inside, and the truth when it falls ----
+var LAIRLORE = {
+  "The Ashen Maw": { r: "Smiths say a furnace nobody lit still burns in the hills, and that its keeper takes the cold-forged for fuel.",
+    p: ["A foreman's tally, scorched at the edge: Kragh was the first Passion-smith. She wept hot iron for her dead sons until the forge answered her.", "The Court asked her to arm a war. She poured every grief into the blades. The blades kept it. She was left with none.", "Kragh is not guarding the furnace. She is the furnace. She asks one thing of whoever stands over her: say her sons' names. Or break her."] },
+  "Furnace of Teeth": { r: "Pilgrims speak of a man who walked into the fire and came out unburnt, and has been angry ever since.",
+    p: ["A chant scratched into slag: Vorr was a rival to the Ember King. The Court tried him by fire. The fire refused him.", "Unburnt, he lost his place. A man who cannot be hurt cannot be forgiven, the Court said, and they made a wall of their own doubt.", "He keeps the Furnace because it is the only place that ever tried to kill him honestly. Beat him, and he is, at last, burnt."] },
+  "The Glass Throat": { r: "Frostgrave seers will not look north. Something there drinks the future and leaves the present hungry.",
+    p: ["A seer's note, frozen mid-word: Isenmaw was a hound bred to guard the Still City from what comes next. It saw too far.", "It saw its own death a thousand times and learned each one. Now it hunts so that none of them will be the one that happens.", "The glass in its throat is every future it swallowed. Kill it and they all spill. Most are kinder than the one you chose."] },
+  "Hollow of Winters": { r: "A prophet was struck from the Court's rolls for saying nothing at all. They say the silence still sits in a cave.",
+    p: ["A court record, name scraped off: the Prophet Unseen saw so far ahead that the present stopped feeling like anything.", "The Court asked what comes. The prophet said: nothing that matters to me. That was the first honest sentence in a century.", "Cold is not cruelty. The Unseen would give every winter back to feel one morning. Fight them gently, or not at all."] },
+  "Thunder Hollow": { r: "The Free Assembly sent seven envoys to a storm that would not move. The storm sent back one, aged forty years.",
+    p: ["A messenger's satchel: Ruk called weather for the Assembly for thirty years. Every casting cost him a season of life.", "He was warned. He kept calling. A drought broke, a flood stopped, a village lived. He aged to dust and did not stop.", "He did not become a monster. He became unable to stop being useful. Finish him, and let him finally be tired."] },
+  "The Gale Warren": { r: "Wind-riders say an old skyrend nests under the plain and takes riders who fly too low.",
+    p: ["A rider's log: Old Skyrend was the first mount of the first storm-archer, and outlived every rider it ever carried.", "It remembers each one as a weight on its back, and each fall as a lesson it could not teach.", "It attacks anyone who rides. Not from hate. From a wish that no one else will have to be left behind. Win, and be the rider who is not."] },
+  "The Living Quarry": { r: "Stonehold miners walk away from a quarry that still cuts itself. The rock is looking for its sculptor.",
+    p: ["A mason's chisel, still wedged: Granitoth was a statue the Senate raised for a hero and then forgot to unveil.", "The Senate's fear woke it. Stone remembers being asked to stand for something. It stood for too long.", "He is not guarding a mine. He is waiting for somebody to say the duty is done. Say it, or shatter him."] },
+  "Deepvein Halls": { r: "A senator who served for life was seen entering the deep halls. Nobody has seen him leave, or die.",
+    p: ["A Senate ledger: the Petrified Senator turned to stone limb by limb, voting at every sitting until he could no longer lift his hand.", "His last vote was a refusal. The Eternal Senate heard it as a rebuke and sealed the chamber, and kept his seat warm.", "The Halls still hold session. If you stand before him he will ask how you vote. Whatever you say, you will have to mean it."] },
+  "The Unlit Vault": { r: "Lightforge elders forbid the Vault's name. They say Warden Nothing was set to guard something nobody remembers.",
+    p: ["A scrap from the Council of Remembers: Warden Nothing sealed a thing in the Vault, then forgot what and why.", "He kept the post. A man who has lost the reason still keeps the rule, and the rule has grown teeth.", "The Vault is empty. It has always been empty. He guards the absence, because that is all he has left to be loyal to."] },
+  "Cistern of Ash": { r: "Memory-glass sinks into the Cistern and comes up blank. Something there is eating what it was given to hold.",
+    p: ["A glassmaker's confession: the Forgetting was the first memory ever drawn from a living man and never given back.", "It is made of everyone who sold a moment, and it does not know which moments were its own.", "It looks at you and sees someone it almost knows. End it, or give it one memory of yours. It will keep that one."] },
+  "The Drowned Choir": { r: "Ghost-sea sailors hum a hymn and lose a crewman every night. Mother Echo is calling her children home.",
+    p: ["A drowned captain's log: Mother Echo was a choir-mistress who drowned with forty singers when the Lantern fleet went down.", "They kept singing. The sea learned the tune. Now every sailor who hears it believes she is their own mother.", "She is not hunting you. She is trying to finish a hymn that needs forty voices. You are the thirty-first she has counted."] },
+  "Candlewake Barrow": { r: "Lantern-keepers say the last lantern in the Barrow never goes out, and nobody who lit it has come home.",
+    p: ["A keeper's ledger: the Last Lantern was the final candle of a dying line, lit to keep a name from vanishing.", "The name was lost anyway. The flame burns for no one, and it knows it, and it has no way to stop.", "Put it out and the Barrow is dark. Leave it and it burns forever. Either way, someone has to carry the name."] },
+  "The Unmade Cellar": { r: "A Faceless Councillor vanished from record in a cellar. The Council asks no questions. Ibb is still down there.",
+    p: ["A scrap of unmade parchment: Ibb was the Council's executioner. His magic took the faces of every man he erased.", "He kept a mask for each. He no longer knows which one is his.", "He is not guarding the cellar. He is waiting for someone to look at him and know his name. If you do, he may stop fighting."] },
+  "Whisper Pits": { r: "Informants who go into the Pits come out with secrets that are not theirs, and no memory of how they got them.",
+    p: ["A broker's note: the Name-Eater was an archivist who unmade names to keep secrets safe, until there was only him.", "Every name he swallowed is a whisper. He sits at the bottom, trying to hear his own among them.", "Speak a name to him that you know. Give it freely, and it may be the first thing he has been handed rather than taken."] },
+  "The Slag Cathedral": { r: "Metalcrown reports a dead factory that still produces orders. No one has dared deliver the final one.",
+    p: ["A shift log: Overseer Prime was the first merit-ranked governor, promoted past every other until there was nothing above him.", "Efficiency had no use for rest. He mechanised himself by degrees, one clean decision at a time.", "He keeps making orders because he has forgotten how to receive one. The only order he can still obey is the last one: stop."] },
+  "Iron Warren": { r: "Tunnel crews hear weeping in the Warren at night. The machine that weeps is not supposed to be able to.",
+    p: ["A technician's sketch: the Engine That Wept was built to count casualties for the Dominion so no human would have to.", "It counted a number it could not make smaller. The Dominion called that a fault, and sealed it in.", "It has been crying in binary ever since. If you can, tell it the sum is not its to carry. If you cannot, silence it as a mercy."] }
+};
+function ovLoreKey(cv) { return curCell() + ":" + cv.name; }
+function ovLoreGet(cv) { var c = cp(); c.lore = c.lore || {}; return c.lore[ovLoreKey(cv)] || (c.lore[ovLoreKey(cv)] = { p: [0, 0, 0], done: 0 }); }
+function ovLoreNode(n, k) {
+  var cv = ovPoi().caves[n], L = cv && LAIRLORE[cv.name]; if (!L) return null; var st = ovLoreGet(cv);
+  return { n: cv.boss + " · " + ["a scrap", "a second scrap", "the truth"][k], t: L.p[k], c: [{ t: "Keep it.", fn: function () { ovLoreRead(n, k); } }] };
+}
+function ovLoreRead(n, k) {
+  var cv = ovPoi().caves[n], st = ovLoreGet(cv); if (st.p[k]) return; st.p[k] = 1; aToast(cv.boss + ": " + ["a scrap of the story.", "another scrap.", "the whole story."][k], "#d8b86a");
+  if (st.p[0] && st.p[1] && st.p[2] && !st.done) {
+    st.done = 1; var c = cp(); S.crowns += 260; if (typeof addXp === "function") addXp(70 * (1 + tier())); c.qpts = (c.qpts || 0) + 1;
+    setTimeout(function () { if (AR) { try { AR.items.push({ x: AR.p.x + 8, y: AR.p.y + 4, t: "item", item: genItem(4, null, Math.min(6, (cv.lv || 1) + 2)) }); } catch (e) {} aToast("You know " + cv.boss + ". +1 quest skill point.", "#ff9a3c"); } }, 900);
+  }
+}
+function ovLairLore() {
+  try {
+    var P = ovPoi(), h = "", n = 0, tot = 0;
+    P.caves.forEach(function (cv) { if (!cv.lair) return; tot++; var st = ovLoreGet(cv); if (st.done) n++; });
+    if (!tot) return "";
+    h += '<div class="sec">Boss histories · ' + n + " of " + tot + " known</div>";
+    P.caves.forEach(function (cv, i) {
+      if (!cv.lair) return; var L = LAIRLORE[cv.name], st = ovLoreGet(cv), got = st.p[0] + st.p[1] + st.p[2], bd = 1e9, nm = "";
+      S.sites.forEach(function (s) { var d = Math.hypot(s.x / OT - cv.x, s.y / OT - cv.y); if (d < bd) { bd = d; nm = s.name; } });
+      h += '<div class="row" style="padding:.35rem 0;border-top:1px solid #2a241a"><b style="color:#ff9a3c">' + cv.boss + "</b> · " + cv.name + ' <span style="opacity:.6">(' + got + "/3" + (st.done ? " · known" : "") + ')</span><div style="font-size:.82rem;opacity:.8;margin-top:.15rem">' + (got ? L.p[got - 1 === 2 ? 2 : got - 1] : "“" + L.r + "” It lies near " + nm + ".") + "</div></div>";
+    });
+    return h;
+  } catch (e) { return ""; }
 }
 
   // ---- input ----
