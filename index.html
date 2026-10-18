@@ -15580,6 +15580,127 @@ function ovGateOpening() {
     "“Keep judging from conscience.”", "Voss sits very still. “Conscience,” she says. “It's heavy.” She does not put the books back. Her verdicts, for the next decade, are quoted in taverns.", function () { px(2); },
     "“Write a new law, and write it well.”", "Voss takes up a pen. It takes her six years. When she finishes, it is thirty pages long, and children can recite it.", function () { px(1); S.crowns += 150; });
 })();
+// ---- ovLORDS: your own vassal lords. Take a town, give it to someone, and they raise men and hold it. Call the banners and they all ride to you. Everything costs. ----
+var VLORDS = [
+  { id: "alden", name: "Ser Alden Roe", realm: "Lightforge", wound: "He has forgotten three of his own oaths and swears them again every morning.", war: 4, loss: 9, meal: 12, n: 46 },
+  { id: "hesper", name: "Dame Hesper Voll", realm: "Stormreach", wound: "She ages a year with every cast and will not stop casting.", war: 2, loss: 7, meal: 10, n: 40 },
+  { id: "brask", name: "Brask Ironhand", realm: "Stonehold", wound: "His right arm is stone. He does not say how far it goes.", war: 3, loss: 5, meal: 8, n: 54 },
+  { id: "calla", name: "Calla Ember", realm: "Flameborne", wound: "She is the calmest person in any room. It frightens her.", war: 5, loss: 10, meal: 14, n: 42 },
+  { id: "tobren", name: "Tobren Quill", realm: "Metalcrown", wound: "A clerk made a captain. He still counts everything twice.", war: 3, loss: 8, meal: 9, n: 44 },
+  { id: "naia", name: "Naia of the Veil", realm: "Shadowdeep", wound: "Nobody recognises her anymore. She has begun to like it.", war: 2, loss: 6, meal: 16, n: 38 },
+  { id: "orrin", name: "Orrin Lantern", realm: "Spiritveil", wound: "He speaks to a brother who died at Greywater, and the brother answers.", war: 4, loss: 7, meal: 11, n: 40 },
+  { id: "isa", name: "Isa Winterborn", realm: "Frostgrave", wound: "She felt nothing at her mother’s funeral and has been waiting for it ever since.", war: 2, loss: 4, meal: 15, n: 42 },
+  { id: "maud", name: "Maud Thatcher", realm: "no realm", wound: "A farmer’s widow who picked up a sword. She wants her village left alone, nothing more.", war: 6, loss: 11, meal: 8, n: 36 },
+  { id: "varro", name: "Varro the Late", realm: "no realm", wound: "He deserted three armies and has never once been afraid. He just gets bored.", war: 3, loss: 3, meal: 18, n: 48 }
+];
+(function () {
+  function vget() { S.vas = S.vas || {}; return S.vas; }
+  function vd(id) { for (var i = 0; i < VLORDS.length; i++) if (VLORDS[i].id === id) return VLORDS[i]; return null; }
+  function vAllies() { return S.allies.filter(function (a) { return a.def && a.def.vassal; }); }
+  function vSite(id) { for (var i = 0; i < S.sites.length; i++) if (S.sites[i].id === id) return S.sites[i]; return null; }
+  function cap() { return Math.min(6, S.sites.filter(function (s) { return s.owner === "player" && s.type !== "village"; }).length); }
+  function loyTxt(l) { return l >= 75 ? "devoted" : l >= 50 ? "loyal" : l >= 30 ? "restless" : "close to breaking"; }
+  pledgedLords = function () { return S.allies.filter(function (a) { return a.def && a.def.lord && !a.def.vassal; }); };
+  function hostSize() { return vAllies().filter(function (a) { return a.mode === "follow" && !a.away; }).length; }
+  var allyStrOld = allyStr;
+  allyStr = function (h) { var v = allyStrOld(h); return (h.def && h.def.vassal && hostSize() >= 3) ? v * 1.12 : v; };
+  var allyLossesOld = allyLosses;
+  allyLosses = function (frac, win) {
+    try { (B.allies || []).forEach(function (h) { if (!(h.def && h.def.vassal)) return; var v = vget()[h.def.vid], d = vd(h.def.vid); if (!v || !d) return; if (frac > 0.35) v.loy = Math.max(0, v.loy - d.loss); else if (win) v.loy = Math.min(100, v.loy + 2); }); } catch (e) {}
+    return allyLossesOld(frac, win);
+  };
+  function appoint(lid, sid) {
+    var d = vd(lid), s = vSite(sid), V = vget(); if (!d || !s || s.owner !== "player" || V[lid]) return;
+    if (vAllies().length >= cap()) return toast("You hold too few towns for another lord.");
+    for (var k in V) if (V[k].site === sid) return toast("That seat already has a lord.");
+    if (S.crowns < 150) return toast("A lord’s first year costs 150 crowns.");
+    S.crowns -= 150; var n = s.type === "castle" ? Math.round(d.n * 1.2) : d.n;
+    V[lid] = { site: sid, loy: 55, meal: 0, base: n, cool: 0, calls: 0 };
+    S.allies.push({ id: "v_" + lid, name: d.name, x: s.x + 26, y: s.y + 28, n: n, q: 1.1, mode: "hold", dest: null, tid: null, unpaid: 0, away: 0,
+      def: { name: d.name, fac: "free", lord: 1, vassal: 1, vid: lid, price: 1, n: n, q: 1.1, pow: 1, loss: 1, spd: 1, regrow: 0 } });
+    log(d.name + " takes the keys of " + s.name + " and swears to you.", "e"); toast(d.name + " holds " + s.name + "."); news(d.name + " has been given " + s.name + ".");
+  }
+  function dismiss(lid, why) {
+    var V = vget(); delete V[lid]; S.allies = S.allies.filter(function (a) { return a.id !== "v_" + lid; });
+    var d = vd(lid); if (d) { log(d.name + " " + why + ".", "e"); news(d.name + " " + why + "."); }
+  }
+  function callBanners() {
+    var L = vAllies(); if (!L.length) return;
+    var cost = 0; L.forEach(function (a) { cost += Math.round(a.n * 0.5); });
+    if (S.crowns < cost) return toast("Calling the banners costs " + cost + " crowns.");
+    S.crowns -= cost; var V = vget();
+    L.forEach(function (a, i) {
+      var v = V[a.def.vid], d = vd(a.def.vid), s = v && vSite(v.site);
+      a.mode = "follow"; a.away = 0; a.x = S.px - 30 + i * 14; a.y = S.py + 24;
+      if (s) s.gar = Math.max(4, s.gar * 0.75);
+      if (v && d) { v.loy = Math.max(0, v.loy - d.war); v.calls++; }
+    });
+    log("You call the banners. " + L.length + " lords ride to you through the night. Their towns stand a quarter emptier.", "e"); toast(L.length + " lords answer. -" + cost + " crowns.");
+    news("A great host is gathering under " + (cp().name || "the wanderer") + "’s banner.");
+  }
+  function homeAll() { vAllies().forEach(function (a) { a.mode = "hold"; a.tid = null; a.dest = null; }); toast("The lords ride home."); }
+  var actOld = act;
+  act = function (a, x, y) {
+    if (!/^vas/.test(a)) return actOld(a, x, y);
+    if (a === "vasapp") appoint(x, y);
+    else if (a === "vascall") callBanners();
+    else if (a === "vashome") homeAll();
+    else if (a === "vasfire") dismiss(x, "was released from your service and went home");
+    else if (a === "vasmeal") { var v = vget()[x], d = vd(x); if (v && d && S.day >= v.meal && S.crowns >= 30) { S.crowns -= 30; v.loy = Math.min(100, v.loy + d.meal); v.meal = S.day + 8; toast(d.name + " is glad of the company."); } else toast("Not yet. Or not enough crowns."); }
+    renderSheet();
+  };
+  function offers() {
+    var V = vget(), seed = Math.floor(S.day / 12), out = [];
+    VLORDS.forEach(function (d, i) { if (!V[d.id] && ((i + seed) % 4 !== 3)) out.push(d); });
+    return out.slice(0, 3);
+  }
+  function sec() {
+    var V = vget(), L = vAllies(), h = '<div class="sec">Your lords</div>', cp_ = cap();
+    var mine = S.sites.filter(function (s) { return s.owner === "player" && s.type !== "village"; });
+    if (!mine.length) return h + '<p class="dim-t">You hold no town or castle yet. Take one, and you can give it to a lord who will raise men and keep it for you.</p>';
+    h += '<p class="dim-t">' + L.length + " of " + cp_ + ' seats have a lord. A lord keeps their town, raises their own men, and costs crowns every day. Call the banners and they all ride to you. Their towns stand emptier while they are gone, and they remember it.</p>';
+    L.forEach(function (a) {
+      var d = vd(a.def.vid), v = V[a.def.vid], s = v && vSite(v.site); if (!d || !v) return;
+      h += '<div class="row"><div class="rd">' + d.name + " <small>of " + d.realm + " · " + (s ? s.name : "?") + " · " + Math.round(a.n) + " men · " + loyTxt(v.loy) + " (" + Math.round(v.loy) + ")<br><i>" + d.wound + "</i></small></div></div>";
+      h += '<div class="btns"><button' + (a.mode === "follow" ? ' class="solid"' : "") + ' data-act="allymode" data-a="' + a.id + '" data-b="follow">Ride with me</button><button' + (a.mode === "hold" ? ' class="solid"' : "") + ' data-act="allymode" data-a="' + a.id + '" data-b="hold">Hold</button><button data-act="vasmeal" data-a="' + d.id + '"' + (S.day < v.meal || S.crowns < 30 ? " disabled" : "") + '>Share a meal (30)</button><button data-act="vasfire" data-a="' + d.id + '">Release</button></div>';
+    });
+    if (L.length) {
+      var cost = 0; L.forEach(function (a) { cost += Math.round(a.n * 0.5); });
+      h += '<div class="btns"><button class="solid" data-act="vascall"' + (S.crowns < cost ? " disabled" : "") + ">Call the banners (" + cost + " crowns)</button><button data-act=\"vashome\">Send them home</button></div>";
+      if (L.length >= 3) h += '<p class="dim-t">Three or more lords riding together are a great host: their armies fight about 12% harder.</p>';
+    }
+    if (L.length < cp_) {
+      var free = mine.filter(function (s) { for (var k in V) if (V[k].site === s.id) return false; return true; });
+      h += '<div class="sec">Lords seeking a seat</div>';
+      offers().forEach(function (d) {
+        h += '<p style="margin:6px 0 0"><b>' + d.name + "</b> <small>of " + d.realm + " · about " + d.n + " men</small><br><i>" + d.wound + "</i></p><div class=\"btns\">";
+        free.slice(0, 3).forEach(function (s) { h += '<button data-act="vasapp" data-a="' + d.id + '" data-b="' + s.id + '"' + (S.crowns < 150 ? " disabled" : "") + ">Give " + s.name + " (150)</button>"; });
+        h += "</div>";
+      });
+    }
+    return h;
+  }
+  var hsOld = heroesSheet;
+  heroesSheet = function () { var h = hsOld(); try { h += sec(); } catch (e) { if (window.console) console.log("vas", e); } return h; };
+  // daily: loyalty drifts, unpaid lords sour, lords who lose their seat go, broken lords take the town, scattered lords regroup
+  var lastD = -1;
+  setInterval(function () {
+    try {
+      if (!S || !S.sites || S.day === lastD) return; lastD = S.day; var V = vget();
+      Object.keys(V).forEach(function (lid) {
+        var v = V[lid], d = vd(lid), s = vSite(v.site), a = S.allies.filter(function (x) { return x.id === "v_" + lid; })[0];
+        if (!d) return;
+        if (!s || s.owner !== "player") { dismiss(lid, "lost their seat and rode away"); return; }
+        if (!a) { if (!v.cool) v.cool = S.day + 15; if (S.day >= v.cool) { v.cool = 0; S.allies.push({ id: "v_" + lid, name: d.name, x: s.x + 26, y: s.y + 28, n: Math.round(v.base * 0.6), q: 1.1, mode: "hold", dest: null, tid: null, unpaid: 0, away: 0, def: { name: d.name, fac: "free", lord: 1, vassal: 1, vid: lid, price: 1, n: v.base, q: 1.1, pow: 1, loss: 1, spd: 1, regrow: 0 } }); log(d.name + " has raised a new levy at " + s.name + ".", "e"); } v.loy = Math.max(0, v.loy - 1); return; }
+        if (a.unpaid > 0) v.loy -= 3; else if (a.mode === "hold" && v.loy < 70) v.loy += 0.5;
+        if (a.n < v.base) a.n = Math.min(v.base, a.n + 0.6);
+        if (v.loy <= 12) { s.owner = "rebel"; s.gar = Math.max(s.gar, 20); dismiss(lid, "has shut the gates of " + s.name + " against you"); toast(d.name + " has turned on you."); }
+        else if (v.loy <= 25 && !v.warned) { v.warned = 1; toast(d.name + " is close to breaking with you."); }
+        else if (v.loy > 35) v.warned = 0;
+      });
+    } catch (e) {}
+  }, 1500);
+})();
 // ---- ovFIX: a quest is not offered until you can actually reach the person who gives it. ----
 (function () {
   QS.forEach(function (q) {
