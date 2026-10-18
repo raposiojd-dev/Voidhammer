@@ -14345,6 +14345,53 @@ function ovLairVideo(name) {
 }
 document.addEventListener("click", function (e) { var t = e.target && e.target.closest && e.target.closest("[data-lairvid]"); if (t) { e.stopPropagation(); ovLairVideo(t.getAttribute("data-lairvid")); } }, true);
 // ---- ovBOOK: The Emberhold Chronicle (Book I, The Shattered Gate) as lantern pages through the campaign ----
+var ERAS = [
+  { id: "e1", t: "The Boy With Nine Sparks", sub: "The Lantern Chronicle · The Child", min: 2, body: [
+    "The Lantern keeps what the Codex would rather forget. A page comes loose from an older book. It is from the Age of Ascension, when the Realms still believed they were whole.",
+    "The Seers of Spiritveil had foreseen a child born with a spark from every Realm. The Twin-Spark prophecy. Lyria, Mother of Memory, saw his face and was forbidden to name him. The Conclave said a spark must be broken before it can be shaped, and sent for him.",
+    "His name was Elyon. He was small for his age, he collected feathers, and he was afraid of the dark because the dark answered him.",
+    "Lightforge took him first, to keep him safe. The Radiant Edict called it protection. Elyon called it a locked door."
+  ] },
+  { id: "e2", t: "The Making of Valek", sub: "The Lantern Chronicle · The Iron Heir", min: 9, body: [
+    "Metalcrown did not steal him. Metalcrown was handed him, through a gate someone left unguarded, and every Realm still says it was somebody else’s hand.",
+    "In the Spark Reactor they tried to give a boy a second spark, and the reactor did what reactors do to a child. They kept the pieces that worked. When he woke, Elyon was a name the Synthesis Council had no use for. The Council gave him a better one: Valek.",
+    "He was perfect. Everyone said so. He was made to be, and nobody asked him once what he wanted. A boy who is never asked learns to answer for himself in the only voice left.",
+    "Somewhere beneath the iron, Elyon was still there, listening."
+  ] },
+  { id: "e3", t: "Power Is Forged", sub: "The Lantern Chronicle · The Iron Dominion", min: 18, body: [
+    "Metalcrown had been laughed at once. Mocked in Council, refused a seat, told that magic was a gift and gifts are not for the poor. So they stopped asking, and forged their own.",
+    "The Spark Reactors lit. The Iron Wraiths marched. “Magic is unstable,” said the Synthesis Council. “We are not.” They truly believed they were saving the Realms from chaos.",
+    "Lightforge fell first. Its walls had glowed for a thousand years and the Wraiths simply walked through the light. The Aetherguard broke into pieces that would never fit again.",
+    "The Dominion was born. Valek sat at its centre, because it needed a heart and he was the only one that would not stop."
+  ] },
+  { id: "e4", t: "A War Everyone Was Born Into", sub: "The Lantern Chronicle · The Thousand-Year War, Early", min: 28, body: [
+    "It was not one war. It was a stack of wars, layered until the bottom ones were forgotten. Flameborne rose and was the first Realm to burn. Stormreach rode out and could not agree on where.",
+    "Children were born in the war and thought it was weather. Grandmothers told them the world had been quiet once, and the children looked at them kindly, the way you look at someone describing a colour.",
+    "In that time hope stopped being a belief and became a habit, which is a much harder thing to kill."
+  ] },
+  { id: "e5", t: "Under Every Realm", sub: "The Lantern Chronicle · The Thousand-Year War, Middle", min: 40, body: [
+    "For five hundred years the Conclave Towers trained children to be weapons, and for five hundred years the children loved each other anyway. The wars were fought by friends who had once played Realmstrike together.",
+    "Shadowdeep ran through all of it, under every city, in tunnels that remembered everything. The Faceless Council never ruled. It chose who would. “Truth hides beneath light,” they said, and killed whoever came too close to either.",
+    "The Conclaves became fortresses. The students became weapons. Somewhere in the long dark the Void learned that the Realms were beginning to forget themselves."
+  ] },
+  { id: "e6", t: "The Flameborne King", sub: "The Lantern Chronicle · The Harrowed King", min: 54, body: [
+    "There was a king of the Flameborne. He was brilliant and he was loved, and when the Void first spoke to him it spoke in a voice he knew.",
+    "It said: <i>you have carried them so long. Set it down.</i>",
+    "He was not seduced by power. He was offered rest, and no one had offered him that in a hundred years. The Void took him gently, the way tide takes a pier. What stood up in his place wore his crown and remembered his name. It could not remember why it mattered.",
+    "They called him the Harrowed King. He became the Void’s first general, and the Void’s first mourner."
+  ] },
+  { id: "e7", t: "The Consumption", sub: "The Lantern Chronicle · The Void Learns Hunger", min: 70, body: [
+    "The Void stopped being weather. It became patient, and then it became clever. It began to consume memory before matter, because a city that has forgotten itself offers no resistance.",
+    "Metalcrown’s territories fractured. Shadowdeep was compromised from within. Stormreach’s citadels fell one by one into the quiet. Frostgrave was erased from linear time, and no one remembers what it was like to lose it. Stonehold collapsed. Spiritveil was half devoured, its lanterns going out in the order they were lit.",
+    "Lightforge was already dust. One by one every Realm became a name on a page. Then only one remained."
+  ] },
+  { id: "e8", t: "The Last Realm", sub: "The Lantern Chronicle · Emberhold", min: 86, body: [
+    "Emberhold became the capital of existence. The last fortress. The last convergence of Aether. The last memory of people.",
+    "Everyone who lived there knew that it was the end of the world, and so they lived there with great care. They baked bread. They rang the bells. They kept the walls clean and told one another it was stable.",
+    "Then a young man with no name fell through the sky, through a Gate no one had opened.",
+    "<i>The next pages are what came after.</i>"
+  ] }
+];
 var BOOK1 = [
   { id: "k1", t: "The Wall That Breathes", sub: "The Emberhold Chronicle · Chapters I–II", cond: function () { return S.day >= 2; }, body: [
     "A page reaches you in the lantern light. The Lantern-keepers say it is memory, and that a lantern does not keep time in order. It may be a place that has already fallen. It may be one that has not yet.",
@@ -14427,8 +14474,12 @@ var BOOK1 = [
     "<i>This is the end of the first book of the Emberhold pages. The lantern has more. It does not say whether they have happened.</i>"
   ], ok: "Close the page" }
 ];
+var CHR = ERAS.concat(BOOK1);
+var _mins = { k1: 98, k2: 106, k3: 116, k4: 128, k5: 142, k6: 156, k7: 172, k8: 188, k9: 204, k10: 222, k11: 240, k12: 258 };
+BOOK1.forEach(function (c) { var m = _mins[c.id], o = c.cond; c.cond = function () { return S.day >= m || (o() && S.day >= m - 25); }; });
+ERAS.forEach(function (c) { var m = c.min; c.cond = function () { return S.day >= m; }; });
 (function () {
-  BOOK1.forEach(function (c) {
+  CHR.forEach(function (c) {
     STORY[c.id] = { t: c.t, sub: c.sub, body: c.body.map(function (x, i) { return typeof x === "function" ? x : x; }), ok: c.ok || "Fold the page", bk: 1 };
   });
 })();
@@ -14445,9 +14496,9 @@ if (typeof storySheet === "function") {
 }
 function ovBookNext() {
   var st = S.story; if (!st) return null;
-  for (var i = 0; i < BOOK1.length; i++) {
-    var c = BOOK1[i]; if (st.seen[c.id]) continue;
-    if (i > 0 && !st.seen[BOOK1[i - 1].id]) return null;
+  for (var i = 0; i < CHR.length; i++) {
+    var c = CHR[i]; if (st.seen[c.id]) continue;
+    if (i > 0 && !st.seen[CHR[i - 1].id]) return null;
     var last = (st.bkLast == null) ? -99 : st.bkLast;
     if (S.day - last < 6) return null;
     var ok = false; try { ok = c.cond(); } catch (e) {}
@@ -14470,12 +14521,12 @@ if (typeof storyQueue === "function") {
 function ovBookChron() {
   try {
     var st = S.story; if (!st || !st.on) return "";
-    var n = 0; BOOK1.forEach(function (c) { if (st.seen[c.id]) n++; });
-    var h = '<div class="sec">The Emberhold Chronicle · ' + n + " of " + BOOK1.length + " pages</div>";
+    var n = 0; CHR.forEach(function (c) { if (st.seen[c.id]) n++; });
+    var h = '<div class="sec">The Lantern Chronicle · ' + n + " of " + CHR.length + " pages</div>";
     if (!n) return h + '<p class="dim-t">Lantern pages arrive as the world turns. The first comes soon.</p>';
-    BOOK1.forEach(function (c) {
+    CHR.forEach(function (c) {
       if (!st.seen[c.id]) return;
-      h += '<div class="row" style="padding:.35rem 0;border-top:1px solid #2a241a"><b style="color:#e3c27a">' + c.t + '</b> <span style="opacity:.6">' + c.sub.replace("The Emberhold Chronicle · ", "") + '</span> <button data-bk="' + c.id + '" style="float:right">Read again</button></div>';
+      h += '<div class="row" style="padding:.35rem 0;border-top:1px solid #2a241a"><b style="color:#e3c27a">' + c.t + '</b> <span style="opacity:.6">' + c.sub.replace(/The (Lantern|Emberhold) Chronicle · /, "") + '</span> <button data-bk="' + c.id + '" style="float:right">Read again</button></div>';
     });
     return h;
   } catch (e) { return ""; }
@@ -14494,9 +14545,9 @@ if (typeof storyEndingBlock === "function") {
     var h = storyEndingBlockBK();
     try {
       var st = S.story; if (!st || !st.on) return h;
-      var n = 0; BOOK1.forEach(function (c) { if (st.seen[c.id]) n++; });
+      var n = 0; CHR.forEach(function (c) { if (st.seen[c.id]) n++; });
       if (!n) return h;
-      h += '<p class="dim-t">You read ' + n + " of " + BOOK1.length + " lantern pages. The lantern holds more.</p>";
+      h += '<p class="dim-t">You read ' + n + " of " + CHR.length + " lantern pages, from the boy Elyon to the last wall of Emberhold. The lantern holds more.</p>";
       BOOKS_AFTER.forEach(function (b) { h += "<p><b>" + b[0] + ".</b> " + b[1] + "</p>"; });
     } catch (e) {}
     return h;
