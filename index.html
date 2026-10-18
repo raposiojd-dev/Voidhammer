@@ -15432,6 +15432,47 @@ ALLYS.push(
     body: ["At night, on the edge of the Silent Reach, the stillness begins to hum. It is not a threat. It is a tune. Three notes, over and over.", "Pip is humming it too. He does not know he is. He learned it from his mother, who learned it from her mother, who sang it to put him to sleep in the Iron Well village before anybody knew what the Void was.", "The stillness learned it from somewhere. It learned it from someone who sang it once, in a place it touched, a long time ago.", "You realise it is not trying to erase the world. It is trying to remember a song."],
     ok: "Hum it back, very quietly.", fx: function () { cp().qpts = (cp().qpts || 0) + 2; S.crowns += 200; log("The Void has learned a lullaby from the world it is erasing.", "e"); } }
 );
+// ---- ovGATE: The Open Gate. After Ashford is fed and a column is raised, Mara sends you to the Realm Gate on the Flameborne coast. It opens for you, and for everyone who follows. ----
+function gateCanOpen() { var f = cp().f; return !!(f.q1done && (f.fmdone || f.q2 || f.q3)); }
+var ovGateOpenGT = ovGateOpen;
+ovGateOpen = function () { return ovGateOpenGT() || !!(S && S.camp && S.camp.f && S.camp.f.gateopen); };
+(function () {
+  DLG.mara_gate = { n: "Elder Mara", t: "You raised a farm and a column, and Ashford slept easy for the first time in a year. There is one more thing before you go out into the world.<br><br>On the Flameborne coast stands a Realm Gate: an old stone arch the first realms built before the Collapse. It has not answered anyone in a century. It hums for the Grey Writ's seal, and you carry it. If you show it to the arch, it will wake, and not only for you. Caravans, lords and every column that follows will be able to pass.<br><br>Highmarch, Luminant and every other realm lie across the sea. The gate is how you reach them.", c: [{ t: "I will go to the gate.", set: { gatetold: 1 }, toast: "New quest: The Open Gate." }, { t: "What is the cost?", go: "mara_gatecost" }, { t: "Later." }] };
+  DLG.mara_gatecost = { n: "Elder Mara", t: "Ten crowns and a day for each crossing, and more as you hold more land. The realm on the other side will know a stranger has come. The gate wakes for everyone, which means it wakes for your enemies too. Nothing is free in this world, child. But nothing else will take you across the sea.", c: [{ t: "I will go to the gate.", set: { gatetold: 1 }, toast: "New quest: The Open Gate." }, { t: "Later." }] };
+  DLG.mara_gatedone = { n: "Elder Mara", t: "I felt it from here. The whole coast hummed. Go on, child. Be kind to the people on the other side of that arch. They are afraid of what comes through." };
+  var marDlgGT = marDlg;
+  marDlg = function (f) { if (f.q1done && f.fmdone && !f.gateopen) return "mara_gate"; if (f.gateopen && !f.q2) return "mara_gatedone"; return marDlgGT(f); };
+  var marMkGT = marMk;
+  marMk = function () { var f = cp().f; if (f.q1done && f.fmdone && !f.gateopen && !f.gatetold) return 1; return marMkGT(); };
+  leg("L1d", 1, "The Open Gate", "Realm Gate, Flameborne coast", function (f) { return f.gateopen ? 4 : f.gatetold ? 2 : f.fmdone ? 1 : 0; }, "Take the Grey Writ to the Realm Gate on the Flameborne coast.");
+  var siteGT = site;
+  site = function (id) { if (id === "__gate") { var g = S && S.gates && S.gates[curCell()]; return g ? { x: g.x, y: g.y, name: "Realm Gate", id: "__gate" } : null; } return siteGT(id); };
+  var mainObjectiveGT = mainObjective;
+  mainObjective = function () {
+    var f = cp().f;
+    if (f.q1done && f.fmdone && !f.gateopen && !f.q2) {
+      if (!f.gatetold) return { text: "Speak to Elder Mara about the Realm Gate.", site: "ashford", area: "ashford", npc: "mara" };
+      return { text: "Take the Grey Writ to the Realm Gate on the Flameborne coast and touch it.", site: "__gate", area: "" };
+    }
+    return mainObjectiveGT();
+  };
+  var ovPortalSheetGT = ovPortalSheet;
+  ovPortalSheet = function (kind) {
+    var h = ovPortalSheetGT(kind);
+    if (kind === "gate" && !ovGateOpen()) {
+      var f = cp().f;
+      if (gateCanOpen()) return ovGateOpening(h);
+      return h.replace("<p>The arch hums when you touch it, and nothing else.", "<p>The arch hums when you touch it, and nothing else. Elder Mara in Ashford says the gate wakes only for someone who has fed their village and raised a column. Finish that first.");
+    }
+    return h;
+  };
+})();
+function ovGateOpening() {
+  var f = cp().f; f.gateopen = 1; f.gatetold = 1; S.skills = S.skills || {}; S.skills.ms_gate = 1; try { addXp(160); } catch (e) {} S.crowns += 100;
+  toast("The Realm Gate wakes. It is open for everyone."); try { log("The Realm Gate woke when you showed it the Grey Writ. It is open for your column, for caravans, and for every lord who follows.", "e"); news("The Realm Gate on the Flameborne coast has woken. Every realm can be reached."); } catch (e) {}
+  save();
+  return '<h2>The Gate Wakes</h2><p class="sub">The Realm Gate · Flameborne coast</p><p>You hold up the Grey Writ and the arch drinks the light off the seal. Stones that have sat silent for a hundred years begin to hum, one note at a time, until the whole coast is singing.</p><p>A column of pale light stands in the arch. On the other side you can hear a city, faint as a memory: bells, wheels, a crowd.</p><p>It is open. Not only for you. Caravans will use it, and lords, and every column that dares. The world just got a great deal smaller, and a great deal more dangerous.</p><p class="dim-t">+160 xp, +100 crowns. You can now cross to any realm: ' + ovGateToll() + ' crowns and a day each way.</p><div class="btns"><button class="solid" data-act="close">Step through</button></div>';
+}
 // ---- ovNGP: New Game+. Begin again carrying a Legacy. The world remembers, and it is harder. ----
 function ngpCyc() { try { var L = JSON.parse(localStorage.getItem("vh_legacy") || "null"); return (L && L.cyc) || 0; } catch (e) { return 0; } }
 function ngpMine() { return (S && S.ngp) || 0; }
