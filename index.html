@@ -14119,10 +14119,28 @@ function ovLairSpec(n, cv) {
     } };
 }
 // every visit to a lair is a fresh one: the boss is back, the hoard is full again
+// a spawn or arrival point inside rock or trees is a soft-lock: move to the nearest open spot that is part of a big walkable region
+function ovFloodN(A, x, y, cap) {
+  var st = 8, seen = {}, q = [[Math.round(x / st), Math.round(y / st)]], n = 0; seen[q[0][0] + "," + q[0][1]] = 1;
+  while (q.length && n < cap) { var c = q.pop(); n++; [[1, 0], [-1, 0], [0, 1], [0, -1]].forEach(function (d) { var i = c[0] + d[0], j = c[1] + d[1], k = i + "," + j; if (seen[k] || i < 1 || j < 1 || i * st > A.W * 16 - 8 || j * st > A.H * 16 - 8) return; if (!boxFree(A, i * st, j * st)) return; seen[k] = 1; q.push([i, j]); }); }
+  return n;
+}
+function ovUnstick(A) {
+  if (!A || !A.p || A.over || (A.sp && A.sp.over)) return;
+  if (boxFree(A, A.p.x, A.p.y) && ovFloodN(A, A.p.x, A.p.y, 260) >= 260) return;
+  var best = null, bd = 1e9, ox = A.p.x, oy = A.p.y, r, a, x, y;
+  for (r = 4; r < 520 && !best; r += 6) for (a = 0; a < 6.283; a += 6 / Math.max(r, 12)) {
+    x = Math.round(ox + Math.cos(a) * r); y = Math.round(oy + Math.sin(a) * r);
+    if (x < 8 || y < 8 || x > A.W * 16 - 8 || y > A.H * 16 - 8 || !boxFree(A, x, y)) continue;
+    if (ovFloodN(A, x, y, 260) >= 260) { var d = (x - ox) * (x - ox) + (y - oy) * (y - oy); if (d < bd) { bd = d; best = [x, y]; } }
+  }
+  if (best) { A.p.x = best[0]; A.p.y = best[1]; }
+}
 function buildArea(id, sx, sy) {
   var li = ovLairIx(id);
   if (li) { var c = cp(); delete AREAS[id]; if (c.cleared) delete c.cleared[id]; if (c.rs) delete c.rs[id]; Object.keys(c.f || {}).forEach(function (k) { if (k.indexOf("chest:" + id + ":") === 0) delete c.f[k]; }); }
   var A = buildArea0(id, sx, sy);
+  try { ovUnstick(A); } catch (er) { if (window.console) console.error(er); }
   if (li) {
     var st = ovLairSt(li.n); A.lair = { n: li.n, st: st, cv: li.cv };
     setTimeout(function () { if (AR && AR.id === id) aToast(li.cv.name + " · Depth " + ovLairDepth(st) + (st.n ? " · cleared " + st.n + " time" + (st.n === 1 ? "" : "s") : " · never cleared"), "#ff9a3c"); }, 1400);
