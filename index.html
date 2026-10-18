@@ -14344,6 +14344,65 @@ function ovLairVideo(name) {
   v.play().catch(function () { v.muted = true; v.play().catch(close); });
 }
 document.addEventListener("click", function (e) { var t = e.target && e.target.closest && e.target.closest("[data-lairvid]"); if (t) { e.stopPropagation(); ovLairVideo(t.getAttribute("data-lairvid")); } }, true);
+// ---- ovEMB: Act VI rebuilt around the Emberhold arc (Book I, The Shattered Gate). Each quest unlocks its Lantern pages. ----
+(function () {
+  function EB(id, name, hp, col, band) { ET[id] = { hp: hp, sp: 36, dmg: 2, col: col, band: band, name: name, big: 1, boss: 1 }; }
+  EB("unrecorded", "The Unrecorded", 17, "#3a3a52", "#d8d0ff");
+  EB("agreeable", "The Agreeable", 17, "#4a4238", "#e8dcc0");
+  EB("unconfirmed", "The Unconfirmed", 18, "#22222c", "#f0f0ff");
+  EB("hunterprime", "Hunter Prime", 19, "#4a4a5a", "#ffb060");
+  EB("kingsignal", "A Signal Wearing a Crown", 20, "#18141c", "#ff7a3a");
+  EB("gatewatcher", "The Watcher at the Gate", 22, "#101018", "#ffffff");
+  EB("harrowedking", "The Harrowed King", 28, "#201010", "#ff5a2a");
+  function F() { return cp().f; }
+  function m(id) { return function (f) { return !!f["qd_" + id]; }; }
+  function ch(q) { q.opt = 0; q.act = 6; Q(q); }
+  ch({ id: "eb_sera", hub: "luminantc", npc: "elyndra", need: m("silence1"), name: "The Statue That Disagrees", zone: "ebsera", zname: "The Erased Ward", th: "cave", lv: 4, seed: 461, pal: ["echo", "hollowsent"], boss: "unrecorded", obj: "Find what the city agreed to forget, in the Erased Ward.",
+    gate: "A ward of the Lantern City where every record has a clean white gap exactly the size of a person.",
+    intro: "I remember a captain called Sera. Nobody else does. The Council struck her from the record, and the city agreed so quickly that I think it was relieved. The Lantern shows me a plaza with no statue and a man who stands where she used to laugh. I need you to walk the ward with me. I cannot bear it alone, and I cannot put it down.",
+    turn: "It is gone, the thing that wore the gap. Her name is back in my hands. It is a small, ordinary name. I think that is the cruelty of what was done to her. What do we do with it?",
+    opts: [{ t: "“Write it where everyone can read it.”", reward: { xp: 450, crowns: 250 }, set: { eb_name: 1 }, text: "Elyndra writes it on the plaza stones in chalk. By evening three people have asked who she was. By morning there are flowers." },
+      { t: "“Keep it with you. Some names need one safe place.”", reward: { xp: 450, perm: "pts" }, set: { eb_keep: 1 }, text: "Elyndra closes her hand. “Then I will carry her,” she says. “I always do. It is the only thing I am any good at.”" }] });
+  ch({ id: "eb_market", hub: "windspire", npc: "kaelren", need: m("eb_sera"), name: "Small Wrongness", zone: "ebmarket", zname: "The Market That Agreed", th: "pass", lv: 4, seed: 462, pal: ["scout", "hollowsent"], boss: "agreeable", obj: "Walk the Market That Agreed with Kaelren.",
+    gate: "A market with every stall open and every voice a half-beat late.",
+    intro: "A grain merchant stopped in the middle of a sentence last week. He looked at his son and there was nothing there. Then he said ‘from storage’ and the whole street breathed out and went on. Nobody screamed. That is what frightens me. I have charged into every danger I could find, and I do not know how to charge at this.",
+    turn: "You saw it. A city that does not fight the wrong thing. It simply makes room for it. I stood in the middle of the road and for once I did not run at it. I asked a stranger what her name was. She told me. Then she told me again, slower. That was all it took.",
+    opts: [{ t: "“Say the names of the ones who stayed. Out loud.”", reward: { xp: 480, perm: "hp" }, set: { eb_names: 1 }, text: "Kaelren stands in the square and says forty names. By the fortieth, some of them are saying them back." },
+      { t: "“We cannot stay and hold this. Move the children out.”", reward: { xp: 480, crowns: 300, item: 2 }, set: { eb_evac: 1 }, text: "“Out,” Kaelren says. “Yes. That I can do.” He is gone down the road with forty children and a borrowed cart, and he is, for once, exactly fast enough." }] });
+  ch({ id: "eb_boy", hub: "granitekeep", npc: "voyager", need: m("eb_market"), name: "The Boy Who Does Not Belong", zone: "ebboy", zname: "The Unconfirmed Corridor", th: "cave", lv: 4, seed: 463, pal: ["hollowsent", "frostshade"], boss: "unconfirmed", obj: "Walk the Unconfirmed Corridor with the Voyager.",
+    gate: "A corridor people walk around without knowing why. The air leans, as if listening.",
+    intro: "There is a place where a stranger once stood, and the city could not hold on to him. Not hide him. Forget him, a little more each day, and agree to it. I know the corridor. I was the stranger. I will not say how I know. Walk it with me, and do not let them name me before I have finished arriving.",
+    turn: "I remember it, a little. The first man who did not try to define me. If it had been anyone else, I think I would have turned to dust. What do you see when you look at me?",
+    opts: [{ t: "“A man who has not finished yet.”", reward: { xp: 520, perm: "pts" }, set: { eb_unfinished: 1 }, text: "The Voyager is silent for some time. “Kaelren said almost the same,” he says. “I think that is why it worked.”" },
+      { t: "“I see someone I would follow whoever he was.”", reward: { xp: 520, crowns: 350 }, set: { eb_follow: 1 }, text: "“That,” the Voyager says quietly, “is the more dangerous thing to say to me. But thank you.”" }] });
+  ch({ id: "eb_hunters", hub: "highmarch", npc: "hald", need: m("eb_boy"), name: "Hunters Awake", zone: "ebhunt", zname: "The Codex Vaults", th: "cave", lv: 5, seed: 464, pal: ["hollowsent", "knife"], boss: "hunterprime", obj: "Go down into the Codex Vaults.",
+    gate: "A stair beneath the Marshal’s hall, older than the hall. The door has a keyhole shaped like nothing.",
+    intro: "The oldest defences of the Realms are waking. We called them Hunters. They were made before the Codex, to hunt what the Codex could not file. Orders arrive in two versions now, and no one can say which came first. A councillor told me, ‘The system is responding to something it has not classified.’ I did not sleep that night. Go down. See which of us they answer to.",
+    turn: "They stand down, for now. You looked at them and they hesitated. I do not know what they saw. I do know that every order I have given since has felt, for the first time, optional.",
+    opts: [{ t: "“Seal them again. Nobody should command that.”", reward: { xp: 560, perm: "hp" }, set: { eb_seal: 1 }, text: "Hald turns the key that is shaped like nothing. “Sealed,” he says. “And the next time they wake, we will not have a say.”" },
+      { t: "“Wake them properly. Under our banner.”", reward: { xp: 560, item: 3 }, eff: function () { S.from.ashford = (S.from.ashford || 0) + 12; }, set: { eb_wake: 1 }, text: "Twelve Hunters step from the vault and stand to attention beside your column. None of them blink. You are not sure you are in command." }] });
+  QMAP.voyagerpast.need = m("eb_hunters");
+  ch({ id: "eb_signal", hub: "luminantc", npc: "elyndra", need: m("voyagerpast"), name: "A Signal, Not Yet a King", zone: "ebsignal", zname: "The Unconfirmed Layer", th: "pass", lv: 5, seed: 465, pal: ["hollowsent", "wraith"], boss: "kingsignal", obj: "Follow the signal into the Unconfirmed Layer.",
+    gate: "A road where the sound leaves first. Your footsteps arrive a moment late.",
+    intro: "Deep in the Codex a label appeared for the length of one breath. HARROWED KING: UNCONFIRMED PRESENCE LAYER. Then it was struck out. They cannot say who struck it. On the field this morning the noise went out of the battle, not quiet but removed. I think he is not coming. I think he is already here, and this is only what it feels like to be prepared for.",
+    turn: "I am sorry. I heard it too. It was his voice, a voice I have heard before, the one that knows you are tired. It did not threaten. It offered rest. That is much harder to refuse than a threat.",
+    opts: [{ t: "“Read the label aloud. Let everyone know he is real.”", reward: { xp: 620, crowns: 400 }, set: { eb_say: 1 }, text: "You read it in the market that afternoon. Some run. More stand. The Council calls it panic. Elyndra calls it the first honest thing said in a year." },
+      { t: "“Strike it out again. Do not let fear spread.”", reward: { xp: 620, perm: "pts" }, set: { eb_hush: 1 }, text: "The label is gone from the Codex, and from the memory of everyone who saw it but you and Elyndra. She does not meet your eyes. “Efficient,” she says, and it is not a compliment." }] });
+  QMAP.unmaderoad.need = m("eb_signal");
+  ch({ id: "eb_gate", hub: "windspire", npc: "aeris", need: m("unmaderoad"), name: "The Gate Appears", zone: "ebgate", zname: "The Shattered Gate", th: "pass", lv: 5, seed: 466, pal: ["wraith", "echo"], boss: "gatewatcher", obj: "Stand before the Shattered Gate.",
+    gate: "An arch of broken sky above the old square. Reality is physical here, and heavy.",
+    intro: "A Gate has opened above the old square. Not one of ours. Nothing came out. The Voidborn drift between the houses and watch the children, with no more hostility than the weather. A soldier laid down his spear this morning because lifting it felt pointless. A woman in the lower market lost every memory of her family and is alive. I do not know how to fight something that does not fight.",
+    turn: "It looked at you and did not strike. Nor did you. For a moment the square was perfectly still, and no one was afraid, and that was the worst part. We have bought a little time. I do not know what we paid with.",
+    opts: [{ t: "“Hold the line around the Gate. Nothing in, nothing out.”", reward: { xp: 680, crowns: 500 }, set: { eb_hold: 1 }, text: "Aeris posts watch around the arch. The Voidborn watch back. Nobody blinks for three days." },
+      { t: "“Keep it open a crack. We need to understand it.”", reward: { xp: 680, item: 3 }, set: { eb_open: 1 }, text: "Aeris stares at you. “If you are wrong,” she says, “you will not be here to be wrong.” But she posts no guard." }] });
+  ch({ id: "eb_king", hub: "highmarch", npc: "hald", need: m("eb_gate"), name: "He Kneels", zone: "ebking", zname: "The Ember Hall", th: "ember", lv: 5, seed: 467, pal: ["hollowsent", "wraith"], boss: "harrowedking", obj: "Meet the Harrowed King in the Ember Hall.",
+    gate: "A hall of dead embers. The silence in it is the held breath of something very large.",
+    intro: "He came without a sound. There was no sound until he was already there. A tall shape in a crown of embers, and Kaelren, who has never knelt to any man, was on his knees before he knew why. That is what he does. He does not conquer. He relieves you of the weight of standing. I am asking you to go into his hall. I do not know that anyone returns whole.",
+    turn: "You are alive. That was not guaranteed. He hesitated, at the last. For one heartbeat there was a man there, wearing a face I think I knew. Then it passed. What did you do?",
+    opts: [{ t: "Stand. Whatever it costs. (Costs a tenth of your column)", reward: { xp: 900, crowns: 700, perm: "hp" }, eff: function () { if (typeof loseFrac === "function") loseFrac(0.1); }, set: { eb_stand: 1 }, text: "You stood when every part of you wanted to rest. The hall remembers it. The Harrowed King does not strike you down. He turns away, and the embers on his crown dim, once." },
+      { t: "Kneel, and ask him why he came.", reward: { xp: 900, item: 3, perm: "pts" }, set: { eb_kneel: 1 }, text: "He listens. Neither of you says anything for a long time. Then he says, very quietly, one word that is almost a name. You carry it out of the hall like a stone in your pocket." }] });
+  QMAP.hollowthrone.need = m("eb_king");
+})();
 // ---- ovBOOK: The Emberhold Chronicle (Book I, The Shattered Gate) as lantern pages through the campaign ----
 var ERAS = [
   { id: "e1", t: "The Boy With Nine Sparks", sub: "The Lantern Chronicle · The Child", min: 2, body: [
@@ -14475,9 +14534,11 @@ var BOOK1 = [
   ], ok: "Close the page" }
 ];
 var CHR = ERAS.concat(BOOK1);
-var _mins = { k1: 98, k2: 106, k3: 116, k4: 128, k5: 142, k6: 156, k7: 172, k8: 188, k9: 204, k10: 222, k11: 240, k12: 258 };
-BOOK1.forEach(function (c) { var m = _mins[c.id], o = c.cond; c.cond = function () { return S.day >= m || (o() && S.day >= m - 25); }; });
-ERAS.forEach(function (c) { var m = c.min; c.cond = function () { return S.day >= m; }; });
+function _qd(id) { return function () { return !!cp().f["qd_" + id]; }; }
+function _fl(k) { return function () { return !!cp().f[k]; }; }
+var _gate = { e1: function () { return S.day >= 2; }, e2: _fl("q3done"), e3: _fl("q4done"), e4: _fl("q5done"), e5: _fl("q5done"), e6: _fl("q6done"), e7: _fl("q6done"), e8: _fl("q7done"),
+  k1: _qd("silence1"), k2: _qd("eb_sera"), k3: _qd("eb_market"), k4: _qd("eb_market"), k5: _qd("eb_boy"), k6: _qd("eb_hunters"), k7: _qd("eb_hunters"), k8: _qd("eb_signal"), k9: _qd("eb_gate"), k10: _qd("eb_king"), k11: _qd("hollowthrone"), k12: _qd("hollowthrone") };
+CHR.forEach(function (c) { var g = _gate[c.id]; c.cond = function () { try { return !!g(); } catch (e) { return false; } }; });
 (function () {
   CHR.forEach(function (c) {
     STORY[c.id] = { t: c.t, sub: c.sub, body: c.body.map(function (x, i) { return typeof x === "function" ? x : x; }), ok: c.ok || "Fold the page", bk: 1 };
@@ -14498,11 +14559,12 @@ function ovBookNext() {
   var st = S.story; if (!st) return null;
   for (var i = 0; i < CHR.length; i++) {
     var c = CHR[i]; if (st.seen[c.id]) continue;
-    if (i > 0 && !st.seen[CHR[i - 1].id]) return null;
+    var era = c.id.charAt(0) === "e";
+    if (i > 0 && CHR[i - 1].id.charAt(0) === c.id.charAt(0) && !st.seen[CHR[i - 1].id]) continue;
     var last = (st.bkLast == null) ? -99 : st.bkLast;
-    if (S.day - last < 6) return null;
+    if (era && S.day - last < 6) continue;
     var ok = false; try { ok = c.cond(); } catch (e) {}
-    return ok ? c : null;
+    if (ok) return c;
   }
   return null;
 }
