@@ -5003,6 +5003,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
     h += ovBookChron();
     h += ovCrisisSec();
     h += ovSilSec();
+    h += ovAllySec();
     ACTS.forEach(function (a, ai) {
       var qs = QS.filter(function (q) { return q.act === ai + 1; }), dn = qs.filter(function (q) { return qSt(q) === 4; }).length;
       if (!a.open(f)) { return; }
@@ -15342,6 +15343,68 @@ function areaUnlocked(id) { if (id === "unmadecity" || id === "lanterncity" || i
   var ovVStrTAUGHT = ovVStr;
   ovVStr = function () { return ovVStrTAUGHT() * (S && S.voidTaught ? 0.5 : 1); };
 })();
+// ---- ovALLY: The Ones Who Come Back. Kindness and cruelty both come home. Friends turn up when you least expect them, and some of them are not who you thought. ----
+var ALLYS = [
+  { id: "al_pip", name: "Pip", cond: function (f) { return f.sq_ash_well && f.qd_ash_well; }, day: 14, t: "Pip Was in the Baggage", sub: "A stowaway",
+    body: ["You find the stable-boy from the Iron Well asleep on a sack of grain, with a goat. You did not pack a goat.", "“I heard you were going to kill monsters,” Pip says. “I can hold the horse. I can hold a lot of things. I brought a goat.”", "He is eleven, he is brave in the way of someone who has not been hurt yet, and the whole camp adores him within the hour."],
+    ok: "Let him stay.", fx: function () { S.from.ashford = (S.from.ashford || 0) + 4; S.crowns += 60; log("Pip joins the column. He has named the goat Captain.", "e"); } },
+  { id: "al_orsk", name: "Orsk", cond: function (f) { return f.sh_spared_orsk; }, day: 28, t: "The Tollmaster Pays His Debt", sub: "Unmade City",
+    body: ["The man you frightened into stopping rides into your camp at dusk with forty men in grey and a cart of coin.", "“You could have killed me,” Orsk says. “You made me afraid instead, and I haven’t slept badly since. I have a debt, and I do not like debts.”", "His forty know every road past the Unmade City. They fall in behind you without being asked."],
+    ok: "Take his hand.", fx: function () { S.from.ashford = (S.from.ashford || 0) + 40; S.crowns += 300; log("Orsk and forty road-wardens ride under your banner.", "e"); } },
+  { id: "al_brask", name: "Brask", cond: function (f) { return f.sh_fang_saved; }, day: 34, t: "The Fang Remembers", sub: "Omg, no way",
+    body: ["A red banner on the ridge. You reach for your sword. It is the Fang: thirty of them, in the open, as they always are.", "At the front is the initiate you let live. He has a scar through his eyebrow and a new name, and he is grinning like a boy who has just won a fight.", "“The Veil said you were soft,” Brask calls. “The Fang says a debt is a debt. We’ve come to repay it. Loudly.”"],
+    ok: "Welcome the Fang.", fx: function () { S.from.ashford = (S.from.ashford || 0) + 30; try { silFade(0); } catch (e) {} log("Thirty Fang riders follow Brask under your banner.", "e"); } },
+  { id: "al_golem", name: "The Weeping Golem", cond: function (f) { return f.sg_co_1 === "a"; }, day: 40, t: "The Golem Comes to Find You", sub: "Stonehold",
+    body: ["The ground shakes in a slow, patient rhythm. Your sentries are shouting.", "It is the golem you let grieve. It walked from the Keep. It has been walking for eleven days. It is carrying a banner that someone has painted a bad little sun on. The sun is yours.", "It does not speak. It sets the banner down at your feet, and sits, and the water on its face is not sorrow this time."],
+    ok: "Raise the banner.", fx: function () { S.from.ashford = (S.from.ashford || 0) + 25; S.crowns += 120; log("The Weeping Golem walks beside the column. Children wave at it.", "e"); } },
+  { id: "al_fleet", name: "The Ghost Fleet", cond: function (f) { return f.sg_gf_1 === "a"; }, day: 46, t: "Sails in the Fog", sub: "Spiritveil",
+    body: ["The mist comes in off the water, and it is full of sails.", "Forty ghost ships, the fleet you gave a harbour. Their captain steps ashore soundless as breath and kneels. “You gave us rest,” he says. “We have a little left to give.”", "Sixty drowned sailors climb the beach and fall in, their wet footprints evaporating as they go. Nobody in your camp says a word. Then someone starts to cheer."],
+    ok: "Let them march.", fx: function () { S.from.ashford = (S.from.ashford || 0) + 60; log("Sixty drowned sailors march under your banner.", "e"); } },
+  { id: "al_choir", name: "The Iron Choir", cond: function (f) { return f.sg_ch_5 === "a"; }, day: 56, t: "The Machines Sing for You", sub: "Metalcrown",
+    body: ["A hum you can feel in your teeth. Over the hill comes a column of machines, marching in step, singing.", "It is the Choir. They conduct themselves now. They found you because you listened. The lead engine bows, with a sound like a cathedral door.", "Noctis is standing beside you. He is crying. You did not know he could. “They’re beautiful,” he says. “They chose to come.”"],
+    ok: "Stand with the Choir.", fx: function () { S.from.ashford = (S.from.ashford || 0) + 50; log("The Iron Choir sings your army to the field.", "e"); } },
+  { id: "al_unmaker", name: "The Unmaker", cond: function (f) { return f.sh_unmaker_heard && f.qd_sh_crown; }, day: 62, t: "The Unmaker Was Never Dead", sub: "Crazy twist",
+    body: ["A hooded figure sits at your campfire. Nobody saw it arrive. Nobody is afraid, which is the first strange thing.", "“You thought I died in the chapel,” the Unmaker says, and pushes back the hood. It is the Councillor who gave you the quest. The same voice. The same hands.", "“Someone had to be unmade so the Council could live. I chose to be that someone. Twice. Now I would like to be of use.”"],
+    ok: "Hear the plan.", fx: function () { S.from.ashford = (S.from.ashford || 0) + 20; cp().qpts = (cp().qpts || 0) + 2; log("The Unmaker, who was never dead, joins your shadow.", "e"); } },
+  { id: "al_courier", name: "The Quiet Courier", cond: function (f) { return f.qd_sh_veil; }, day: 66, t: "Whose Daughter", sub: "Twist",
+    body: ["The courier who gave you the Slate takes off the black glass shard, and then the grey mask.", "She is perhaps twenty, and she has Veilrend’s eyes. “He wasn’t my master,” she says. “He was my father. He forgot he was. I made sure the Order was never mine. I gave you the Slate so someone would end it kindly.”", "She puts the shard in your hand. “Now it is yours. Do something better with it.”"],
+    ok: "Take it.", fx: function () { S.crowns += 500; cp().qpts = (cp().qpts || 0) + 2; log("The courier was Veilrend’s daughter all along.", "e"); } },
+  { id: "al_voyager", name: "The Voyager", cond: function (f) { return f.qd_voyagerpast; }, day: 70, t: "He Laughs", sub: "Voyager",
+    body: ["Around the fire, someone tells a bad joke about a horse. Nobody expects the Voyager to laugh.", "He does. It is startled out of him. It is the first time anyone in camp has heard it. He puts a hand over his mouth, as if ashamed of the noise, and then he laughs again, and the whole camp falls apart.", "Later he sits next to you and doesn’t say anything for a long time. “I had forgotten,” he says. “That a thing could be simply funny.”"],
+    ok: "Sit with him.", fx: function () { cp().qpts = (cp().qpts || 0) + 1; log("The Voyager laughed.", "e"); } },
+  { id: "al_elyndra", name: "Elyndra", cond: function (f) { return f.qd_sp_elyndra; }, day: 74, t: "The Promise She Never Told", sub: "Elyndra",
+    body: ["Elyndra finds you alone. For the first time she is unsure of her words.", "“I said there was a promise I never kept. It was this. When we met, I promised myself I would remember you even when you forgot yourself. Magic was going to take your name. I resolved to be the place where it was kept.”", "She takes your hand. “I’ve been keeping it all this time.”"],
+    ok: "Thank her.", fx: function () { cp().qpts = (cp().qpts || 0) + 2; log("Elyndra has kept your name all along.", "e"); } },
+  { id: "al_iseult", name: "Iseult", cond: function (f) { return f.qd_fr_court; }, day: 78, t: "She Felt Something", sub: "Frostgrave",
+    body: ["A letter in neat, hesitant script: three words, then a long blot.", "“I felt it.” Then, below, in a different pen: “I felt it again. It was loud. I did not know how loud it was. I was crying in the Prophet Court and nobody knew how to behave.”", "Underneath, a small drawing of a sun, badly done, as if by someone who has never drawn one."],
+    ok: "Keep the letter.", fx: function () { S.crowns += 200; cp().qpts = (cp().qpts || 0) + 1; log("Iseult can feel again.", "e"); } },
+  { id: "al_kaelren", name: "Kaelren", cond: function (f) { return f.qd_sv_5; }, day: 82, t: "Kaelren Chooses Himself", sub: "Stormreach",
+    body: ["Kaelren is waiting at the edge of the camp with his pack and his hand on his sword. You assume he is leaving.", "“I have always sacrificed,” he says. “I never once picked a thing because I wanted it. I want this. I want to stay. I want to stay because I like you, and for no better reason.”", "He grins, windblown and young. “It is the most selfish thing I have ever done. I love it.”"],
+    ok: "Tell him to stay.", fx: function () { cp().qpts = (cp().qpts || 0) + 2; S.from.ashford = (S.from.ashford || 0) + 15; log("Kaelren stays because he wants to.", "e"); } },
+  { id: "al_noctis", name: "Noctis", cond: function (f) { return f.qd_ch_5; }, day: 90, t: "He Chose", sub: "Noctis",
+    body: ["Noctis stands before the whole army, and the army goes quiet. He is the one every NPC fears.", "“I was a weapon,” he says. “People used me. I was never chosen.” He kneels, and it is the most unsettling and moving thing in the world. “I am choosing now.”", "Nobody in the camp looks away. Nobody says a word. Somewhere at the back a hard old sergeant starts, quietly, to weep."],
+    ok: "Raise him up.", fx: function () { cp().qpts = (cp().qpts || 0) + 3; S.from.ashford = (S.from.ashford || 0) + 30; log("Noctis chose his side.", "e"); } }
+];
+function allyCard(a) { STORY["ally_" + a.id] = { t: a.t, sub: a.sub, body: a.body, choices: [{ k: "ok", t: a.ok, fx: a.fx }], bk: 0 }; return "ally_" + a.id; }
+function allyTick() {
+  var st = S.story; if (!st || sheet || S.intro || S.ended || st.cur || !cp().on) return;
+  S.ally = S.ally || { seen: {}, last: -9 }; var today = Math.floor(S.day);
+  if (today - S.ally.last < 5) return;
+  for (var i = 0; i < ALLYS.length; i++) {
+    var a = ALLYS[i]; if (S.ally.seen[a.id] || today < a.day) continue;
+    var ok = false; try { ok = a.cond(cp().f); } catch (e) {} if (!ok) continue;
+    S.ally.seen[a.id] = today; S.ally.last = today; var id = allyCard(a); st.cur = id; log(a.t, "e"); openSheet("story", id); return;
+  }
+}
+if (typeof storyQueue === "function") { var storyQueueAL = storyQueue; storyQueue = function () { storyQueueAL(); try { allyTick(); } catch (e) {} }; }
+function ovAllySec() {
+  try {
+    var a = (S.ally && S.ally.seen) || {}; if (!Object.keys(a).length) return "";
+    var h = '<div class="sec">Those who came back</div>';
+    ALLYS.forEach(function (x) { if (a[x.id]) h += '<div class="row" style="padding:.3rem 0;border-top:1px solid #2a241a"><b>' + x.name + '</b> · ' + x.t + ' <span style="opacity:.6">(day ' + a[x.id] + ')</span></div>'; });
+    return h;
+  } catch (e) { return ""; }
+}
 // ---- ovNGP: New Game+. Begin again carrying a Legacy. The world remembers, and it is harder. ----
 function ngpCyc() { try { var L = JSON.parse(localStorage.getItem("vh_legacy") || "null"); return (L && L.cyc) || 0; } catch (e) { return 0; } }
 function ngpMine() { return (S && S.ngp) || 0; }
