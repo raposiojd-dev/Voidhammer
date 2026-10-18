@@ -5000,6 +5000,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
     h += tierSection();
     h += wildSection();
     h += ovLairLore();
+    h += ovBookChron();
     ACTS.forEach(function (a, ai) {
       var qs = QS.filter(function (q) { return q.act === ai + 1; }), dn = qs.filter(function (q) { return qSt(q) === 4; }).length;
       if (!a.open(f)) { return; }
@@ -14343,6 +14344,164 @@ function ovLairVideo(name) {
   v.play().catch(function () { v.muted = true; v.play().catch(close); });
 }
 document.addEventListener("click", function (e) { var t = e.target && e.target.closest && e.target.closest("[data-lairvid]"); if (t) { e.stopPropagation(); ovLairVideo(t.getAttribute("data-lairvid")); } }, true);
+// ---- ovBOOK: The Emberhold Chronicle (Book I, The Shattered Gate) as lantern pages through the campaign ----
+var BOOK1 = [
+  { id: "k1", t: "The Wall That Breathes", sub: "The Emberhold Chronicle · Chapters I–II", cond: function () { return S.day >= 2; }, body: [
+    "A page reaches you in the lantern light. The Lantern-keepers say it is memory, and that a lantern does not keep time in order. It may be a place that has already fallen. It may be one that has not yet.",
+    "The sky above Emberhold was the colour of worn steel. Not storming, not clear. A sky that had stopped arguing with itself. They called it <i>safe morning</i>. Kaelren never trusted names like that. Names were what people used when they wanted reality to behave.",
+    "He crossed the northern wall, left foot first, seven steps, and then the fracture line. Always the fracture line. The crack ran through stone older than the city’s pride. He laid a hand on it and it was warm. That was new.",
+    "“Did you feel that?” Tavian asked.",
+    "“No,” said Kaelren, and the lie arrived before he chose it. That bothered him more than the warmth.",
+    "Below them Emberhold went on: smoke in clean threads, bakers, bells, the market opening on time. Everyone agreed it had been a quiet night. Kaelren had begun to wonder what, exactly, they had agreed to."
+  ] },
+  { id: "k2", t: "The Council of Stability", sub: "The Emberhold Chronicle · Chapter III", cond: function () { return S.day >= 9; }, body: [
+    "The Hall pretended nothing was wrong. It was very good at pretending. The Council spoke in procedure, and procedure had no word for the northern wall.",
+    "“A civilian was lost in the collapse,” Kaelren said. “Captain Sera was there.”",
+    "“No such incident is recorded.” The chief councillor did not look up. “Captain Sera was reassigned three cycles ago.”",
+    "“She died.”",
+    "“No official death was recorded.”",
+    "For a moment Kaelren forgot how to breathe. Not from grief. Grief at least implied certainty. This was theft. They were not remembering her wrongly. They were letting the city decide she had become administratively optional. At the back of the room Tavian looked at the floor, and did not defend her. Kaelren hated him for it, and then hated himself more, because once he might have done the same.",
+    "When the Codex prism was brought to settle it, the prism flickered, split, and refused to show either answer."
+  ] },
+  { id: "k3", t: "Small Wrongness", sub: "The Emberhold Chronicle · Chapters IV–V", cond: function () { return S.day >= 18; }, body: [
+    "Daren the grain merchant stopped in the middle of a sentence. He had been telling his son to fetch crates from storage. The sentence no longer existed inside him. He looked at the boy, and for one empty second there was no recognition. Not confusion. Worse. The absence of a connection that should have been automatic.",
+    "The customer smiled politely. “From storage?” she prompted. Daren nodded too quickly. “Yes. From storage.” The sentence was repaired after the fact. It was not remembered.",
+    "Mira, who sold ribbon three stalls down, saw all of it. Nobody screamed. The market simply agreed to go on. That was the horror of it: not that something was wrong, but that normal was so quick to close over it.",
+    "Kaelren found the young man at the edge of the market, standing where attention would not settle. Unconfirmed. When Kaelren reached for him the pendant at the stranger’s throat pulsed once, and every person in the square lost the same two seconds.",
+    "The Codex rejected the stranger’s classification outright. He was not a threat. He was not a citizen. He was not a person the city had a word for.",
+    function () { return S.kael !== "away" ? "If Kaelren walks with you, he goes very quiet at his own name on the page, and does not say why." : ""; }
+  ] },
+  { id: "k4", t: "Shadows Under Emberhold", sub: "The Emberhold Chronicle · Chapters VI–VII", cond: function () { var f = cp().f; return f.q3done || S.day >= 40; }, body: [
+    "Under the lower streets something was moving that the city’s logic did not account for. Mira heard it first, through her cellar floor: not footsteps, not water. A shifting of agreements. She told no one, because telling someone would have made it a rumour, and rumours in Emberhold were quietly retired.",
+    "The incidents came faster. A bell rang the wrong hour and then had always rung it. A bridge was a day’s walk longer than anyone remembered.",
+    "Kaelren and Mira lived through the same distortions and carried them differently. He felt his own memories shifting under him, a floor tilting a degree at a time. She felt the people around her drift together, agreeing on a past that was a little smaller than the real one.",
+    "It took them both to see the shape of it. One of them could feel the wound. The other could see where the skin was closing over."
+  ] },
+  { id: "k5", t: "The Boy Who Does Not Belong", sub: "The Emberhold Chronicle · Chapters VIII–X", cond: function () { return (cp().f.q3done && S.day >= 30) || S.day >= 70; }, body: [
+    "He did not know his name. He did not know the word for the grey stone under his feet or for the feeling in his chest when Kaelren was near. He knew pressure, and the way the world seemed to try to decide what he was before he had finished existing.",
+    "Kaelren saw a protective anomaly. The stranger saw nothing that held still, and a man who did not try to name him. That was the first time he felt safe. He could not say why, so he trusted it. Not logically. Structurally.",
+    "The city forgot him a little more each day. Not all at once. A face half-remembered at a gate. A name that slid off the tongue. Mira tested it, asking the same question of twelve people, and found they had agreed to forget him. Kaelren found something else: the facts faded, but the feeling of him stayed. Emotional memory outlasted the factual kind.",
+    "The Council denied it all. A procedure was invoked. The Codex refused to classify a man it could not record, and the fear in the chamber was dressed as order."
+  ] },
+  { id: "k6", t: "The Sky Does Not Break", sub: "The Emberhold Chronicle · Chapters XI–XII", cond: function () { return cp().f.q4done || S.day >= 95; }, body: [
+    "The sky fractured without sound. Not breaking, not cracking. Losing agreement across itself. A child ran into the open square beneath it, and Kaelren caught him before he thought. The boy did not struggle. He was looking up, not afraid. Recognising.",
+    "“He’s already here,” the child whispered.",
+    "Then the sky corrected itself, or pretended it never changed. From the market Mira watched a woman point upward and lower her hand halfway through the motion. A man said, “Did you see that?” and immediately, “It was nothing.” The city was not denying the fracture. It was agreeing to replace it.",
+    "Orders came that night. <i>Contain the anomaly. Classify. Erase uncertainty.</i> Kaelren refused. Not politically. Instinctively, because the order felt wrong in a way language could not hold.",
+    "Behind him the stranger stood, not hiding, not resisting. Waiting. And Kaelren did the unusual thing. He did not define him. He let him be a man who was not yet finished."
+  ] },
+  { id: "k7", t: "Hunters Awake", sub: "The Emberhold Chronicle · Chapters XIII–XIV", cond: function () { return mcFellCount() >= 1 || cp().f.q5done; }, body: [
+    "People began stopping in the middle of what they were doing. Not collapse. Hesitation, as if their instructions were arriving late. Soldiers argued, but not in disagreement. They were unsure what they had been ordered to do.",
+    "Deep in the Council’s Codex the oldest defences woke. Hunters, built before the city had a name, and never meant to wake. Orders arrived in parallel versions and no one could say which was first. “The system is responding,” a councillor said, “to something that is not classified.” That sentence should not have been possible.",
+    "Then the Void touched Emberhold for the first time. Kaelren was mid-sentence with an old comrade when the man’s name vanished from him. For ten seconds it was simply gone. It came back in pieces, and he could not trust the pieces. Memory had become a thing with a clock on it.",
+    "The stranger felt it too, and he felt it differently. Something pulled at him, not at his body but at his shape, as if the world were deciding which parts of him were allowed to stay consistent. For the first time he was afraid. Not of dying. Of being partly removed."
+  ] },
+  { id: "k8", t: "A Signal, Not Yet a King", sub: "The Emberhold Chronicle · Chapter XV", cond: function () { return cp().f.q5done || S.day >= 140; }, body: [
+    "On the field the noise began to leave. Not quiet. Removed. Soldiers stopped mid-motion, not hurt, only paused, as if breathing were no longer fully agreed upon. Kaelren felt it in his body: even fear arrived late.",
+    "In the deepest layer of the Codex a signal flickered. It was not incoming. It was not external. It was already inside. A label held for the length of one breath before it was struck out: <b>HARROWED KING: UNCONFIRMED PRESENCE LAYER.</b>",
+    "No confirmation was allowed. Only residue.",
+    "Kaelren stood in the silence and understood without language what he was looking at. This was not a collapse. This was a preparation."
+  ] },
+  { id: "k9", t: "The Gate Appears", sub: "The Emberhold Chronicle · Chapters XVI–XVIII", cond: function () { return cp().f.q6done || mcFellCount() >= 2; }, body: [
+    "The Gate opened above the old square, and reality became physical. For three seconds Kaelren could not say which way he was facing. The young man stood closer to it than anyone else could bear. Nobody asked him to. It was simply where he was.",
+    "The Void did not attack. Voidborn drifted through the streets and watched the children, with no aggression at all. One soldier lowered his spear, because lifting it felt pointless. Fear had stopped being a feeling and become a question.",
+    "The first casualty never died. A woman in the lower market lost every memory of her family while she was still standing there, alive and breathing. Her body stayed. Her husband held her hand and she thanked him politely, as one thanks a stranger.",
+    "That was when the horror stopped being about fighting."
+  ] },
+  { id: "k10", t: "He Kneels", sub: "The Emberhold Chronicle · Chapters XIX–XXI", cond: function () { return cp().f.q7done || mcFellCount() >= 3; }, body: [
+    "Kaelren chose. Not the Council, not the order, not the wall he had walked for years. He chose the stranger. It was the first irreversible betrayal of authority, and it did not feel like a decision. It felt like gravity.",
+    "The Harrowed King arrived without sound. There was no sound until he was already there. A tall shape in a crown of dead embers, and a silence around him like a held breath. Kaelren, who had never knelt to anyone, was on his knees before he knew why.",
+    "The Hunters had no answer. The Void waited behind its king, patient as stillness.",
+    "The stranger collapsed. Kaelren caught him and held him like a person, not an anomaly. In the last of his strength the young man said one word that no one there recognised, and everyone felt it, the way you feel a name you have lost."
+  ] },
+  { id: "k11", t: "Emberhold Still Stands", sub: "The Emberhold Chronicle · Chapters XXII–XXV", cond: function () { return S.day >= 190 || (cp().f.q7done && S.day >= 150); }, body: [
+    "Emberhold still stood. That was the cruelty of it. The survivors rebuilt out of habit, laying stone before they had grieved, because grief postponed was grief survived.",
+    "The Council began to blame the stranger, quietly, in the language of safety. Kaelren stopped answering their summons. He sat by a cot in a lower ward and watched a man breathe.",
+    "The pendant pulsed once, and the young man was gone. Seconds. The bed was empty, the blanket flat. Kaelren refused it so hard the room seemed to flinch. When he came back, the pendant pulsing like a heartbeat that did not belong to anyone, Kaelren did not say a word.",
+    "Later, alone, he said it out loud for the first time: he could no longer tell the difference between duty and attachment. The Wall of Emberhold had cracked, and nobody saw it but the one person who would not say so."
+  ] },
+  { id: "k12", t: "The Gate Does Not Close", sub: "The Emberhold Chronicle · Chapter XXVI", cond: function () { return S.day >= 215 || (cp().f.q7done && S.day >= 175); }, body: [
+    "Silence returned to Emberhold, and it was the wrong kind. Too complete. The kind of quiet a house has when someone has just left it.",
+    "The young man was alive, and unstable, and unconscious but still somehow present, so that the air bent a little around his cot. The Harrowed King was gone from sight and not from the city. And the Gate stayed open just enough to be noticed.",
+    "Emberhold burned under an inverted sky. Kaelren knelt in the ash. Over his heart, the pendant beat on, a drum that belonged to no one yet.",
+    "<i>This is the end of the first book of the Emberhold pages. The lantern has more. It does not say whether they have happened.</i>"
+  ], ok: "Close the page" }
+];
+(function () {
+  BOOK1.forEach(function (c) {
+    STORY[c.id] = { t: c.t, sub: c.sub, body: c.body.map(function (x, i) { return typeof x === "function" ? x : x; }), ok: c.ok || "Fold the page", bk: 1 };
+  });
+})();
+if (typeof storySheet === "function") {
+  var storySheetBK = storySheet;
+  storySheet = function (id) {
+    var d = STORY[id];
+    if (d && d.bk) {
+      var b = d.body; d.body = b.map(function (x) { return typeof x === "function" ? x() : x; }).filter(function (x) { return !!x; });
+      var h = storySheetBK(id); d.body = b; return h;
+    }
+    return storySheetBK(id);
+  };
+}
+function ovBookNext() {
+  var st = S.story; if (!st) return null;
+  for (var i = 0; i < BOOK1.length; i++) {
+    var c = BOOK1[i]; if (st.seen[c.id]) continue;
+    if (i > 0 && !st.seen[BOOK1[i - 1].id]) return null;
+    var last = (st.bkLast == null) ? -99 : st.bkLast;
+    if (S.day - last < 6) return null;
+    var ok = false; try { ok = c.cond(); } catch (e) {}
+    return ok ? c : null;
+  }
+  return null;
+}
+if (typeof storyQueue === "function") {
+  var storyQueueBK = storyQueue;
+  storyQueue = function () {
+    storyQueueBK();
+    var st = S.story; if (!storyOn() || sheet || S.intro || S.ended || (st && st.cur)) return;
+    if (!st.seen.p0) return;
+    var c = ovBookNext(); if (!c) return;
+    st.seen[c.id] = 1; st.cur = c.id; st.bkLast = S.day;
+    S.crowns += 120; if (typeof addXp === "function") addXp(40 * (1 + tier()));
+    log("Lantern page: " + c.t, "e"); openSheet("story", c.id);
+  };
+}
+function ovBookChron() {
+  try {
+    var st = S.story; if (!st || !st.on) return "";
+    var n = 0; BOOK1.forEach(function (c) { if (st.seen[c.id]) n++; });
+    var h = '<div class="sec">The Emberhold Chronicle · ' + n + " of " + BOOK1.length + " pages</div>";
+    if (!n) return h + '<p class="dim-t">Lantern pages arrive as the world turns. The first comes soon.</p>';
+    BOOK1.forEach(function (c) {
+      if (!st.seen[c.id]) return;
+      h += '<div class="row" style="padding:.35rem 0;border-top:1px solid #2a241a"><b style="color:#e3c27a">' + c.t + '</b> <span style="opacity:.6">' + c.sub.replace("The Emberhold Chronicle · ", "") + '</span> <button data-bk="' + c.id + '" style="float:right">Read again</button></div>';
+    });
+    return h;
+  } catch (e) { return ""; }
+}
+document.addEventListener("click", function (e) { var t = e.target && e.target.closest && e.target.closest("[data-bk]"); if (t) { e.stopPropagation(); var id = t.getAttribute("data-bk"); if (S.story) S.story.cur = null; openSheet("story", id); } }, true);
+var BOOKS_AFTER = [
+  ["Book II · The Soulforged Awakening", "The Voyager dies, briefly. The Hammer wakes through him, and he begins to remember a self that is not yet his."],
+  ["Book III · Emberhold Besieged", "The Void arrives as weather, not army. The walls fail, the Council breaks, and Kaelren becomes the last wall."],
+  ["Book IV · The Void That Remembers", "Memory horror. The Void is not empty. He learns he has been its conduit for a thousand years, victim and origin both."],
+  ["Book V · The Soulforged Hammer", "Elyndra gives up her memories to steady him. The Harrowed King hesitates. A name that was never speakable is spoken."],
+  ["Book VI · The Reforging", "Nine Realms become one world. The Void is sealed, not destroyed. A child asks if the Realms ever existed. They survived inside us."]
+];
+if (typeof storyEndingBlock === "function") {
+  var storyEndingBlockBK = storyEndingBlock;
+  storyEndingBlock = function () {
+    var h = storyEndingBlockBK();
+    try {
+      var st = S.story; if (!st || !st.on) return h;
+      var n = 0; BOOK1.forEach(function (c) { if (st.seen[c.id]) n++; });
+      if (!n) return h;
+      h += '<p class="dim-t">You read ' + n + " of " + BOOK1.length + " lantern pages. The lantern holds more.</p>";
+      BOOKS_AFTER.forEach(function (b) { h += "<p><b>" + b[0] + ".</b> " + b[1] + "</p>"; });
+    } catch (e) {}
+    return h;
+  };
+}
 
   // ---- input ----
   (function () {
