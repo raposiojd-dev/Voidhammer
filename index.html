@@ -15473,6 +15473,14 @@ function ovGateOpening() {
   save();
   return '<h2>The Gate Wakes</h2><p class="sub">The Realm Gate · Flameborne coast</p><p>You hold up the Grey Writ and the arch drinks the light off the seal. Stones that have sat silent for a hundred years begin to hum, one note at a time, until the whole coast is singing.</p><p>A column of pale light stands in the arch. On the other side you can hear a city, faint as a memory: bells, wheels, a crowd.</p><p>It is open. Not only for you. Caravans will use it, and lords, and every column that dares. The world just got a great deal smaller, and a great deal more dangerous.</p><p class="dim-t">+160 xp, +100 crowns. You can now cross to any realm: ' + ovGateToll() + ' crowns and a day each way.</p><div class="btns"><button class="solid" data-act="close">Step through</button></div>';
 }
+// ---- ovFIX: a quest is not offered until you can actually reach the person who gives it. ----
+(function () {
+  QS.forEach(function (q) {
+    if (!q.hub || q.leg || q.__hubWrapped) return;
+    var need0 = q.need; q.__hubWrapped = 1;
+    q.need = function (f) { try { if (!areaUnlocked(q.hub)) return false; } catch (e) {} return need0 ? need0(f) : true; };
+  });
+})();
 // ---- ovNGP: New Game+. Begin again carrying a Legacy. The world remembers, and it is harder. ----
 function ngpCyc() { try { var L = JSON.parse(localStorage.getItem("vh_legacy") || "null"); return (L && L.cyc) || 0; } catch (e) { return 0; } }
 function ngpMine() { return (S && S.ngp) || 0; }
