@@ -4690,7 +4690,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
   function dmgEn(e, dmg, dx, dy, kn) {
     sfx("hit");
     if (e.dead || e.gone || e.yield) return false; if (AR && AR.p && AR.p.buffT > AR.t) dmg *= 1.3; var d = Math.hypot(dx, dy) || 1;
-    if (e.d.boss && sk("giantslayer")) dmg *= 1 + 0.10 * sk("giantslayer"); if (e.d.boss) dmg *= 1 + affSum("boss") + skfx("bossdmg"); if (e.d.boss && sk("bossbane")) dmg *= 1 + 0.20 * sk("bossbane"); if (COOP.guest() && COOP.hit(e, dmg, dx, dy)) return true; e.hp -= dmg; e.flash = 0.2; e.kx = dx / d * (kn || 130) * (e.d.boss ? 0.12 : 0.5); e.ky = dy / d * (kn || 130) * (e.d.boss ? 0.12 : 0.5); AR.fx.push({ x: e.x, y: e.y - 8, t: 0.2 });
+    if (e.d.boss && sk("giantslayer")) dmg *= 1 + 0.10 * sk("giantslayer"); if (e.d.boss) dmg *= 1 + affSum("boss") + skfx("bossdmg"); if (e.d.boss && sk("bossbane")) dmg *= 1 + 0.20 * sk("bossbane"); if (COOP.guest() && COOP.hit(e, dmg, dx, dy)) return true; dmg = silStab(e, dmg); e.hp -= dmg; e.flash = 0.2; e.kx = dx / d * (kn || 130) * (e.d.boss ? 0.12 : 0.5); e.ky = dy / d * (kn || 130) * (e.d.boss ? 0.12 : 0.5); AR.fx.push({ x: e.x, y: e.y - 8, t: 0.2 });
     AR.floats.push({ x: e.x, y: e.y - 16, t: 0.7, s: String(Math.round(dmg * 10) / 10) });
     if (e.d.yieldAt && e.hp <= e.d.yieldAt && e.hp > 0 && !cp().f.rusk) { e.yield = true; e.hp = Math.max(1, e.hp); }
     if (e.hp <= 0) killEn(e); return true;
@@ -4766,7 +4766,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
     if (p.hp < p.max && a.t - (p.hurtT || -9) > 3) p.hp = Math.min(p.max, p.hp + skfx("regen") * dt);
     if (aShootP) { aShootP = false; aShoot(); }
     if (aCastP) { aCastP = false; dlgOpen("cast"); return; }
-    var v = aInput(), sp = 54 * (1 + affSum("spd") + skfx("aspd")) * ((p.adrT || 0) > a.t ? 1.25 : 1) * (a.sp.over ? 1.35 : 1);
+    var v = aInput(), sp = 54 * (1 + affSum("spd") + skfx("aspd")) * ((p.adrT || 0) > a.t ? 1.25 : 1) * silSpd() * (a.sp.over ? 1.35 : 1);
     if (v[0] || v[1]) {
       p.face = Math.abs(v[0]) > Math.abs(v[1]) ? { x: Math.sign(v[0]), y: 0 } : { x: 0, y: Math.sign(v[1]) }; p.anim += dt * 9; stepSfx(dt);
       var nx = p.x + v[0] * sp * dt, ny = p.y + v[1] * sp * dt;
@@ -4796,7 +4796,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
       if (e.stun > 0) { e.stun -= dt; return; }
       var tg = COOP.target(e, p), dx = tg.x - e.x, dy = tg.y - e.y, d = Math.hypot(dx, dy);
       if (a.sp.over && e.aggro && d > 140) e.aggro = false;
-      if (!e.aggro && d < (e.d.boss ? 120 : 76)) { e.aggro = true; if (e.d.boss && typeof VO !== "undefined") VO.pool("hero", "boss", 8000); } if (!e.aggro) return;
+      if (!e.aggro && d < (e.d.boss ? 120 : 76) * silMul(e)) { e.aggro = true; if (e.d.boss && typeof VO !== "undefined") VO.pool("hero", "boss", 8000); } if (!e.aggro) return;
       var spd = e.d.sp * (e.d.ranged ? 0.8 : 1) * (e.mul || 1);
       if (e.d.ranged) {
         var want = d < 54 ? -1 : d > 86 ? 1 : 0, mx = dx / (d || 1) * want * spd * dt, my = dy / (d || 1) * want * spd * dt;
@@ -5002,6 +5002,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
     h += ovLairLore();
     h += ovBookChron();
     h += ovCrisisSec();
+    h += ovSilSec();
     ACTS.forEach(function (a, ai) {
       var qs = QS.filter(function (q) { return q.act === ai + 1; }), dn = qs.filter(function (q) { return qSt(q) === 4; }).length;
       if (!a.open(f)) { return; }
@@ -13863,7 +13864,7 @@ function ovGoCell(c, kind) {
   (S.allies || []).forEach(function (h) { if (h.mode === "follow") { h.x = S.px + 24; h.y = S.py + 18; } });
   ovCellSync(); cam.x = S.px; cam.y = S.py;
   var days = kind === "gate" ? 1 : 2; S.day += days; S.tickDay = S.day;
-  if (kind === "tunnel") { var lost = 0; Object.keys(S.from || {}).forEach(function (k) { if (typeof S.from[k] === "number" && S.from[k] > 0) { var n = Math.floor(S.from[k] * 0.2); if (n > 0) { S.from[k] -= n; lost += n; } } }); if (lost) { S.loot.shards = (S.loot.shards || 0) + lost; toast(lost + " of your men came up with the Void in their eyes. Their names are already fading."); } }
+  if (kind === "tunnel") { var lost = 0; Object.keys(S.from || {}).forEach(function (k) { if (typeof S.from[k] === "number" && S.from[k] > 0) { var n = Math.floor(S.from[k] * silTunnelLoss()); if (n > 0) { S.from[k] -= n; lost += n; } } }); if (lost) { S.loot.shards = (S.loot.shards || 0) + lost; toast(lost + " of your men came up with the Void in their eyes. Their names are already fading."); } }
   toast(kind === "gate" ? "The gate closes behind you. " + ovConts()[c].n + "." : "You come up into the " + ovConts()[c].n + " hills with grit in your teeth.");
   try { news("You crossed to " + ovConts()[c].n + " by " + (kind === "gate" ? "the Realm Gate." : "the Shadow tunnels.")); } catch (e) {}
   try { VO.pool("hero", "town", 0); } catch (e) {}
@@ -14831,6 +14832,201 @@ function ovCrisisSec() {
       opts: [{ t: q[15], reward: { xp: r.xp, crowns: r.crowns }, set: (function () { var o = {}; o["sq_" + id] = "a"; return o; })(), text: q[16] },
              { t: q[17], reward: i % 3 === 0 ? { xp: r.xp, item: Math.min(3, act) } : i % 3 === 1 ? { xp: r.xp, perm: "pts" } : { xp: r.xp, perm: "hp" }, set: (function () { var o = {}; o["sq_" + id] = "b"; return o; })(), text: q[18] }] });
   });
+})();
+// ---- ovSIL: the Silence. Shadowdeep's quiet arts: sneak through dungeons, strike the unaware, vanish. Everything costs a little of your name. ----
+function silS() { if (!S.sil) S.sil = { on: 0, faded: 0, kills: 0, hide: 0 }; return S.sil; }
+function silR(id) { return (S.skills && S.skills[id]) || 0; }
+function silHas() { return silR("sil_step") > 0; }
+function silMul(e) {
+  var s = silS(); if (!AR || !AR.p) return 1;
+  if (AR.t < (s.hide || 0)) return 0.1;
+  if (!s.on) return 1;
+  if ((AR.p.atk || 0) > 0 || (AR.p.atk2 || 0) > 0) return 1;
+  return Math.max(0.12, 0.62 - 0.08 * silR("sil_step") - 0.04 * silR("sil_cloak"));
+}
+function silSpd() { var s = silS(); if (!s.on) return 1; return Math.min(0.9, 0.6 + 0.05 * silR("sil_cloak") + 0.02 * silR("sil_step")); }
+function silTunnelLoss() { return 0.2 * (1 - Math.min(3, silR("sil_walker")) / 3); }
+function silStab(e, dmg) {
+  var s = silS(); if (!e || e.aggro || e.yield || !s.on) return dmg;
+  var r = silR("sil_blade"); if (r < 1) return dmg;
+  var m = e.d.boss ? 1 + 0.25 * r : 2 + 0.5 * r;
+  var extra = 0;
+  if (e.d.boss && silR("sil_nightblade") > 0 && !e.sneaked) { e.sneaked = 1; extra = (e.hpm || e.hp) * 0.15; }
+  if (AR && AR.floats) AR.floats.push({ x: e.x, y: e.y - 26, t: 0.9, s: "Backstab", col: "#cfc0ff" });
+  e.aggro = true; return dmg * m + extra;
+}
+function silFade(n) {
+  var s = silS(); s.faded += n || 1;
+  if (s.faded >= 12 && Math.random() < 0.2 && typeof removeMen === "function") { removeMen(1); try { aToast("A soldier of yours did not know your face, and left."); } catch (e) {} }
+}
+// ---- the skill branch ----
+(function () {
+  if (typeof SKILLS === "undefined" || SKILLS.some(function (b) { return b.branch === "Silence"; })) return;
+  var G = "sil_init";
+  function it(o) { o.storyq = G; return o; }
+  SKILLS.push({ branch: "Silence", blurb: "The Quiet Order's arts. Walk unheard, strike the unaware, vanish. Every kill takes a little of your name.", items: [
+    it({ id: "sil_step", name: "Soft Step", pos: [0, 2], max: 5, per: "sneaking: enemies notice you from much less far", desc: "Toggle Sneak. Enemies hear you from half as far, and every rank halves it again. You move slower while you do it." }),
+    it({ id: "sil_cloak", name: "Shadow Cloak", pos: [1, 1], lv: 3, req: "sil_step", max: 3, per: "quieter, and faster while sneaking", desc: "Dark cloth over every buckle. The dark does the rest." }),
+    it({ id: "sil_blade", name: "Blade in the Dark", pos: [1, 3], lv: 3, req: "sil_step", max: 5, per: "sneak attacks on the unaware hit far harder", desc: "Strike someone who has not seen you, while sneaking, for 2.5x to 4.5x. Bosses take a quarter more per rank." }),
+    it({ id: "sil_assassinate", name: "Assassinate", pos: [2, 0], lv: 6, req: "sil_cloak", max: 3, active: 1, per: "silently kill the nearest unaware foe", desc: "Slay the nearest foe who has not seen you, without a sound. Costs half a heart and a little of your name: past twelve, your own men begin to forget you." }),
+    it({ id: "sil_smoke", name: "Smoke and Silence", pos: [2, 2], lv: 6, req: "sil_step", max: 3, active: 1, per: "everyone loses you for a moment", desc: "A breath of black. Enemies near you drop their guard, and no one will notice you for a few seconds." }),
+    it({ id: "sil_purse", name: "Light Fingers", pos: [2, 4], lv: 6, req: "sil_blade", max: 5, per: "+8 crowns from each silent kill", desc: "A quiet kill leaves a full purse and an empty pair of hands." }),
+    it({ id: "sil_walker", name: "Underway Walker", pos: [3, 1], lv: 12, req: "sil_smoke", max: 3, per: "fewer of your men lost to the shadow tunnels", desc: "You learn the tunnels' habits. Fewer of your men come up Void-touched. At the third rank, none." }),
+    it({ id: "sil_nightblade", name: "Nightblade", pos: [3, 3], lv: 12, req: "sil_blade", max: 1, per: "your first sneak strike on a boss takes 15% of its life", desc: "The mark of the Quiet Order. A boss that has not seen you loses a seventh of its life to the first blow." })
+  ] });
+  Object.assign(SKACT, {
+    sil_assassinate: { cd: 10, cost: function () { return { hp: 0.5 }; }, txt: "half a heart and a little of your name", eff: function (r) { return "Slay the nearest foe who has not seen you. Bosses lose " + Math.round((0.12 + 0.05 * r) * 100) + "% of their life instead."; } },
+    sil_smoke: { cd: 30, cost: function () { return { cr: 6 }; }, txt: "6 crowns", eff: function (r) { return "Enemies near you lose track of you, and no one notices you for " + (4 + r) + " seconds."; } }
+  });
+  try { if (typeof SKG !== "undefined") { SKG.sil_step = '<path d="M14 36c0-6 4-8 4-14s-2-8-2-10M26 36c0-6 4-8 4-14s-2-8-2-10"/>'; SKG.sil_cloak = '<path d="M24 8c-7 4-10 12-10 28h20c0-16-3-24-10-28z"/>'; SKG.sil_blade = '<path d="M12 36L36 12M30 12h6v6M12 36l4 0"/>'; SKG.sil_assassinate = '<path d="M24 8v28M18 14l6-6 6 6M16 36h16"/>'; SKG.sil_smoke = '<path d="M12 32c-4 0-4-6 0-6 0-6 8-8 12-4 4-4 12-2 12 4 4 0 4 6 0 6z"/>'; SKG.sil_purse = '<path d="M16 16h16l4 18H12zM20 16c0-4 8-4 8 0"/>'; SKG.sil_walker = '<path d="M8 34h32M12 34c0-10 6-16 12-16s12 6 12 16"/>'; SKG.sil_nightblade = '<path d="M24 8l6 12 12 2-9 8 3 12-12-6-12 6 3-12-9-8 12-2z"/>'; } } catch (e) {}
+  try { SKUI_ICON.Silence = "sil_step"; } catch (e) {}
+})();
+if (typeof skWhy === "function") {
+  var skWhySIL = skWhy;
+  skWhy = function (it) { if (it && it.storyq === "sil_init" && !(S.camp && S.camp.f && S.camp.f.sil_init)) return "The Quiet Order has not taught you yet. Find the courier in the Unmade City."; return skWhySIL(it); };
+}
+if (typeof skSecs === "function") {
+  var skSecsSIL = skSecs;
+  skSecs = function () {
+    var r = skSecsSIL(), b = skBranch("Silence");
+    if (b && S.camp && S.camp.f && (S.camp.f.sil_init || silHas())) r.push({ i: 19, name: "Silence", blurb: b.blurb, items: b.items });
+    return r;
+  };
+  try { SKUI_GROUPS.push(["The Quiet Order", [19]]); } catch (e) {}
+}
+function silUse(id) {
+  if (!AR || !AR.p || sheet || AR.dlg) return; var p = AR.p, r = silR(id), A = SKACT[id];
+  SKT.a = SKT.a || {}; if ((SKT.a[id] || 0) > AR.t) return;
+  var live = AR.en.filter(function (e) { return !e.dead && !e.gone && !e.yield; });
+  var pp;
+  if (id === "sil_assassinate") {
+    var best = null, bd = 38; live.forEach(function (e) { if (e.aggro) return; var d = Math.hypot(e.x - p.x, e.y - p.y); if (d < bd) { bd = d; best = e; } });
+    if (!best) { aToast("No one close enough who has not seen you."); return; }
+    pp = skPay(id, r, false); if (typeof pp === "string") { aToast(pp); return; } skSpend(pp, false); SKT.a[id] = AR.t + A.cd; p.atk = 0.3;
+    if (best.d.boss) { dmgEn(best, (best.hpm || best.hp) * (0.12 + 0.05 * r), best.x - p.x, best.y - p.y, 60); best.aggro = true; aToast("The blade goes in. It notices."); }
+    else { dmgEn(best, best.hp + 1, best.x - p.x, best.y - p.y, 20); var cr = 8 * silR("sil_purse"); if (cr) { S.crowns += cr; AR.floats.push({ x: best.x, y: best.y - 28, t: 1, s: "+" + cr, col: "#e8d080" }); } silS().kills++; silFade(1); aToast("Silent."); }
+  } else if (id === "sil_smoke") {
+    pp = skPay(id, r, false); if (typeof pp === "string") { aToast(pp); return; } skSpend(pp, false); SKT.a[id] = AR.t + A.cd; p.atk = 0.3;
+    live.forEach(function (e) { if (Math.hypot(e.x - p.x, e.y - p.y) < 90 && !e.d.boss) { e.aggro = false; e.stun = Math.max(e.stun || 0, 2 + 0.6 * r); e.cd = Math.max(e.cd, 0.4); } });
+    silS().hide = AR.t + 4 + r; AR.wave = { x: p.x, y: p.y - 6, t: 0.5 }; aToast("Smoke. Silence.");
+  }
+}
+if (typeof skUseArea === "function") {
+  var skUseAreaSIL = skUseArea;
+  skUseArea = function () { var id = skActId(); if (id && id.indexOf("sil_") === 0) { silUse(id); return; } return skUseAreaSIL(); };
+}
+if (typeof skUseField === "function") {
+  var skUseFieldSIL = skUseField;
+  skUseField = function () { var id = skActId(); if (id && id.indexOf("sil_") === 0) { try { fieldMsg("The Quiet Order works in the dark, not on the field."); } catch (e) {} return; } return skUseFieldSIL(); };
+}
+// ---- the sneak button ----
+(function () {
+  var bar = document.querySelector(".abtns"); if (!bar || document.getElementById("sneakbtn")) return;
+  var b = document.createElement("button"); b.id = "sneakbtn"; b.textContent = "Sneak"; b.hidden = true;
+  b.addEventListener("click", function (e) { e.stopPropagation(); var s = silS(); s.on = s.on ? 0 : 1; upd(); try { if (AR) aToast(s.on ? "You go quiet." : "You stop hiding."); } catch (x) {} });
+  bar.insertBefore(b, bar.firstChild);
+  function upd() { var s = silS(); b.hidden = !(typeof AR !== "undefined" && AR && silHas()); b.textContent = s.on ? "Sneaking" : "Sneak"; b.style.boxShadow = s.on ? "0 0 0 2px #9a8ab8 inset, 0 0 10px #6a5a9a" : ""; }
+  setInterval(function () { try { upd(); } catch (e) {} }, 400);
+  document.addEventListener("keydown", function (e) { if (e.key === "c" || e.key === "C") { if (typeof AR !== "undefined" && AR && silHas() && !sheet) { var s = silS(); s.on = s.on ? 0 : 1; upd(); } } });
+})();
+function ovSilSec() {
+  try {
+    var f = S.camp && S.camp.f; if (!f || !f.sil_init) return "";
+    var s = silS();
+    return '<div class="sec">The Quiet Order</div><div class="row" style="padding:.3rem 0;border-top:1px solid #2a241a">Silent kills <b>' + s.kills + '</b> · Fading <b style="color:' + (s.faded >= 12 ? "#ff9a3c" : "#cfc0ff") + '">' + s.faded + '</b> <span style="opacity:.6">' + (s.faded >= 12 ? "your own men sometimes do not know you" : "twelve and your men begin to forget you") + "</span></div>";
+  } catch (e) { return ""; }
+}
+// ---- ovSHAD: THE QUIET ORDER. A Shadowdeep storyline: train as an assassin, unlock the Silence, open the tunnels, and decide who the Faceless Council becomes. ----
+(function () {
+  function EB(id, name, hp, col, band) { ET[id] = { hp: hp, sp: 36, dmg: 2, col: col, band: band, name: name, big: 1, boss: 1 }; }
+  EB("sh_listener", "The Listener", 12, "#2a2a3a", "#b8a8e0");
+  EB("sh_floor", "Floor-Mistress Thessaly", 14, "#3a2a4a", "#e0c8ff");
+  EB("sh_toll", "Tollmaster Orsk", 13, "#5a4a3a", "#e0c070");
+  EB("sh_fang", "Fang Initiate Brask", 15, "#4a2a2a", "#ff8a8a");
+  EB("sh_namewarden", "The Name-Warden", 16, "#1a1a2a", "#ffffff");
+  EB("sh_deepwalker", "The Deep Walker", 17, "#18181e", "#a0a0d8");
+  EB("sh_unmaker", "The Unmaker", 19, "#101018", "#d0b0ff");
+  EB("sh_seven", "Councillor Seven", 18, "#2a2a38", "#c0b0ff");
+  EB("sh_veilrend", "Veilrend, Hollowed", 24, "#0c0c14", "#f0e0ff");
+  function m(id) { return function (f) { return !!f["qd_" + id]; }; }
+  function sq(o) { o.opt = 1; o.act = o.act || 2; o.hub = "unmadecity"; Q(o); }
+  function stats(s) { return function () { if (typeof silFade === "function") silFade(s); }; }
+  sq({ id: "sh_slate", act: 2, npc: "shcourier", npcDef: { name: "A Quiet Courier", col: "#2e2e42", hair: "#16161e", idle: "Do not look at me. I am not here. That is the whole of the lesson." }, need: function (f) { return !!f.q3done; },
+    name: "The Slate", zone: "shlisten", zname: "The Listening Room", th: "cave", lv: 3, seed: 601, pal: ["assassin", "hollowsent"], boss: "sh_listener", obj: "Cross the Listening Room without being heard.",
+    gate: "A cellar room whose floor remembers every step, and whose walls have ears of black glass.",
+    intro: "I have a slate with your name on it. Do not ask who wrote it. Veilrend wants to know if you can cross a room without being a sound. The Listening Room is below us. Go in quiet. Go in slow. If you have to fight, you have already failed, but you may still survive. The Order takes survivors.",
+    turn: "You came back, which is rarer than you think. I will tell you what the Order does not tell most people. The silence is not an art. It is a bargain. It will take things from you, a little at a time, and the first thing it takes is your name. Do you still want it?",
+    opts: [{ t: "“Take me in. Swear me to the Order.”", reward: { xp: 500, crowns: 200 }, set: { sil_init: 1, sh_order: 1 }, eff: function () { cp().f.sil_init = 1; }, text: "The courier presses a black glass shard into your palm. It is cold, and it does not reflect your face. The Silence skills open to you now. You can feel the Order’s eyes, though no one is there." },
+      { t: "“Teach me the quiet. I swear to no one.”", reward: { xp: 500, perm: "pts" }, set: { sil_init: 1, sh_free: 1 }, eff: function () { cp().f.sil_init = 1; }, text: "“A free knife,” the courier says. “Rare. They will not trust you, and they will use you anyway.” The Silence skills open to you now, and no one in the Order owes you a thing." }] });
+  sq({ id: "sh_floors", act: 2, npc: "shthessaly", npcDef: { name: "Mistress Thessaly", col: "#4a3a5a", hair: "#cfc0e0", idle: "A floor can sing, if you let it. I teach the floors to stay silent." }, need: m("sh_slate"),
+    name: "The Nightingale Floor", zone: "shfloor", zname: "The Nightingale Hall", th: "cave", lv: 3, seed: 602, pal: ["assassin", "knife"], boss: "sh_floor", obj: "Cross the Nightingale Hall and spar with Thessaly.",
+    gate: "A long hall of polished boards that sing under the lightest step.",
+    intro: function () { var f = cp().f; return (f.sh_order ? "You swore. That means I may be unkind. " : "You swore to no one. That means I need not be gentle with you either way. ") + "Every plank in this hall sings if you let weight fall wrong. Cross it. Then I will see what is behind your eyes with a blade."; },
+    turn: "You walked the singing floor and you made it hum only twice. That is better than most of my graduates. Now. Sneak, and I will tell you the first secret of the Silence: the loudest thing in a room is not the footstep. It is the intent.",
+    opts: [{ t: "“Teach me to move without wanting to.”", reward: { xp: 540, perm: "pts" }, set: { sh_floor_a: 1 }, text: "“Good,” Thessaly says, and for the first time her voice has an edge of warmth. “Not wanting is the hardest thing in the world. You will fail at it every day. That is how you know you are doing it.”" },
+      { t: "“Teach me where to put the knife.”", reward: { xp: 540, item: 3 }, set: { sh_floor_b: 1 }, text: "“Behind the third rib,” she says, and demonstrates on an air that is suddenly very cold. “Never in front. The front watches you back.”" }] });
+  sq({ id: "sh_contract1", act: 2, npc: "shcourier", need: m("sh_floors"), name: "The First Contract", zone: "shtoll", zname: "The Toll House", th: "cave", lv: 3, seed: 603, pal: ["bandit", "assassin"], boss: "sh_toll", obj: "Reach Tollmaster Orsk in the Toll House.",
+    gate: "A toll house on a road no one has used in a year, its lamp still burning.",
+    intro: "Your first contract. Tollmaster Orsk taxes the roads past the Unmade City and sends none of it home. The Order would like him to stop. There are three ways to do this, and I have been told not to say which one I prefer. Go quietly, if you can. See him. Decide.",
+    turn: "Orsk is finished one way or another. I will not ask which. The Order will know. It always does. The question I will ask is whether you slept.",
+    opts: [{ t: "“He is dead. It was quiet.”", reward: { xp: 600, crowns: 450 }, set: { sh_killed_orsk: 1 }, eff: stats(2), text: "The courier slides a coin across the table, then a second. “For the work,” they say. “The second is for the sleep. You will want it.”" },
+      { t: "“He lives. I made him afraid enough to stop.”", reward: { xp: 600, item: 2, perm: "hp" }, set: { sh_spared_orsk: 1 }, text: "“Hm,” the courier says. “A mercy. The Order will say it was weakness. The Order has never once been right about what weakness is.”" }] });
+  sq({ id: "sh_rival", act: 3, npc: "shrook", npcDef: { name: "Fang-Sergeant Rook", col: "#5a2a2a", hair: "#2a1010", idle: "The Veil loves the quiet. The Fang loves the result. We are not friends." }, need: m("sh_contract1"),
+    name: "The Fang Initiate", zone: "shfang", zname: "The Fang Pit", th: "cave", lv: 3, seed: 604, pal: ["assassin", "knife"], boss: "sh_fang", obj: "Face the Fang Initiate in the Fang Pit.",
+    gate: "A sunken pit lit from below by a red lamp, with the marks of a thousand quick endings on the floor.",
+    intro: "You smell like the Veil. Soft, careful, a little afraid of making noise. The Fang does not hide. We kill in the open, and we leave the body for the crows to read. One of my initiates has refused to leave the Pit. Beat him, or I will make you an example of why quiet is not enough.",
+    turn: "He is down. Not dead, unless you chose it. The Fang saw it, and the Fang does not forget, though it will forgive if you pay. Which will you pay?",
+    opts: [{ t: "“Let him live. Teach him the quiet.”", reward: { xp: 640, perm: "pts" }, set: { sh_fang_saved: 1 }, text: "Rook watches the boy limp out of the Pit. “Teach him?” she says. “If he learns half of what you have, he will be dangerous.”" },
+      { t: "“Finish it. Make it a lesson.”", reward: { xp: 640, crowns: 500 }, set: { sh_fang_killed: 1 }, eff: stats(2), text: "It is quick. Rook nods once, a gesture so small it could be a twitch. “The Fang will remember,” she says. “So will the Veil.”" }] });
+  sq({ id: "sh_oath", act: 3, npc: "shvoice", npcDef: { name: "Veilrend’s Voice", col: "#1a1a28", hair: "#0a0a12", idle: "Veilrend speaks through whoever is nearest. Today, it is me." }, need: m("sh_rival"),
+    name: "The Oath of No Name", zone: "shoath", zname: "The Hall of Erased Names", th: "cave", lv: 4, seed: 605, pal: ["hollowsent", "assassin"], boss: "sh_namewarden", obj: "Pass the Name-Warden in the Hall of Erased Names.",
+    gate: "A hall whose walls are carved smooth where names once were.",
+    intro: "To belong to the Order you give up your name. Not the sound of it. The weight of it. Every Nightblade is, in the end, a hole in a shape. The Name-Warden stands at the door of the Hall. He will take it from you if you let him, and you will be given another name that no one else may use. This is the choice the Order cannot make for you.",
+    turn: "It is done. You carry it now, either a name you gave away or a name you kept. Both are heavy. Do you know which one you are?",
+    opts: [{ t: "“Take it. I will be whoever the Order needs.”", reward: { xp: 800, crowns: 600, item: 3 }, set: { sh_sworn: 1 }, eff: stats(6), text: "It leaves you like a held breath. For an instant you cannot say what you were called. The Name-Warden bows, and the hall feels a little warmer, like a house with one more resident. Your men, later that week, will hesitate when they see your face." },
+      { t: "“Keep it. A knife with a name is more dangerous.”", reward: { xp: 800, perm: "hp", item: 2 }, set: { sh_named: 1 }, text: "The Name-Warden is silent for a long moment. Then, unexpectedly, he laughs. “They always say that,” he says. “Almost none of them are right. Almost.”" }] });
+  sq({ id: "sh_tunnels", act: 3, npc: "shpale", npcDef: { name: "Underway-Guide Pale", col: "#3a3a4e", hair: "#8a8aa0", idle: "The roads are for people who want to be seen. I know the other ones." }, need: m("sh_oath"),
+    name: "The Underways", zone: "shunderway", zname: "The Black Underway", th: "mine", lv: 4, seed: 606, pal: ["hollowsent", "wraith"], boss: "sh_deepwalker", obj: "Walk the Black Underway to its end.",
+    gate: "A stair that goes down for longer than the Unmade City is deep, and into a cold that smells of nothing.",
+    intro: "Under every Realm there is a road no one built. The Underways connect Lightforge’s cellars to Flameborne’s forges to Frostgrave’s ice. I will give you the way. But the Underway is not empty. Something walks it that was once a courier, and has been walking since before the first Gate. Make it let you pass.",
+    turn: "You walked it and it let you. Now every mouth of the Underway in every Realm will open for you. Tell me which you want, and I will mark it. Not all of your men will come up the other side whole. That cost is the road’s.",
+    opts: [{ t: "“Open every tunnel mouth. I will go everywhere.”", reward: { xp: 900, crowns: 400 }, set: { tunnels: 1, sh_tunnels_all: 1 }, eff: function () { cp().f.tunnels = 1; }, text: "Pale draws a line across the back of your hand with a cold finger. Nothing is left there, and everything is. From now on the shadow tunnels on all nine continents will open when you touch them. The Walker skill will make them kinder." },
+      { t: "“Open only Shadowdeep’s way, to and from the Unmade City.”", reward: { xp: 900, perm: "pts", item: 2 }, set: { tunnels: 1, sh_tunnels_one: 1 }, eff: function () { cp().f.tunnels = 1; }, text: "Pale nods. “A cautious road is a longer-lived one.” The tunnels are still open to you, but the Order will watch which you use, and for what." }] });
+  sq({ id: "sh_unmaker", act: 4, npc: "shfaceless", npcDef: { name: "A Faceless Councillor", col: "#26263a", hair: "#12121c", idle: "Do not say my name. I do not have it today." }, need: m("sh_tunnels"),
+    name: "The One Who Unmakes", zone: "shunmaker", zname: "The Unmade Chapel", th: "cave", lv: 4, seed: 607, pal: ["assassin", "inkling"], boss: "sh_unmaker", obj: "Find the one who unmakes the Faceless Council.",
+    gate: "A chapel in which every pew has a clean gap where somebody used to sit.",
+    intro: "Another seat is empty on the Council. Another face unmade. We cannot say which of us it was, because we have forgotten who sat there. Someone is doing this on purpose. The Order says you are the best knife it has. Find the Unmaker.",
+    turn: "The Unmaker is gone. It was not the one we thought it was. I will say only that it wore a Councillor’s robe, and that it had a reason. A good one. Do you want to hear it?",
+    opts: [{ t: "“Tell me. I want to understand.”", reward: { xp: 1000, perm: "pts" }, set: { sh_unmaker_heard: 1 }, text: "“It was afraid,” the Councillor says. “The Council had begun to hunt its own to keep its secrets. The Unmaker was trying to make us less of a thing worth hunting. It was not wrong.”" },
+      { t: "“Do not tell me. I do not want to know.”", reward: { xp: 1000, crowns: 700 }, set: { sh_unmaker_unheard: 1 }, eff: stats(1), text: "“Wise,” the Councillor says. “Knowledge in this city is a kind of debt.”" }] });
+  sq({ id: "sh_knife", act: 4, npc: "shfaceless", need: m("sh_unmaker"), name: "A Knife in the Council", zone: "shseven", zname: "The Faceless Chamber", th: "cave", lv: 4, seed: 608, pal: ["assassin", "hollowsent"], boss: "sh_seven", obj: "Reach Councillor Seven in the Faceless Chamber.",
+    gate: "A chamber of seven seats, where six of the chairs are empty and one of them is humming.",
+    intro: "Councillor Seven wants to rule alone. He is the last of the old guard and he has been buying the Order’s loyalty one name at a time. I am not asking you to kill him. I am telling you what he will do if no one does. Choose.",
+    turn: "It is done. Seven’s seat is empty. Whatever you chose, the Order will say it was meant. They always do.",
+    opts: [{ t: "“He dies. Quietly.”", reward: { xp: 1200, crowns: 900 }, set: { sh_seven_dead: 1 }, eff: stats(3), text: "The humming stops. The Order never mentions it again, but when you walk through the Unmade City, people clear a little more room than before." },
+      { t: "“Warn him, and let the Council judge him in the open.”", reward: { xp: 1200, item: 3, perm: "hp" }, set: { sh_seven_warned: 1 }, text: "Seven is taken alive. The trial is loud and public and unprecedented. In Shadowdeep, where nothing is ever said aloud, it changes everything." }] });
+  sq({ id: "sh_veil", act: 4, npc: "shvoice", need: m("sh_knife"), name: "Veilrend’s Last Contract", zone: "shveilrend", zname: "The Hollow Sanctum", th: "cave", lv: 5, seed: 609, pal: ["hollowsent", "wraith"], boss: "sh_veilrend", obj: "Answer Veilrend’s last contract in the Hollow Sanctum.",
+    gate: "A chamber at the bottom of the Order, where something once great sits very still.",
+    intro: "Veilrend is hollow. Fifty years of unmaking himself for the Order, and there is nothing left in the chair but the habit of command. He has one last contract and I am not permitted to say what it is. Go to him. He will tell you in his own voice.",
+    turn: "He asked you to end him. He asked you to do it quietly, because he has been quiet all his life. You did what you did. I will carry the answer to the Order.",
+    opts: [{ t: "“I gave him the peace he asked for.”", reward: { xp: 1600, crowns: 1000, perm: "hp" }, set: { sh_veil_ended: 1 }, eff: stats(2), text: "The Voice bows to the floor. “He was the Order,” it says. “Now it is only a rumour of a thing. Perhaps that is what it was always meant to be.”" },
+      { t: "“I could not. I left him with his silence.”", reward: { xp: 1600, item: 3, perm: "pts" }, set: { sh_veil_left: 1 }, text: "“Mercy and cruelty are one blade,” the Voice says. “He sits there still. The Order serves a king who has forgotten how to give orders. Whether that is a kindness, I cannot say.”" }] });
+  sq({ id: "sh_crown", act: 5, npc: "shfaceless", need: m("sh_veil"), name: "The Faceless Crown", zone: "shcrown", zname: "The Council’s Vault", th: "cave", lv: 5, seed: 610, pal: ["assassin", "wraith"], boss: "sh_namewarden", obj: "Decide the fate of the Faceless Council.",
+    gate: "A vault in which seven masks hang on seven hooks, all of them smiling.",
+    intro: "The Order is leaderless. The Council is nearly empty. There are seven masks in the Vault, and the Vault will give one to anyone who walks in and is not turned away. You might take a seat, and rule Shadowdeep without a name. Or you might break the masks, and let Shadowdeep be what it has never been: seen. It will cost you either way.",
+    turn: "The Vault is quiet. Whatever you chose, the city is waiting to see what you have made of it.",
+    opts: [{ t: "Take a seat. Rule the Order without a face.", reward: { xp: 2000, crowns: 1500, item: 3, perm: "hp" }, set: { sh_crowned: 1 }, eff: stats(8), text: "The mask fits as if it had been waiting. For a moment you are not anyone. Then you are the Faceless Council, and you have never had a name at all. Shadowdeep’s lords will know you by a sign, and by nothing else." },
+      { t: "Break the masks. Let Shadowdeep be seen.", reward: { xp: 2000, perm: "pts", item: 3 }, set: { sh_dissolved: 1 }, text: "You break them one by one. Each shatters with a small sigh, like a person giving up a secret. By morning, for the first time in a thousand years, Shadowdeep’s rulers have names, and the Realm does not know what to do with them." }] });
+  // quiet contracts: repeatable-feeling one-offs for the sneaking toolkit
+  function ct(id, name, npcName, zone, boss, intro, turn, a, ra, b, rb, lv, seed) {
+    EB("sh_" + id, boss, 12 + lv * 2, "#26263a", "#c0b0ff");
+    sq({ id: "shc_" + id, act: 3, npc: "shcourier", need: m("sh_floors"), name: name, zone: "shc_" + id, zname: zone, th: "cave", lv: lv, seed: seed, pal: ["assassin", "knife"], boss: "sh_" + id, obj: "Finish the contract: " + name + ".", gate: "A door that was left unlocked for you.", intro: intro, turn: turn,
+      opts: [{ t: a, reward: { xp: 500 + lv * 90, crowns: 350 + lv * 80 }, set: (function () { var o = {}; o["shc_" + id] = "a"; return o; })(), eff: stats(1), text: ra }, { t: b, reward: { xp: 500 + lv * 90, perm: "pts" }, set: (function () { var o = {}; o["shc_" + id] = "b"; return o; })(), text: rb }] });
+  }
+  ct("cup", "The Poisoned Cup", "", "The Banquet Cellar", "The Cup-Bearer", "A lord is to be poisoned at a banquet. Not by you. Your job is to make sure no one else is poisoned by accident. Get into the cellar, find the cup, and decide whose it is.", "The cup is found. The lord will drink nothing more than wine tonight. Whose name is on the cup?", "“The lord’s. Let him drink.”", "He drank. By morning he was a legend and a corpse. The Order paid in the usual coin.", "“The poisoner’s. Let them learn.”", "The poisoner drank it. The lord never knew, and thanked the cup-bearer for the wine.", 3, 611);
+  ct("ledger", "The Ledger Thief", "", "The Counting-Room", "The Ledger-Keeper", "A ledger that names too many names has to disappear. Take it from the Counting-Room, past a keeper who does not sleep. Do not let him see your face.", "You have the ledger. It names the Order, too. What do we do with it?", "“Burn it. The Order does not exist on paper.”", "The page curls in the fire. For a night, the Order is a rumour again.", "“Keep it. A name in a book is a leash.”", "You hide it where only you can find it. It will be useful someday, and dangerous the day after.", 4, 612);
+  ct("witness", "The Silent Witness", "", "The Court Annex", "The Witness-Bailiff", "A witness will speak at dawn. Their words would hang three good people. Reach them first. Silence them, or convince them. The Order does not care how.", "The witness will say nothing at dawn. I will not ask how you achieved it.", "“Silenced. For good.”", "The witness is not seen again. The three go free. Nobody asks about the witness.", "“Persuaded. They are on a ship tonight.”", "The witness boards a ship with a purse and a new name. The three go free, and a stranger in the south has a secret.", 4, 613);
+  ct("crown", "The Borrowed Seal", "", "The Chancery Vault", "The Seal-Warden", "A noble’s seal is wanted for one night. Get into the Chancery and press it into wax, then replace it before dawn. They must never know it was missing.", "The wax is pressed. By dawn a letter will bear a name that never wrote it. This is how the Order moves a Realm.", "“Use it to forge the order.”", "The forged letter moves a garrison. A battle that would have happened does not.", "“Return it unpressed. I will not forge a noble’s hand.”", "You return the seal, wax-free. The courier looks at you for a long moment. “Principles are expensive in this trade,” they say. “Keep them.”", 5, 614);
 })();
 
   // ---- input ----
