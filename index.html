@@ -15709,6 +15709,24 @@ var VLORDS = [
     q.need = function (f) { try { if (!areaUnlocked(q.hub)) return false; } catch (e) {} return need0 ? need0(f) : true; };
   });
 })();
+// ---- ovCALM: one pop-up at a time, and a long breath between them. Story cards, crises, helpers, book pages and roadside events share one clock. ----
+(function () {
+  var GAP_DAYS = 9, GAP_SEC = 240, lastT = 0;
+  function calmOk() {
+    if (!S) return true;
+    if (S.story && S.story.seen && !S.story.seen.p0) return true; // the very first card
+    var d = S.popDay == null ? -99 : S.popDay;
+    return (S.day - d >= GAP_DAYS) && (Date.now() - lastT >= GAP_SEC * 1000);
+  }
+  var osOld = openSheet;
+  openSheet = function (kind, id) {
+    if (kind === "hkev" && !calmOk()) return;
+    if (kind === "story" || kind === "hkev") { try { S.popDay = S.day; lastT = Date.now(); } catch (e) {} }
+    return osOld(kind, id);
+  };
+  var sqOld = storyQueue;
+  storyQueue = function () { if (!calmOk()) return; sqOld(); };
+})();
 // ---- ovNGP: New Game+. Begin again carrying a Legacy. The world remembers, and it is harder. ----
 function ngpCyc() { try { var L = JSON.parse(localStorage.getItem("vh_legacy") || "null"); return (L && L.cyc) || 0; } catch (e) { return 0; } }
 function ngpMine() { return (S && S.ngp) || 0; }
