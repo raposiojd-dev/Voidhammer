@@ -12597,7 +12597,7 @@ try { ["npc_child", "npc_elder", "npc_farmer", "npc_guard", "npc_inn", "npc_merc
 // ---- painted 3/4-view settlements and buildings on the world map (img/map/*.webp) ----
 var WM2 = {};
 function wm2(k) { var im = WM2[k]; if (!im) { im = WM2[k] = new Image(); im.src = "img/map/" + k + ".webp"; } return im.complete && im.naturalWidth ? im : null; }
-try { ["village", "town", "castle", "farm", "mill", "smithy", "granary", "tavern", "barracks", "market", "beacon", "yard"].forEach(wm2); } catch (e) {}
+try { ["village", "town", "castle", "farm", "mill", "smithy", "granary", "tavern", "barracks", "market", "beacon", "yard", "lair"].forEach(wm2); } catch (e) {}
 function wm2Img(g, k, x, y, w, al) {
   var im = wm2(k); if (!im) return false; var h = w * im.naturalHeight / im.naturalWidth;
   g.save(); g.imageSmoothingEnabled = true; g.imageSmoothingQuality = "high"; if (al !== undefined) g.globalAlpha = al;
@@ -12659,7 +12659,7 @@ function gateImgP(k, im) {
   try {
     var c = document.createElement("canvas"); c.width = im.naturalWidth; c.height = im.naturalHeight; var x = c.getContext("2d"); x.drawImage(im, 0, 0);
     var d = x.getImageData(0, 0, c.width, c.height), p = d.data, W = c.width, H = c.height, i, xx, yy;
-    var fx = k === "cave_mouth" ? 0.2 : k === "town_gate" ? 0.14 : 0.06, ft = k === "cave_mouth" ? 0.22 : 0, fb = 0.04;
+    var fx = k === "lair" ? 0.05 : k === "cave_mouth" ? 0.2 : k === "town_gate" ? 0.14 : 0.06, ft = k === "cave_mouth" ? 0.22 : 0, fb = 0.04;
     function sm(t) { t = Math.max(0, Math.min(1, t)); return t * t * (3 - 2 * t); }
     for (yy = 0; yy < H; yy++) for (xx = 0; xx < W; xx++) {
       i = (yy * W + xx) * 4; var r = p[i], gg = p[i + 1], b = p[i + 2], al = p[i + 3];
@@ -12677,8 +12677,8 @@ function gateImgP(k, im) {
 function ovGateArt(g, a) {
   try {
     (a.sp.exits || []).forEach(function (e) {
-      var k = ovGateKind(e); if (!k) return; if (k === "town_gate" && (a.sp.th === "cave" || (ATH[a.sp.th] && ATH[a.sp.th].cave))) k = "cave_mouth"; var im0 = wm2(k); if (!im0) return; var im = gateImgP(k, im0);
-      var cx = (e.x + e.w / 2) * ATS, by = (e.y + e.h) * ATS + 3, w = k === "cave_mouth" ? 64 : k === "dungeon_gate" ? 52 : 60, h = w * im0.naturalHeight / im0.naturalWidth;
+      var k = ovGateKind(e); if (!k) return; try { if (e.cave !== undefined) { var lcv = ovPoi().caves[e.cave]; if (lcv && lcv.lair) k = "lair"; } } catch (x) {} if (k === "town_gate" && (a.sp.th === "cave" || (ATH[a.sp.th] && ATH[a.sp.th].cave))) k = "cave_mouth"; var im0 = wm2(k); if (!im0) return; var im = gateImgP(k, im0);
+      var cx = (e.x + e.w / 2) * ATS, by = (e.y + e.h) * ATS + 3, w = k === "lair" ? 76 : k === "cave_mouth" ? 64 : k === "dungeon_gate" ? 52 : 60, h = w * im0.naturalHeight / im0.naturalWidth;
       if (e.x === 0) cx = Math.max(cx, w * 0.42); if (e.x >= a.W - 1) cx = Math.min(cx, a.W * ATS - w * 0.42);
       if (e.y === 0) by = Math.max(by, h * 0.92);
       var locked = e.lock && e.lock(), i, hs = function (n) { var q = Math.sin(n * 91.7 + e.x * 13.1 + e.y * 7.3) * 43758.5453; return q - Math.floor(q); };
@@ -12698,19 +12698,24 @@ function ovGateArt(g, a) {
         if (kind < 0.55) { g.strokeStyle = kind < 0.25 ? "rgba(70,96,44,0.9)" : "rgba(54,78,38,0.9)"; g.lineWidth = 1; for (var bl = -1; bl <= 1; bl++) { g.beginPath(); g.moveTo(tx + bl, ty); g.lineTo(tx + bl * 2.4 + (hs(i * 3 + bl) - 0.5) * 2, ty - 3 - hs(i + 140 + bl) * 4); g.stroke(); } }
         else { var rs = 1.5 + hs(i + 160) * 2.4; g.fillStyle = "rgba(" + (96 + hs(i) * 30 | 0) + "," + (90 + hs(i) * 24 | 0) + ",84,0.95)"; g.beginPath(); g.ellipse(tx, ty, rs * 1.3, rs * 0.85, 0, 0, 6.283); g.fill(); g.fillStyle = "rgba(0,0,0,0.3)"; g.fillRect(tx - rs, ty + rs * 0.5, rs * 2.2, 1); }
       }
-      if (!locked) { var pu = 0.3 + 0.18 * Math.sin(a.t * 2.5), gr = g.createRadialGradient(cx, by - h * 0.35, 1, cx, by - h * 0.35, w * 0.4); gr.addColorStop(0, "rgba(" + (k === "cave_mouth" ? "120,90,200" : "255,180,80") + "," + pu.toFixed(2) + ")"); gr.addColorStop(1, "rgba(0,0,0,0)"); g.globalCompositeOperation = "lighter"; g.fillStyle = gr; g.beginPath(); g.arc(cx, by - h * 0.35, w * 0.4, 0, 6.283); g.fill(); }
+      if (!locked) { var pu = 0.3 + 0.18 * Math.sin(a.t * 2.5), gr = g.createRadialGradient(cx, by - h * 0.35, 1, cx, by - h * 0.35, w * 0.4); gr.addColorStop(0, "rgba(" + (k === "lair" ? "255,70,30" : k === "cave_mouth" ? "120,90,200" : "255,180,80") + "," + pu.toFixed(2) + ")"); gr.addColorStop(1, "rgba(0,0,0,0)"); g.globalCompositeOperation = "lighter"; g.fillStyle = gr; g.beginPath(); g.arc(cx, by - h * 0.35, w * 0.4, 0, 6.283); g.fill(); }
       g.restore();
     });
   } catch (x) {}
 }
 var CAVN = -1, CAVB = null;
+function ovLairDraw(cv, x, y, now) {
+  if (!cv.lair || !wm2("lair")) return false;
+  var pl = 0.28 + 0.16 * Math.sin(now / 420 + cv.x); ctx.save(); var rg = ctx.createRadialGradient(x, y - 6, 4, x, y - 6, 40); rg.addColorStop(0, "rgba(255,70,30," + pl.toFixed(2) + ")"); rg.addColorStop(1, "rgba(255,70,30,0)"); ctx.fillStyle = rg; ctx.fillRect(x - 44, y - 50, 88, 88); ctx.restore();
+  wm2Img(ctx, "lair", x, y + 4, 58); return true;
+}
 function wmCaves(now) {
   try {
     var P = ovPoi(); if (!P || !P.caves) return; var best = -1, bd = 1e9;
     P.caves.forEach(function (cv, k) {
-      var x = cv.x * OT + cellOrg(curCell())[0], y = cv.y * OT + cellOrg(curCell())[1]; wm2Img(ctx, "cave", x, y, 44);
+      var x = cv.x * OT + cellOrg(curCell())[0], y = cv.y * OT + cellOrg(curCell())[1]; ovLairDraw(cv, x, y, now) || wm2Img(ctx, "cave", x, y, 44);
       var d = Math.hypot(S.px - x, S.py - y); if (d < bd) { bd = d; best = k; }
-      ctx.save(); ctx.font = "italic 9px 'IM Fell English',Georgia,serif"; ctx.textAlign = "center"; ctx.lineWidth = 3; ctx.strokeStyle = "rgba(10,8,6,0.85)"; ctx.strokeText(cv.name, x, y + 14); ctx.fillStyle = "#d8c8a8"; ctx.fillText(cv.name, x, y + 14); ctx.restore();
+      ctx.save(); ctx.font = "italic 9px 'IM Fell English',Georgia,serif"; ctx.textAlign = "center"; ctx.lineWidth = 3; ctx.strokeStyle = "rgba(10,8,6,0.85)"; ctx.strokeText(cv.name, x, y + (cv.lair ? 18 : 14)); ctx.fillStyle = cv.lair ? "#ff9a7a" : "#d8c8a8"; ctx.fillText(cv.name, x, y + (cv.lair ? 18 : 14)); ctx.restore();
     });
     CAVN = bd < 18 ? best : -1;
   } catch (x) {}
