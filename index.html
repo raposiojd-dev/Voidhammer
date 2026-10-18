@@ -5001,6 +5001,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
     h += wildSection();
     h += ovLairLore();
     h += ovBookChron();
+    h += ovCrisisSec();
     ACTS.forEach(function (a, ai) {
       var qs = QS.filter(function (q) { return q.act === ai + 1; }), dn = qs.filter(function (q) { return qSt(q) === 4; }).length;
       if (!a.open(f)) { return; }
@@ -14614,6 +14615,119 @@ if (typeof storyEndingBlock === "function") {
     } catch (e) {}
     return h;
   };
+}
+// ---- ovCRIS: Realm crises on a clock. Ignore one and the map changes; answer it and it costs you. Endless cycles. ----
+var CRISES = {
+  light: { cell: 5, t: "The Forgetting", s: [
+    "The Council of Remembers has begun to forget. Not their duties; their reasons. Their leader sat down to open the session and could not recall his own name, and no one in the Hall could supply it. Lightforge asks, quietly, whether you would sit with the Council and remember for them until the Citadel recovers.",
+    "Orders are being lost between Lightforge’s citadels. A garrison marched on a siege it was not told to abandon. A courier delivered a message to the person who sent it. The Council is paralysed by its own memory, and the Luminant Citadel’s walls have begun to dim.",
+    "The Luminant Citadel’s walls went dark in the night. The garrison still stands at the gates and cannot say why. Lightforge has not fallen. It has forgotten how to be defended." ] },
+  shadow: { cell: 7, t: "The Unmaking", s: [
+    "A seat on the Faceless Council is empty, and no one remembers who sat in it. Then another. Someone is unmaking the council one by one, and in Shadowdeep every face is a suspect. A Nightblade is asking whether you could find the knife before it finds the next name.",
+    "Two more seats gone. The Unmade City’s walls are thinner each morning, as though the city itself were being edited. No one in Shadowdeep trusts the person beside them, and the Realm’s agents have stopped reporting to one another.",
+    "The Faceless Council no longer exists. Shadowdeep’s towns each decided, separately and in silence, that they answer to no one. The paranoia is done; the Realm that most feared its own magic has been taken apart by it." ] },
+  ember: { cell: 4, t: "The Burning King", s: [
+    "The king on the Ember Throne is brilliant, and he is unstable, and the Realm worships him because of both. His fire is climbing. The Passion Court asks whether you could stand beside him in the Court and help him hold his temper before it holds him.",
+    "The Ember Throne burned a hall to the ground last night, with the court still in it. The king says it was an accident. The Realm believes him, because it needs to, and the fire in his eyes has not gone out.",
+    "The king burned out. In the morning the throne was warm and empty, and Flameborne’s castles each woke to find they had no one to follow. The riots started before the sun was up." ] },
+  storm: { cell: 2, t: "The Ageing Wind", s: [
+    "Every Stormreach rider who casts grows older by the day. The Free Assembly has noticed, and each rotating speaker is unwilling to be the one who orders the next casting. No one can decide who rides. The Assembly asks if you would take the command for one season.",
+    "The Assembly has voted, and voted again, and cannot agree. Riders are leaving the Wind Spire for lowlands to grow old slowly. Stormreach’s fastest couriers are now its eldest.",
+    "The Free Assembly dissolved. Each citadel of Stormreach decided for itself, and no two decided alike. The wind is still fast; there is simply no one to tell it where." ] },
+  stone: { cell: 3, t: "The Stone Tide", s: [
+    "The Gravem-masters of Stonehold are turning to stone, limb by limb. The Eternal Senate has lived through ten thousand winters and cannot decide, in this one, whether to forbid the magic or the mourning. A senator asks you to stand witness while they choose.",
+    "A Senator petrified mid-vote. The vote was never counted, and the Senate has been waiting for a verdict for eleven days. Stonehold’s great forges are idle; there is no hand left that can move them.",
+    "The Eternal Senate has become a gallery of statues. Stonehold still stands, but every wall in it is waiting for an order that will not be spoken. A fortress that cannot move is only a very large stone." ] },
+  spirit: { cell: 6, t: "The Crowded Dead", s: [
+    "The Memory Parliament consults the echoes of its dead leaders. Lately the echoes disagree, and the living cannot tell whose advice is older. Spiritveil asks whether you would speak in the Parliament, and say what the present wants.",
+    "The echoes have started to quarrel in the streets of the Lantern City. Past decisions walk into present rooms. A lantern-rider was arrested by a magistrate who died two hundred years ago.",
+    "The border between the past and the present went out like a candle. The Lantern City is now a city of the dead who believe they are alive, and the living, who are not sure. Spiritveil is not conquered. It is lost." ] },
+  frost: { cell: 0, t: "The Unreadable Hour", s: [
+    "The Prophet Court can see ahead no further than a week. Beyond that the futures go blank, and a Court that has ruled by foresight does not know how to rule by guessing. Frostgrave asks whether you would be their guess.",
+    "The Seers can no longer agree on tomorrow. Mercenaries hired on predictions are marching on contracts that were never signed, and the Still City has gone, as the prophets say, still.",
+    "Frostgrave’s futures closed. The Prophet Court sits in a silent hall, each Seer with the same blank in their eyes. A Realm that lived by tomorrow has been left with only today." ] },
+  metal: { cell: 1, t: "The Fear Tax", s: [
+    "The Dominion Council keeps its garrisons by fear. Fear is expensive, and the Council has begun to count its cost. Metalcrown’s regents are quietly asking whether you would take a seat at the table and show them what loyalty looks like.",
+    "Desertions are up. Foundry crews walked out of the Iron Throne City last night, and the Council answered with tighter quotas. It has not occurred to them that this is the problem.",
+    "The Dominion’s garrisons put down their arms in a single night. No one gave the order. Metalcrown’s machines are intact, and the people running them have gone home." ] }
+};
+var CRORDER = ["light", "shadow", "ember", "storm", "stone", "spirit", "frost", "metal"];
+function crState() {
+  if (!S.crisis) S.crisis = {};
+  CRORDER.forEach(function (r, i) { if (!S.crisis[r]) S.crisis[r] = { stage: 0, next: 22 + i * 17, cyc: 0, solved: 0, fell: 0 }; });
+  return S.crisis;
+}
+function crCost(c, stage) { return Math.round(220 * stage * (1 + 0.45 * c.cyc)); }
+function crSites(r) { return S.sites.filter(function (q) { return q.owner === r; }); }
+function crApply(r, stage) {
+  var P = CRISES[r], sites = crSites(r), capId = FAC[r].cap;
+  if (stage === 2) {
+    sites.forEach(function (q) { if (q.type !== "village") q.gar = Math.max(8, q.gar * 0.8); });
+    news(FAC[r].name + ": " + P.t + " deepens. Garrisons thin across the Realm.");
+  } else if (stage === 3) {
+    sites.forEach(function (q) { if (q.type !== "village") q.gar = Math.max(6, q.gar * 0.6); });
+    var cands = sites.filter(function (q) { return q.type === "town" && q.id !== capId; });
+    if (cands.length && typeof rebelTown === "function") { var q = cands[rndInt(0, cands.length - 1)]; rebelTown(q); news(q.name + " broke from " + FAC[r].name + " in the crisis."); }
+    if (!S.sealed) { S.rifts.push({ id: S.eid++, a: rnd(0, 6.283), cool: 0, c: CRISES[r].cell }); news("A Rift opened over " + FAC[r].name + " while its leaders were looking away."); }
+  }
+}
+function crReward(r, c, stage) {
+  var xp = 120 * stage * (1 + 0.3 * c.cyc);
+  if (typeof addXp === "function") addXp(xp);
+  S.crowns += Math.round(60 * stage);
+  S.sites.forEach(function (q) { if (q.owner === r && q.type === "village") q.credit = (q.credit || 0) + 1; });
+  c.solved++;
+}
+function crCard(r, c) {
+  var P = CRISES[r], stage = c.stage, id = "cr_" + r + "_" + stage, again = c.cyc ? " The " + (c.cyc === 1 ? "second" : "next") + " time it has come." : "";
+  var cost = crCost(c, stage), can = S.crowns >= cost;
+  var d = { t: P.t, sub: FAC[r].name + " · Crisis" + (stage > 1 ? ", stage " + stage : ""), body: [P.s[stage - 1] + again], bk: 0 };
+  if (stage < 3) {
+    d.body.push("Answering it costs " + cost + " crowns of your own. Ignoring it costs you nothing today, and the " + FAC[r].name + " map will pay for it in about a month.");
+    d.choices = [
+      { k: "help", t: can ? "Answer it. Spend " + cost + " crowns and see it through." : "Send what you can (" + S.crowns + " crowns). It will only slow it.", fx: function () {
+        if (can) { S.crowns -= cost; c.stage = 0; c.next = Math.floor(S.day) + 60; c.cyc++; crReward(r, c, stage); log(P.t + " eased in " + FAC[r].name + ".", "e"); toast(P.t + " eased."); }
+        else { S.crowns = 0; c.next = Math.floor(S.day) + 14; log("You sent what you could to " + FAC[r].name + ". It bought a fortnight.", "e"); } } },
+      { k: "ignore", t: "This is not mine to fix. Ignore it.", fx: function () { c.next = Math.floor(S.day) + 28; log("You left the " + FAC[r].name + " crisis to run.", "e"); } }
+    ];
+  } else {
+    d.body.push("The consequence is already on the map.");
+    d.ok = "Go on";
+  }
+  STORY[id] = d; return id;
+}
+function crTick() {
+  var st = S.story; if (!st || sheet || S.intro || S.ended || st.cur) return;
+  if (S.day < 20) return;
+  var C = crState(), today = Math.floor(S.day);
+  if (S.crLast != null && today - S.crLast < 9) return;
+  for (var i = 0; i < CRORDER.length; i++) {
+    var r = CRORDER[i], c = C[r];
+    if (today < c.next) continue;
+    if (c.stage === 3) { c.stage = 0; c.next = today + 60; c.cyc++; c.fell++; continue; }
+    c.stage++;
+    if (c.stage >= 2) crApply(r, c.stage);
+    if (c.stage === 3) c.next = today + 1;
+    S.crLast = today; var id = crCard(r, c); st.cur = id; log("Crisis in " + FAC[r].name + ": " + CRISES[r].t, "e"); openSheet("story", id);
+    return;
+  }
+}
+if (typeof storyQueue === "function") {
+  var storyQueueCR = storyQueue;
+  storyQueue = function () { storyQueueCR(); try { crTick(); } catch (e) {} };
+}
+function ovCrisisSec() {
+  try {
+    if (S.day < 20) return "";
+    var C = crState(), h = '<div class="sec">Realm crises</div>';
+    CRORDER.forEach(function (r) {
+      var c = C[r], P = CRISES[r], today = Math.floor(S.day), txt;
+      if (c.stage === 0) txt = "quiet" + (c.cyc ? " · answered " + c.solved + ", lost " + c.fell : "") + " · next stirs in ~" + Math.max(0, c.next - today) + "d";
+      else txt = '<b style="color:#ff9a3c">stage ' + c.stage + " of 3</b> · worsens in ~" + Math.max(0, c.next - today) + "d";
+      h += '<div class="row" style="padding:.3rem 0;border-top:1px solid #2a241a"><b style="color:' + FAC[r].col + '">' + FAC[r].name + "</b> · " + P.t + ' <span style="opacity:.7">' + txt + "</span></div>";
+    });
+    return h;
+  } catch (e) { return ""; }
 }
 
   // ---- input ----
