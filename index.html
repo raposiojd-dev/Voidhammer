@@ -14312,6 +14312,7 @@ function ovLoreRead(n, k) {
   var cv = ovPoi().caves[n], st = ovLoreGet(cv); if (st.p[k]) return; st.p[k] = 1; aToast(cv.boss + ": " + ["a scrap of the story.", "another scrap.", "the whole story."][k], "#d8b86a");
   if (st.p[0] && st.p[1] && st.p[2] && !st.done) {
     st.done = 1; var c = cp(); S.crowns += 260; if (typeof addXp === "function") addXp(70 * (1 + tier())); c.qpts = (c.qpts || 0) + 1;
+    setTimeout(function () { ovLairVideo(cv.name); }, 3200);
     setTimeout(function () { if (AR) { try { AR.items.push({ x: AR.p.x + 8, y: AR.p.y + 4, t: "item", item: genItem(4, null, Math.min(6, (cv.lv || 1) + 2)) }); } catch (e) {} aToast("You know " + cv.boss + ". +1 quest skill point.", "#ff9a3c"); } }, 900);
   }
 }
@@ -14324,11 +14325,24 @@ function ovLairLore() {
     P.caves.forEach(function (cv, i) {
       if (!cv.lair) return; var L = LAIRLORE[cv.name], st = ovLoreGet(cv), got = st.p[0] + st.p[1] + st.p[2], bd = 1e9, nm = "";
       S.sites.forEach(function (s) { var d = Math.hypot(s.x / OT - cv.x, s.y / OT - cv.y); if (d < bd) { bd = d; nm = s.name; } });
-      h += '<div class="row" style="padding:.35rem 0;border-top:1px solid #2a241a"><b style="color:#ff9a3c">' + cv.boss + "</b> · " + cv.name + ' <span style="opacity:.6">(' + got + "/3" + (st.done ? " · known" : "") + ')</span><div style="font-size:.82rem;opacity:.8;margin-top:.15rem">' + (got ? L.p[got - 1 === 2 ? 2 : got - 1] : "“" + L.r + "” It lies near " + nm + ".") + "</div></div>";
+      h += '<div class="row" style="padding:.35rem 0;border-top:1px solid #2a241a"><b style="color:#ff9a3c">' + cv.boss + "</b> · " + cv.name + ' <span style="opacity:.6">(' + got + "/3" + (st.done ? " · known" : "") + ')</span>' + (st.done ? ' <button data-lairvid="' + cv.name + '" style="margin-left:.4rem;padding:.1rem .55rem;font-size:.75rem;background:#1a140c;color:#e3c27a;border:1px solid #6a4f22;border-radius:3px">▶ Watch the story</button>' : '') + '<div style="font-size:.82rem;opacity:.8;margin-top:.15rem">' + (got ? L.p[got - 1 === 2 ? 2 : got - 1] : "“" + L.r + "” It lies near " + nm + ".") + "</div></div>";
     });
     return h;
   } catch (e) { return ""; }
 }
+var LAIRVID = { "The Ashen Maw": "ashen_maw", "Furnace of Teeth": "furnace_teeth", "The Glass Throat": "glass_throat", "Hollow of Winters": "hollow_winters", "Thunder Hollow": "thunder_hollow", "The Gale Warren": "gale_warren", "The Living Quarry": "living_quarry", "Deepvein Halls": "deepvein", "The Unlit Vault": "unlit_vault", "Cistern of Ash": "cistern_ash", "The Drowned Choir": "drowned_choir", "Candlewake Barrow": "candlewake", "The Unmade Cellar": "unmade_cellar", "Whisper Pits": "whisper_pits", "The Slag Cathedral": "slag_cathedral", "Iron Warren": "iron_warren" };
+function ovLairVideo(name) {
+  var k = LAIRVID[name]; if (!k || document.getElementById("lvid")) return;
+  var w = document.createElement("div"); w.id = "lvid";
+  w.style.cssText = "position:fixed;inset:0;z-index:400;background:#000;display:flex;align-items:center;justify-content:center";
+  var v = document.createElement("video"); v.innerHTML = '<source src="vid/lair_' + k + '.mp4" type="video/mp4"><source src="vid/lair_' + k + '.webm" type="video/webm">'; v.playsInline = true; v.setAttribute("playsinline", ""); v.controls = false; v.style.cssText = "width:100%;max-height:100%;object-fit:contain";
+  var b = document.createElement("button"); b.textContent = "Skip"; b.style.cssText = "position:absolute;right:max(14px,env(safe-area-inset-right,0px));top:max(14px,env(safe-area-inset-top,0px));padding:.5rem 1rem;font-family:'Cinzel',Georgia,serif;font-weight:700;background:rgba(10,7,4,.7);color:#e3c27a;border:1px solid #6a4f22;border-radius:3px";
+  function close() { try { v.pause(); } catch (e) {} w.remove(); }
+  b.onclick = close; v.onended = close; v.addEventListener("error", function (ev) { if (ev.target === v.lastElementChild) close(); }, true);
+  w.appendChild(v); w.appendChild(b); document.body.appendChild(w);
+  v.play().catch(function () { v.muted = true; v.play().catch(close); });
+}
+document.addEventListener("click", function (e) { var t = e.target && e.target.closest && e.target.closest("[data-lairvid]"); if (t) { e.stopPropagation(); ovLairVideo(t.getAttribute("data-lairvid")); } }, true);
 
   // ---- input ----
   (function () {
