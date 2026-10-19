@@ -15694,7 +15694,7 @@ var VLORDS = [
     return h;
   }
   var hsOld = heroesSheet;
-  heroesSheet = function () { var h = hsOld(); try { h += sec(); } catch (e) { if (window.console) console.log("vas", e); } return h; };
+  heroesSheet = function () { var h = hsOld(); try { var k = "Unpaid armies walk home.</p>", i = h.indexOf(k), x = sec(); if (i >= 0) { i += k.length; h = h.slice(0, i) + x + h.slice(i); } else h += x; } catch (e) { if (window.console) console.log("vas", e); } return h; };
   // daily: loyalty drifts, unpaid lords sour, lords who lose their seat go, broken lords take the town, scattered lords regroup
   var lastD = -1;
   setInterval(function () {
