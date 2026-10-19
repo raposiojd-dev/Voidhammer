@@ -15780,6 +15780,31 @@ var VLORDS = [
     } catch (e) {}
   }, 250);
 })();
+// ---- ovLMAP: realm lords on the map ride the same painted knight as you, tinted in their realm's colours with a pennant ----
+(function () {
+  var TC = {};
+  function tinted(im, col) {
+    var k = col; if (TC[k]) return TC[k];
+    var c = document.createElement("canvas"); c.width = im.naturalWidth; c.height = im.naturalHeight; var g = c.getContext("2d");
+    g.drawImage(im, 0, 0); g.globalCompositeOperation = "source-atop"; g.globalAlpha = 0.2; g.fillStyle = col; g.fillRect(0, 0, c.width, c.height);
+    g.globalAlpha = 1; g.globalCompositeOperation = "source-over"; return (TC[k] = c);
+  }
+  var prev = horseRiderNew;
+  horseRiderNew = function (x, y, dir, phase, moving, t, col) {
+    var im = col && typeof spImg === "function" && spImg("tp_knight");
+    if (!im || !im.naturalWidth) return prev(x, y, dir, phase, moving, t, col);
+    var h = 40, w = im.naturalWidth / im.naturalHeight * h, bob = moving ? -Math.abs(Math.sin(phase)) * 1.4 : 0, tc = tinted(im, col);
+    ctx.save(); ctx.globalAlpha = 1;
+    ctx.fillStyle = "rgba(0,0,0,0.35)"; ctx.beginPath(); ctx.ellipse(x, y + 1, w * 0.42, 3, 0, 0, 6.283); ctx.fill();
+    ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = "high"; ctx.translate(x, y + bob); if (dir < 0) ctx.scale(-1, 1);
+    ctx.drawImage(tc, -w / 2, -h, w, h);
+    // pennant on a lance
+    var px = -w * 0.28, top = -h - 2, wv = Math.sin(t / 160 + x) * 1.6;
+    ctx.strokeStyle = "#2a2014"; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.moveTo(px, -h * 0.35); ctx.lineTo(px, top); ctx.stroke();
+    ctx.fillStyle = col; ctx.strokeStyle = "#140e08"; ctx.beginPath(); ctx.moveTo(px, top); ctx.lineTo(px - 18, top + 5 + wv); ctx.lineTo(px, top + 11); ctx.closePath(); ctx.fill(); ctx.lineWidth = 0.8; ctx.stroke();
+    ctx.restore();
+  };
+})();
 // ---- ovPOLISH: the nitpick pass. Safe areas, edge tabs, typography. ----
 (function () {
   var st = document.createElement("style");
