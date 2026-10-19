@@ -15740,6 +15740,46 @@ var VLORDS = [
   var sqOld = storyQueue;
   storyQueue = function () { if (!calmOk()) return; sqOld(); };
 })();
+// ---- ovSKSEL: choose which battle skill sits on your button. Swap button next to it, cost shown on the button. ----
+(function () {
+  function learned() { var ids = []; SKILLS.forEach(function (b) { b.items.forEach(function (i) { if (i.active && sk(i.id) > 0) ids.push(i.id); }); }); return ids; }
+  function costTxt(id) { try { var c = SKACT[id].cost(sk(id)), t = []; if (c.cr) t.push(c.cr + "c"); if (c.gr) t.push(c.gr + " grain"); if (c.hp) t.push(c.hp >= 1 ? "heart" : "½ heart"); return t.join(" ") || "free"; } catch (e) { return ""; } }
+  function swap() {
+    var ids = learned(); if (ids.length < 2) return; var cur = skActId(), i = ids.indexOf(cur);
+    S.skEq = ids[(i + 1) % ids.length]; try { save(); } catch (e) {}
+    try { aToast(skFind(S.skEq).name + " is on your button. Costs " + costTxt(S.skEq) + "."); } catch (e) {}
+  }
+  var st = document.createElement("style");
+  st.textContent = "#asksw,#bfsw{border-radius:50%;font:700 .9rem inherit;color:#f4e6c0;border:2px solid #9a7a3a;background:#1a1208;padding:0;touch-action:none}#askill{right:11.6rem!important}#asksw{position:absolute;right:15.4rem;bottom:calc(7.6rem + env(safe-area-inset-bottom,0px));width:2.3rem;height:2.3rem}#bfsw{margin-left:.4rem;padding:.25rem .6rem;border-radius:3px}#askill:not(:disabled)::after{content:attr(data-cost);display:block;font-size:.52rem;opacity:.9;font-weight:500}";
+  document.head.appendChild(st);
+  // bottom-edge walking: a finger near the bottom edge has no room to drag down, so downward travel is amplified there
+  (function () {
+    var M = 70;
+    window.addEventListener("pointerdown", function (e) {
+      try { if (!astick.on || e.pointerId !== astick.id) return; astick.gain = e.clientY > innerHeight - M ? Math.max(1, Math.min(4, 40 / Math.max(10, innerHeight - e.clientY))) : 1; } catch (x) {}
+    });
+    window.addEventListener("pointermove", function (e) {
+      try { if (!astick.on || e.pointerId !== astick.id) return;
+        var m = 40, g = astick.gain || 1, dx = e.clientX - astick.ox, dy = e.clientY - astick.oy; if (dy > 0) dy *= g;
+        var l = Math.hypot(dx, dy); if (l > m) { dx = dx / l * m; dy = dy / l * m; l = m; }
+        document.getElementById("aknob").style.transform = "translate(" + dx + "px," + dy + "px)";
+        astick.dx = l < 4 ? 0 : Math.max(-1, Math.min(1, dx / (m * 0.8))); astick.dy = l < 4 ? 0 : Math.max(-1, Math.min(1, dy / (m * 0.8))); } catch (x) {}
+    });
+  })();
+  setInterval(function () {
+    try {
+      var ids = learned(), id = skActId(), many = ids.length > 1;
+      var ar = document.getElementById("area"), ab = document.getElementById("askill");
+      if (ar && !document.getElementById("asksw")) { var b = document.createElement("button"); b.id = "asksw"; b.hidden = true; b.textContent = "⇄"; b.setAttribute("aria-label", "Change battle skill"); ar.appendChild(b); b.addEventListener("pointerdown", function (e) { e.stopPropagation(); e.preventDefault(); swap(); }); }
+      var sw = document.getElementById("asksw"); if (sw) sw.hidden = !(many && ab && !ab.hidden);
+      if (ab && id) ab.setAttribute("data-cost", costTxt(id));
+      var fb = document.getElementById("bfsk"), bfb = document.getElementById("bfb");
+      if (bfb && !document.getElementById("bfsw")) { var c = document.createElement("button"); c.id = "bfsw"; c.hidden = true; c.textContent = "Change skill ⇄"; bfb.appendChild(c); c.addEventListener("click", function (e) { e.stopPropagation(); swap(); }); }
+      var fs = document.getElementById("bfsw"); if (fs) fs.hidden = !(many && fb && !fb.hidden);
+      if (fb && !fb.hidden && id && fb.textContent.indexOf("[") < 0 && !/\(\d+s\)$/.test(fb.textContent)) fb.textContent = skFind(id).name + " [" + costTxt(id) + "]";
+    } catch (e) {}
+  }, 250);
+})();
 // ---- ovPOLISH: the nitpick pass. Safe areas, edge tabs, typography. ----
 (function () {
   var st = document.createElement("style");
