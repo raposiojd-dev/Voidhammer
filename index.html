@@ -15805,6 +15805,46 @@ var VLORDS = [
     ctx.restore();
   };
 })();
+// ---- ovLVID: a boss cave's story video plays the first time you walk into it (Skip button), then lives in the journal ----
+(function () {
+  var base = startArea, busy = false;
+  startArea = function (id, sx, sy) {
+    var args = arguments;
+    try {
+      var ix = ovLairIx(id);
+      if (ix && ix.fl === 1 && !busy) {
+        S.lairSeen = S.lairSeen || {};
+        var nm = ix.cv.name;
+        if (!S.lairSeen[nm] && LAIRVID[nm]) {
+          S.lairSeen[nm] = 1; busy = true;
+          if (S.speed) S.speed = 0;
+          ovLairVideo(nm);
+          var tmr = setInterval(function () {
+            if (!document.getElementById("lvid")) { clearInterval(tmr); busy = false; base.apply(null, args); }
+          }, 150);
+          return;
+        }
+      }
+    } catch (e) { busy = false; }
+    return base.apply(null, args);
+  };
+})();
+// ---- ovLFACE: painted portraits for every realm lord, ruler and vassal (img/face/<slug>.webp) ----
+var LFACE = { "Lady Cinder": "cinder", "Lord Brannoch": "brannoch", "Lord Hald": "hald", "Lady Ysolde": "ysolde", "Lord Kerrin": "kerrin", "Lord Aurel": "aurel", "Lady Maren": "maren", "Lyriel Frostwraith": "lyriel", "High Seer Vaelith": "vaelith", "Archivist Lume": "lume", "Veilrend": "veilrend", "Marshal Dravik": "dravik", "Warden Sable": "sable", "Overseer Quill": "quill", "Magistrate Voss": "voss", "Ser Alden Roe": "alden", "Dame Hesper Voll": "hesper", "Brask Ironhand": "brask", "Calla Ember": "calla", "Tobren Quill": "tobren", "Naia of the Veil": "naia", "Orrin Lantern": "orrinl", "Isa Winterborn": "isa", "Maud Thatcher": "maud", "Varro the Late": "varro" };
+(function () {
+  Object.keys(LFACE).forEach(function (k) { NFACEN[k] = LFACE[k]; });
+  function lfImg(name, sz) { var f = LFACE[name]; return f ? '<img class="face talk" src="img/face/' + f + '.webp" width="' + sz + '" height="' + sz + '" alt="" style="float:left;margin:.1rem .75rem .4rem 0;border-radius:3px;border:1px solid #6a4f22;box-shadow:0 3px 10px rgba(0,0,0,.6)" onerror="this.remove()">' : ""; }
+  var ts = talkSheet;
+  talkSheet = function (id) {
+    var h = ts(id); try { var e = enemyById(+id); if (e && LFACE[e.name]) h = h.replace(/(<h2>[^<]*<\/h2>)/, lfImg(e.name, 84) + "$1"); } catch (x) {} return h;
+  };
+  var ss = storySheet;
+  storySheet = function (id) {
+    var h = ss(id); try {
+      var d = STORY[id]; if (d && /^lo_|^vl_|^lv_/.test(id) || (d && d.sub)) { Object.keys(LFACE).some(function (n) { if ((d.sub || "").indexOf(n) >= 0 || (d.t || "").indexOf(n) >= 0) { h = h.replace(/(<p class="sub">[^<]*<\/p>)/, "$1" + lfImg(n, 96)); return true; } return false; }); }
+    } catch (x) {} return h;
+  };
+})();
 // ---- ovPOLISH: the nitpick pass. Safe areas, edge tabs, typography. ----
 (function () {
   var st = document.createElement("style");
