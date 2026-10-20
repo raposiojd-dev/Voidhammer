@@ -1068,7 +1068,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
 
     S.nextBandit--;
     if (S.nextBandit <= 0 && countKind("bandit") < 5) { spawnBandit(); S.nextBandit = rndInt(6, 10); }
-    if (S.day >= 12 && !S.sealed) { S.nextVoid--; if (S.nextVoid <= 0 && countKind("void") < 4) { spawnVoid(); S.nextVoid = rndInt(8, 13); } }
+    if (S.day >= 30 && !S.sealed) { S.nextVoid--; if (S.nextVoid <= 0 && countKind("void") < (S.day >= 150 ? 3 : 2)) { spawnVoid(); S.nextVoid = rndInt(26, 42); } }
 
     if (S.day >= END_DAY && !S.ended) { S.ended = true; save(); openSheet("ending"); }
   }
@@ -14033,12 +14033,12 @@ function ovVoidDay() {
   SEAL_AT = v.on ? 9 : 5;
   if (!v.mig) { v.mig = 1; if (!ovGateOpen()) S.rifts.forEach(function (r) { r.c = 4; delete r.x; delete r.y; }); }
   if (!ovGateOpen() && !v.on) {
-    var want = S.day >= 60 ? 3 : S.day >= 35 ? 2 : S.day >= 10 ? 1 : 0, pend = (S.riftBack || []).length;
-    if (S.rifts.length + pend < want && S.day >= (S.nextRift || 0)) { S.rifts.push(ovNewRift(4)); S.nextRift = S.day + 12; toast("A Rift has torn open on the Flameborne shore."); news("A Rift has torn open on the Flameborne shore."); }
+    var want = S.day >= 240 ? 3 : S.day >= 140 ? 2 : S.day >= 45 ? 1 : 0, pend = (S.riftBack || []).length;
+    if (S.rifts.length + pend < want && S.day >= (S.nextRift || 0)) { S.rifts.push(ovNewRift(4)); S.nextRift = S.day + 45; toast("A Rift has torn open on the Flameborne shore."); news("A Rift has torn open on the Flameborne shore."); }
     return;
   }
   if (!v.on) {
-    v.on = 1; v.t0 = S.day; v.nr = S.day + 22;
+    v.on = 1; v.t0 = S.day; v.nr = S.day + 80;
     var t = "The Gates are open and the Void has felt them. It does not need a road. Rifts will open on every shore, and each place it takes makes it stronger.";
     news(t); log(t, "e");
   }
@@ -14048,32 +14048,32 @@ function ovVoidDay() {
       var r = ovNewRift(); S.rifts.push(r); news("A Rift has opened on the " + ovConts()[r.c].n + " coast.");
       if (r.c === curCell()) toast("A new Rift has torn open on this continent.");
     }
-    v.nr = S.day + Math.max(26, 48 - Math.floor(S.rifts.length * 0.6));
+    v.nr = S.day + Math.max(90, 150 - Math.floor(S.rifts.length * 1.5));
   }
   cells.forEach(function (c) {
     var rs = S.rifts.filter(function (r) { return r.c === c; }); if (!rs.length) return;
-    var g = v.g[c] || (v.g[c] = { due: S.day + 70, tgt: null, at: 0 });
+    var g = v.g[c] || (v.g[c] = { due: S.day + 220, tgt: null, at: 0 });
     if (!g.tgt && S.day >= g.due) {
       var best = null, bd = 1e9;
       S.sites.forEach(function (s) {
         if (s.type === "village" || s.vh || cellAt(s.x, s.y) !== c) return;
         rs.forEach(function (r) { var p = riftPos(r), d = Math.hypot(p.x - s.x, p.y - s.y); if (d < bd) { bd = d; best = s; } });
       });
-      if (best) { g.tgt = best.id; g.at = S.day + 6; news("The Void is closing on " + best.name + "."); if (best.owner === "player") toast("The Void is closing on " + best.name + ". You have days."); else if (c === curCell()) toast("The Void is closing on " + best.name + "."); }
-      else g.due = S.day + 20;
+      if (best) { g.tgt = best.id; g.at = S.day + 14; news("The Void is closing on " + best.name + "."); if (best.owner === "player") toast("The Void is closing on " + best.name + ". You have days."); else if (c === curCell()) toast("The Void is closing on " + best.name + "."); }
+      else g.due = S.day + 60;
     }
     if (g.tgt && S.day >= g.at) {
       var s2 = site(g.tgt), held = 0; S.sites.forEach(function (q) { if (q.vh && cellAt(q.x, q.y) === c) held++; });
       g.tgt = null;
       if (s2 && !s2.vh) {
-        var atk = (32 + 0.22 * (S.day - (v.t0 || S.day))) * ovVStr() * (1 + 0.3 * rs.length), def = s2.gar * s2.wall;
+        var atk = (32 + 0.1 * (S.day - (v.t0 || S.day))) * ovVStr() * (1 + 0.3 * rs.length), def = s2.gar * s2.wall;
         S.enemies.forEach(function (e) { if (e.kind === "lord" && e.fac === s2.owner && Math.hypot(e.x - s2.x, e.y - s2.y) < 90) def += e.n * e.q * 0.8; });
         if (Math.hypot(S.px - s2.x, S.py - s2.y) < 90) def += pStrength() * 0.8;
         S.allies.forEach(function (h) { if (!h.away && Math.hypot(h.x - s2.x, h.y - s2.y) < 90) def += allyStr(h) * 0.6; });
-        if (def > atk) { news("The Void broke on the walls of " + s2.name + " and fell back."); if (s2.owner === "player" || c === curCell()) toast("The Void broke on the walls of " + s2.name + "."); s2.gar = Math.max(4, s2.gar * 0.7); g.due = S.day + 24; return; }
+        if (def > atk) { news("The Void broke on the walls of " + s2.name + " and fell back."); if (s2.owner === "player" || c === curCell()) toast("The Void broke on the walls of " + s2.name + "."); s2.gar = Math.max(4, s2.gar * 0.7); g.due = S.day + 90; return; }
         ovVTake(s2);
       }
-      g.due = S.day + Math.max(30, Math.round(95 / Math.pow(rs.length, 0.55) * (1 - Math.min(0.5, 0.06 * held))));
+      g.due = S.day + Math.max(110, Math.round(330 / Math.pow(rs.length, 0.55) * (1 - Math.min(0.4, 0.04 * held))));
     }
   });
   Object.keys(v.fell).forEach(function (f) { if (v.fell[f] && holdings(f).length > 0) { delete v.fell[f]; news(FAC[f].name + " stands again."); toast(FAC[f].name + " stands again."); } });
