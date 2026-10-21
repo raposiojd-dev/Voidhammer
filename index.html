@@ -1,6 +1,6 @@
 <meta charset="utf-8">
 <title>Voidhammer Campaign</title>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Cinzel:wght@500;700&family=IM+Fell+English:ital@0;1&display=swap">
+<style>@font-face{font-family:"Cinzel";font-style:normal;font-weight:500;font-display:swap;src:url(fonts/cinzel-latin-500-normal.woff2) format("woff2")}@font-face{font-family:"Cinzel";font-style:normal;font-weight:700;font-display:swap;src:url(fonts/cinzel-latin-700-normal.woff2) format("woff2")}@font-face{font-family:"IBM Plex Mono";font-style:normal;font-weight:400;font-display:swap;src:url(fonts/ibm-plex-mono-latin-400-normal.woff2) format("woff2")}@font-face{font-family:"IBM Plex Mono";font-style:normal;font-weight:500;font-display:swap;src:url(fonts/ibm-plex-mono-latin-500-normal.woff2) format("woff2")}@font-face{font-family:"IM Fell English";font-style:normal;font-weight:400;font-display:swap;src:url(fonts/im-fell-english-latin-400-normal.woff2) format("woff2")}@font-face{font-family:"IM Fell English";font-style:italic;font-weight:400;font-display:swap;src:url(fonts/im-fell-english-latin-400-italic.woff2) format("woff2")}</style>
 <style>
 /* Layout: full-screen campaign map, HUD pinned top, three menu buttons pinned bottom, slide-up sheets for places and menus. */
 :root {
@@ -2909,10 +2909,10 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
 
   // ---------- shops and skills ----------
   var IMG = {
-    village: "https://cdn.openart.ai/openart-ai/production/2026-10/create-image/yAnh2kxPs2yviRPO9aAP/40e31d0409417a97096a9fb21c149e4a-ec3c89ba-f87c-44c0-afd8-eb088bd2fa4c_1791522490044_105d57f4.png",
-    battle: "https://cdn.openart.ai/openart-ai/production/2026-10/create-image/yAnh2kxPs2yviRPO9aAP/b2f29036d2cb11cf9770c26cd6b8902f-9922b647-85e9-46d8-a7c9-5fb9484e308e_1791522510977_52abf2d5.png",
-    siege: "https://cdn.openart.ai/openart-ai/production/2026-10/create-image/yAnh2kxPs2yviRPO9aAP/64766a3659314064179ff56cb2dfee01-4aad1d06-1f05-44a2-983e-8acf20d73ea3_1791522496004_b223160d.png",
-    rift: "https://cdn.openart.ai/openart-ai/production/2026-10/create-image/yAnh2kxPs2yviRPO9aAP/b482d079c8ee71d513d6307ae743537a-a1ed33a2-e6c4-4602-af18-06e93c334554_1791522516194_7ba5794c.png"
+    village: "img/it2/village.webp",
+    battle: "img/it2/battle.webp",
+    siege: "img/it2/siege.webp",
+    rift: "img/it2/rift.webp"
   };
   function sceneImg(k) { return '<img class="scene" src="' + IMG[k] + '" alt="" loading="lazy" onerror="this.remove()">'; }
   var GEARFX = { steel: "+30% strength", plate: "+40% strength", longbows: "+16% strength", blades: "+15% strength, +8% loot", mail: "+20% strength, fewer deaths in battle", bows: "+8% strength, +10% experience", kit: "+5% strength, men eat 6% less" };
@@ -15844,6 +15844,19 @@ var LFACE = { "Lady Cinder": "cinder", "Lord Brannoch": "brannoch", "Lord Hald":
       var d = STORY[id]; if (d && /^lo_|^vl_|^lv_/.test(id) || (d && d.sub)) { Object.keys(LFACE).some(function (n) { if ((d.sub || "").indexOf(n) >= 0 || (d.t || "").indexOf(n) >= 0) { h = h.replace(/(<p class="sub">[^<]*<\/p>)/, "$1" + lfImg(n, 96)); return true; } return false; }); }
     } catch (x) {} return h;
   };
+})();
+// ---- ovNATIVE: inside the iOS app, drop the "Add to Home Screen" and Safari wording ----
+(function () {
+  var C = window.Capacitor; if (!C || !(C.isNativePlatform && C.isNativePlatform())) return;
+  document.documentElement.classList.add("native");
+  var R = [[/On iPhone: tap Share, then Add to Home Screen, to play full-screen\.?/, ""], [/On iPhone,? tap Share, then Add to Home Screen, to play full-screen\.?/, "Your game saves on this device automatically."], [/Safari can clear saved data\. Make a backup code and keep it in Notes or Messages\./, "Deleting the app deletes its saves. Make a backup code and keep it in Notes or Messages."]];
+  function fix(root) {
+    var w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null), n, list = [];
+    while ((n = w.nextNode())) list.push(n);
+    list.forEach(function (t) { R.forEach(function (r) { if (r[0].test(t.nodeValue)) t.nodeValue = t.nodeValue.replace(r[0], r[1]); }); });
+  }
+  var busy = 0;
+  new MutationObserver(function () { if (busy) return; busy = 1; setTimeout(function () { busy = 0; try { fix(document.body); } catch (e) {} }, 200); }).observe(document.body || document.documentElement, { childList: true, subtree: true });
 })();
 // ---- ovPOLISH: the nitpick pass. Safe areas, edge tabs, typography. ----
 (function () {
