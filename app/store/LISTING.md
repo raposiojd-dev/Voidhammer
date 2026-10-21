@@ -1,0 +1,66 @@
+# Voidhammer — App Store listing (copy and paste into App Store Connect)
+
+**App name:** Voidhammer: Shattered Realms   (30 chars max; "Voidhammer" alone may be taken)
+**Subtitle (30):** Nine Realms. One Void.
+**Bundle ID:** com.voidhammer.shatteredrealms
+**Category:** Games > Role Playing   (secondary: Strategy)
+**Price:** Paid, Tier ~ A$7.99 (your call) — or free to start
+**Support URL:** https://raposiojd-dev.github.io/Voidhammer/
+**Privacy Policy URL:** https://raposiojd-dev.github.io/Voidhammer/privacy.html
+**Copyright:** 2026 John Raposio   (edit to your legal name)
+
+## Promotional text (170)
+A sandbox war RPG where every spell costs you something real. Lead a warband across nine realms while the Void hungers for them all.
+
+## Keywords (100)
+rpg,sandbox,medieval,warband,strategy,fantasy,open world,kingdom,siege,magic,offline,story,lords
+
+## Description
+Nine Realms. One fractured world. And the Void that hungers for both.
+
+Voidhammer is a sandbox war RPG in the spirit of the great medieval warband games, with a story, a cast of characters who matter, and a magic system where nothing is free.
+
+LEAD A WARBAND
+Recruit from villages, train your troops through six tiers, feed and pay them, and march across a living map where realms wage war without you. Besiege towns and castles. Take them and rule them. Appoint vassal lords, call their banners and fight beside them in bigger battles.
+
+MAGIC WITH A PRICE
+Every realm has a school of magic, and every school takes something. Lightforge erases your memories. Shadowdeep erases who you are. Flameborne burns away your self-control. Use it and you win the battle. Use it too much and you lose something that mattered.
+
+NINE REALMS, NINE CRISES
+Each realm has its own troops, architecture, politics and a crisis that unfolds whether you act or not. Befriend lords. Betray them. Watch them remember.
+
+COMPANIONS WITH WOUNDS
+Kaelren never chooses himself. Elyndra remembers every promise you break. Jorren disappears and never explains. Noctis only wants to be chosen. They make their own decisions, and they will surprise you.
+
+THE VOID IS COMING
+It is not evil. It simply cannot survive change. Rifts tear open, holds fall, and the troops who touch it slowly vanish from your roster, names and faces first. Ignore it and the world is lost, even if you are winning.
+
+DEEP AND LONG
+Dozens of hours of quests, sixteen boss lairs with their own stories, dungeons, a skill book with active battle skills, crafting, trade and a New Game Plus.
+
+PLAYS OFFLINE. NO ACCOUNT. NO ADS. NO PURCHASES BEYOND THE GAME.
+
+## What's new (1.0)
+First release.
+
+## Age rating questionnaire (App Store Connect → Age Rating)
+- Cartoon or Fantasy Violence: **Frequent/Intense**
+- Realistic Violence: None
+- Horror/Fear Themes: **Infrequent/Mild**
+- Alcohol, Tobacco, Drugs: None  (check the game text before answering; answer honestly)
+- Sexual content, Profanity, Gambling, Contests: None
+- Unrestricted web access: No
+Expected rating: 12+ (or 13+ in some regions). Answer honestly; Apple decides the final rating.
+
+## App Privacy (nutrition label)
+**Data Not Collected.** (no accounts, analytics or ads; saves stay on device; co-op uses a public peer broker that you do not receive data from)
+
+## Export compliance
+Already answered in the build: ITSAppUsesNonExemptEncryption = false.
+
+## Screenshots
+store/screens/ (1320x2868, iPhone 6.9"). Upload 3–10. Suggested order: 1_title, 4_map, 3_town, 5_heroes, 6_skills, 2_create.
+The app is iPhone-only so no iPad screenshots are needed.
+
+## App Review notes (paste into "Notes")
+Voidhammer is a self-contained offline game. No login is needed. Tap New Game → create a character → Begin. Co-op (optional, in the ☰ menu) uses peer-to-peer WebRTC between two devices and needs no account.

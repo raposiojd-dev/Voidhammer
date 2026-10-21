@@ -1,0 +1,13 @@
+# Optional: build an unsigned simulator/archive check on GitHub's macOS runners (copy to .github/workflows/ios.yml in the game repo).
+# Signed uploads need your Apple certificate + API key stored as repo secrets; do that only if you do not have a Mac.
+name: ios-build-check
+on: workflow_dispatch
+jobs:
+  build:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - run: cd app && npm ci && ./sync-web.sh .. && npx cap sync ios
+      - run: cd app/ios/App && xcodebuild -project App.xcodeproj -scheme App -sdk iphonesimulator -configuration Debug -derivedDataPath build CODE_SIGNING_ALLOWED=NO build

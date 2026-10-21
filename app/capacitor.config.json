@@ -1,0 +1,8 @@
+{
+  "appId": "com.voidhammer.shatteredrealms",
+  "appName": "Voidhammer",
+  "webDir": "www",
+  "backgroundColor": "#0c0b09",
+  "ios": { "contentInset": "never", "allowsLinkPreview": false, "limitsNavigationsToAppBoundDomains": false },
+  "server": { "iosScheme": "capacitor" }
+}
