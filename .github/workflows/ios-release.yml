@@ -1,0 +1,52 @@
+# Builds, signs and uploads the app to TestFlight from GitHub's cloud Macs. No Mac of your own needed.
+# Needs an Apple Developer account and 4 repo secrets (Settings > Secrets and variables > Actions):
+#   APPLE_TEAM_ID   your 10-character Team ID (developer.apple.com > Membership)
+#   ASC_KEY_ID      App Store Connect API key ID
+#   ASC_ISSUER_ID   App Store Connect issuer ID
+#   ASC_KEY_P8      full text of the downloaded AuthKey_XXXX.p8 file
+# Apple signs automatically with that key (no certificate files to handle).
+name: ios-release
+on: workflow_dispatch
+jobs:
+  release:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - name: Check secrets
+        env: { T: "${{ secrets.APPLE_TEAM_ID }}", K: "${{ secrets.ASC_KEY_ID }}", I: "${{ secrets.ASC_ISSUER_ID }}", P: "${{ secrets.ASC_KEY_P8 }}" }
+        run: |
+          for v in T K I P; do [ -n "${!v}" ] || { echo "Missing secret for $v. See the comments at the top of this file."; exit 1; }; done
+      - run: cd app && npm ci && ./sync-web.sh .. && npx cap sync ios
+      - name: Write API key
+        run: |
+          mkdir -p ~/.appstoreconnect/private_keys
+          printf '%s' "${{ secrets.ASC_KEY_P8 }}" > ~/.appstoreconnect/private_keys/AuthKey_${{ secrets.ASC_KEY_ID }}.p8
+      - name: Archive
+        working-directory: app/ios/App
+        run: |
+          BUILD=${{ github.run_number }}
+          xcodebuild -project App.xcodeproj -scheme App -configuration Release -sdk iphoneos \
+            -archivePath $RUNNER_TEMP/App.xcarchive archive \
+            DEVELOPMENT_TEAM=${{ secrets.APPLE_TEAM_ID }} CURRENT_PROJECT_VERSION=$BUILD \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath ~/.appstoreconnect/private_keys/AuthKey_${{ secrets.ASC_KEY_ID }}.p8 \
+            -authenticationKeyID ${{ secrets.ASC_KEY_ID }} -authenticationKeyIssuerID ${{ secrets.ASC_ISSUER_ID }}
+      - name: Export and upload to TestFlight
+        working-directory: app/ios/App
+        run: |
+          cat > $RUNNER_TEMP/export.plist <<EOF
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0"><dict>
+          <key>method</key><string>app-store-connect</string>
+          <key>destination</key><string>upload</string>
+          <key>teamID</key><string>${{ secrets.APPLE_TEAM_ID }}</string>
+          <key>signingStyle</key><string>automatic</string>
+          </dict></plist>
+          EOF
+          xcodebuild -exportArchive -archivePath $RUNNER_TEMP/App.xcarchive -exportOptionsPlist $RUNNER_TEMP/export.plist \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath ~/.appstoreconnect/private_keys/AuthKey_${{ secrets.ASC_KEY_ID }}.p8 \
+            -authenticationKeyID ${{ secrets.ASC_KEY_ID }} -authenticationKeyIssuerID ${{ secrets.ASC_ISSUER_ID }}

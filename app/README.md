@@ -31,3 +31,12 @@ Change the web game as usual, then repeat `./sync-web.sh .. && npx cap sync ios`
 - App Review guideline 4.2 rejects thin website wrappers. This one ships all its content inside the app, plus native splash, so it should pass; the review notes in LISTING.md explain it.
 - Native text: inside the app the "Add to Home Screen" and "Safari" wording is replaced automatically.
 - Memory/size: the app is about 190 MB. That is fine, but anyone on mobile data will be prompted before downloading over 200 MB, so avoid growing it much further.
+
+## No Mac? Use GitHub Actions
+Two workflows are already in `.github/workflows/` (GitHub repo > Actions tab > pick one > Run workflow):
+- **ios-check**: builds the app unsigned on a cloud Mac. No Apple account needed. Proves it compiles.
+- **ios-release**: signs and uploads to TestFlight. After your Developer account is approved:
+  1. App Store Connect > Users and Access > Integrations > App Store Connect API > create a key (role: App Manager). Download the `.p8` once.
+  2. Create the app record (bundle ID `com.voidhammer.shatteredrealms`).
+  3. Repo > Settings > Secrets and variables > Actions, add `APPLE_TEAM_ID`, `ASC_KEY_ID`, `ASC_ISSUER_ID`, `ASC_KEY_P8` (paste the whole .p8 text).
+  4. Run **ios-release**. The build appears in TestFlight in a few minutes; then submit it for review as above.
