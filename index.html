@@ -584,6 +584,7 @@ window.__vhGame = function () { (function () {
   if (!S.mc) addDominionToSave(S);
   try { if (ovFeedVillages(S.sites)) S.total = S.sites.length; } catch (e) {}
   if (!S.tut) S.tut = {};
+  try { (S.sites || []).forEach(function (v) { if (v && 'gar' in v && !(typeof v.gar === 'number' && isFinite(v.gar))) v.gar = 6; }); } catch (e) {} // repair garrisons broken by the old removeMen bug
   if (!S.camp) S.camp = { on: false, f: {}, cleared: {}, kills: 0 };
   if (!S.story) S.story = { on: false, seen: {}, ch: {}, fin: null, cur: null };
   if (S.mc && S.mc.on && !S.pwar.metal) S.pwar.metal = true;
@@ -1927,11 +1928,13 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
     return true;
   }
   function removeMen(n) {
+    var done = 0;
     for (var i = 0; i < n && T() > 0; i++) {
       var keys = Object.keys(S.from), tot = T(), r = Math.random() * tot, acc = 0, pick = keys[0];
       for (var j = 0; j < keys.length; j++) { acc += S.from[keys[j]]; if (r < acc) { pick = keys[j]; break; } }
-      S.from[pick]--; if (S.from[pick] <= 0) delete S.from[pick];
+      S.from[pick]--; if (S.from[pick] <= 0) delete S.from[pick]; done++;
     }
+    return done;
   }
   function fadeSparks() {
     var gone = 0;
