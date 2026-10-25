@@ -1,0 +1,22 @@
+/* Voidhammer site skin — applied on every page via an HTML block */
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500&family=Inter:wght@400;500;600&display=swap');
+body{background:#07070a!important}
+body,p,li,div{font-family:Inter,system-ui,sans-serif}
+h1,h2,h3{font-family:'Cormorant Garamond',Georgia,serif!important;letter-spacing:-.01em;color:#fff}
+h1{font-weight:600!important}
+p,li{color:#d4cfdc;line-height:1.75}
+a{transition:color .2s}
+.btn.primary,form button[type=submit],a.btn-primary{background:linear-gradient(135deg,#ff7b3a,#e8452a)!important;border:0!important;border-radius:999px!important;font-weight:600!important;box-shadow:0 10px 40px -10px rgba(255,110,50,.7);color:#fff!important}
+form .form-control{border-radius:999px!important;background:#111116!important;color:#fff!important;border:1px solid rgba(255,255,255,.18)!important;padding-left:20px!important}
+form textarea.form-control{border-radius:18px!important}
+form .form-control::placeholder{color:#8d889a!important}
+/* page banner */
+.vhb{position:relative;width:100%;min-height:62vh;display:flex;align-items:flex-end;overflow:hidden;background:#07070a center 30%/cover no-repeat;background-image:var(--img)}
+.vhb .bgv{position:absolute;inset:0;width:100%;height:100%;border:0;pointer-events:none}
+.vhb:after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(7,7,10,.25),rgba(7,7,10,.35) 45%,rgba(7,7,10,.95) 92%,#07070a),radial-gradient(70% 60% at 15% 85%,rgba(255,110,50,.16),transparent 60%)}
+.vhb .in{position:relative;z-index:2;max-width:1180px;width:100%;margin:0 auto;padding:0 24px 7vh;box-sizing:border-box}
+.vhb .eb{font:600 12px/1 Inter,sans-serif;letter-spacing:.32em;text-transform:uppercase;color:#ffb36b;margin-bottom:16px}
+.vhb h1{font-size:clamp(44px,7vw,96px)!important;line-height:.96;margin:0 0 16px;max-width:14ch;text-shadow:0 4px 40px rgba(0,0,0,.6)}
+.vhb h1 em{font-style:italic;background:linear-gradient(90deg,#ffb36b,#ff7b3a);-webkit-background-clip:text;background-clip:text;color:transparent}
+.vhb p{font-size:clamp(17px,1.6vw,20px);color:#ddd8e6;max-width:56ch;margin:0}
+.vhb .pill{display:inline-block;margin-top:22px;padding:13px 22px;border-radius:999px;background:linear-gradient(135deg,#ff7b3a,#e8452a);color:#fff!important;font:600 15px Inter,sans-serif;text-decoration:none;box-shadow:0 10px 40px -10px rgba(255,110,50,.7)}
