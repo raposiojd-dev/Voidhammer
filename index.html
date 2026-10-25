@@ -2828,7 +2828,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
   function endingSheet() {
     if (S.mc && S.mc.broken) {
       return "<h2>The Iron Throne</h2><p class=\"sub\">Day " + dayN() + "</p>" +
-        "<p>Marshal Dravik’s foundries go cold one at a time, and the smoke over the north thins until the sky is only sky. " + (realmList().length - mcFellCount()) + " of " + realmList().length + " realms still stand. " + S.allies.length + " heroes ride under your banner. " + T() + " men follow you.</p>" +
+        "<p>You hold the Iron Throne City for one night. From its high windows the smoke over the south is thicker than the smoke over the foundries. " + (realmList().length - mcFellCount()) + " of " + realmList().length + " realms still stand. " + S.allies.length + " heroes ride under your banner. " + T() + " men follow you.</p>" +
         storyEndingBlock() + "<p class=\"dim-t\">Every Realm was asked what it would be when the Edict came. Stormreach rode out, Flameborne burned, Stonehold shut its doors, Spiritveil wrote it all down, Shadowdeep said nothing, and Metalcrown smiled. You got to choose who lived through the first night. Nobody got to choose whether there would be a second.</p>" + tkwEnd() +
         '<div class="btns"><button class="solid" data-act="keepgoing">Keep playing</button><button data-act="again">Begin again</button></div>';
     }
