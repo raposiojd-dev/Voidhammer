@@ -1256,7 +1256,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
   function sealVoid0() {
     S.sealed = true; S.voidR = VOIDMAX; S.rifts = [];
     S.enemies = S.enemies.filter(function (e) { return e.kind !== "void"; });
-    toast("The Void is sealed. The edge is gone."); news("The Void was driven off the continent and sealed. No Rift will open again while you hold the line.");
+    toast("The Void draws back. The edge goes quiet."); news("The Void has drawn back from the edge. No Rift will open while you hold the line. Nobody thinks it has gone far.");
     try { TERRDIRTY = true; } catch (e) {}
   }
   function riftPos(r) { return { x: CX + Math.cos(r.a) * (S.voidR - 30), y: CY + Math.sin(r.a) * (S.voidR - 30) }; }
@@ -1799,7 +1799,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
   function storyOn() { return !!(S.story && S.story.on && S.mc && S.mc.on); }
   var STORY = {
     p0: { t: "The name under the world", sub: "Prologue",
-      body: ["Before the Realms there was only the Void: awareness without a self, stillness without end. Then it dreamed, and the dream struck a First Spark, and the Spark was the first thing that was not the Void. It was the first refusal of sameness.", "From the Spark came the Codex that writes what might be, and the Hammer that makes it real. The Void reached for the Hammer and had never learned to shape. It struck, and reality shattered into the Realms. That is the First Sundering, and every war since has been an echo of it.", "Memory shapes identity. Love survives memory. Now the foundries of the Iron Dominion will not go quiet, and you are one person in a coat, and the world is about to ask who you mean to become."],
+      body: ["Before the Realms there was only the Void: awareness without a self, stillness without end. Then it dreamed, and the dream struck a First Spark, and the Spark was the first thing that was not the Void. It was the first refusal of sameness.", "From the Spark came the Codex that writes what might be, and the Hammer that makes it real. The Void reached for the Hammer and had never learned to shape. It struck, and reality shattered into the Realms. That is the First Sundering, and every war since has been an echo of it.", "That was a very long time ago. Now it is the last season of the Concord. Eight Realms sit at one table in Luminant under the Aetherguard High Council and argue, mostly about Metalcrown, which is not invited. The foundries in the north have not gone quiet in a month. You are one person in a coat, and nobody has asked you anything yet."],
       ok: "Walk on" },
     b1: { t: "The Order", sub: "Chapter I",
       body: ["Metalcrown has stopped asking. The Iron Dominion’s decree is nailed to every gate its armies pass: power is forged, not gifted, and every Realm will be forged to the Dominion’s measure, gently or not.", "The Synthesis Council’s seal is at the bottom. Under it, in a different hand, small and almost shy, one word. Valek.", "No lord you ask will say who Valek is. Some go quiet. One crosses himself with an iron nail."],
@@ -1812,7 +1812,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
       choices: [{ k: "warn", t: "Send riders to every court. (80 crowns)", fx: function () { S.crowns = Math.max(0, S.crowns - 80); news("Riders from a column in the field warn every court: the Dominion is collecting sparks, not land."); } },
                 { k: "keep", t: "Keep the case. Tell no one what is in it.", fx: function () { news("A case of Dominion orders has gone missing from the field."); } }] },
     b4: { t: "The Twin-Spark Child", sub: "Chapter IV", cond: function () { return mcFellCount() >= 2 || S.mc.defeats >= 2 || mcPower() >= 1.8; },
-      body: ["In a ledger from a siege wagon, one entry is circled in red. A child, born of all the Realms, carrying two sparks in one body: the prophecy of Twins that was never about twins. The Radiant Edict ordered him controlled. Metalcrown simply took him.", "They woke both sparks with a spark-reactor. One was gentle. One was hungry. The hungry one survived, and not because it was stronger. Survival so often chooses hardness over hope.", "Beside the entry, a name someone tried to scratch out. Elyon. Valek is what the Dominion made of him, and he was loved too late."],
+      body: ["In a ledger from a siege wagon, one entry is circled in red. A child, born of all the Realms, carrying two sparks in one body: the prophecy of Twins that was never about twins. The Radiant Edict ordered him controlled. Metalcrown simply took him.", "They woke both sparks with a spark-reactor. One was gentle. One was hungry. The hungry one survived, and not because it was stronger.", "Beside the entry, a name someone tried to scratch out. Elyon. Valek is what the Dominion made of him, and he was loved too late."],
       choices: [{ k: "tell", t: "Tell your heroes what you have learned. Some will not stay. (Allies lose 15%)", fx: function () { S.allies.forEach(function (a) { a.n = Math.max(2, Math.round(a.n * 0.85)); }); } },
                 { k: "hold", t: "Tell no one. A secret only you carry, and carrying it costs you. (40 crowns)", fx: function () { S.crowns = Math.max(0, S.crowns - 40); } }] },
     b5: { t: "Why the Dominion marches", sub: "Chapter V", cond: function () { return mcPower() >= 2 || mcFellCount() >= 3; },
@@ -1827,22 +1827,22 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
     ss: { t: "The Lanterns go out", sub: "Interlude", cond: function () { return !!(S.mc.fell.spirit); },
       body: ["Spiritveil kept the world’s memory, and the Dominion took the archive.", "One page survives, carried out by a scout. In the Lantern Codex the entry for the Twin-Spark child has not been erased. It has been written over, again and again, by a hand that is also his. Each version is a little less certain of its own name."],
       ok: "Go on" },
-    sv: { t: "The Harrowed King", sub: "Interlude", cond: function () { return S.voidR < 1150 || (S.rifts && S.rifts.length >= 3); },
-      body: ["Word comes up the Ember road with the refugees, and none of them will say it the same way twice. The king of Flameborne did not die when the Void came to the Ember Throne. It did something worse. It let him keep his face.", "He sits where he sat. The fire around him is black and gives no light, and it does not burn flesh first. It burns meaning. Men kneel to him and slowly forget why they came, and their banners go grey in their hands, and then they are simply not there.", "The Lantern Council has a name for what he is now. The Harrowed King. The first general of the Void. He remembers being a king, and that memory hurts him more than anything the Void has done to him. That is why he serves it: it is the only thing that still gives him a purpose.", "The Void is not trying to win. It is trying to go back to the silence before anything was lost. He is how it walks."],
+    sv: { t: "The Crown in the Fire", sub: "Interlude", cond: function () { return S.voidR < 1150 || (S.rifts && S.rifts.length >= 3); },
+      body: ["Word comes up the Ember road with the refugees, and none of them tell it the same way twice. Something looks out of the Rifts now. Not an army. A picture.", "People who stand too near a Rift see a hall of dead embers and a tall shape in a crown of black fire. It has no face anyone can describe. Everyone who sees it kneels, and nobody can say afterwards why they did.", "Lyriel Frostwraith has sent word from Frostgrave, in the clipped hand of a seer who is tired of being ignored: it is a future, not a guest. The Void has noticed the TwinSpark child, and it is trying on the shapes of what comes after him.", "The Flameborne King heard the story at supper, put down his bread, and went to write a letter. He did not send it."],
       ok: "Go on" },
     sh: { t: "The quiet knife", sub: "Interlude", cond: function () { return !!(S.mc.fell.shadow); },
       body: ["Shadowdeep always expected betrayal. It spent a thousand years making itself too quiet to be worth the trouble, and the Dominion came anyway.", "A Nightblade’s last message reaches you in a dead drop, unsigned: the Dominion does not find its spark-bearers by force. It finds them by what they have forgotten they are."],
       ok: "Go on" },
-    fin: { t: "The Iron Throne", sub: "Finale", body: ["The Iron Throne City is silent. The reactors have stopped to listen. In the hall, on a seat far too big for him, sits Valek: slight, grey at the eyes, with a spark under his skin for every Realm you have crossed.", "“Everyone asks the same thing,” he says. “Who gets to decide what I become? Nobody asked me. They only ever asked what I was for.”", "The reactors are waiting. So is he. Something behind his eyes is listening too."],
-      choices: [{ k: "break", t: "Break the reactors. End the Dominion, and Valek with it. (Costs a third of your column)", fx: function () { loseFrac(0.33); } },
+    fin: { t: "The Iron Throne", sub: "Finale", body: ["The Iron Throne City is half empty. Its armies are in the south, under the walls of Luminant, and from the high windows of the hall you can see the Citadel burning. The reactors have stopped to listen.", "On a seat far too big for him sits Valek: slight, grey at the eyes, with a spark under his skin for every Realm you have crossed. “Everyone asks the same thing,” he says. “Who gets to decide what I become? Nobody asked me. They only ever asked what I was for.”", "The reactors are waiting. So is he. Something behind his eyes is listening too."],
+      choices: [{ k: "break", t: "Break the reactors. Cut the Dominion’s heart out from under him. (Costs a third of your column)", fx: function () { loseFrac(0.33); } },
                 { k: "name", t: "Say his name. Elyon. (Needs your heroes to hear it, a case kept close, or that you reached for him at Ironwatch.)", fx: function () { if (!(S.story.ch.b4 === "tell" || S.story.ch.b3 === "keep" || cp().f.reach)) { S.story.ch.nameFail = 1; loseFrac(0.2); } } },
-                { k: "throne", t: "Take the Iron Throne yourself. Run the reactors. Keep the world still.", fx: function () {} }] }
+                { k: "throne", t: "Take the Iron Throne yourself. Run the reactors. Make the war yours.", fx: function () {} }] }
   };
   var STORY_FIN = {
-    break: "The reactors scream and stop. The sparks go back to wherever sparks go. For the length of a breath there is a boy in the chair, and then there is nothing at all. The Dominion has no heart to follow and goes cold. The Realms stand, and each of them is a little less magic than before. You chose to end it, and it cost you a third of those who followed you. The Void is still out there. It does not care who wins.",
-    name: "“Elyon.” It is the first time anyone has said it in a very long while. Two sparks stir in one body. One of them remembers. The reactors stop, because he asked them to, and he looks at his hands as if they belonged to someone else. He cannot undo what he did, and he knows it. He is not whole. He is not Valek. For once nobody tells him what to be, and the choice, whatever it is, is his.",
-    namefail: "“Elyon.” He does not turn. The name means nothing to him, because nobody who knew him was there to make it mean something. The reactors flare, and you get out with what you can carry. The Dominion falls anyway, but not the way you wanted. He never saw you.",
-    throne: "You sit where he sat. The reactors wake and find a new hand, and the sparks keep flowing. The world stops changing, and for a long season it is quiet, ordered and safe. The Void withdraws, the way tide leaves a pier. Somewhere a boy is still being absorbed. You became exactly what the Dominion wanted, and nobody asked you either."
+    break: "The reactors scream and stop. For the length of a breath there is only a boy in the chair. Then Valek stands, and the sparks are still burning under his skin, because they were never in the machines. He walks past you as if you were furniture. The Dominion has lost its foundries and kept its heir. By morning Luminant has fallen, every Realm that refused the Edict is at war with every Realm that kept it, and all of them are at war with Metalcrown. It cost you a third of those who followed you. The Thousand-Year War begins.",
+    name: "“Elyon.” Nobody has said it to him in a long time. Two sparks stir in one body, and for one heartbeat the boy comes up: nine years old, frightened, looking at you as if you were the first door he has seen open. He lowers his hand. He lets you live. Then the other one comes back the way a tide comes back, and Valek looks at that hand as if it had disobeyed him. “Go,” he says, “before I remember why I let you.” You go. Behind you the reactors wake. In the south the Citadel of Luminant falls before dawn. The Thousand-Year War begins.",
+    namefail: "“Elyon.” He does not turn. Nobody who knew him was there to make the name mean anything. The reactors flare, and you get out with what you can carry. Luminant falls the same night. He never saw you. The Thousand-Year War begins.",
+    throne: "You sit where he sat. The reactors wake and find a new hand. Valek watches from the doorway, curious, then goes south to take Lightforge without you. Now the Dominion has two heads, and Metalcrown’s engineers love nothing more than a spare. The Realms look north and see you on the Iron Throne. Whatever you meant by it, they will call it war. The Thousand-Year War begins."
   };
   function storyQueue() {
     var st = S.story; if (!storyOn() || sheet || S.intro || S.ended) return;
@@ -1878,9 +1878,10 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
   }
   function storyEndingBlock() {
     if (!S.story || !S.story.on) return "";
-    if (S.story.fin) return "<p>" + STORY_FIN[S.story.fin] + "</p>";
-    if (S.mc && S.mc.lost) return "<p>In the Iron Throne City a boy named Elyon sits very still while the world is finished around him. No one has said his name in a very long while.</p>";
-    return "";
+    var kh = S.kael !== "away" ? "<p class=\"dim-t\">Before the last march the Flameborne King took Kaelren’s hand and pressed his thumb into the palm until it burned. “Bring him home,” he said. Kaelren has not said who he meant.</p>" : "";
+    if (S.story.fin) return "<p>" + STORY_FIN[S.story.fin] + "</p>" + kh;
+    if (S.mc && S.mc.lost) return "<p>In the Iron Throne City a boy named Elyon sits very still while the world is finished around him. No one has said his name in a very long while.</p>" + kh;
+    return kh;
   }
 
   // ---------- magic tutorial ----------
@@ -1889,7 +1890,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
     { t: "Magic runs on memory", b: function () { return ["Your magic is not a spell list. It is your own past. Every memory in your Ledger is a piece of who you are, and you start with " + S.held.length + " held.", "Each memory also does something for you all the time: one makes salvage sell dearer, one feeds your column for less, one makes your hand steadier. You can see them all under <b>Ledger</b>."]; } },
     { t: "Cast to win a fight", b: function () { return ["In any battle, tap <b>Cast</b> (it glows purple). The Ledger opens and you choose one memory to burn.", "Auto-resolved fights: the enemy breaks at once, and you lose only a tenth of your men. On the field: a wave of light sweeps out from you and hurts every foe it touches.", "This is how you beat a fight you cannot win. It is not free."]; } },
     { t: "The cost", b: function () { return ["A burned memory is gone for good. You lose what it gave you, and you lose the memory itself.", "Elyndra writes every burn in the Record, her page of the Lantern Codex. You can ask her to read it back to you, but reading is all she can do. It does not come back.", "Your Ledger shows how hollow you are as a row of pips at the top. Each burn fills one."]; } },
-    { t: "What emptiness gives", b: function () { return ["Hollow is not only a loss. The emptier you are, the less the Void can take from you.", "<b>1 burned:</b> Marked. Nothing you can name.<br><b>2 to 3:</b> Unburdened. Taking from villages costs no goodwill.<br><b>4 to 5:</b> Clean Sight. You can walk the Void unharmed.<br><b>6:</b> Nothing To Lose. With eight men or fewer you fight at half again your strength.", "Every burn answers the question this game keeps asking: who do you become when you pay for what you want?"]; } },
+    { t: "What emptiness gives", b: function () { return ["Hollow is not only a loss. The emptier you are, the less the Void can take from you.", "<b>1 burned:</b> Marked. Nothing you can name.<br><b>2 to 3:</b> Unburdened. Taking from villages costs no goodwill.<br><b>4 to 5:</b> Clean Sight. You can walk the Void unharmed.<br><b>6:</b> Nothing To Lose. With eight men or fewer you fight at half again your strength.", "Six is the bottom of the Ledger. Nobody in the Record has gone past it and stayed someone their friends would recognise."]; } },
     { t: "When to cast", b: function () { return ["Spend a memory when the fight is hopeless, a Rift needs closing, or a siege will not break. Keep them when you can win by other means.", "Think about which one you spend. Some memories matter to your companions. Burning one you share with Kaelren changes what you can say to him.", "You hold " + S.held.length + " memories and have burned " + S.burned.length + ". Open the Ledger any time to read them, then cast in your next battle."]; } }
   ];
   function magicSheet() {
@@ -2820,26 +2821,28 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
     return "<h2>Ashford</h2><p class=\"sub\">Day 1</p>" + sceneImg("village") +
       "<p>" + (ORIGINS[OPT.origin] || ORIGINS.wanderer).intro + "</p>" + (OPT.dom !== "off" ? "<p class=\"dim-t\">Far to the north, Iron Throne City has closed its gates. Merchants say the foundries have not gone quiet in a month. The realms argue about who it is for.</p>" : "") +
       "<p>Your coat still smells of " + R("[[forge|the forge where my father worked]]") + ". Ashford is short of grain. Redbank, an hour east, is not.</p>" +
-      (noVoid() ? '<p>' + nwd(realmList().length) + ' realms are at each other’s throats, and nothing stands behind them but sky.</p>' : '<p>' + nwd(realmList().length) + ' realms are at each other’s throats. Beyond them all, the Void is closing in from every side, and it does not care who wins.</p>')+
+      (noVoid() ? '<p>' + nwd(realmList().length) + ' realms are at each other’s throats, and nothing stands behind them but sky.</p>' : '<p>' + nwd(realmList().length) + ' realms are at each other’s throats. Out past the edges the Void is stirring, and lately it has started to pay attention.</p>')+
       '<p class="dim-t">Tap a place to go there. Menus pause the world. Take work, buy cheap, sell dear, and find men who will follow you. Later, take a town of your own, and close the Rifts at the edge.</p><div class="btns"><button class="solid" data-act="begin">Begin</button></div>';
   }
+  function tkwEnd() { var b = storyEndingBlock(); return b.indexOf("Thousand-Year War begins") > -1 ? "" : "<p><b style=\"font-weight:500;color:var(--amber)\">The Thousand-Year War begins.</b></p>"; }
   function endingSheet() {
     if (S.mc && S.mc.broken) {
-      return "<h2>The Iron Throne breaks</h2><p class=\"sub\">Day " + dayN() + "</p>" +
+      return "<h2>The Iron Throne</h2><p class=\"sub\">Day " + dayN() + "</p>" +
         "<p>Marshal Dravik’s foundries go cold one at a time, and the smoke over the north thins until the sky is only sky. " + (realmList().length - mcFellCount()) + " of " + realmList().length + " realms still stand. " + S.allies.length + " heroes ride under your banner. " + T() + " men follow you.</p>" +
-        storyEndingBlock() + "<p class=\"dim-t\">Every realm asked who it would become when the Dominion came. Some kneeled, some burned, some forgot. You never learned what you were. You chose what to do next, and that was enough.</p>" +
+        storyEndingBlock() + "<p class=\"dim-t\">Every Realm was asked what it would be when the Edict came. Stormreach rode out, Flameborne burned, Stonehold shut its doors, Spiritveil wrote it all down, Shadowdeep said nothing, and Metalcrown smiled. You got to choose who lived through the first night. Nobody got to choose whether there would be a second.</p>" + tkwEnd() +
         '<div class="btns"><button class="solid" data-act="keepgoing">Keep playing</button><button data-act="again">Begin again</button></div>';
     }
     if (S.mc && S.mc.lost) {
       return "<h2>The Dominion is complete</h2><p class=\"sub\">Day " + dayN() + "</p>" +
         "<p>" + nwd(realmList().length) + " realms, one banner. Iron Throne City sends out the order that the continent has a single law now, and the law is efficiency. You are still alive, and so are the people who will not kneel.</p>" +
-        storyEndingBlock() + "<p class=\"dim-t\">You can still break the Iron Throne. It will be harder now.</p>" +
+        storyEndingBlock() + "<p class=\"dim-t\">You can still break the Iron Throne. It will be harder now.</p>" + tkwEnd() +
         '<div class="btns"><button class="solid" data-act="keepgoing">Keep fighting</button><button data-act="again">Begin again</button></div>';
     }
     var vs = S.sites.length, kt = S.kael === "alive" ? "Kaelren rides beside you." : S.kael === "wounded" ? "Kaelren is in the surgeon’s wagon, and will ride again." : "";
     return "<h2>The winter ends</h2><p class=\"sub\">Day " + END_DAY + "</p>" +
       "<p>" + vs + " of " + S.total + " places still stand. " + T() + " men follow you. " + hollow() + " memories are gone. " + kt + "</p>" +
-      (S.sealed ? "<p class=\"dim-t\">The Void is sealed. For the first time in living memory the sky past the edge is only sky.</p>" : (noVoid() ? "<p class=\"dim-t\">The realms still stand, for now.</p>" : "<p class=\"dim-t\">The edge has not stopped. You have only learned how far it is.</p>")) +
+      (S.sealed ? "<p class=\"dim-t\">The Void has drawn back from the edge. It has not gone far, and it is still looking north.</p>" : (noVoid() ? "<p class=\"dim-t\">The realms still stand, for now.</p>" : "<p class=\"dim-t\">The edge has not stopped. You have only learned how far it is.</p>")) +
+      "<p>In the spring the Edict’s wardens ride out of Luminant to count every spark, and Metalcrown’s foundries open their gates to meet them.</p>" + tkwEnd() +
       '<div class="btns"><button class="solid" data-act="keepgoing">Keep playing</button><button data-act="again">Begin again</button></div>';
   }
 
@@ -3802,7 +3805,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
       if (q.owner === "storm" || q.owner === "ember") q.credit = (q.credit || 0) + (side === "against" ? 1 : side === "for" ? -1 : 0);
     });
     var t = "The Radiant Edict has passed. All Aether is to be regulated, every spark watched, and the TwinSpark child held under Lightforge guard.";
-    news(t); news("Stormreach walked out of the Council. Flameborne is rioting in the streets. Stonehold has refused to comply."); log(t, "e");
+    news(t); news("Stormreach walked out of the Council. Flameborne is rioting in the streets. Stonehold has refused to comply."); news("Spiritveil has sent a warning to every court. Shadowdeep has said nothing at all, which is worse. In Iron Throne City, someone is smiling."); log(t, "e");
     toast("The Radiant Edict has passed. The Concord is broken.");
   }
   function startDominion() {
@@ -3812,11 +3815,11 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
     log("The Iron Heir has risen. The Dominion will march.", "e");
   }
   var ACTS = [
-    { n: "I", t: "The Grey Writ", d: "Three bandits, one grey seal, one name.", open: function (f) { return true; }, done: function (f) { return f.q3done; } },
+    { n: "I", t: "The Grey Writ", d: "The Concord’s last season. Three bandits, one grey seal, one name.", open: function (f) { return true; }, done: function (f) { return f.q3done; } },
     { n: "II", t: "The Lantern Page", d: "A name that was never written.", open: function (f) { return f.q3done; }, done: function (f) { return f.q4done; } },
     { n: "III", t: "The Radiant Edict", d: "Lightforge chooses fear over trust.", open: function (f) { return f.q4done; }, done: function (f) { return f.q5done; } },
     { n: "IV", t: "The Iron Child", d: "Metalcrown takes what Lightforge locked away.", open: function (f) { return f.q5done; }, done: function (f) { return f.q6done; } },
-    { n: "V", t: "The Dominion Marches", d: "The foundries open. The long war begins.", open: function (f) { return f.q6done; }, done: function (f) { return f.q7done; } }
+    { n: "V", t: "The Dominion Marches", d: "The foundries open, and the Dominion marches on Lightforge. The finale is at the Iron Throne.", open: function (f) { return f.q6done; }, done: function (f) { return f.q7done; } }
   ];
   function actNow() { var f = cp().f, cur = ACTS[ACTS.length - 1]; for (var i = 0; i < ACTS.length; i++) if (!ACTS[i].done(f)) { cur = ACTS[i]; break; } return cur; }
   function arng(seed) { var s = seed >>> 0; return function () { s = (s + 0x6D2B79F5) >>> 0; var t = s; t = Math.imul(t ^ t >>> 15, t | 1); t ^= t + Math.imul(t ^ t >>> 7, t | 61); return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
@@ -4185,10 +4188,10 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
     b_1: { n: "Lord Brannoch", t: "Brannoch of Stonehold. You carry Flameborne dust and a grey writ. Show me.", c: [{ t: "Here.", go: "b_2" }] },
     b_2: { n: "Lord Brannoch", t: "I have seen this seal on orders for the northern pass. They are building something there, a foundry that never sleeps. Greywater is held by Warden Sable. Break him and we can see what stands behind him.", c: [
       { t: "I will go.", set: { q3: 1 }, toast: "New quest: Greywater Pass." }, { t: "Why me?", go: "b_3" }] },
-    b_3: { n: "Lord Brannoch", t: "A stranger who keeps choosing the hard road. That is exactly who I need. Not who you were. Who you are choosing to be.", c: [{ t: "I will go.", set: { q3: 1 }, toast: "New quest: Greywater Pass." }] },
+    b_3: { n: "Lord Brannoch", t: "A stranger who keeps choosing the hard road. That is exactly who I need, and exactly who I cannot afford to lose, so try not to die at the pass. Stonehold hates paperwork.", c: [{ t: "I will go.", set: { q3: 1 }, toast: "New quest: Greywater Pass." }] },
     b_wait: { n: "Lord Brannoch", t: "Greywater Pass. The north gate. Sable holds it." },
     b_back: { n: "Lord Brannoch", t: "You did it. The scouts are broken and the road north is ours to see. Take the Stonehold purse, three hundred crowns, and my mark. Every Stonehold lord will know you stood at the pass.", c: [
-      { t: "Accept.", go: "b_end", give: { crowns: 300, xp: 150 }, set: { q3done: 1 }, toast: "Book 1, Part 1 complete." }] },
+      { t: "Accept.", go: "b_end", give: { crowns: 300, xp: 150 }, set: { q3done: 1 }, toast: "Act I complete." }] },
     b_end: { n: "Lord Brannoch", t: "The Dominion has a face now, and a name: Valek. Whatever he was, someone made him. The world is yours, wanderer. Go, and keep choosing." },
     b_done: { n: "Lord Brannoch", t: "The roads are yours. Go." },
     b_4: { n: "Lord Brannoch", t: "You are back from the pass with a grey-coated figure on your mind. Good. He is on mine. The name Valek is in no Stonehold ledger, and Stonehold records everything that can be weighed. The one place that keeps what cannot be weighed is the Lantern Archive. Spiritveil keeps an annex of it in Luminant, under Archivist Lume. Take the writ there. And be careful. Luminant is a city that has only just started to be afraid.", c: [
@@ -4200,8 +4203,8 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
     b_7enough: { n: "Lord Brannoch", t: "No. Nothing is enough. But it buys the Realms a season, and a season is how a stranger becomes a banner.", c: [{ t: "I will break Steelgate.", set: { q7: 1 }, toast: "New quest: The Steelgate Foundry." }] },
     b_7wait: { n: "Lord Brannoch", t: "Steelgate. Dravik. Do not go in with a light heart." },
     b_7back: { n: "Lord Brannoch", t: "Steelgate is dark. Dravik is dead and the reactors are cold. Take Stonehold's thanks, and take this. It was made for someone who would still be alive in a year.", c: [
-      { t: "Accept.", go: "b_7end", give: { crowns: 400, xp: 200 }, fn: function () { dropAtP(genItem(3, null, 3)); }, set: { q7done: 1 }, toast: "Book 1, Part 2 complete." }] },
-    b_7end: { n: "Lord Brannoch", t: "The Dominion is loose, but it is no longer unstoppable. Call the heroes of the Realms. Hold what you can. When you are ready to end it, the Iron Throne is where the boy sits. Whatever you mean to do about him, decide before you get there." },
+      { t: "Accept.", go: "b_7end", give: { crowns: 400, xp: 200 }, fn: function () { dropAtP(genItem(3, null, 3)); }, set: { q7done: 1 }, toast: "The Steelgate Foundry is broken." }] },
+    b_7end: { n: "Lord Brannoch", t: "The Dominion is loose, but it is no longer unstoppable. Its main host is marching on Luminant, and Lightforge will not hold forever. Call the heroes of the Realms. Hold what you can. The Iron Throne is where the boy sits. Whatever you mean to do about him, decide before you get there." },
     lume_idle: { n: "Archivist Lume", t: "Spiritveil keeps what the world forgets. If you need something remembered, ask Lord Brannoch to send you." },
     lume_1: { n: "Archivist Lume", t: "Spiritveil keeps the memory of the world, and I keep this annex of it in a city that has stopped wanting to remember. You carry a grey writ. May I? There. Valek. In the Lantern Codex that name is a blank line, a hole where ink should be. It is not erased. Erasure leaves marks. It was never written, and yet it is everywhere. The page that explains it was moved to the Drowned Archive when the ink began to crawl off the paper. What crawls there now is not ink any more. Bring me the page.", c: [
       { t: "I will go down.", set: { lumeok: 1 }, toast: "New objective: the Drowned Archive.", go: "lume_go" }, { t: "What is crawling?", go: "lume_ink" }] },
@@ -4227,7 +4230,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
     ardyn_vote: { n: "High Councillor Ardyn", t: "The undercroft is quiet and the scroll is whole. Come. The hall is full.", c: [{ t: "Watch the vote.", go: "edict_scene" }] },
     edict_scene: { n: "The Aetherguard High Council", t: function () { var side = cp().f.edictSide; return "The hall is lit like a courtroom. Ardyn reads the three lines aloud. All Aether must be regulated. All sparks must be monitored. The TwinSpark child must be controlled. Seraphine Skyrend is on her feet before he finishes, and she is not alone for long, and none of it matters. The elders raise their hands in the same slow motion, one after another, because Lyriel Frostwraith has told them how this ends, and they would rather be afraid together than alone. The Radiant Edict passes. " + (side === "for" ? "You stood with Ardyn at the rail. He did not look at you, which was its own kind of thanks." : side === "against" ? "You stood with Seraphine at the rail. She looked at you once, like someone counting an ally and finding the number small." : "You stood at the back where the light does not reach. It was not a choice, and everyone in the hall knew it."); },
       c: [{ t: "It is done.", fn: applyEdict, set: { edict: 1, q5done: 1 }, give: { crowns: 150, xp: 150 }, toast: "The Radiant Edict has passed.", go: "edict_after" }] },
-    edict_after: { n: "Seraphine Skyrend", t: "Stormreach does not stay where it is put. We leave tonight, and Flameborne is already in the streets. Stonehold will refuse. The Aetherguard held seven chairs. By morning it will hold none. Remember this hour. Everyone else will remember it wrong.", c: [{ t: "What happens to the boy?", go: "edict_boy" }] },
+    edict_after: { n: "Seraphine Skyrend", t: "Stormreach does not stay where it is put. We leave tonight, and Flameborne is already in the streets. Stonehold will refuse. Spiritveil will warn everyone and be thanked by no one, and Shadowdeep has already started. The Aetherguard held seven chairs. By morning it will hold none. Metalcrown never had a chair, and tonight that is the only thing that looks clever. Remember this hour. Everyone else will remember it wrong.", c: [{ t: "What happens to the boy?", go: "edict_boy" }] },
     edict_boy: { n: "Seraphine Skyrend", t: "He is in the north ward of this Citadel, under Lightforge guard, because the Edict says so. Aldreth Veil keeps the key. Speak to her. If I were you I would not wait for morning.", c: [{ t: "I will find Aldreth.", toast: "Speak to Archmarshal Aldreth." }] },
     ardyn_after: { n: "High Councillor Ardyn", t: "The Edict is law. I have never been so certain, or so sorry. Find Aldreth Veil. The ward is her charge." },
     ardyn_after2: { n: "High Councillor Ardyn", t: "I wrote the line that made them take him. I will carry that for as long as I can still remember it." },
@@ -4925,7 +4928,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
     if (!f.q6) return { text: "Speak to Archmarshal Aldreth Veil.", site: "luminant", area: "luminantc", npc: "aldreth" };
     if (!f.wardclear) return { text: "Fight up the north ward of the Citadel.", site: "luminant", area: "ward", en: "*" };
     if (!f.cell) return { text: "Search the cell at the top of the stair.", site: "luminant", area: "ward", npc: "cell" };
-    if (!hasDom) return { text: "Book 1 ends here. The world is yours.", site: "" };
+    if (!hasDom) return { text: "The Edict has passed and the boy is gone. With the Dominion switched off, the war stays a rumour. The world is yours.", site: "" };
     if (!f.q6done) return { text: "Follow the ruts to Ironwatch and stop the wagon.", site: "ironwatch", area: "ironyard", en: "quill" };
     if (!f.q7) return { text: "Report to Lord Brannoch. The Dominion marches.", site: "highmarch", area: "highmarch", npc: "brannoch" };
     if (!f.foundry) return { text: "Break the Steelgate foundry and Marshal Dravik.", site: "steelgate", area: "foundry", en: "dravik" };
@@ -11030,7 +11033,7 @@ function qFinish(q, opt, idx) { qFinish0(q, opt, idx); if (opt && typeof opt.eff
       { t: "Say nothing. Let them find it on their own.", reward: { xp: 350, item: 3 }, set: { two_quiet: 1 }, text: "In the evening, you hear them talking quietly by a fire, and you leave them to it." }] });
 
   // ---------------- ACT VI · THE QUIET BETWEEN (main story, after the Iron Reaper) ----------------
-  ACTS.push({ n: "VI", t: "The Quiet Between", d: "The Void is not an enemy. It is a fear. And fears can be answered.", open: function (f) { return !!f.qd_gate; }, done: function (f) { return !!f.qd_hollowthrone; } });
+  ACTS.push({ n: "VI", t: "The Quiet Between", d: "A side road before the end. The Void has noticed the boy, and it is leaning on the edges of the map.", open: function (f) { return !!f.qd_gate; }, done: function (f) { return !!f.qd_hollowthrone; } });
   ACTOPEN[6] = function (f) { return !!f.qd_gate; };
   var m = function (id) { return function (f) { return !!f["qd_" + id]; }; };
   ch({ id: "silence1", opt: 0, act: 6, hub: "granitekeep", npc: "voyager", npcDef: { name: "The Voyager", col: "#c8c8d8", hair: "#f0f0f8", idle: "I have walked this road before. I walked it before the Keep had stones. Do not ask me how." },
@@ -11048,17 +11051,17 @@ function qFinish(q, opt, idx) { qFinish0(q, opt, idx); if (opt && typeof opt.eff
       { t: "“Then we finish what you started. Together.”", reward: { xp: 600, crowns: 500, item: 3 }, set: { v6_together: 1 }, text: "“Together,” he says, and the word has weight. “Yes. That may be what I was waiting for.”" }] });
   ch({ id: "unmaderoad", opt: 0, act: 6, hub: "windspire", npc: "aeris", need: m("voyagerpast"), name: "The Unmade Road", zone: "unmaderoad", zname: "The Unmade Road", th: "pass", lv: 4, seed: 453, pal: ["wraith", "hollowsent"], boss: "unmade", obj: "Hold the Unmade Road until the Realms arrive.",
     gate: "The road ends in a white blur. Beyond it there is no road, only the idea of one.",
-    intro: "The Void has taken a road. Not a village. A road. The whole thing is gone, as though no one ever walked it. The Realms must march to the Hollow Throne together. They will not do it unless someone holds this road first. Stormreach will ride. Stonehold will march. Lightforge remembers. I need you to hold the line while they decide.",
-    turn: "You held. The Realms are marching, all nine of them. I did not think I would live to see that.",
+    intro: "The Void has taken a road. Not a village. A road. The whole thing is gone, as though no one ever walked it. The Realms must march to the Hollow Throne together. They will not do it unless someone holds this road first. Stormreach will ride. Stonehold will march. Lightforge has promised to come, in writing, twice. I need you to hold the line while they decide.",
+    turn: "You held. Every Realm that still answers is marching, and some that swore they never would. I did not think I would live to see that.",
     opts: [{ t: "“Stonehold's Eternal Senate stands beside us.”", reward: { xp: 700, crowns: 400 }, set: { v6_stone: 1 }, eff: gift({ troops: 15, say: "Stonehold marches with you." }), text: "The Senators arrive in slow stone ranks. Orm gives you a nod that is two hundred years deep." },
       { t: "“Stormreach rides first. Speed is what the Void cannot match.”", reward: { xp: 700, item: 3 }, set: { v6_storm: 1 }, eff: gift({ troops: 15, say: "Stormreach rides with you." }), text: "The riders pass in a roar of wind and thunder. The Void's quiet is the first thing to break." }] });
   ch({ id: "hollowthrone", opt: 0, act: 6, hub: "highmarch", npc: "hald", need: m("unmaderoad"), name: "The Hollow Throne", zone: "hollowthrone", zname: "The Hollow Throne", th: "pass", lv: 5, seed: 454, pal: ["hollowsent", "wraith"], boss: "hollowking", obj: "Drive the Herald off the Hollow Throne, or answer it.",
-    gate: "A throne of nothing at the end of the world. A king of nothing sits on it, wearing the faces of everyone who was ever forgotten.",
-    intro: function () { var f = F(); return "This is the last road. " + (f.v6_choose ? "The Voyager will walk it as himself, for the first time. " : f.v6_together ? "The Voyager walks beside you. " : "") + "The Hollow King is every thing the Void has ever taken, speaking with one voice. He does not want to destroy the world. He wants to make it stop hurting. Every Realm has marched. Every companion stands behind you. What you choose here is the shape of everything after."; },
-    turn: "It is over. The throne is empty. The Realms are shaking hands with people who were their enemies a year ago, and nobody can quite say how. Book One ends here. Everything after is what you make of it.",
-    opts: [{ t: "Break the Hollow King. The world must keep moving.", reward: { xp: 1200, crowns: 1000, item: 3, perm: "hp" }, set: { void_end: "broken" }, text: "The Hollow King shatters like glass. The faces he wore go free, one by one, and every one of them looks at you. The Void pulls back, wounded, and will return." },
-      { t: "Sit with the Hollow King. Teach the Void that change does not have to end.", reward: { xp: 1200, perm: "pts" }, set: { void_end: "taught" }, text: "You sit on the empty step and tell him a story. It takes all night. At dawn the Void is still there, but it is no longer pressing. It is listening." },
-      { t: "Offer yourself to the Hollow Throne. Be the one who remembers them all.", reward: { xp: 1500, crowns: 500, item: 3, perm: "hp" }, set: { void_end: "vessel" }, text: "You walk into the Throne. For one second you are every name that was ever forgotten. Then you are yourself again, carrying all of them. The Void has someone to talk to. So do you." }] });
+    gate: "A throne of nothing at the edge of the map. The Herald sits on it, wearing the faces of everyone the Void has ever eaten a name from.",
+    intro: function () { var f = F(); return "This is the last road before the north. " + (f.v6_choose ? "The Voyager will walk it as himself. " : f.v6_together ? "The Voyager walks beside you. " : "") + "The Herald has climbed onto the Hollow Throne, because the Void wants a seat close enough to watch the boy. It does not want the world. It wants to see what Elyon becomes. Every Realm that still answers has sent someone. Push it back from the edge, and whatever happens at the Iron Throne will happen without the Void leaning on it."; },
+    turn: "The throne is empty, for now. For a week the Realms shake hands with people who were their enemies a year ago, and nobody can quite say how. Then the riders come in from the north. The Dominion is marching on Lightforge, and the Iron Throne is open. Go and finish it.",
+    opts: [{ t: "Break the Herald’s hold. The world must keep moving.", reward: { xp: 1200, crowns: 1000, item: 3, perm: "hp" }, set: { void_end: "broken" }, text: "The Herald comes apart like wet paper. The faces it wore go free one by one, and every one of them looks at you. The Void pulls back from the edge, stung. It will be back. Not soon." },
+      { t: "Sit with the Herald. Show the Void that change does not have to end.", reward: { xp: 1200, perm: "pts" }, set: { void_end: "taught" }, text: "You sit on the empty step and tell it a story. It takes all night. At dawn the Void is still there, but it has stopped pressing. It is listening, which is not the same as friendly." },
+      { t: "Offer yourself to the Hollow Throne. Be the one who remembers them all.", reward: { xp: 1500, crowns: 500, item: 3, perm: "hp" }, set: { void_end: "vessel" }, text: "You walk into the Throne. For one second you are every name that was ever eaten. Then you are yourself again, carrying all of them. The Void has someone to talk to. So, unfortunately, do you." }] });
 })();
 // ===== STORY EXPANSION 2: the Voidhammer shard main chain (required for the Iron Gate) + Stonehold, Frostgrave, Shadowdeep, Metalcrown chains =====
 (function () {
@@ -14009,8 +14012,8 @@ function ovVTake(s, why) {
   else if (cellAt(s.x, s.y) === curCell()) toast("The Void has taken " + s.name + ".");
   var v = ovVD();
   if (FAC[old] && FAC[old].cap && !v.fell[old] && holdings(old).length === 0) {
-    v.fell[old] = 1; var t = FAC[old].name + " is gone. The last hold fell to the Void, and no one is left to write it down.";
-    news(t); toast(FAC[old].name + " has been consumed."); log(t, "e");
+    v.fell[old] = 1; var t = "Every hold of " + FAC[old].name + " has gone grey. The Realm is not dead. It is waiting under the Void for someone to pull it back out.";
+    news(t); toast(FAC[old].name + " has gone grey."); log(t, "e");
   }
 }
 function ovVRelease(s) {
@@ -15350,10 +15353,10 @@ function areaUnlocked(id) { if (id === "unmadecity" || id === "lanterncity" || i
   });
   // ---- THE VOID FINALE ----
   var VF = [
-    ["vf_1", "", "The Silent Gate", "The Shard Reach", "pass", "The Gatewatch", "A gate on the Unstable Shard. The banner on it is blue, then not a banner, then blue again.", "The Void is not an army. It is a stillness that has learned to push. Go to the Silent Gate and see what holds it.", "The gate is held by something that was once a gatewatch. It does not move. It does not blink. It has not for a thousand years.", "Seal it behind you.", "Hald seals the gate. The silence at your back is very large.", "Leave it open. We may need to leave.", "Hald says nothing. You leave it open. The silence is not hostile; it is only waiting."],
+    ["vf_1", "", "The Silent Gate", "The Shard Reach", "pass", "The Gatewatch", "A gate on the Unstable Shard. The banner on it is blue, then not a banner, then blue again.", "The Void is not an army. It is a stillness that has learned to lean. It is leaning on the Shard, the one Realm that never finished being made. Go to the Silent Gate and see what holds it.", "The gate is held by something that was once a gatewatch. It does not move. It does not blink. It has not for a thousand years.", "Seal it behind you.", "Hald seals the gate. The silence at your back is very large.", "Leave it open. We may need to leave.", "Hald says nothing. You leave it open. The silence is not hostile; it is only waiting."],
     ["vf_2", "vf_1", "The Unmoving Host", "The Frozen Field", "pass", "The Unmoving Captain", "A field of soldiers, mid-stride, who have not fallen in a thousand years.", "Every soldier the Void touched is standing in the field. They are not dead. They are not alive. They are held. Walk through them, and do not stop to listen.", "You walked through. You heard one of them whisper your name.", "Carry one out. Even one.", "You carry a soldier out. He weeps, and ages forty years in an hour, and dies in your arms, grateful.", "Leave them. They are beyond help.", "You walk on. Behind you, the field is very still."],
     ["vf_3", "vf_2", "The Heart of Stillness", "The Still Heart", "cave", "Stillness Incarnate", "A cavern at the end of the world where nothing has ever moved.", "The Void has a heart. Not a king, not a god. A place where it began. Go there, and find out whether it can be asked to change.", "You stood in the heart. You felt it listen. You do not know whether it understood.", "Tell it about change.", "You speak of seasons, of children, of rivers. The stillness hums, like a held note.", "Tell it about death.", "You speak of endings. The stillness shudders, and for a moment, it is almost like pain."],
-    ["vf_4", "vf_3", "The Void Itself", "The Last Stillness", "cave", "The Void", "A place with no walls, no floor, no ceiling, and one presence.", "This is the end of the road. The Void will ask you for something. I do not know what. Whatever it is, it is the answer to everything the game has asked.", "The Void has asked. You answered. The world is not the same as it was.", "Seal it. Pay the price. Let the world live, unchanged.", "You seal the Void. It costs a fifth of your column, who remain with it. The edge of the world goes quiet.", "Teach it. Let the Void learn to change, and let the world pay for the lesson.", "You teach it. The rifts close, the holds crumble, and the Void grows slow and strange. It is not defeated. It is, at last, a neighbour."]
+    ["vf_4", "vf_3", "The Void Itself", "The Last Stillness", "cave", "The Void", "A place with no walls, no floor, no ceiling, and one presence.", "This is as close as anyone can stand. The Void will ask you for something. Whatever it is, it is not about you. It has been watching the north since the boy was born.", "The Void asked where the boy was going. You answered. It drew back to think about it, the way a tide draws back.", "Close the fracture. Pay the price. Buy the Realms time.", "You close the fracture. It costs a fifth of your column, who stay behind to hold it shut. The edge goes quiet. Nobody believes it is for good.", "Teach it. Let the Void learn what change is, and let the world pay for the lesson.", "You teach it. The rifts close, the holds crumble, and the Void grows slow and strange. It is not defeated. It is curious, which may be worse, and it is a long way off."]
   ];
   VF.forEach(function (q, i) {
     var id = q[0], bossId = "sb_" + id;
@@ -15364,7 +15367,7 @@ function areaUnlocked(id) { if (id === "unmadecity" || id === "lanterncity" || i
       name: q[2], zone: "vfz_" + i, zname: q[3], th: q[4], lv: 5, seed: 1000 + i, pal: ["hollowsent", "wraith"], boss: bossId, obj: "Finish " + q[2] + " in " + q[3] + ".",
       gate: q[6], intro: q[7], turn: q[8],
       opts: [{ t: q[9], reward: { xp: 700, crowns: 700, perm: "hp" }, set: (function () { var o = {}; o["vf_" + i] = "a"; if (last) o.voidsealed = 1; return o; })(), eff: last ? function () { try { loseFrac(0.2); sealVoid(); } catch (e) {} } : undefined, text: q[10] },
-             { t: q[11], reward: { xp: 700, perm: "pts", item: 3 }, set: (function () { var o = {}; o["vf_" + i] = "b"; if (last) o.voidtaught = 1; return o; })(), eff: last ? function () { try { S.rifts = []; S.sites.forEach(function (s) { if (s.vh) ovVRelease(s); }); S.voidTaught = 1; news("The Void has learned to change. Its holds crumble back."); } catch (e) {} } : undefined, text: q[12] }] });
+             { t: q[11], reward: { xp: 700, perm: "pts", item: 3 }, set: (function () { var o = {}; o["vf_" + i] = "b"; if (last) o.voidtaught = 1; return o; })(), eff: last ? function () { try { S.rifts = []; S.sites.forEach(function (s) { if (s.vh) ovVRelease(s); }); S.voidTaught = 1; news("The Void has drawn back to think. Its holds crumble."); } catch (e) {} } : undefined, text: q[12] }] });
   });
   var ovVStrTAUGHT = ovVStr;
   ovVStr = function () { return ovVStrTAUGHT() * (S && S.voidTaught ? 0.5 : 1); };
