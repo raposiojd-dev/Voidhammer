@@ -1,0 +1,4 @@
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>bg</title>
+<style>html,body{margin:0;height:100%;background:#07070a;overflow:hidden}video{position:fixed;inset:0;width:100%;height:100%;object-fit:cover}</style></head>
+<body><video id="v" autoplay muted loop playsinline preload="auto"></video>
+<script>var n=(location.search.match(/v=([a-z0-9_-]+)/i)||[])[1]||'hero';var v=document.getElementById('v');v.poster=n+'.jpg';v.src=n+'.mp4';v.play&&v.play().catch(function(){});</script></body></html>
