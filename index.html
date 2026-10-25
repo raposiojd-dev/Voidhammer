@@ -394,8 +394,8 @@ window.__vhGame = function () { (function () {
       back: "You told me he was younger than you, and that he apologised. You said your hand has been steady since, and that you hate that it is." },
     name: { title: "The Name My Teacher Gave Me", desc: "She said a blade should know who is holding it.", passive: "+10% strength",
       back: "Your teacher was Maren. She named you before you could hold a blade. She was the only one who ever used it." },
-    ford: { title: "The Man Who Died So I Could Reach the Ford", desc: "He went in first. He always did.", passive: "Fleeing works more often",
-      back: "Kaelren rode into the line to give you the ford. You did not ask him to. He did not wait to be asked." }
+    ford: { title: "The Day Kaelren Bought Me the Ford", desc: "He went in first. He always does.", passive: "Fleeing works more often",
+      back: "Kaelren rode into the line to give you the ford. You did not ask him to. He did not wait to be asked. They carried him back across a shield, and he complained about the shield." }
   };
 
   var STORY_A = "The coat still smells of [[forge|the forge where my father worked]], and I have never managed to wash it out. ";
@@ -585,6 +585,7 @@ window.__vhGame = function () { (function () {
   try { if (ovFeedVillages(S.sites)) S.total = S.sites.length; } catch (e) {}
   if (!S.tut) S.tut = {};
   try { (S.sites || []).forEach(function (v) { if (v && 'gar' in v && !(typeof v.gar === 'number' && isFinite(v.gar))) v.gar = 6; }); } catch (e) {} // repair garrisons broken by the old removeMen bug
+  if (S.kael === "dead") { S.kael = "wounded"; S.kaelBack = Math.floor(S.day || 0) + 3; } // canon: Kaelren cannot die; old saves get him back in three days
   if (!S.camp) S.camp = { on: false, f: {}, cleared: {}, kills: 0 };
   if (!S.story) S.story = { on: false, seen: {}, ch: {}, fin: null, cur: null };
   if (S.mc && S.mc.on && !S.pwar.metal) S.pwar.metal = true;
@@ -972,6 +973,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
   }
 
   function dailyTick1() {
+    if (S.kael === "wounded" && S.day >= (S.kaelBack || 0)) { S.kael = "alive"; delete S.kaelBack; log("Kaelren rode back into camp with his ribs strapped and his grin intact. He asked whether anyone had been looking after his horse. Everyone had.", "e"); try { toast("Kaelren is back."); } catch (e) {} }
     var t = T();
     if (t > 0) {
       var dg = daysOf(S.grain, eatDay()), dc = daysOf(S.crowns, wageDay());
@@ -1214,7 +1216,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
     B.kaelDone = true;
     if (choice === "hold") {
       var n = Math.min(6, Math.max(0, T() - 1)); loseTroops(n);
-      B.log.push("You pinned him with the Herald. The right flank never heard the order. " + n + " men died there.");
+      B.log.push("You pinned him with the warhorn. The right flank never heard the order. " + n + " men died there.");
       log("Held Kaelren back. Six men paid for it on the right flank.", "e");
       B.stage = "run"; renderSheet(); B.timer = setTimeout(fightStep, 850);
     } else if (choice === "burn") {
@@ -1224,10 +1226,10 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
       finishBattle(true, "burn"); renderSheet("kael");
     } else {
       var held = has("kael");
-      S.kael = "dead"; S.held.push("ford"); B.eCur *= 0.5;
-      B.log.push("Kaelren broke the line. He did not come back.");
-      log("Kaelren charged and did not come back. His horse follows the column. His purse is still addressed west.", "e");
-      if (held) log("Elyndra: You chose the memory.", "ely");
+      S.kael = "wounded"; S.kaelBack = Math.floor(S.day) + 12; if (!has("ford") && S.burned.indexOf("ford") < 0) S.held.push("ford"); B.eCur *= 0.5;
+      B.log.push("Kaelren broke the line. Four men carried him back on a shield.");
+      log("Kaelren charged and broke the line. They carried him off the field with a lance-head in his side. The surgeon says twelve days. Kaelren says six. His purse is still addressed west.", "e");
+      if (held) log("Elyndra: You chose the memory. He chose the ford. I have written both down.", "ely");
       B.stage = "run"; renderSheet(); B.timer = setTimeout(fightStep, 850);
     }
   }
@@ -2669,7 +2671,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
     h += forgeSection(t);
     h += '<div class="sec">Men</div>';
     h += row("Hire sellswords", "150 crowns. 0.6 a day each. They leave when unpaid.", "Hire 5", "hire", t.id, "", S.crowns < 150 || capNow() - T() < 5);
-    if (t.id === "emberfall" && S.kael === "away") h += '<div class="sec">Tavern</div>' + row("Kaelren, a Stormreach outrider", T() >= 5 ? "He is handing out water to men who are not his. He will ride with you." : "He will not follow someone with no one behind them. Come back with five men.", "Ask him", "joinkael", t.id, "", T() < 5);
+    if (t.id === "emberfall" && S.kael === "away") h += '<div class="sec">Tavern</div>' + row("Kaelren, a young Flameborne swordsman", T() >= 5 ? "He is handing out water to men who are not his. The Flameborne King trained him and sent him out to learn the roads. He will ride with you." : "He will not follow someone with no one behind them. Come back with five men.", "Ask him", "joinkael", t.id, "", T() < 5);
     h += '<div class="sec">Tavern</div>';
     h += row("Listen for rumours", "5 crowns", "Listen", "rumour", t.id, "", S.crowns < 5);
     if (S.rumours.length) h += S.rumours.map(function (r) { return '<p class="dim-t" style="margin-top:0.6rem">' + r + "</p>"; }).join("");
@@ -2751,7 +2753,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
       h += '<div class="choices">' + CHOICES.filter(function (c) { return !c.needs || S.burned.indexOf(c.needs) < 0; }).map(function (c) {
         return '<button data-act="say" data-a="' + c.id + '">' + c.text + "</button>";
       }).join("") + "</div>";
-    } else if (S.kael === "dead") h += '<p class="dim-t">Windrunner follows the column. Nobody rides him.</p>';
+    } else if (S.kael === "wounded") h += '<p class="dim-t">Kaelren is in the surgeon’s wagon with his ribs strapped. He sends word that he is fine, which is a lie, and that he will be back in ' + Math.max(1, (S.kaelBack || 0) - Math.floor(S.day)) + ' days, which may not be.</p>';
     return h;
   }
   function booksCalc() {
@@ -2833,7 +2835,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
         storyEndingBlock() + "<p class=\"dim-t\">You can still break the Iron Throne. It will be harder now.</p>" +
         '<div class="btns"><button class="solid" data-act="keepgoing">Keep fighting</button><button data-act="again">Begin again</button></div>';
     }
-    var vs = S.sites.length, kt = S.kael === "alive" ? "Kaelren rides beside you." : "Kaelren is dead. Windrunner follows the column.";
+    var vs = S.sites.length, kt = S.kael === "alive" ? "Kaelren rides beside you." : S.kael === "wounded" ? "Kaelren is in the surgeon’s wagon, and will ride again." : "";
     return "<h2>The winter ends</h2><p class=\"sub\">Day " + END_DAY + "</p>" +
       "<p>" + vs + " of " + S.total + " places still stand. " + T() + " men follow you. " + hollow() + " memories are gone. " + kt + "</p>" +
       (S.sealed ? "<p class=\"dim-t\">The Void is sealed. For the first time in living memory the sky past the edge is only sky.</p>" : (noVoid() ? "<p class=\"dim-t\">The realms still stand, for now.</p>" : "<p class=\"dim-t\">The edge has not stopped. You have only learned how far it is.</p>")) +
@@ -2853,7 +2855,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
       h += "<p>The Ledger opens. Choose what to spend.</p>" + fragRows(true) + '<div class="btns"><button data-act="backask">Not yet</button></div>';
     } else if (B.stage === "vow") {
       h += "<p><b style=\"font-weight:400;color:var(--amber)\">Kaelren’s horse screams.</b> The line is breaking. He has seen a man go down, and no one is closer. In three seconds he will ride.</p>";
-      h += '<div class="choices"><button data-act="vow" data-a="hold">Pin him with the Herald. The right flank will not hear the order.</button>';
+      h += '<div class="choices"><button data-act="vow" data-a="hold">Pin him with the warhorn. The right flank will not hear the order.</button>';
       if (has("kael")) h += '<button data-act="vow" data-a="burn">Open the Ledger. Burn “The Night Kaelren Told Me About His Sister.”</button>';
       h += '<button data-act="vow" data-a="ride">Let him ride.</button></div>';
     } else {
@@ -3570,7 +3572,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
       d.dead = true; F.corpses.push({ x: d.x, y: d.y, s: d.s, v: d.void });
       if (F.corpses.length > 200) F.corpses.shift();
       if (d.hero) { fieldMsg("You are down! The line wavers."); }
-      if (d.kael && !d.friend) { F.kdead = true; fieldMsg("Kaelren has fallen."); } if (d.friend) fieldMsg("Your friend is down!");
+      if (d.kael && !d.friend) { F.kdead = true; fieldMsg("Kaelren is down! They are carrying him off."); } if (d.friend) fieldMsg("Your friend is down!");
     }
   }
   function fieldStep(dt) {
@@ -3652,7 +3654,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
           var ad = ovCounter(arw.a, arw.d) * (arw.a.jav ? 1.25 : 1) * arw.a.w * 0.3 * (arw.mul || 1) * rnd(0.75, 1.25) * (onHill(arw.a.x, arw.a.y) ? 1.15 : 1) * (inTrees(arw.d.x, arw.d.y) ? 0.7 : 1) * (arw.s === "p" && F.cry > 0 ? 1.3 : 1) * (arw.s === "p" ? 1 + skfx("tarch") : 1);
           if (arw.d.s === "p" && F.cmd === "hold" && !arw.d.hero && !arw.d.kael) ad *= 0.8;
           arw.d.hp -= ad; arw.d.flash = 0.18;
-          if (arw.d.hp <= 0 && !arw.d.dead) { arw.d.dead = true; F.corpses.push({ x: arw.d.x, y: arw.d.y, s: arw.d.s, v: arw.d.void }); if (arw.d.hero) fieldMsg("You are down! The line wavers."); if (arw.d.kael && !arw.d.friend) { F.kdead = true; fieldMsg("Kaelren has fallen."); } if (arw.d.friend) fieldMsg("Your friend is down!"); }
+          if (arw.d.hp <= 0 && !arw.d.dead) { arw.d.dead = true; F.corpses.push({ x: arw.d.x, y: arw.d.y, s: arw.d.s, v: arw.d.void }); if (arw.d.hero) fieldMsg("You are down! The line wavers."); if (arw.d.kael && !arw.d.friend) { F.kdead = true; fieldMsg("Kaelren is down! They are carrying him off."); } if (arw.d.friend) fieldMsg("Your friend is down!"); }
         }
       }
     }
@@ -3768,9 +3770,9 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
     var pf = Math.max(0, Math.min(1, Fx.pw / Math.max(0.0001, Fx.p0))), ef = Math.max(0, Math.min(1, Fx.ew / Math.max(0.0001, Fx.e0)));
     B.pCur = Math.max(0.0001, B.p0 * pf); B.eCur = B.e0 * ef;
     if (Fx.kdead && S.kael === "alive") {
-      var held = has("kael"); S.kael = "dead"; if (!has("ford")) S.held.push("ford");
-      log("Kaelren charged and did not come back. His horse follows the column. His purse is still addressed west.", "e");
-      if (held) log("Elyndra: You chose the memory.", "ely");
+      var held = has("kael"); S.kael = "wounded"; S.kaelBack = Math.floor(S.day) + 12; if (!has("ford") && S.burned.indexOf("ford") < 0) S.held.push("ford");
+      log("Kaelren went down in the press. They carried him from the field, grey and swearing. The surgeon says twelve days. Kaelren says six.", "e");
+      if (held) log("Elyndra: You chose the memory. I have written it down.", "ely");
     }
     $("bf").classList.remove("on");
     setTimeout(function () {
@@ -11005,11 +11007,11 @@ function qFinish(q, opt, idx) { qFinish0(q, opt, idx); if (opt && typeof opt.eff
 
   // ---------------- CHAIN 5 · WINDSPIRE · THE WIND OWES ----------------
   var d4 = function (f) { return !!f.q4done; };
-  ch({ id: "kaelone", act: 3, hub: "windspire", npc: "kaelren", npcDef: { name: "Kaelren Stormborne", col: "#6cc0e8", hair: "#f0f8ff", idle: "I have never lost a race. I have never won one either. I just keep leaving before it ends." },
+  ch({ id: "kaelone", act: 3, hub: "windspire", npc: "kaelren", npcDef: { name: "Kaelren", col: "#6cc0e8", hair: "#f0f8ff", idle: "The King used to say, again, little ember. I am still doing it again. I will tell you when I get it right." },
     need: d4, name: "The Last Courier", zone: "kaelone", zname: "The Storm Road", th: "pass", lv: 3, seed: 441, pal: ["scout", "slinger"], boss: "stormbanner", obj: "Ride the Storm Road with Kaelren.",
     gate: "A cliff road where the wind blows sideways and every cairn is carved with a courier's name.",
-    intro: "There is a message that has to cross the Storm Road before the Assembly sits. Nine couriers have died trying. I have volunteered every time. The Assembly says I may not go. I would like you to tell me I may. Or not. I do not know which I want.",
-    turn: "You came back. I almost did not. I stood at the last cairn and I thought about charging the banner alone, the way I always do. This time I looked behind me and you were there. That felt like something. I do not have a name for it.",
+    intro: "The Flameborne King has a letter that has to cross the Storm Road before the Assembly sits. Stormreach couriers have tried nine times. I offered every time, and the Assembly says a Flameborne boy does not ride their road. I would like you to tell me I may. Or tell me I may not. Either way, someone else gets to decide for once.",
+    turn: "We made it. I stood at the last cairn and I was going to charge the banner alone, the way I always do. Then I looked behind me and you were there, and I stopped. I have no idea what to do with that. The King will laugh at me.",
     opts: [{ t: "“Stay behind me this time. You do not have to die for the message.”", reward: { xp: 260, perm: "pts" }, set: { kael_stay: 1 }, text: "Kaelren laughs, a short startled sound. “Behind someone. Hm. Nobody has ever asked me to be behind them.”" },
       { t: "“Charge. I will cover you.”", reward: { xp: 260, item: 2 }, set: { kael_go: 1 }, text: "He grins like a boy, and is gone down the road in a blue streak. He does not look back. You see him get there. You see him live. This time." }] });
   ch({ id: "jorrenone", act: 3, hub: "windspire", npc: "jorren", npcDef: { name: "Jorren", col: "#3a3a4e", hair: "#1a1a22", idle: "Do not ask where I go. I will always come back. That is the only promise I have ever made." },
@@ -15400,8 +15402,8 @@ var ALLYS = [
   { id: "al_iseult", name: "Iseult", cond: function (f) { return f.qd_fr_court; }, day: 78, t: "She Felt Something", sub: "Frostgrave",
     body: ["A letter in neat, hesitant script: three words, then a long blot.", "“I felt it.” Then, below, in a different pen: “I felt it again. It was loud. I did not know how loud it was. I was crying in the Prophet Court and nobody knew how to behave.”", "Underneath, a small drawing of a sun, badly done, as if by someone who has never drawn one."],
     ok: "Keep the letter.", fx: function () { S.crowns += 200; cp().qpts = (cp().qpts || 0) + 1; log("Iseult can feel again.", "e"); } },
-  { id: "al_kaelren", name: "Kaelren", cond: function (f) { return f.qd_sv_5; }, day: 82, t: "Kaelren Chooses Himself", sub: "Stormreach",
-    body: ["Kaelren is waiting at the edge of the camp with his pack and his hand on his sword. You assume he is leaving.", "“I have always sacrificed,” he says. “I never once picked a thing because I wanted it. I want this. I want to stay. I want to stay because I like you, and for no better reason.”", "He grins, windblown and young. “It is the most selfish thing I have ever done. I love it.”"],
+  { id: "al_kaelren", name: "Kaelren", cond: function (f) { return f.qd_sv_5; }, day: 82, t: "Kaelren Chooses Himself", sub: "Kaelren",
+    body: ["Kaelren is waiting at the edge of the camp with his pack and his hand on his sword. You assume he is leaving.", "“I have always sacrificed,” he says. “I never once picked a thing because I wanted it. I want this. I want to stay. I want to stay because I like you, and for no better reason.”", "He grins, windblown and eighteen. “It is the most selfish thing I have ever done. The King will be thrilled. He has been telling me to try it for years.”"],
     ok: "Tell him to stay.", fx: function () { cp().qpts = (cp().qpts || 0) + 2; S.from.ashford = (S.from.ashford || 0) + 15; log("Kaelren stays because he wants to.", "e"); } },
   { id: "al_noctis", name: "Noctis", cond: function (f) { return f.qd_ch_5; }, day: 90, t: "He Chose", sub: "Noctis",
     body: ["Noctis stands before the whole army, and the army goes quiet. He is the one every NPC fears.", "“I was a weapon,” he says. “People used me. I was never chosen.” He kneels, and it is the most unsettling and moving thing in the world. “I am choosing now.”", "Nobody in the camp looks away. Nobody says a word. Somewhere at the back a hard old sergeant starts, quietly, to weep."],
