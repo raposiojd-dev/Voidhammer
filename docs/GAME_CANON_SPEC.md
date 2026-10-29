@@ -63,6 +63,13 @@ Strict, concrete, warm, dry humour; keep the existing good jokes (the goat line)
 - **Remove the duplicated Harrowed King paragraph.**
 - **Never spoil the main saga:** no Ember Oath detail beyond the final hint, no Kaelren immortality reveal, no Voyager true name, and no Consumption or Emberhold-as-last-refuge.
 
+## LENGTH AND PACING (John, 29 Oct: "a 200-hour-plus game; the Void must not consume everything")
+- **No calendar ending.** The story decides when it ends; the world keeps going after.
+- **The Void is capped by story stage** (`ovVCap`): it can quiet 0 holds before day 150, then 1, 2 after the Edict, 3 after the coup, 4 after the finale. It never takes a capital, Iron Throne City or either of a realm's last two holds. Sealing the Rifts buys a 180-day lull, not a permanent end.
+- **No realm is ever wiped out** by the Void, the Dominion or revolts; a realm always keeps its last hold. The Thousand-Year War has to start with every realm still standing.
+- **The finale is earned**: Iron Throne City can't be assaulted until Acts V and VI are done, two realm sagas are complete and day 365 has passed (sandbox: the Dominion is marching and day 365 has passed).
+- **After the finale** "Keep playing" continues the sandbox as the Thousand-Year War rages; New Game+ is optional, never forced.
+
 ## TECH RULES
 - **Change display strings only.** Keep every internal id, state flag (S.kael, f.qd_*), quest id, VO file key and face-image slug, so old saves keep working.
 - Where a portrait regex matches a renamed display name (~line 12624 NFACEN), update the regex to accept both old and new names.
