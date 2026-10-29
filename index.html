@@ -354,7 +354,7 @@ window.__vhGame = function () { (function () {
   var KEY = "voidhammer-campaign-v3";
   var CX = 1400, CY = 1400, WORLD = 2800, DAY_RATE = 0.3, SPEED = 95, CAP0 = 60, END_DAY = 360, VOID0 = 1350, VOIDMAX = 2100, SEAL_AT = 5;
   var TERRDIRTY = true;
-  var OPTKEY = "voidhammer-opts-v1", OPTDEF = { dom: "normal", void: "normal", size: "large", len: 360, diff: "normal", origin: "wanderer", pname: "", bname: "The Free Company", bcol: "#c8873a", story: "on", map: "heartland", mode: "campaign" };
+  var OPTKEY = "voidhammer-opts-v1", OPTDEF = { dom: "normal", void: "normal", size: "large", len: 0, diff: "normal", origin: "wanderer", pname: "", bname: "The Free Company", bcol: "#c8873a", story: "on", map: "heartland", mode: "campaign" };
   var ORIGINS = {
     wanderer: { name: "Wanderer", desc: "A coat, fifteen crowns, nobody behind you. The classic start.", intro: "You walk into Ashford with a coat, fifteen crowns, and nobody behind you. A Lantern archivist from Spiritveil is writing names in a book for the Codex. She writes yours, and asks nothing." },
     farmer: { name: "Farmer", desc: "You own a farm at Ashford, 60 crowns and a little grain. No men, no gear.", intro: "You come back to Ashford with your father’s deed in your coat. The farm is yours: a barn, a field and a debt of work. A Lantern archivist on the road from Spiritveil writes your name in her book." },
@@ -370,7 +370,7 @@ window.__vhGame = function () { (function () {
   var DIFFS = { easy: { en: 0.75, loot: 1.3, up: 0.8, voidm: 0.8, start: 60 }, normal: { en: 1, loot: 1, up: 1, voidm: 1, start: 0 }, hard: { en: 1.3, loot: 0.8, up: 1.2, voidm: 1.25, start: 0 } };
   function loadOpts() { try { var o = JSON.parse(localStorage.getItem(OPTKEY)); return Object.assign({}, OPTDEF, o || {}); } catch (e) { return Object.assign({}, OPTDEF); } }
   var OPT = loadOpts(), DF = DIFFS[OPT.diff] || DIFFS.normal;
-  function applyOpt(o) { OPT = Object.assign({}, OPTDEF, o || {}); DF = DIFFS[OPT.diff] || DIFFS.normal; END_DAY = OPT.len > 0 ? OPT.len : 99999; try { localStorage.setItem(OPTKEY, JSON.stringify(OPT)); } catch (e) {} }
+  function applyOpt(o) { OPT = Object.assign({}, OPTDEF, o || {}); DF = DIFFS[OPT.diff] || DIFFS.normal; END_DAY = 1e9; try { localStorage.setItem(OPTKEY, JSON.stringify(OPT)); } catch (e) {} }
   function szv() { return SIZES[OPT.size] || 1; }
   function noVoid() { return OPT.void === "off"; }
   var MAPS = {
@@ -590,6 +590,7 @@ window.__vhGame = function () { (function () {
   if (!S.camp) S.camp = { on: false, f: {}, cleared: {}, kills: 0 };
   if (!S.story) S.story = { on: false, seen: {}, ch: {}, fin: null, cur: null };
   if (S.mc && S.mc.on && !S.pwar.metal) S.pwar.metal = true;
+  if (S.ended) { S.ended = false; if ((S.story && S.story.fin) || (S.mc && S.mc.broken)) S.tkw = 1; if (S.mc) S.mc.endShown = true; }
   var LOOT = {
     blades: { name: "Notched swords", base: 8, note: "Bandit blades, edges chipped" },
     mail: { name: "Mail scraps", base: 11, note: "Patched hauberks, good for the forge" },
@@ -950,13 +951,13 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
   function spawnBandit() {
     var vs = villages(); if (!vs.length) return;
     var v = vs[rndInt(0, vs.length - 1)], a = rnd(0, 6.283), r = rnd(90, 150);
-    S.enemies.push({ id: S.eid++, kind: "bandit", x: v.x + Math.cos(a) * r, y: v.y + Math.sin(a) * r, n: Math.round((rndInt(8, 16) + Math.floor(S.day / 12)) * DF.en * (1 + 0.05 * (lvl() - 1))), q: 0.95, cool: 0, dest: null });
+    S.enemies.push({ id: S.eid++, kind: "bandit", x: v.x + Math.cos(a) * r, y: v.y + Math.sin(a) * r, n: Math.round((rndInt(8, 16) + Math.floor(Math.min(S.day, 720) / 12)) * DF.en * (1 + 0.05 * (lvl() - 1))), q: 0.95, cool: 0, dest: null });
   }
   function spawnVoid() {
     if (!S.rifts.some(function (r) { return r.c === curCell(); })) return;
     var a = rnd(0, 6.283), r = S.voidR - 8, cx = ccx(S.px), cy = ccy(S.py);
     var _lr = S.rifts.filter(function (r) { return r.c === curCell(); }); if (_lr.length) { var rf = _lr[rndInt(0, _lr.length - 1)], p = riftPos(rf); cx = p.x; cy = p.y; r = 0; }
-    S.enemies.push({ id: S.eid++, kind: "void", x: cx + Math.cos(a) * (r || 22), y: cy + Math.sin(a) * (r || 22), n: Math.round((14 + Math.floor(S.day / 6)) * DF.en * (1 + 0.05 * (lvl() - 1)) * ovVStr()), q: 1.35, cool: 0, dest: null });
+    S.enemies.push({ id: S.eid++, kind: "void", x: cx + Math.cos(a) * (r || 22), y: cy + Math.sin(a) * (r || 22), n: Math.round((14 + Math.floor(Math.min(S.day, 540) / 6)) * DF.en * (1 + 0.05 * (lvl() - 1)) * ovVStr()), q: 1.35, cool: 0, dest: null });
     toast("Something has walked out of the Void.");
   }
   function countKind(k) { return S.enemies.filter(function (e) { return e.kind === k; }).length; }
@@ -1074,7 +1075,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
     if (S.nextBandit <= 0 && countKind("bandit") < 5) { spawnBandit(); S.nextBandit = rndInt(6, 10); }
     if (S.day >= 30 && !S.sealed) { S.nextVoid--; if (S.nextVoid <= 0 && countKind("void") < (S.day >= 150 ? 3 : 2)) { spawnVoid(); S.nextVoid = rndInt(26, 42); } }
 
-    if (S.day >= END_DAY && !S.ended) { S.ended = true; save(); openSheet("ending"); }
+    /* no calendar ending: the story decides when it ends, and the world keeps going after */
   }
 
   function passDays(n) {
@@ -1330,7 +1331,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
       if (s.stock > s.cap * 0.2) s.starved = false;
       if (s.stock <= 0) { s.unrest = (s.unrest || 0) + 1; if (s.owner === "player" && s.unrest === 5) toast("Hunger is turning to anger in " + s.name + "."); }
       else if (s.stock > s.cap * 0.1) s.unrest = Math.max(0, (s.unrest || 0) - 2);
-      if (s.owner !== "rebel" && (s.unrest || 0) >= 12) rebelTown(s);
+      if (s.owner !== "rebel" && (s.unrest || 0) >= 12 && (s.owner === "player" || holdings(s.owner).length > 1)) rebelTown(s);
       if (s.stock > s.cap * 0.5) s.gar = Math.min(ovGM(s), s.gar + 0.3);
     });
     ovShare();
@@ -1346,7 +1347,8 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
       S.sites.forEach(function (s) { if (s.type !== "village" && atWar(e.fac, s.owner) && dist(e.x, e.y, s.x, s.y) < 36) tgt = s; });
       if (tgt) {
         tgt.gar -= e.n * 0.07 * e.q;
-        if (tgt.gar <= 0) { captureSite(tgt, e.fac); e.n = Math.max(10, e.n * 0.8); e.dest = null; }
+        if (tgt.gar <= 0 && ovAiMayTake(tgt, e.fac)) { captureSite(tgt, e.fac); e.n = Math.max(10, e.n * 0.8); e.dest = null; }
+        else if (tgt.gar <= 0) { tgt.gar = Math.max(12, tgt.gmax * 0.35); e.n = Math.max(10, e.n * 0.7); e.dest = null; news("The walls of " + tgt.name + " held. " + FAC[tgt.owner].name + " will not give up its last ground."); }
         else if (tgt.owner === "player") ovSiege(tgt, e);
       }
       lords.forEach(function (o) {
@@ -1475,7 +1477,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
   function mcFellCount() { var n = 0; realmList().forEach(function (f) { if (S.mc && S.mc.fell && S.mc.fell[f]) n++; }); return n; }
   function mcAbroad() { return S.sites.filter(function (s) { return s.owner === "metal" && s.type !== "village" && MCHOME.indexOf(s.id) < 0; }).length; }
   function mcPower() {
-    if (!mcOn() || S.mc.broken) return 1;
+    if (!mcOn() || (S.mc.broken && !S.tkw)) return 1;
     if (!domOpen()) return 1;
     var days = Math.max(0, S.day - S.mc.start);
     return Math.min(3.5, 1 + 0.25 * mcFellCount() + 0.07 * mcAbroad() + days * 0.0025 * (S.mc.df || 1));
@@ -1488,7 +1490,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
     return best;
   }
   function dominionDay() {
-    var M = S.mc; if (!M || !M.on || M.broken) return;
+    var M = S.mc; if (!M || !M.on || (M.broken && !S.tkw)) return;
     realmList().forEach(function (f) {
       if (M.fell[f] && holdings(f).length > 0) { M.fell[f] = false; news(FAC[f].name + " stands again. Someone has taken a hold back from the Dominion."); toast(FAC[f].name + " stands again."); log(FAC[f].name + " stands again.", "e"); }
     });
@@ -1804,7 +1806,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
     b1: { t: "The Order", sub: "Chapter I",
       body: ["Metalcrown has stopped asking. The Iron Dominion’s decree is nailed to every gate its armies pass: power is forged, not gifted, and every Realm will be forged to the Dominion’s measure, gently or not.", "The Synthesis Council’s seal is at the bottom. Under it, in a different hand, small and almost shy, one word. Valek.", "No lord you ask will say who Valek is. Some go quiet. One crosses himself with an iron nail."],
       ok: "Read on" },
-    b2: { t: "The gates remember", sub: "Chapter II", cond: function () { return mcFellCount() >= 1; },
+    b2: { t: "The gates remember", sub: "Chapter II", cond: function () { return mcFellCount() >= 1 || mcAbroad() >= 3; },
       body: ["A survivor from the fallen realm sits in the road and will not move. She says the Dominion’s armies were not what broke the walls.", "“He walked up alone. Not tall. The Iron Wraiths stopped when he stopped. Every wall that was ever blessed with our magic let go, one after another, as if someone had called it by name. He has a spark from every Realm in him, and every one of them answered.”", "Whoever he is, he is spending the whole world to win it."],
       ok: "Go on" },
     b3: { t: "The captured dispatches", sub: "Chapter III", cond: function () { return S.mc.defeats >= 1; },
@@ -1821,16 +1823,16 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
     b6: { t: "He is waiting", sub: "Chapter VI", cond: function () { return S.sites.some(function (s) { return s.owner === "player" && (s.id === "ironwatch" || s.id === "steelgate"); }) || dist(S.px, S.py, (site("irontown") || { x: -999 }).x, (site("irontown") || { y: -999 }).y) < 260; },
       body: ["A single rider reaches your column under a flag of truce. He carries no letter. He recites it.", "“You have come a long way to ask a question you could have asked at home. Come and see what the world is when nothing is divided.”", "He does not speak like a soldier. He sounds like a boy who has been told what to say."],
       ok: "Ride on" },
-    sf: { t: "The winter they saw", sub: "Interlude", cond: function () { return !!(S.mc.fell.frost); },
+    sf: { t: "The winter they saw", sub: "Interlude", cond: function () { return !!(S.mc.fell.frost) || ((cp().f.coup || !cp().on) && mcAbroad() >= 4); },
       body: ["Frostgrave’s Seers did not lose a battle. They chose which ones were survivable, and for a long time chose well. Then they chose wrongly, or there was no right choice left.", "In the last Mirror-Seer’s record there is one line, repeated: every future ends in the same place, with a child in an iron chair. No one wrote whose child."],
       ok: "Go on" },
-    ss: { t: "The Lanterns go out", sub: "Interlude", cond: function () { return !!(S.mc.fell.spirit); },
+    ss: { t: "The Lanterns go out", sub: "Interlude", cond: function () { return !!(S.mc.fell.spirit) || ((cp().f.coup || !cp().on) && mcAbroad() >= 6); },
       body: ["Spiritveil kept the world’s memory, and the Dominion took the archive.", "One page survives, carried out by a scout. In the Lantern Codex the entry for the Twin-Spark child has not been erased. It has been written over, again and again, by a hand that is also his. Each version is a little less certain of its own name."],
       ok: "Go on" },
     sv: { t: "The Crown in the Fire", sub: "Interlude", cond: function () { return S.voidR < 1150 || (S.rifts && S.rifts.length >= 3); },
       body: ["Word comes up the Ember road with the refugees, and none of them tell it the same way twice. Something looks out of the Rifts now. Not an army. A picture.", "People who stand too near a Rift see a hall of dead embers and a tall shape in a crown of black fire. It has no face anyone can describe. Everyone who sees it kneels, and nobody can say afterwards why they did.", "Lyriel Frostwraith has sent word from Frostgrave, in the clipped hand of a seer who is tired of being ignored: it is a future, not a guest. The Void has noticed the TwinSpark child, and it is trying on the shapes of what comes after him.", "The Flameborne King heard the story at supper, put down his bread, and went to write a letter. He did not send it."],
       ok: "Go on" },
-    sh: { t: "The quiet knife", sub: "Interlude", cond: function () { return !!(S.mc.fell.shadow); },
+    sh: { t: "The quiet knife", sub: "Interlude", cond: function () { return !!(S.mc.fell.shadow) || ((cp().f.coup || !cp().on) && mcAbroad() >= 8); },
       body: ["Shadowdeep always expected betrayal. It spent a thousand years making itself too quiet to be worth the trouble, and the Dominion came anyway.", "A Nightblade’s last message reaches you in a dead drop, unsigned: the Dominion does not find its spark-bearers by force. It finds them by what they have forgotten they are."],
       ok: "Go on" },
     fin: { t: "The Iron Throne", sub: "Finale", body: ["The Iron Throne City is half empty. Its armies are in the south, under the walls of Luminant, and from the high windows of the hall you can see the Citadel burning. The reactors have stopped to listen.", "On a seat far too big for him sits Valek: slight, grey at the eyes, with a spark under his skin for every Realm you have crossed. “Everyone asks the same thing,” he says. “Who gets to decide what I become? Nobody asked me. They only ever asked what I was for.”", "The reactors are waiting. So is he. Something behind his eyes is listening too."],
@@ -1965,7 +1967,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
     { t: "Troops and gear", b: function () { return ["Open <b>Party</b>, then the <b>Troops</b> tab. Your levy can train in three paths:", "<b>Swordsmen</b> → Men-at-arms → Champions.<br><b>Archers</b> → Crossbowmen.<br><b>Half Sparks</b> → Full Sparks.", "Each step needs battle experience, crowns and gear from your backpack. Sparks are strong, but they burn out after fights, and waking a Full Spark costs one of your memories."]; } },
     { t: "Skills", b: function () { return ["Every level gives you a skill point. Spend it in the <b>Skills</b> page.", "There are seven branches: command, warrior, archery, trade and land, politics, road and siege, and memory and spark. Pick a style and go deep, or spread out.", "You can unlearn everything for 100 crowns. Changing who you are is never free."]; } },
     { t: "Realms, lords and heroes", b: function () { return ["The realms fight each other, and the Dominion and the Void feed on that. Check the <b>Realms</b> page for who holds what and who is at war.", "Lords can be asked to pledge to you, and some will, if you earn it. Heroes can be hired to fight at your side. Each has a past, and they remember how you treat them.", "You can make peace with a realm, or ask two realms to make peace with each other."]; } },
-    { t: "The Dominion and the Void", b: function () { return ["Metalcrown's Dominion marches out of Iron Throne City and takes the realms one by one. If every realm falls, the game is lost.", "The Void creeps in from the edge of the world. It opens <b>Rifts</b> you can close, and each one you close pushes it back.", "You can switch either off, or set how fast they move, when you start a new game."]; } }
+    { t: "The Dominion and the Void", b: function () { return ["Metalcrown's Dominion marches out of Iron Throne City and takes towns and castles. A realm can be pushed back to its last walls, but it never falls completely: the war is only beginning, and it will last a thousand years.", "The Void creeps in from the edge of the world. It opens <b>Rifts</b> you can close, and each one you close pushes it back.", "You can switch either off, or set how fast they move, when you start a new game."]; } }
   ];
   var TUT_END = [
     { t: "Saving and the menu", b: function () { return ["The game saves on this phone every day and when you leave. Come back and tap <b>Continue</b>.", "The <b>☰</b> button holds the Ledger, the Record, the Key, graphics (Pixel or Smooth), and this guide.", "On iPhone, tap Share, then Add to Home Screen, to play full-screen."]; } }
@@ -3082,7 +3084,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
     return h;
   }
   function realmsSheet() {
-    var h = "<h2>The Realms</h2><p class=\"sub\">Day " + dayN() + (OPT.len > 0 ? " of " + END_DAY : "") + "</p>";
+    var h = "<h2>The Realms</h2><p class=\"sub\">Day " + dayN() + "" + "</p>";
     h += dominionBlock();
     realmList().forEach(function (f) {
       var hs = holdings(f), vs = S.sites.filter(function (s) { return s.owner === f && s.type === "village"; }).length;
@@ -3403,14 +3405,14 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
     var h = '<h2>New game</h2><p class="sub">Shape the world</p>';
     h += '<div class="sec">Your name</div><div class="bprev"><input id="pname" type="text" maxlength="16" autocomplete="off" autocapitalize="words" spellcheck="false" placeholder="Your name" value="' + String(NG.pname || "").replace(/"/g, "&quot;") + '"></div>'; h += bannerSection();
     h += '<div class="sec">The Void</div>' + chips("void", [["off", "Off"], ["slow", "Slow"], ["normal", "Normal"], ["fast", "Fast"]]) + '<p class="dim-t">' + vd[NG.void] + "</p>";
-    var dd = { off: "No Metalcrown. The realms only fight each other.", slow: "The Dominion marches late and grows slowly.", normal: "Metalcrown marches in about three weeks and takes the realms one by one.", fast: "Metalcrown marches early and grows fast. Act at once." };
+    var dd = { off: "No Metalcrown. The realms only fight each other.", slow: "The Dominion marches late and grows slowly.", normal: "Metalcrown marches in about three weeks and pushes the realms back hold by hold.", fast: "Metalcrown marches early and grows fast. Act at once." };
     h += '<div class="sec">The Dominion (Metalcrown)</div>' + chips("dom", [["off", "Off"], ["slow", "Slow"], ["normal", "Normal"], ["fast", "Fast"]]) + '<p class="dim-t">' + dd[NG.dom || "normal"] + "</p>";
     var mdesc = (MAPS[NG.map || "heartland"] || MAPS.heartland).desc;
     h += '<div class="sec">Map</div>' + chips("map", Object.keys(MAPS).map(function (k) { return [k, MAPS[k].name]; })) + '<p class="dim-t">' + mdesc + '</p>';
     h += '<div class="sec">Mode</div>' + chips("mode", [["campaign", "Campaign"], ["sandbox", "Sandbox"]]) + '<p class="dim-t">' + ((NG.mode || "campaign") === "campaign" ? "Follow a story across towns and roads. Step inside places, talk to people, fight bandits, and unlock the map as you go. The sandbox is still there around it." : "No quests. Only the map, the realms, and what you make of them.") + "</p>";
     h += '<div class="sec">Story</div>' + chips("story", [["on", "Story mode"], ["off", "Sandbox only"]]) + '<p class="dim-t">' + ((NG.story || "on") === "on" ? "Chapters follow the Dominion\u2019s march and answer one question: who is Valek? Needs the Dominion on." : "No chapters. Just the world.") + "</p>";
     h += '<div class="sec">Map size</div>' + chips("size", [["small", "Small"], ["medium", "Medium"], ["large", "Large"], ["huge", "Huge"]]) + '<p class="dim-t">' + sd[NG.size] + "</p>";
-    h += '<div class="sec">Game length</div>' + chips("len", [[180, "180 days"], [360, "360 days"], [720, "720 days"], [0, "Endless"]]) + '<p class="dim-t">' + ln[NG.len] + "</p>";
+
     h += '<div class="sec">Difficulty</div>' + chips("diff", [["easy", "Easy"], ["normal", "Normal"], ["hard", "Hard"]]) + '<p class="dim-t">' + df[NG.diff] + "</p>";
     h += '<div class="btns"><button class="solid" data-act="startnew">Begin</button><button data-act="mainmenu">Back</button></div>';
     return h;
@@ -13957,7 +13959,7 @@ function objective() {
   return o;
 }
 
-// ---- ovVOID: no circle. Once the gates open the Void tears Rifts on every continent and consumes the holds one by one. ----
+// ---- ovVOID: no circle. Once the gates open the Void tears Rifts on every continent and can quiet a few holds (capped by ovVCap; never capitals, never a realm's last two holds). ----
 function ovVD() { return S.vd || (S.vd = { on: 0, nr: 0, g: {}, fell: {}, hn: 12 }); }
 function ovVCells() { var o = {}; S.sites.forEach(function (s) { o[cellAt(s.x, s.y)] = 1; }); return Object.keys(o).map(Number); }
 function ovVHeld() { var n = 0; S.sites.forEach(function (s) { if (s.vh) n += s.type === "village" ? 0.35 : 1; }); return n; }
@@ -14034,10 +14036,27 @@ function sealVoid() {
   S.sites.forEach(function (s) { if (s.vh) { s.vh = 0; delete s.vo; } });
   TERRDIRTY = true; news("Every hold the Void kept crumbles back into the hands that held it.");
 }
+function ovVHeldT() { return S.sites.filter(function (q) { return q.vh && q.type !== "village"; }).length; }
+function ovVCap() { var f = cp().f, d = S.day, n = 0, sb = !cp().on;
+  if (d >= 150) n = 1; if (d >= 300 && (f.edict || sb)) n = 2; if (d >= 450 && (f.coup || sb)) n = 3; if (S.tkw) n = 4;
+  return Math.min(n, Math.max(1, Math.floor(ovVCells().length / 2))); }
+function ovVMayTake(s) { if (!s || s.id === "irontown") return false; if (FAC[s.owner] && FAC[s.owner].cap === s.id) return false;
+  if (s.owner !== "player" && s.owner !== "rebel" && holdings(s.owner).length <= 2) return false; return true; }
+function ovAiMayTake(s, f) { var o = s.owner; if (f === "player" || o === "player" || o === "rebel" || !FAC[o]) return true;
+  if (holdings(o).length <= 1) return false; if (FAC[o].cap === s.id && !S.tkw) return false; return true; }
+function ovFinReady() { var f = cp().f; if (S.day < 365) return false; if (!cp().on) return !!(S.mc && S.mc.began);
+  var n = ["ti_5", "sv_5", "co_5", "ch_5", "dh_5", "wy_5", "gf_5"].filter(function (k) { return f["qd_" + k]; }).length;
+  return !!(f.q7done && f.qd_hollowthrone && n >= 2); }
+function ovFinOk(v) { if (!v || v.id !== "irontown" || v.owner !== "metal" || ovFinReady()) return true;
+  toast(cp().on ? "Iron Throne City will not fall yet. Finish the main story, see two realm sagas through, and let the year turn (day " + Math.floor(S.day) + " of 365)." : "Iron Throne City will not fall yet. Let the Dominion march and the year turn (day " + Math.floor(S.day) + " of 365)."); return false; }
+function ovWarSeed() { try { if (!S.mc || !S.mc.on) return; S.mc.endShown = true;
+  if (!holdings("metal").length) { var sd = ["steelgate", "ironwatch"].map(function (k) { return site(k); }).filter(function (q) { return q && q.owner !== "player"; })[0]; if (sd) captureSite0(sd, "metal"); }
+  news("The Thousand-Year War has begun. Metalcrown's columns are on every road south."); } catch (e) {} }
 function aiDay() { aiDay0(); try { ovVoidDay(); } catch (e) { if (window.console) console.error(e); } }
 function ovVoidDay() {
   if (!S || S.ended) return;
   S.voidR = VOIDMAX; var v = ovVD();
+  if (S.sealed && !S.voidTaught && !noVoid()) { if (S.sealAt == null) S.sealAt = S.day; if (S.day - S.sealAt >= 180) { S.sealed = false; S.sealAt = null; S.pushes = 0; news("The edge has started to hum again. Whatever the seal held back has found the seam."); } }
   if (noVoid() || S.sealed) return;
   SEAL_AT = v.on ? 9 : 5;
   if (!v.mig) { v.mig = 1; if (!ovGateOpen()) S.rifts.forEach(function (r) { r.c = 4; delete r.x; delete r.y; }); }
@@ -14048,12 +14067,12 @@ function ovVoidDay() {
   }
   if (!v.on) {
     v.on = 1; v.t0 = S.day; v.nr = S.day + 80;
-    var t = "The Gates are open and the Void has felt them. It does not need a road. Rifts will open on every shore, and each place it takes makes it stronger.";
+    var t = "The Gates are open and the Void has felt them. It does not need a road. Rifts will open on every shore. It is only feeling at the seams for now, but each hold it quiets makes it bolder. Close the Rifts and it pulls back.";
     news(t); log(t, "e");
   }
   var cells = ovVCells();
   if (S.day >= v.nr) {
-    if (S.rifts.length + (S.riftBack || []).length < cells.length * 4) {
+    if (S.rifts.length + (S.riftBack || []).length < cells.length * 2) {
       var r = ovNewRift(); S.rifts.push(r); news("A Rift has opened on the " + ovConts()[r.c].n + " coast.");
       if (r.c === curCell()) toast("A new Rift has torn open on this continent.");
     }
@@ -14062,10 +14081,10 @@ function ovVoidDay() {
   cells.forEach(function (c) {
     var rs = S.rifts.filter(function (r) { return r.c === c; }); if (!rs.length) return;
     var g = v.g[c] || (v.g[c] = { due: S.day + 220, tgt: null, at: 0 });
-    if (!g.tgt && S.day >= g.due) {
+    if (!g.tgt && S.day >= g.due && ovVHeldT() < ovVCap()) {
       var best = null, bd = 1e9;
       S.sites.forEach(function (s) {
-        if (s.type === "village" || s.vh || cellAt(s.x, s.y) !== c) return;
+        if (s.type === "village" || s.vh || cellAt(s.x, s.y) !== c || !ovVMayTake(s)) return;
         rs.forEach(function (r) { var p = riftPos(r), d = Math.hypot(p.x - s.x, p.y - s.y); if (d < bd) { bd = d; best = s; } });
       });
       if (best) { g.tgt = best.id; g.at = S.day + 14; news("The Void is closing on " + best.name + "."); if (best.owner === "player") toast("The Void is closing on " + best.name + ". You have days."); else if (c === curCell()) toast("The Void is closing on " + best.name + "."); }
@@ -14074,8 +14093,8 @@ function ovVoidDay() {
     if (g.tgt && S.day >= g.at) {
       var s2 = site(g.tgt), held = 0; S.sites.forEach(function (q) { if (q.vh && cellAt(q.x, q.y) === c) held++; });
       g.tgt = null;
-      if (s2 && !s2.vh) {
-        var atk = (32 + 0.1 * (S.day - (v.t0 || S.day))) * ovVStr() * (1 + 0.3 * rs.length), def = s2.gar * s2.wall;
+      if (s2 && !s2.vh && ovVMayTake(s2) && ovVHeldT() < ovVCap()) {
+        var atk = (32 + Math.min(45, 0.1 * (S.day - (v.t0 || S.day)))) * ovVStr() * (1 + 0.3 * Math.min(3, rs.length)), def = s2.gar * s2.wall;
         S.enemies.forEach(function (e) { if (e.kind === "lord" && e.fac === s2.owner && Math.hypot(e.x - s2.x, e.y - s2.y) < 90) def += e.n * e.q * 0.8; });
         if (Math.hypot(S.px - s2.x, S.py - s2.y) < 90) def += pStrength() * 0.8;
         S.allies.forEach(function (h) { if (!h.away && Math.hypot(h.x - s2.x, h.y - s2.y) < 90) def += allyStr(h) * 0.6; });
@@ -14086,7 +14105,7 @@ function ovVoidDay() {
     }
   });
   Object.keys(v.fell).forEach(function (f) { if (v.fell[f] && holdings(f).length > 0) { delete v.fell[f]; news(FAC[f].name + " stands again."); toast(FAC[f].name + " stands again."); } });
-  if (!v.lost && !sheet) {
+  if (false) { /* the Void never ends the game in this era */
     var rl = realmList(), allGone = rl.length && rl.every(function (f) { return v.fell[f] || (S.mc && S.mc.fell && S.mc.fell[f]); }) && Object.keys(v.fell).length;
     if (allGone) { v.lost = 1; S.ended = true; save(); openSheet("ending"); }
   }
@@ -14674,7 +14693,7 @@ function crApply(r, stage) {
     sites.forEach(function (q) { if (q.type !== "village") q.gar = Math.max(6, q.gar * 0.6); });
     var cands = sites.filter(function (q) { return q.type === "town" && q.id !== capId; });
     if (cands.length && typeof rebelTown === "function") { var q = cands[rndInt(0, cands.length - 1)]; rebelTown(q); news(q.name + " broke from " + FAC[r].name + " in the crisis."); }
-    if (!S.sealed) { S.rifts.push({ id: S.eid++, a: rnd(0, 6.283), cool: 0, c: CRISES[r].cell }); news("A Rift opened over " + FAC[r].name + " while its leaders were looking away."); }
+    if (!S.sealed && S.rifts.filter(function (q) { return q.c === CRISES[r].cell; }).length < 2) { S.rifts.push({ id: S.eid++, a: rnd(0, 6.283), cool: 0, c: CRISES[r].cell }); news("A Rift opened over " + FAC[r].name + " while its leaders were looking away."); }
   }
 }
 function crReward(r, c, stage) {
@@ -15900,7 +15919,7 @@ document.addEventListener("click", function (ev) {
 var freshNGP = fresh;
 fresh = function () { var NS = freshNGP(); try { NS.ngp = ngpCyc(); } catch (e) {} return NS; };
 var ovVStrNGP = ovVStr;
-ovVStr = function () { return ovVStrNGP() * (1 + 0.25 * ngpMine()); };
+ovVStr = function () { return ovVStrNGP() * (1 + 0.25 * Math.min(4, ngpMine())); };
 var crStateNGP = crState;
 crState = function () {
   var fresh0 = !S.crisis, c = crStateNGP();
@@ -16065,7 +16084,7 @@ setInterval(function () {
       case "ovvil": openSheet("site", x); break;
       case "ovdef": ovDefend(site(x)); break;
       case "assault":
-        if (v && hostileSite(v)) { startBattle({ id: -1, kind: "siege", title: "Assault on " + v.name, n: Math.round(v.gar), q: v.wall * ovDefAdv(v), siegeId: v.id }); return; } break;
+        if (v && hostileSite(v) && ovFinOk(v)) { startBattle({ id: -1, kind: "siege", title: "Assault on " + v.name, n: Math.round(v.gar), q: v.wall * ovDefAdv(v), siegeId: v.id }); return; } break;
       case "starve":
         if (v && hostileSite(v)) {
           var before = Math.round(v.gar); S.sieging = v.id; passDays(5); S.sieging = null;
@@ -16123,7 +16142,7 @@ setInterval(function () {
       case "vow": vow(x); save(); return;
       case "done": closeSheet(true); return;
       case "begin": S.intro = false; pausedSpeed = 3; closeSheet(true); if (!tutSeen()) openTutorial(false); else campKick(); return;
-      case "keepgoing": pausedSpeed = 3; closeSheet(true); return;
+      case "keepgoing": S.ended = false; if ((S.story && S.story.fin) || (S.mc && S.mc.broken)) { S.tkw = 1; ovWarSeed(); } pausedSpeed = 3; closeSheet(true); return;
       case "again": NG = null; showTitle(); return;
       case "mainmenu": showTitle(); return;
       case "cont": closeSheet(true); if (S.intro) openSheet("intro"); return;
