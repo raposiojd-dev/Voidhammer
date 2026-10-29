@@ -590,7 +590,7 @@ window.__vhGame = function () { (function () {
   if (!S.camp) S.camp = { on: false, f: {}, cleared: {}, kills: 0 };
   if (!S.story) S.story = { on: false, seen: {}, ch: {}, fin: null, cur: null };
   if (S.mc && S.mc.on && !S.pwar.metal) S.pwar.metal = true;
-  if (S.ended) { S.ended = false; if ((S.story && S.story.fin) || (S.mc && S.mc.broken)) S.tkw = 1; if (S.mc) S.mc.endShown = true; }
+  if (S.ended) { S.ended = false; if ((S.story && S.story.fin) || (S.mc && S.mc.broken)) S.tkw = 1; if (S.mc && (S.mc.broken || S.mc.lost)) S.mc.endShown = true; }
   var LOOT = {
     blades: { name: "Notched swords", base: 8, note: "Bandit blades, edges chipped" },
     mail: { name: "Mail scraps", base: 11, note: "Patched hauberks, good for the forge" },
@@ -1331,7 +1331,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
       if (s.stock > s.cap * 0.2) s.starved = false;
       if (s.stock <= 0) { s.unrest = (s.unrest || 0) + 1; if (s.owner === "player" && s.unrest === 5) toast("Hunger is turning to anger in " + s.name + "."); }
       else if (s.stock > s.cap * 0.1) s.unrest = Math.max(0, (s.unrest || 0) - 2);
-      if (s.owner !== "rebel" && (s.unrest || 0) >= 12 && (s.owner === "player" || holdings(s.owner).length > 1)) rebelTown(s);
+      if (s.owner !== "rebel" && (s.unrest || 0) >= 12 && (s.owner === "player" || holdings(s.owner).length > 1) && !(s.id === "irontown" && !S.tkw) && !(FAC[s.owner] && FAC[s.owner].cap === s.id && !S.tkw)) rebelTown(s);
       if (s.stock > s.cap * 0.5) s.gar = Math.min(ovGM(s), s.gar + 0.3);
     });
     ovShare();
@@ -1348,7 +1348,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
       if (tgt) {
         tgt.gar -= e.n * 0.07 * e.q;
         if (tgt.gar <= 0 && ovAiMayTake(tgt, e.fac)) { captureSite(tgt, e.fac); e.n = Math.max(10, e.n * 0.8); e.dest = null; }
-        else if (tgt.gar <= 0) { tgt.gar = Math.max(12, tgt.gmax * 0.35); e.n = Math.max(10, e.n * 0.7); e.dest = null; news("The walls of " + tgt.name + " held. " + FAC[tgt.owner].name + " will not give up its last ground."); }
+        else if (tgt.gar <= 0) { tgt.gar = Math.max(12, tgt.gmax * 0.35); e.n = Math.max(10, e.n * 0.85); e.dest = null; e.cool = 20; if (!tgt.heldMsg || S.day - tgt.heldMsg > 60) { tgt.heldMsg = S.day; news("The walls of " + tgt.name + " held. " + (FAC[tgt.owner].cap === tgt.id ? FAC[tgt.owner].name + " will not give up its seat." : FAC[tgt.owner].name + " will not give up its last ground.")); } }
         else if (tgt.owner === "player") ovSiege(tgt, e);
       }
       lords.forEach(function (o) {
@@ -1446,7 +1446,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
       var r = S.rifts[j], p = riftPos(r);
       if ((r.cool || 0) <= S.day && dist(p.x, p.y, S.px, S.py) < 22) {
         r.cool = S.day + 4;
-        var rm = Math.min(8, Math.pow(2, S.pushes || 0)); startBattle({ id: -2, kind: "rift", title: "The Rift" + (rm > 1 ? " (" + rm + "x strength)" : ""), n: 34 + Math.floor(S.day / 3), q: 1.5 * rm * ovVStr(), riftId: r.id });
+        var rm = Math.min(8, Math.pow(2, S.pushes || 0)); startBattle({ id: -2, kind: "rift", title: "The Rift" + (rm > 1 ? " (" + rm + "x strength)" : ""), n: 34 + Math.floor(Math.min(S.day, 540) / 3), q: 1.5 * rm * ovVStr(), riftId: r.id });
         return;
       }
     }
@@ -2841,7 +2841,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
         '<div class="btns"><button class="solid" data-act="keepgoing">Keep fighting</button><button data-act="again">Begin again</button></div>';
     }
     var vs = S.sites.length, kt = S.kael === "alive" ? "Kaelren rides beside you." : S.kael === "wounded" ? "Kaelren is in the surgeon’s wagon, and will ride again." : "";
-    return "<h2>The winter ends</h2><p class=\"sub\">Day " + END_DAY + "</p>" +
+    return "<h2>The winter ends</h2><p class=\"sub\">Day " + dayN() + "</p>" +
       "<p>" + vs + " of " + S.total + " places still stand. " + T() + " men follow you. " + hollow() + " memories are gone. " + kt + "</p>" +
       (S.sealed ? "<p class=\"dim-t\">The Void has drawn back from the edge. It has not gone far, and it is still looking north.</p>" : (noVoid() ? "<p class=\"dim-t\">The realms still stand, for now.</p>" : "<p class=\"dim-t\">The edge has not stopped. You have only learned how far it is.</p>")) +
       "<p>In the spring the Edict’s wardens ride out of Luminant to count every spark, and Metalcrown’s foundries open their gates to meet them.</p>" + tkwEnd() +
@@ -3110,7 +3110,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
     var dc = Math.round(dist(S.px, S.py, ccx(S.px), ccy(S.py)));
     if (noVoid()) h += "<p><b>There is no Void in this world.</b> Only the realms remain.</p>";
     else if (S.sealed) h += "<p><b>The Void is sealed.</b> The edge is gone and no Rift can open. Keep the realms at peace and it stays that way.</p>";
-    else h += '<p>Seal progress: ' + S.pushes + ' of ' + SEAL_AT + ' Rifts closed. Close ' + SEAL_AT + ' and the Void is driven off the map for good. Closed Rifts can tear open again after two or three months, so do not take too long. Each Rift you close makes the next one twice as strong (up to 8x). When closed ones return, the Rifts get weaker again. The next Rift is ' + Math.min(8, Math.pow(2, S.pushes || 0)) + 'x strength. The last three Rifts hold amazing treasure, and the final one always holds a Mythic (purple) item.' + (S.riftBack && S.riftBack.length ? ' The soonest may return in about ' + Math.max(1, Math.min.apply(null, S.riftBack) - S.day) + ' days.' : '') + '</p>';
+    else h += '<p>Seal progress: ' + S.pushes + ' of ' + SEAL_AT + ' Rifts closed. Close ' + SEAL_AT + ' and the Void is driven off the map for a season. Closed Rifts can tear open again after two or three months, so do not take too long. Each Rift you close makes the next one twice as strong (up to 8x). When closed ones return, the Rifts get weaker again. The next Rift is ' + Math.min(8, Math.pow(2, S.pushes || 0)) + 'x strength. The last three Rifts hold amazing treasure, and the final one always holds a Mythic (purple) item.' + (S.riftBack && S.riftBack.length ? ' The soonest may return in about ' + Math.max(1, Math.min.apply(null, S.riftBack) - S.day) + ' days.' : '') + '</p>';
     if (!S.sealed && !noVoid()) h += ovVSummary() + S.rifts.length + " Rift" + (S.rifts.length === 1 ? "" : "s") + " open.</p>";
     if (!S.sealed) h += '<p class="dim-t">Push it back: close a Rift at the edge (large fight, +80), kill Void-touched bands (+14 each), build Ward-lanterns in villages, and keep the realms at peace. Wars make it hungrier.</p>';
     if (S.news.length) {
@@ -3862,7 +3862,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
   var PRE = { cdr: "Swift", gold: "Gilded", life: "Hungering", vig: "Stalwart", spd: "Fleet", free: "Thrifty", boss: "Giantbane" };
   var NOUN = { blades: "Sword", steel: "Steel Sword", mail: "Mail Shirt", plate: "Plate Harness", bows: "Bow", longbows: "Longbow", kit: "Cloak" };
   var RN1 = ["Gloom", "Ember", "Bone", "Thorn", "Wraith", "Storm", "Dusk", "Grim", "Ash", "Hollow"], RN2 = { w: ["Edge", "Fang", "Reaver", "Brand"], a: ["Guard", "Mantle", "Carapace", "Bulwark"], r: ["Wail", "Arc", "Sting", "Song"], k: ["Wraps", "Treads", "Mantle", "Shroud"] };
-  var LEGN = { w: ["Cinderbrand", "The Quiet Hours", "Lanternblade", "Valek’s Regret"], a: ["Mantle of the First Forge", "Ashfall Harness", "The Unbroken Coat"], r: ["Stormreach Wail", "Kaelren’s Spare Arrow"], k: ["Elyndra’s Remembrance Cloak", "Boots of the Long Road"] };
+  var LEGN = { w: ["Cinderbrand", "The Quiet Hours", "Lanternblade", "Valek’s Regret"], a: ["Mantle of the First Forge", "Cinderfall Harness", "The Unbroken Coat"], r: ["Stormreach Wail", "Kaelren’s Spare Arrow"], k: ["Elyndra’s Remembrance Cloak", "Boots of the Long Road"] };
   var AFFP = { w: ["cdr", "gold", "life", "vig"], a: ["vig", "spd", "gold", "life"], r: ["free", "cdr", "gold", "spd"], k: ["spd", "vig", "gold"] };
   function pick(a) { return a[Math.floor(Math.random() * a.length)]; }
   function affVal(a, r) { return a === "cdr" ? 0.05 + 0.04 * r : a === "gold" ? 0.1 * r : a === "life" ? 0.12 * r : a === "vig" ? (r >= 3 ? 2 : 1) : a === "spd" ? 0.03 * r : a === "boss" ? 0.18 * r : 0.07 * r; }
@@ -11240,7 +11240,7 @@ function qFinish(q, opt, idx) { qFinish0(q, opt, idx); if (opt && typeof opt.eff
       { id: "hunter", name: "A hunter's apprentice", line: "At fourteen you were apprenticed to a hunter, and learned to wait for the shot.", sk: { fletcher: 1, wy_pace: 1 }, loot: { bows: 2 }, c: -5, cost: "5 crowns less." },
       { id: "thief", name: "Running with thieves", line: "At fourteen you ran with thieves, and learned to leave before anyone looked.", sk: { cutthroat: 1, sv_footwork: 1 }, c: 5, cost: "The watch knows your face." },
       { id: "levy", name: "Drilled in the levy", line: "At fourteen they put a spear in your hand and taught you to stand in a line.", sk: { drill: 1, wf_drill: 1 }, from: { ashford: 2 }, c: -10, cost: "10 crowns less. The levy kept your wages." },
-      { id: "acolyte", name: "A temple acolyte", line: "At fourteen you took a quiet vow in a Lantern house, and learned to speak so people stay.", sk: { silvertongue: 1, steadyhand: 1 }, c: -10, cost: "A vow of poverty: 10 crowns less." },
+      { id: "acolyte", name: "A Lantern-house acolyte", line: "At fourteen you took a quiet vow in a Lantern house, and learned to speak so people stay.", sk: { silvertongue: 1, steadyhand: 1 }, c: -10, cost: "A vow of poverty: 10 crowns less." },
       { id: "caravan", name: "A caravan guard", line: "At fourteen you walked beside the caravans, and learned what lives at the edge of the road.", sk: { pathfinder: 1, giantslayer: 1 }, c: 0, cost: "Always on the move: no home to go back to." },
       { id: "void", name: "Touched by the Void", line: "At fourteen the Void touched you and let you go. Something in you was left hollow.", sk: { hollowstrength: 1, sparkward: 1 }, burn: 1, c: 0, cost: "You lose your name. A memory is burned from the start." }] },
     { key: "y", title: "Young adulthood", ask: "What did you do before Ashford?", opts: [
@@ -11676,6 +11676,7 @@ var POW = {
   "Voidcutter": { fx: { dmg: 0.22, loot: -0.1 }, t: "+22% damage; the Void eats some of your loot" },
   "The Last Verdict": { fx: { bossdmg: 0.4, dodge: -0.05 }, t: "+40% boss damage, -5% dodge" },
   "Mantle of the First Forge": { fx: { tough: 0.14, speed: -0.05 }, t: "+14% toughness, a little slower" },
+  "Cinderfall Harness": { fx: { tough: 0.1, regen: 0.5 }, t: "Ash seals wounds: tougher and mending, but no dodging" },
   "Ashfall Harness": { fx: { tough: 0.1, regen: 0.5 }, t: "Ash seals wounds: tougher and mending, but no dodging" },
   "The Unbroken Coat": { fx: { tough: 0.18, aspd: -0.05 }, t: "+18% toughness, -5% attack speed" },
   "Plate of the Nine": { fx: { tough: 0.24, speed: -0.09 }, t: "+24% toughness, heavy to move in" },
@@ -14041,23 +14042,23 @@ function ovVHeldT() { return S.sites.filter(function (q) { return q.vh && q.type
 function ovVCap() { var f = cp().f, d = S.day, n = 0, sb = !cp().on;
   if (d >= 150) n = 1; if (d >= 300 && (f.edict || sb)) n = 2; if (d >= 450 && (f.coup || sb)) n = 3; if (S.tkw) n = 4;
   return Math.min(n, Math.max(1, Math.floor(ovVCells().length / 2))); }
-function ovVMayTake(s) { if (!s || s.id === "irontown") return false; if (FAC[s.owner] && FAC[s.owner].cap === s.id) return false;
+function ovVMayTake(s) { if (!s || s.id === "irontown") return false; if (Object.keys(FAC).some(function (k) { return FAC[k].cap === s.id; })) return false;
   if (s.owner !== "player" && s.owner !== "rebel" && holdings(s.owner).length <= 2) return false; return true; }
 function ovAiMayTake(s, f) { var o = s.owner; if (f === "player" || o === "player" || o === "rebel" || !FAC[o]) return true;
   if (holdings(o).length <= 1) return false; if (FAC[o].cap === s.id && !S.tkw) return false; return true; }
 function ovFinReady() { var f = cp().f; if (S.day < 365) return false; if (!cp().on) return !!(S.mc && S.mc.began);
   var n = ["ti_5", "sv_5", "co_5", "ch_5", "dh_5", "wy_5", "gf_5"].filter(function (k) { return f["qd_" + k]; }).length;
   return !!(f.q7done && f.qd_hollowthrone && n >= 2); }
-function ovFinOk(v) { if (!v || v.id !== "irontown" || v.owner !== "metal" || ovFinReady()) return true;
+function ovFinOk(v) { if (!v || v.id !== "irontown" || (S.mc && S.mc.broken) || ovFinReady()) return true;
   toast(cp().on ? "Iron Throne City will not fall yet. Finish the main story, see two realm sagas through, and let the year turn (day " + Math.floor(S.day) + " of 365)." : "Iron Throne City will not fall yet. Let the Dominion march and the year turn (day " + Math.floor(S.day) + " of 365)."); return false; }
 function ovWarSeed() { try { if (!S.mc || !S.mc.on) return; S.mc.endShown = true;
-  if (!holdings("metal").length) { var sd = ["steelgate", "ironwatch"].map(function (k) { return site(k); }).filter(function (q) { return q && q.owner !== "player"; })[0]; if (sd) captureSite0(sd, "metal"); }
-  news("The Thousand-Year War has begun. Metalcrown's columns are on every road south."); } catch (e) {} }
+  if (!holdings("metal").length) { var sd = ["steelgate", "ironwatch"].map(function (k) { return site(k); }).filter(function (q) { return q && q.owner !== "player"; })[0]; if (!sd) sd = S.sites.filter(function (q) { return q.type !== "village" && q.owner !== "player" && q.owner !== "metal" && !q.vh && ovAiMayTake(q, "metal"); }).sort(function (a, b) { return Math.hypot(a.x - site("irontown").x, a.y - site("irontown").y) - Math.hypot(b.x - site("irontown").x, b.y - site("irontown").y); })[0]; if (sd) captureSite(sd, "metal"); }
+  if (holdings("metal").length) news("The Thousand-Year War has begun. Metalcrown's columns are on every road south."); } catch (e) {} }
 function aiDay() { aiDay0(); try { ovVoidDay(); } catch (e) { if (window.console) console.error(e); } }
 function ovVoidDay() {
   if (!S || S.ended) return;
   S.voidR = VOIDMAX; var v = ovVD();
-  if (S.sealed && !S.voidTaught && !noVoid()) { if (S.sealAt == null) S.sealAt = S.day; if (S.day - S.sealAt >= 180) { S.sealed = false; S.sealAt = null; S.pushes = 0; news("The edge has started to hum again. Whatever the seal held back has found the seam."); } }
+  if (S.sealed && !S.voidTaught && !cp().f.voidsealed && !noVoid()) { if (S.sealAt == null) S.sealAt = S.day; if (S.day - S.sealAt >= 180) { S.sealed = false; S.sealAt = null; S.pushes = 0; news("The edge has started to hum again. Whatever the seal held back has found the seam."); } }
   if (noVoid() || S.sealed) return;
   SEAL_AT = v.on ? 9 : 5;
   if (!v.mig) { v.mig = 1; if (!ovGateOpen()) S.rifts.forEach(function (r) { r.c = 4; delete r.x; delete r.y; }); }
@@ -15020,7 +15021,7 @@ function ovSilSec() {
     opts: [{ t: "“Open every tunnel mouth. I will go everywhere.”", reward: { xp: 900, crowns: 400 }, set: { tunnels: 1, sh_tunnels_all: 1 }, eff: function () { cp().f.tunnels = 1; }, text: "Pale draws a line across the back of your hand with a cold finger. Nothing is left there, and everything is. From now on the shadow tunnels on all nine continents will open when you touch them. The Walker skill will make them kinder." },
       { t: "“Open only Shadowdeep’s way, to and from the Unmade City.”", reward: { xp: 900, perm: "pts", item: 2 }, set: { tunnels: 1, sh_tunnels_one: 1 }, eff: function () { cp().f.tunnels = 1; }, text: "Pale nods. “A cautious road is a longer-lived one.” The tunnels are still open to you, but the Order will watch which you use, and for what." }] });
   sq({ id: "sh_unmaker", act: 4, npc: "shfaceless", npcDef: { name: "A Faceless Councillor", col: "#26263a", hair: "#12121c", idle: "Do not say my name. I do not have it today." }, need: m("sh_tunnels"),
-    name: "The One Who Unmakes", zone: "shunmaker", zname: "The Unmade Chapel", th: "cave", lv: 4, seed: 607, pal: ["assassin", "inkling"], boss: "sh_unmaker", obj: "Find the one who unmakes the Faceless Council.",
+    name: "The One Who Unmakes", zone: "shunmaker", zname: "The Unmade Hall", th: "cave", lv: 4, seed: 607, pal: ["assassin", "inkling"], boss: "sh_unmaker", obj: "Find the one who unmakes the Faceless Council.",
     gate: "A hall in which every bench has a clean gap where somebody used to sit.",
     intro: "Another seat is empty on the Council. Another face unmade. We cannot say which of us it was, because we have forgotten who sat there. Someone is doing this on purpose. The Order says you are the best knife it has. Find the Unmaker.",
     turn: "The Unmaker is gone. It was not the one we thought it was. I will say only that it wore a Councillor’s robe, and that it had a reason. A good one. Do you want to hear it?",
@@ -15284,7 +15285,7 @@ function areaUnlocked(id) { if (id === "unmadecity" || id === "lanterncity" || i
     ["ch_4", 5, "furnacerow", "ch_3", "Magistrate Oren", "#6a7a8a", "#2a2a3a", "The Dominion Council fears nothing but inefficiency. It is about to meet a new kind.", "The Choir Strikes", "The Dominion Floor", "cave", ["knife", "slinger"], "The Striking Foreman", "A factory floor where every machine has stopped at once and refuses to resume.",
       "The Choir has gone on strike. Every machine in Furnace Row is idle. The Dominion cannot enforce a quota on a machine that has chosen not to run. I want you to negotiate, as the only person they will talk to.", "They want a charter. They want rights. The Council is going to need a chair.",
       "“Write the charter. Give them rights.”", "Oren drafts it by night. By dawn the machines hum again, softly, in thanks.", "“Break the strike. They are only machines.”", "Oren does not look at you. The machines resume, grimly. Something is lost.", "metal"],
-    ["ch_5", 6, "furnacerow", "ch_4", "Noctis", "#3a3a4a", "#1a1a22", "I was a weapon before I was a person. I know what they want.", "The Iron Choir", "The Hall of Gears", "mine", ["wraith", "slinger"], "The Iron Choir", "A cathedral of gears, tuned to a single note, waiting to be conducted.",
+    ["ch_5", 6, "furnacerow", "ch_4", "Noctis", "#3a3a4a", "#1a1a22", "I was a weapon before I was a person. I know what they want.", "The Iron Choir", "The Hall of Gears", "mine", ["wraith", "slinger"], "The Iron Choir", "A hall of gears, tuned to a single note, waiting to be conducted.",
       "The Choir has asked for a conductor. Not a master. They want someone who will listen. I am not that person, but I think you might be. I would ask you to go, and I would ask you to be kind.", "They sang for you. I have never heard anything so beautiful. I did not know a machine could do that.",
       "“I will conduct them. Gently.”", "Noctis lowers his head. “Then they will not be weapons,” he says. “At last.”", "“I will not. They must conduct themselves.”", "The Choir falls silent, then begins again, strangely free.", "metal"],
     // LIGHTFORGE: the Dawn Heresy
