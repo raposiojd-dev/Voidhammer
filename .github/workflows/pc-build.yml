@@ -1,0 +1,44 @@
+# Builds the desktop (PC) version of the game for Windows, Mac and Linux.
+# Run it from the Actions tab ("Run workflow"), or push a tag like pc-v1.0.0.
+# The finished installers appear under the run's "Artifacts".
+name: PC build
+
+on:
+  workflow_dispatch:
+  push:
+    tags: ["pc-v*"]
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            script: dist:win
+          - os: macos-latest
+            script: dist:mac
+          - os: ubuntu-latest
+            script: dist:linux
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        working-directory: pc
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci
+      - run: npm run ${{ matrix.script }} -- --publish never
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: voidhammer-${{ matrix.os }}
+          path: |
+            pc/dist/*.exe
+            pc/dist/*.zip
+            pc/dist/*.dmg
+            pc/dist/*.AppImage
+          if-no-files-found: error
