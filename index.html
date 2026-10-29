@@ -6426,7 +6426,7 @@ var BIMG_SRC={"farm": "data:image/webp;base64,UklGRqyAAABXRUJQVlA4WAoAAAAQAAAAZw
   document.addEventListener("click", function (e) { if (e.target.closest && e.target.closest("button")) sfx("click"); }, true);
   // visible hint until the browser lets sound play
   (function () {
-    var hint = document.createElement("div"); hint.id = "sndhint"; hint.textContent = "Tap for sound";
+    var hint = document.createElement("div"); hint.id = "sndhint"; hint.textContent = (window.vhDesktop || matchMedia("(pointer:fine)").matches) ? "Click for sound" : "Tap for sound";
     hint.style.cssText = "position:fixed;left:50%;top:22%;transform:translateX(-50%);z-index:90;background:rgba(12,11,9,.88);border:1px solid #c8873a;color:#f2c37a;font:0.72rem monospace;letter-spacing:.12em;text-transform:uppercase;padding:.45rem .8rem;display:none;pointer-events:none";
     document.body.appendChild(hint);
     setInterval(function () { var need = mOn && (!mac || mac.state !== "running"); if ((hint.style.display === "block") !== need) hint.style.display = need ? "block" : "none"; }, 700);

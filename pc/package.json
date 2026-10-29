@@ -1,0 +1,32 @@
+{
+  "name": "voidhammer-shattered-realms",
+  "productName": "Voidhammer - The Shattered Realms",
+  "version": "1.0.0",
+  "description": "Voidhammer: The Shattered Realms, a sandbox RPG set before the Radiant Edict.",
+  "author": "John Raposio",
+  "main": "main.js",
+  "private": true,
+  "scripts": {
+    "sync": "bash sync-game.sh",
+    "start": "bash sync-game.sh && electron .",
+    "dist:win": "bash sync-game.sh && electron-builder --win",
+    "dist:mac": "bash sync-game.sh && electron-builder --mac",
+    "dist:linux": "bash sync-game.sh && electron-builder --linux"
+  },
+  "devDependencies": {
+    "electron": "33.4.11",
+    "electron-builder": "25.1.8"
+  },
+  "build": {
+    "appId": "com.voidhammersaga.shatteredrealms",
+    "productName": "Voidhammer - The Shattered Realms",
+    "artifactName": "Voidhammer-${version}-${os}-${arch}.${ext}",
+    "directories": { "output": "dist", "buildResources": "build" },
+    "files": ["main.js", "preload.js", "game/**/*"],
+    "icon": "build/icon.png",
+    "win": { "target": [{ "target": "zip", "arch": ["x64"] }, { "target": "nsis", "arch": ["x64"] }] },
+    "nsis": { "oneClick": false, "allowToChangeInstallationDirectory": true, "shortcutName": "Voidhammer" },
+    "mac": { "target": [{ "target": "dmg", "arch": ["universal"] }], "category": "public.app-category.role-playing-games" },
+    "linux": { "target": [{ "target": "AppImage", "arch": ["x64"] }], "category": "Game" }
+  }
+}
