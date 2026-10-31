@@ -16606,7 +16606,7 @@ setInterval(function () {
     };
     // test and debug hooks (read-only views plus the two entry points)
     window.__vh = { S: function () { return S; }, B: function () { return B; }, sheet: function () { return sheet; }, site: site, T: T, startWalk: startWalk, startFight: startFight, scene: function () { return cur; },
-      battleWith: function (n) { var e = S.enemies.filter(function (x) { return x.kind === "bandit"; })[0] || S.enemies[0]; if (!e) return false; if (n) e.n = n; startBattle(e); return true; },
+      battleWith: function (n, kind) { var e = kind ? null : (S.enemies.filter(function (x) { return x.kind === "bandit"; })[0] || S.enemies[0]); if (kind) { e = { id: 990000 + Math.floor(Math.random() * 9999), kind: kind, n: n || 10, q: 1, x: S.px + 40, y: S.py, cool: 0 }; S.enemies.push(e); } if (!e) return false; if (n) e.n = n; startBattle(e); return true; },
       give: function (n) { S.from.merc = (S.from.merc || 0) + n; return T(); }, pref: pref };
   })();
   setInterval(function () { if (!sheet || sheet.kind !== "battle") save(); }, 4000);

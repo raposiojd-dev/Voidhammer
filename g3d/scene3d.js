@@ -199,7 +199,7 @@ function makeKit(stage) {
     const m = new THREE.MeshStandardMaterial(Object.assign({ color: hex, roughness: 0.86, metalness: 0.04, flatShading: true }, o || {}));
     mats.set(key, m); return m;
   };
-  const glow = (hex) => mat(hex, { emissive: hex, emissiveIntensity: 2.2, roughness: 1, metalness: 0 });
+  const glow = (hex) => mat(hex, { emissive: hex, emissiveIntensity: 1.6, roughness: 1, metalness: 0 });
   const g = {
     box: new THREE.BoxGeometry(1, 1, 1),
     prism: prismGeo(),
@@ -563,7 +563,7 @@ function buildWalk(st, api, info, done) {
     // fences round the green
     for (let i = 0; i < 40; i++) { const a = i / 40 * Math.PI * 2, r = R - 2; const x = Math.cos(a) * r, z = Math.sin(a) * r; if (z > R - 6 && Math.abs(x) < 4) continue; B.box(x, 0.5, z, 0.14, 1, 0.14, 0, 0x5a4026); B.box(x, 0.7, z, 0.1, 0.08, 3.3, -a, 0x6a4a2c); }
     // the way out
-    spots.push({ key: "gate", label: "Back to the map", x: 0, z: R - 1, r: 3 });
+    spots.push({ key: "gate", label: "The village edge", x: 0, z: R - 1, r: 3 });
   }
   if (info.townKael) npcStatic(t1door(), 0, { cloth: 0x7a2a1c, cloth2: 0x2a1c18, cloak: 0x3a1a14, skin: 0xa8704a, helm: "bare", weapon: "sword", scale: 0.96 });
   function t1door() { const s = spots.find((p) => p.key === "tavern"); return s ? [s.x - 1.6, s.z + 0.8] : [6, 6]; }
@@ -634,7 +634,7 @@ function buildWalk(st, api, info, done) {
   const folk = [];
   const nf = isV ? 9 : isC ? 9 : info.size >= 4 ? 22 : 16;
   for (let i = 0; i < nf; i++) {
-    const n = nodes[Math.floor(rand() * nodes.length)], c = P.cloth[Math.floor(rand() * P.cloth.length)];
+    const spawnable = nodes.filter((q) => q[1] < R - 9), n = (spawnable.length ? spawnable : nodes)[Math.floor(rand() * (spawnable.length || nodes.length))], c = P.cloth[Math.floor(rand() * P.cloth.length)];
     const kind = rand();
     const f = figure(kit, kind < 0.15 && !isV ? guardLook() : { cloth: c, cloth2: shade(P.cloth[(i + 2) % P.cloth.length], 0.8).getHex(), skin: [0xd8b090, 0xb88a68, 0x8a5a3a, 0xe8c8a8][Math.floor(rand() * 4)], helm: info.realm === "shadow" || info.realm === "spirit" && rand() < 0.5 ? "hood" : "bare", cloak: rand() < 0.4 ? shade(c, 0.7).getHex() : null, lantern: P.lanterns && rand() < 0.5 ? 0xc8e0ff : null, scale: 0.88 + rand() * 0.18 });
     const off = (rand() - 0.5) * 2.4;
@@ -645,7 +645,7 @@ function buildWalk(st, api, info, done) {
 
   // the player
   const me = figure(kit, { cloth: 0x4a3a2a, cloth2: 0x2a2018, cloak: info.banner, skin: 0xc89a78, helm: "bare", weapon: "sword", shield: null });
-  me.position.set(0, 0, R - 3.5); me.rotation.y = Math.PI; scene.add(me);
+  me.position.set(0, 0, R - (isV ? 3.5 : 6.5)); me.rotation.y = Math.PI; scene.add(me);
   let yaw = 0, pitch = 0.32, moveT = 0;
   followCam(camera, me.position.x, 0, me.position.z, yaw, pitch, 5.6, 0.55, 0, true);
 
@@ -777,17 +777,22 @@ function buildBattle(st, api, info, done) {
   const nAlly = info.allyS > 0 ? clamp(Math.round(NP * info.allyS / info.p0), 1, NP - 1) : 0;
   const wp = info.p0 / NP, we = info.e0 / NE;
   const units = [];
+  const ec = new THREE.Color(info.ecol), bc = new THREE.Color(info.banner), ecol2 = Math.abs(ec.r - bc.r) + Math.abs(ec.g - bc.g) + Math.abs(ec.b - bc.b) < 0.35 ? shade(info.ecol, 0.5).getHex() : info.ecol;
   const enemyLook = () => {
     if (isVoid) return { cloth: 0x1e1828, cloth2: 0x141018, skin: 0x3a2a4a, helm: "hood", hoodc: 0x16121e, eyes: VOIDC, weapon: rand() < 0.5 ? "sword" : "spear", cloak: 0x241a34 };
-    if (info.fac) { const r = REALMS[info.fac] || P; return { cloth: r.cloth[0], cloth2: r.cloth[3] || 0x2a2420, armour: true, metal: info.fac === "metal" ? 0x2c2c30 : info.fac === "light" ? 0xd0b050 : info.fac === "frost" ? 0x6a7a8a : 0x8a8e94, tabard: info.ecol, helm: info.fac === "metal" ? "spike" : info.fac === "shadow" ? "hood" : "cap", weapon: rand() < 0.45 ? "spear" : "sword", shield: info.fac === "shadow" ? null : info.ecol }; }
+    if (info.fac) { const r = REALMS[info.fac] || P; return { cloth: r.cloth[0], cloth2: r.cloth[3] || 0x2a2420, armour: true, metal: info.fac === "metal" ? 0x2c2c30 : info.fac === "light" ? 0xd0b050 : info.fac === "frost" ? 0x6a7a8a : 0x8a8e94, tabard: ecol2, helm: info.fac === "metal" ? "spike" : info.fac === "shadow" ? "hood" : "cap", weapon: rand() < 0.45 ? "spear" : "sword", shield: info.fac === "shadow" ? null : ecol2 }; }
     return { cloth: [0x6a4a2a, 0x4a3a2a, 0x5a3a24, 0x3a3020][Math.floor(rand() * 4)], cloth2: 0x2a2018, skin: [0xc89a78, 0x9a6a48, 0xd8b090][Math.floor(rand() * 3)], helm: rand() < 0.5 ? "hood" : rand() < 0.5 ? "cap" : "bare", hoodc: 0x3a2a1c, weapon: rand() < 0.3 ? "spear" : "sword", shield: rand() < 0.4 ? 0x6a4a2a : null, armour: rand() < 0.2 };
   };
   const ownLook = (ally) => ally ? { cloth: 0x3a3428, cloth2: 0x2a2420, armour: true, tabard: ally.col, helm: "cap", weapon: rand() < 0.4 ? "spear" : "sword", shield: ally.col }
     : { cloth: 0x4a3e30, cloth2: 0x2a2420, armour: rand() < 0.6, tabard: info.banner, helm: rand() < 0.7 ? "cap" : "bare", weapon: rand() < 0.4 ? "spear" : "sword", shield: rand() < 0.7 ? info.banner : null };
+  const ringGeo = st.track(new THREE.RingGeometry(0.3, 0.42, 16));
+  const ringMat = (c, o) => new THREE.MeshBasicMaterial({ color: c, transparent: true, opacity: o, depthWrite: false });
+  const ringP = ringMat(0xffd884, 0.55), ringHero = ringMat(0xffffff, 0.9), ringE = ringMat(isVoid ? 0xb89cff : 0xff3a2a, 0.6);
   function addUnit(side, i, n, w, look, extra) {
     const cols = Math.min(12, Math.ceil(Math.sqrt(n * 2.2))), row = Math.floor(i / cols), col = i % cols;
     const sx = (col - (cols - 1) / 2) * 1.55 + (rand() - 0.5) * 0.3, sz = (side === "p" ? 15 : -15) + (side === "p" ? 1 : -1) * row * 1.7 + (rand() - 0.5) * 0.3;
     const f = figure(kit, look); f.position.set(sx, H(sx, sz), sz); f.rotation.y = side === "p" ? Math.PI : 0; scene.add(f);
+    const ring = new THREE.Mesh(ringGeo, side === "p" ? (extra && extra.hero ? ringHero : ringP) : ringE); ring.rotation.x = -Math.PI / 2; ring.position.y = 0.04; f.add(ring); f.userData.ring = ring;
     const u = Object.assign({ f, side, w, hp: w * 3.2, hpm: w * 3.2, x: sx, z: sz, hx: sx, hz: sz, yaw: f.rotation.y, tgt: null, cd: 0.4 + rand() * 0.8, atk: 0, rout: false, dead: false, gone: false, deadT: 0, t: rand() * 10, mv: 0, retarget: rand() * 0.3, reach: look.weapon === "spear" ? 1.75 : 1.35 }, extra || {});
     units.push(u); return u;
   }
@@ -852,7 +857,7 @@ function buildBattle(st, api, info, done) {
     }
     v.hp -= dmg;
     if (v.hp <= 0) {
-      if (v.hero) { v.hp = 0; heroDown = true; v.dead = true; v.deadT = 0; st.msg("You are struck down. Your sergeants drag you behind the line. The men fight on.", 4); speedK = 2; return; }
+      if (v.hero) { v.hp = 0; heroDown = true; v.dead = true; v.deadT = 0; if (v.f.userData.ring) v.f.userData.ring.visible = false; st.msg("You are struck down. Your sergeants drag you behind the line. The men fight on.", 4); speedK = 2; return; }
       v.dead = true; v.deadT = 0;
       if (v.kael) { kdead = true; st.msg("Kaelren is down. Four men carry him back on a shield.", 3.5); }
       if (from && from.hero && api.sfx) api.sfx("kill");
@@ -896,6 +901,7 @@ function buildBattle(st, api, info, done) {
       const r = api.vow(id, sideW("p", true) / Math.max(1e-6, p0w));
       if (r.end) { over = "done"; ended = true; st.root.style.transition = "opacity .4s"; st.root.style.opacity = "0"; setTimeout(() => { st.dispose(); done({ how: "done" }); }, 420); return; }
       paused = false;
+      if (kael && id === "hold") kael.pinned = true;
       if (r.lost) { const k = Math.min(Math.round(r.lost * NP / Math.max(1, ownT)), 12); units.filter((u) => u.side === "p" && fighting(u) && !u.hero && !u.kael && !u.ally).sort((a, b) => b.x - a.x).slice(0, k).forEach((u) => { u.dead = true; u.deadT = 0; }); st.msg("The right flank never heard the order.", 3); }
       if (r.ride && kael && alive(kael)) {
         st.msg("Kaelren rides. The line breaks around him.", 3.5);
@@ -934,11 +940,11 @@ function buildBattle(st, api, info, done) {
     if (hero.cd > 0) hero.cd -= dt;
     // the line's AI
     const pW = sideW("p", true), eW = sideW("e", true);
-    if (!vowDone && !over && kael && fighting(kael) && pW / p0w < 0.62) { vowModal(); return; }
+    if (!vowDone && !over && kael && fighting(kael) && (pW / p0w < 0.62 || kael.hp < kael.hpm * 0.4)) { vowModal(); return; }
     for (const u of units) {
       if (u.hero) continue;
       u.t += sdt;
-      if (u.dead) { if (u.deadT < 1) { u.deadT += sdt * 2.2; u.f.rotation.x = -Math.PI / 2 * Math.min(1, u.deadT); u.f.position.y = H(u.x, u.z) + 0.15 * Math.min(1, u.deadT); } continue; }
+      if (u.dead) { if (u.f.userData.ring) u.f.userData.ring.visible = false; if (u.deadT < 1) { u.deadT += sdt * 2.2; u.f.rotation.x = -Math.PI / 2 * Math.min(1, u.deadT); u.f.position.y = H(u.x, u.z) + 0.15 * Math.min(1, u.deadT); } continue; }
       if (u.gone) continue;
       if (u.ride) { u.rideT -= sdt; u.z -= sdt * 9; u.x += Math.sin(u.t * 2) * sdt * 2; u.mv = 1.6; if (u.rideT <= 0) { u.gone = true; u.f.visible = false; } u.f.position.set(u.x, H(u.x, u.z), u.z); u.f.rotation.y = 0; animFigure(u.f, u.t, 1.6, 0); continue; }
       if (u.cd > 0) u.cd -= sdt; if (u.atk > 0) u.atk = Math.max(0, u.atk - sdt * 2.4);
@@ -952,7 +958,7 @@ function buildBattle(st, api, info, done) {
         u.retarget -= sdt;
         if (u.retarget <= 0 || !u.tgt || !fighting(u.tgt)) { u.tgt = nearestFoe(u); u.retarget = 0.35 + Math.random() * 0.3; }
         const foe = u.tgt, fd = foe ? Math.hypot(foe.x - u.x, foe.z - u.z) : 1e9;
-        const engage = u.side === "e" ? t0 > enemyGo || fd < 7 : (order === "charge" || fd < 6 || (u.kael && fd < 12) || (u.ally && t0 > 6));
+        const engage = u.side === "e" ? t0 > enemyGo || fd < 7 : u.pinned ? fd < 1.6 : (order === "charge" || fd < 6 || (u.kael && !u.pinned && fd < 9) || (u.ally && t0 > 6));
         if (u.kael && !engage && !heroDown) { tx = hero.x - 2; tz = hero.z + 1; want = Math.hypot(tx - u.x, tz - u.z) > 1.5; }
         if (foe && engage) {
           if (fd > u.reach) { tx = foe.x; tz = foe.z; want = true; }
