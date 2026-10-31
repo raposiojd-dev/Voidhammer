@@ -16375,6 +16375,177 @@ setInterval(function () {
       ["apple-touch-icon", "icon"].forEach(function (rel) { var l = document.createElement("link"); l.rel = rel; l.href = url; hd.appendChild(l); });
     } catch (e) {}
   })();
+  // ---- VH3D: third person in towns, villages, castles and battles. The world map stays top-down. ----
+  // The 3D code and three.js live in g3d/ and load only when a scene opens. Every action still runs through the
+  // existing sheets and finishBattle, so numbers, saves, story flags and the Void rules are unchanged.
+  (function () {
+    var mod = null, loading = null, cur = null, walkSpeed = 0;
+    var PREF = "vh3d-opts-v1", pref = { walk: true };
+    try { var pj = JSON.parse(localStorage.getItem(PREF) || "null"); if (pj) pref = Object.assign(pref, pj); } catch (e) {}
+    function savePref() { try { localStorage.setItem(PREF, JSON.stringify(pref)); } catch (e) {} }
+    var glYes = null;
+    function glOk() {
+      if (glYes !== null) return glYes;
+      try { var c = document.createElement("canvas"); glYes = !!(window.WebGLRenderingContext && (c.getContext("webgl2") || c.getContext("webgl"))); } catch (e) { glYes = false; }
+      return glYes;
+    }
+    function load() {
+      if (mod) return Promise.resolve(mod);
+      if (!loading) loading = import("./g3d/scene3d.js").then(function (m) { mod = m; return m; }, function (e) { loading = null; throw e; });
+      return loading;
+    }
+    function realmAt(x, y) {
+      var best = "ember", bd = 1e9;
+      Object.keys(FAC).forEach(function (k) { var c = FAC[k].cap && site(FAC[k].cap); if (c) { var d = dist(x, y, c.x, c.y); if (d < bd) { bd = d; best = k; } } });
+      return best;
+    }
+    function voidNear(x, y) { try { var m = S.voidR - dist(x, y, ccx(x), ccy(y)); return S.sealed ? 0 : Math.max(0, Math.min(1, 1 - m / 320)); } catch (e) { return 0; } }
+    function realmOf(s) { return s.owner && s.owner !== "player" && s.owner !== "rebel" && FAC[s.owner] ? s.owner : realmAt(s.x, s.y); }
+    function canWalk(s) { return !!(s && !hostileSite(s) && glOk()); }
+    var SECS = {
+      market: ["Market", "Grain", "Trade"], tavern: ["Tavern"], barracks: ["Men", "Levy", "Soldiers"],
+      smith: ["Forge: make better gear", "Gear: for sale", "Troop kit: for sale", "Equipment"],
+      hall: ["Your hold", "Realm", "Standing", "Service"], fields: ["Work"], build: ["Buildings", "Your farm"]
+    };
+    function scrollToSec(names) {
+      var secs = document.querySelectorAll("#sbody .sec"), hit = null;
+      for (var n = 0; n < names.length && !hit; n++) for (var i = 0; i < secs.length; i++) if (secs[i].textContent.indexOf(names[n]) === 0) { hit = secs[i]; break; }
+      if (!hit) return false;
+      hit.scrollIntoView({ block: "start" }); hit.classList.add("vh3d-hit"); setTimeout(function () { hit.classList.remove("vh3d-hit"); }, 1600);
+      return true;
+    }
+    function openPlace(sid, key) {
+      if (key === "writs") { openSheet("writs", sid); return; }
+      if (key === "shrine") { openSheet("magic"); return; }
+      openSheet("site", sid);
+      if (SECS[key]) setTimeout(function () { scrollToSec(SECS[key]); }, 30);
+    }
+    function heroStats() {
+      var PN = Math.max(1, Math.min(40, T())), hb = Math.max(0.05, (B.p0 - (B.allyS || 0)) / PN);
+      var hpm = 3.2 * 2.2 * (1 + 0.15 * sk("ironhide")) * gearBattle().hp * Math.max(1, (maxHp() - sk("ironhide")) / 5);
+      return { w: hb * 2.5, hp: hb * 2.5 * hpm, hb: hb };
+    }
+    var api = {
+      dev: false,
+      sheetOpen: function () { return !!sheet; },
+      closeSheet: function () { if (sheet && !/^(battle|intro|ending|menu|newgame|story)$/.test(sheet.kind)) closeSheet(); },
+      open: function (key) { if (cur && cur.sid) openPlace(cur.sid, key); },
+      banner: function () { return FAC.player.col || "#c8873a"; },
+      toast: function (t) { try { toast(t); } catch (e) {} },
+      sfx: function (n) { try { sfx(n); } catch (e) {} },
+      fail: function (why) { if (window.console) console.log("vh3d fallback:", why && (why.message || why)); }
+    };
+    function prepUi() {
+      if ($("vh3d-style")) return;
+      var st = document.createElement("style"); st.id = "vh3d-style";
+      st.textContent = ".vh3d-hit{animation:vh3dHit 1.6s ease}@keyframes vh3dHit{0%{color:#ffd884;text-shadow:0 0 12px #c8873a}100%{}}" +
+        ".vh3d-walk{display:flex;gap:.5rem;align-items:center;margin:.2rem 0 .7rem;flex-wrap:wrap}.vh3d-walk button.solid{padding:.7rem 1.1rem}.vh3d-walk label{font:500 .7rem var(--mono);color:var(--muted);display:flex;gap:.35rem;align-items:center;letter-spacing:.06em;cursor:pointer}" +
+        "body.vh3d-on #musbtn,body.vh3d-on #savebtn,body.vh3d-on #mptab,body.vh3d-on #omini,body.vh3d-on #hkg,body.vh3d-on #walkbtn,body.vh3d-on #fbtns,body.vh3d-on #sndhint,body.vh3d-on button[style*='writing-mode']{display:none!important}";
+      document.head.appendChild(st);
+    }
+    function startWalk(sid) {
+      var s = site(sid); if (!canWalk(s) || cur) return false;
+      prepUi();
+      walkSpeed = sheet ? pausedSpeed : S.speed;
+      if (sheet) closeSheet(true);
+      S.speed = 0; cur = { kind: "walk", sid: sid };
+      var info = { id: s.id, name: s.name, type: s.type, owner: s.owner || "", realm: realmOf(s), voidNear: voidNear(s.x, s.y), has: Object.assign({}, s.has || {}),
+        townKael: s.id === "emberfall" && S.kael === "away", own: s.owner === "player", ownerName: s.owner && FAC[s.owner] ? FAC[s.owner].name : "", banner: api.banner(),
+        writs: s.type === "town", kael: S.kael === "alive", size: s.type === "village" ? 1 : s.type === "castle" ? 2 : (FAC[s.owner] && FAC[s.owner].cap === s.id ? 4 : 3) };
+      document.body.classList.add("vh3d-on");
+      load().then(function (m) {
+        cur.ctl = m.walk(api, info, function (how) {
+          cur = null; document.body.classList.remove("vh3d-on"); S.speed = walkSpeed; save();
+          if (how === "menu") openSheet("site", sid);
+          if (how === "fail") openSheet("site", sid);
+        });
+      }, function (e) { api.fail(e); cur = null; document.body.classList.remove("vh3d-on"); S.speed = walkSpeed; openSheet("site", sid); });
+      return true;
+    }
+    function startFight() {
+      if (!B || cur || !glOk() || T() < 1) return false;
+      prepUi();
+      clearTimeout(B.timer);
+      var e = enemyById(B.eid), hs = heroStats(), fac = B.kind === "lord" && B.fac ? B.fac : null;
+      var info = { p0: B.p0, e0: B.e0, allyS: B.allyS || 0, t0: B.t0, en0: B.en0, kind: B.kind, fac: fac, title: B.title || (B.kind === "void" ? "Void-touched" : B.kind === "rift" ? "A Rift" : "Bandits"),
+        siege: !!B.siegeId, realm: realmAt(S.px, S.py), voidNear: voidNear(S.px, S.py), banner: api.banner(), ecol: fcol(), kael: S.kael === "alive" && !B.kaelDone, kaelAlive: S.kael === "alive",
+        allies: (B.allies || []).map(function (h) { var d = hdef(h); return { name: h.name.split(",")[0], col: d.col || "#f0d060", s: allyStr(h) * 0.9 }; }),
+        heroW: hs.w, heroHp: hs.hp, hb: hs.hb, held: S.held.length, hasKael: has("kael"), pname: (S.pname || OPT.pname || "") };
+      cur = { kind: "battle" };
+      $("sheet").hidden = true; $("dim").hidden = true; document.body.classList.add("vh3d-on");
+      var back = function () { cur = null; document.body.classList.remove("vh3d-on"); $("sheet").hidden = false; $("dim").hidden = false; };
+      load().then(function (m) {
+        cur.ctl = m.battle(api, info, function (r) {
+          back();
+          if (!B) return;
+          if (r.how === "fail") { renderSheet(); return; }
+          if (r.how === "done") { renderSheet(); return; } // the vow's Ledger burn already finished the battle
+          B.pCur = Math.max(0.0001, B.p0 * r.pf); B.eCur = B.e0 * r.ef;
+          if (r.kdead && S.kael === "alive") {
+            var held = has("kael"); S.kael = "wounded"; S.kaelBack = Math.floor(S.day) + 12; if (!has("ford") && S.burned.indexOf("ford") < 0) S.held.push("ford");
+            log("Kaelren went down in the press. They carried him from the field, grey and swearing. The surgeon says twelve days. Kaelren says six.", "e");
+            if (held) log("Elyndra: You chose the memory. I have written it down.", "ely");
+          }
+          if (r.how === "win") { B.eCur = 0; finishBattle(true, "field"); }
+          else if (r.how === "flee") { var en = enemyById(B.eid); S.grain = Math.floor(S.grain * 0.9); if (en) en.cool = 2; B.out = ["You pulled your men off the field, and left some grain behind."]; B.won = null; B.stage = "result"; renderSheet(); }
+          else { B.eCur = Math.max(B.eCur, B.e0 * (B.pCur / B.p0) * 1.05 + 0.001); finishBattle(false); }
+          save();
+        });
+      }, function (er) { api.fail(er); back(); renderSheet(); });
+      return true;
+    }
+    // Kaelren's vow, from inside the 3D battle. Same choices and costs as the sheet; the battle carries on in 3D.
+    api.vowChoices = function () {
+      var c = [{ id: "hold", t: "Pin him with the warhorn. The right flank will not hear the order." }];
+      if (has("kael")) c.push({ id: "burn", t: "Open the Ledger. Burn “The Night Kaelren Told Me About His Sister.”" });
+      c.push({ id: "ride", t: "Let him ride." });
+      return c;
+    };
+    api.vow = function (choice, pRatio) {
+      if (!B) return { end: true };
+      B.pCur = B.p0 * pRatio; B.stage = "run";
+      var before = T();
+      vow(choice); clearTimeout(B.timer);
+      if (choice === "burn") return { end: true };
+      return { lost: Math.max(0, before - T()), ride: choice === "ride" };
+    };
+    // offer the walk at the top of every friendly settlement, and Fight in person on the battle sheet
+    var ssOld = siteSheet;
+    siteSheet = function (s) {
+      var h = ssOld(s);
+      if (!canWalk(s)) return h;
+      var w = '<div class="vh3d-walk"><button class="solid" data-act="vh3dwalk" data-a="' + s.id + '">Walk the streets</button><label><input type="checkbox" data-act="vh3dauto"' + (pref.walk ? " checked" : "") + "> Walk in when I arrive</label></div>";
+      var i = h.indexOf("</p>"); return i > 0 ? h.slice(0, i + 4) + w + h.slice(i + 4) : w + h;
+    };
+    var bsOld = battleSheet;
+    battleSheet = function () {
+      var h = bsOld();
+      if (B && B.stage === "ask" && glOk() && T() > 0) h = h.replace('<button class="solid" data-act="field">', '<button class="solid" data-act="vh3dfight">Fight in person</button><button data-act="field">');
+      return h;
+    };
+    var arOld = arrive;
+    arrive = function (id) {
+      arOld(id);
+      if (pref.walk && !cur && sheet && sheet.kind === "site" && sheet.id === id && canWalk(site(id)) && !(S.story && S.story.seen && !S.story.seen.p0)) startWalk(id);
+    };
+    document.addEventListener("click", function (ev) {
+      var b = ev.target && ev.target.closest ? ev.target.closest("[data-act=vh3dwalk],[data-act=vh3dfight],[data-act=vh3dauto]") : null; if (!b) return;
+      var a = b.getAttribute("data-act");
+      if (a === "vh3dauto") { ev.stopPropagation(); pref.walk = !!b.checked; savePref(); return; }
+      ev.stopPropagation(); ev.preventDefault();
+      if (a === "vh3dwalk") startWalk(b.getAttribute("data-a")); else startFight();
+    }, true);
+    // Esc closes the open menu (on the map and inside a walk)
+    document.addEventListener("keydown", function (ev) {
+      if (ev.key !== "Escape" || !sheet || /^(battle|intro|ending|menu|newgame|story)$/.test(sheet.kind)) return;
+      if (ev.target && /input|textarea|select/i.test(ev.target.tagName)) return;
+      ev.preventDefault(); closeSheet();
+    });
+    // test and debug hooks (read-only views plus the two entry points)
+    window.__vh = { S: function () { return S; }, B: function () { return B; }, sheet: function () { return sheet; }, site: site, T: T, startWalk: startWalk, startFight: startFight, scene: function () { return cur; },
+      battleWith: function (n) { var e = S.enemies.filter(function (x) { return x.kind === "bandit"; })[0] || S.enemies[0]; if (!e) return false; if (n) e.n = n; startBattle(e); return true; },
+      give: function (n) { S.from.merc = (S.from.merc || 0) + n; return T(); }, pref: pref };
+  })();
   setInterval(function () { if (!sheet || sheet.kind !== "battle") save(); }, 4000);
   resize();
   showTitle();
