@@ -284,5 +284,15 @@ footer .wrap { padding-block: 36px 48px; font-family: var(--mono); font-size: 12
   vids.forEach(function (v) { io.observe(v); });
 })();
 </script>
+
+<script>
+(function () {
+  if (window.parent === window) return;
+  function send() { window.parent.postMessage({ vhWorldsHeight: document.documentElement.scrollHeight }, "*"); }
+  window.addEventListener("load", send); window.addEventListener("resize", send);
+  if ("ResizeObserver" in window) new ResizeObserver(send).observe(document.body);
+  send();
+})();
+</script>
 </body>
 </html>
