@@ -384,8 +384,8 @@ window.__vhGame = function () { (function () {
   var FRAGS = {
     forge: { title: "The Forge Where My Father Worked", desc: "Where I learned what a good edge costs.", passive: "Salvage sells for 15% more",
       back: "You told me your father kept a left-handed hammer and sang while the iron cooled. You said the coat never lost the smell." },
-    kael: { title: "The Night Kaelren Told Me About His Sister", desc: "The fire had burned low. He did not look at me while he said it.", passive: "Kaelren fights harder: +10% strength",
-      back: "You told me Kaelren has a sister, Iselle, twelve when he left. He sends her every coin he is paid. You said you would never mention it to him, and you didn’t." },
+    kael: { title: "The Night Kaelren Told Me About His Mother", desc: "The fire had burned low. He did not look at me while he said it.", passive: "Kaelren fights harder: +10% strength",
+      back: "You told me Kaelren’s mother blew glass, and that she died when he was six. He keeps a chip of her green glass in his coat. You said you would never mention it to him, and you didn’t." },
     meal: { title: "A Meal I Don’t Recall Eating", desc: "Someone handed it to me. I was hungry. That is all.", passive: "The column eats 15% less",
       back: "You do not recall the meal. I can tell you it was hot, and that someone gave it to you without being asked." },
     mother: { title: "The Winter My Mother Sang Through the Wall", desc: "The fever was bad that year. The song was worse, and better.", passive: "10% fewer men lost in battle",
@@ -399,14 +399,14 @@ window.__vhGame = function () { (function () {
   };
 
   var STORY_A = "The coat still smells of [[forge|the forge where my father worked]], and I have never managed to wash it out. ";
-  var STORY_K = "Across the fire Kaelren counts his wages into a purse he says is for [[kael|his sister Iselle]], and he grins as he says it. ";
+  var STORY_K = "Across the fire Kaelren turns a chip of green glass over in his fingers, [[kael|his mother’s work]], and he grins when he catches you looking. ";
   var STORY_B = "I [[meal|ate the bread]] without tasting it, and through the tent wall someone is singing, the way [[mother|my mother]] once did. My hand has not shaken since [[kill|the first man I killed]], and the sword at my hip still answers to [[name|the name Maren gave me]].";
   function story() { return STORY_A + (S.kael !== "away" ? STORY_K : "") + STORY_B; }
-  var KAEL_LINE = "You’d have liked [[kael|my sister Iselle]]. She’d have called you slow.";
+  var KAEL_LINE = "You’d have liked [[kael|my mother]]. She’d have called you slow.";
 
   var CHOICES = [
     { id: "water", text: "Ask why he gives his water away.", reply: "“Because I’m not using it.” He grins, and keeps grinning a beat too long.", rec: "Asked Kaelren why he gives his water away. He said he wasn’t using it." },
-    { id: "iselle", needs: "kael", text: "Ask about his sister.", reply: "“Twelve when I left. She writes that the goats are well. I’ve never met a goat I trusted.”", rec: "Asked Kaelren about [[kael|his sister]]. He talked about her goats." },
+    { id: "iselle", needs: "kael", text: "Ask about his mother.", reply: "“She blew glass. Green, mostly. I was six.” He pokes the fire. “The neighbours kept goats. I’ve never met a goat I trusted.”", rec: "Asked Kaelren about [[kael|his mother]]. He talked about the neighbours’ goats." },
     { id: "fire", text: "Say nothing. Pass him the fire.", reply: "He passes it back. Neither of you speaks, and it is the best part of the day.", rec: "Sat with Kaelren at the fire. Said nothing." }
   ];
 
@@ -1223,7 +1223,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
       B.stage = "run"; renderSheet(); B.timer = setTimeout(fightStep, 850);
     } else if (choice === "burn") {
       burnFragment("kael");
-      log("Kaelren rode back grinning. He spoke of [[kael|his sister Iselle]], and did not notice that you did not answer.", "e");
+      log("Kaelren rode back grinning. He spoke of [[kael|his mother’s glass]], and did not notice that you did not answer.", "e");
       B.out = ["He lives."]; B.eCur = 0;
       finishBattle(true, "burn"); renderSheet("kael");
     } else {
@@ -2865,7 +2865,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
     } else if (B.stage === "vow") {
       h += "<p><b style=\"font-weight:400;color:var(--amber)\">Kaelren’s horse screams.</b> The line is breaking. He has seen a man go down, and no one is closer. In three seconds he will ride.</p>";
       h += '<div class="choices"><button data-act="vow" data-a="hold">Pin him with the warhorn. The right flank will not hear the order.</button>';
-      if (has("kael")) h += '<button data-act="vow" data-a="burn">Open the Ledger. Burn “The Night Kaelren Told Me About His Sister.”</button>';
+      if (has("kael")) h += '<button data-act="vow" data-a="burn">Open the Ledger. Burn “The Night Kaelren Told Me About His Mother.”</button>';
       h += '<button data-act="vow" data-a="ride">Let him ride.</button></div>';
     } else {
       h += '<div class="log">' + B.log.map(function (l) { return "<p>" + l + "</p>"; }).join("") + "</div>";
@@ -3097,7 +3097,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
       h += "<p>" + hs.length + " towns and castles, " + vs + " villages. Armies about " + Math.round(str) + " strong." + (wars.length ? " At war with " + wars.join(", ") + "." : "") + "</p>";
       if (S.mc && S.mc.fell && S.mc.fell[f]) h += '<p class="dim-t">Fallen to the Dominion. Retake any hold and the realm lives again.</p>';
       else if (!hs.length && !vs) h += '<p class="dim-t">Destroyed.</p>';
-      else if (S.pwar[f]) h += row("At war with you", "Their lords are hunting you.", "Peace", "peace", f, "", S.crowns < dipPeaceCost(f)) + '<p class="dim-t">Peace costs ' + dipPeaceCost(f) + ' crowns.</p>';
+      else if (S.pwar[f]) h += row(vhMetalRaids(f) ? "Raiders on the roads" : "At war with you", vhMetalRaids(f) ? "Metalcrown denies its raiders. Open war comes after the Edict." : "Their lords are hunting you.", "Peace", "peace", f, "", S.crowns < dipPeaceCost(f)) + '<p class="dim-t">Peace costs ' + dipPeaceCost(f) + ' crowns.</p>';
       else h += warRow(f);
       h += dipTag(f);
     });
@@ -6274,8 +6274,9 @@ var BIMG_SRC={"farm": "data:image/webp;base64,UklGRqyAAABXRUJQVlA4WAoAAAAQAAAAZw
   function dipGift(f) { if (S.crowns < 100) return; S.crowns -= 100; opAdd(f, 8); dipSay("Your gift is received. " + dnm(f) + " thinks a little better of you."); }
   // --- UI ---
   function tag(t, c) { return '<span style="display:inline-block;border:1px solid ' + c + ";color:" + c + ';padding:0 .35rem;margin:0 .25rem .2rem 0;font-size:.7rem;letter-spacing:.06em">' + t + "</span>"; }
+  function vhMetalRaids(f) { try { var c = cp().f; return f === "metal" && !c.edict && !c.domRule && !(S.mc && S.mc.began); } catch (e) { return false; } }
   function realmTags(f) {
-    var o = opOf(f), h = tag(regard(o) + " " + Math.round(o), regCol(o)); if (S.pwar[f]) h += tag("AT WAR WITH YOU", "#ff6a5a"); if (isAlly("player", f)) h += tag("YOUR ALLY", "#7fd88a"); if (dip().vas === f) h += tag("YOUR LIEGE", "#e8c75a"); if (truced("player", f)) h += tag("TRUCE", "#9fb4e8");
+    var o = opOf(f), h = tag(regard(o) + " " + Math.round(o), regCol(o)); if (S.pwar[f]) h += vhMetalRaids(f) ? tag("RAIDERS HUNT YOU · NOT YET WAR", "#ff9a5a") : tag("AT WAR WITH YOU", "#ff6a5a"); if (isAlly("player", f)) h += tag("YOUR ALLY", "#7fd88a"); if (dip().vas === f) h += tag("YOUR LIEGE", "#e8c75a"); if (truced("player", f)) h += tag("TRUCE", "#9fb4e8");
     return h;
   }
   function joinRow(f) {
@@ -6303,7 +6304,7 @@ var BIMG_SRC={"farm": "data:image/webp;base64,UklGRqyAAABXRUJQVlA4WAoAAAAQAAAAZw
       h += '<div class="sec" style="color:' + FAC[f].col + '">' + dnm(f) + "</div><p>" + realmTags(f) + "</p>";
       var al = alliesOf(f).map(dnm), wr = warsOf(f).map(dnm); h += '<p class="dim-t">' + (al.length ? "Allied with " + al.join(", ") + ". " : "") + (wr.length ? "At war with " + wr.join(", ") + ". " : "") + (!al.length && !wr.length ? "Standing alone. " : "") + "</p>";
       (d.mem[f] || []).slice(-2).forEach(function (m) { h += '<p class="dim-t">Day ' + m.d + ': ' + m.t + "</p>"; });
-      if (S.pwar[f]) h += row("At war with you", d.vwar[f] ? "Your liege's war." : "Their lords hunt you.", "Peace", "peace", f, "", !!d.vwar[f] || S.crowns < dipPeaceCost(f)) + '<p class="dim-t">Peace costs ' + dipPeaceCost(f) + " crowns.</p>";
+      if (S.pwar[f]) h += row(vhMetalRaids(f) ? "Raiders on the roads" : "At war with you", vhMetalRaids(f) ? "Metalcrown denies its raiders. Open war comes after the Edict." : d.vwar[f] ? "Your liege's war." : "Their lords hunt you.", "Peace", "peace", f, "", !!d.vwar[f] || S.crowns < dipPeaceCost(f)) + '<p class="dim-t">Peace costs ' + dipPeaceCost(f) + " crowns.</p>";
       else { var wb = warBlockRow(f); h += wb || warRow(f); }
       if (!d.vas) {
         if (!isAlly("player", f) && !S.pwar[f]) { var ar = allyReason(f); h += row("Propose an alliance", ar || "200 crowns for the envoys. About " + Math.round((0.5 + opOf(f) / 200) * 100) + "%. They will join your wars.", "Propose", "dipally", f, "", !!ar); }
@@ -16024,7 +16025,7 @@ setInterval(function () {
       case "joinkael":
         if (S.kael === "away" && T() >= 5) {
           S.kael = "alive"; S.held.push("kael");
-          log("Kaelren agreed to ride with me. That night at the fire he told me about [[kael|his sister Iselle]].", "e");
+          log("Kaelren agreed to ride with me. That night at the fire he told me about [[kael|his mother]].", "e");
           toast("Kaelren rides with you now.");
         } break;
       case "farmauto": if (v) { var cur = v.mode || (v.autosell === false ? "off" : "sell"), nx = { sell: "army", army: "village", village: "off", off: "sell" }[cur]; v.mode = nx; v.autosell = nx !== "off"; } break;
@@ -16383,7 +16384,7 @@ setInterval(function () {
   // existing sheets and finishBattle, so numbers, saves, story flags and the Void rules are unchanged.
   (function () {
     var mod = null, loading = null, cur = null, walkSpeed = 0;
-    var PREF = "vh3d-opts-v1", pref = { walk: !!(window.matchMedia && matchMedia("(pointer:fine)").matches) };
+    var PREF = "vh3d-opts-v1", pref = { walk: true };
     try { var pj = JSON.parse(localStorage.getItem(PREF) || "null"); if (pj) pref = Object.assign(pref, pj); } catch (e) {}
     function savePref() { try { localStorage.setItem(PREF, JSON.stringify(pref)); } catch (e) {} }
     var glYes = null;
@@ -16448,6 +16449,8 @@ setInterval(function () {
     }
     function startWalk(sid) {
       var s = site(sid); if (!canWalk(s) || cur) return false;
+      var aid = areaIdFor(sid);
+      if (aid && getSpec(aid) && a3ok()) { if (sheet) closeSheet(true); startArea(aid); return !!AR; }
       prepUi();
       walkSpeed = sheet ? pausedSpeed : S.speed;
       if (sheet) closeSheet(true);
@@ -16500,7 +16503,7 @@ setInterval(function () {
     // Kaelren's vow, from inside the 3D battle. Same choices and costs as the sheet; the battle carries on in 3D.
     api.vowChoices = function () {
       var c = [{ id: "hold", t: "Pin him with the warhorn. The right flank will not hear the order." }];
-      if (has("kael")) c.push({ id: "burn", t: "Open the Ledger. Burn “The Night Kaelren Told Me About His Sister.”" });
+      if (has("kael")) c.push({ id: "burn", t: "Open the Ledger. Burn “The Night Kaelren Told Me About His Mother.”" });
       c.push({ id: "ride", t: "Let him ride." });
       return c;
     };
@@ -16516,7 +16519,7 @@ setInterval(function () {
     var ssOld = siteSheet;
     siteSheet = function (s) {
       var h = ssOld(s);
-      if (!canWalk(s)) return h;
+      if (!canWalk(s) || AR) return h;
       var w = '<div class="vh3d-walk"><button class="solid" data-act="vh3dwalk" data-a="' + s.id + '">Walk the streets</button><label><input type="checkbox" data-act="vh3dauto"' + (pref.walk ? " checked" : "") + "> Walk in when I arrive</label></div>";
       var i = h.indexOf("</p>"); return i > 0 ? h.slice(0, i + 4) + w + h.slice(i + 4) : w + h;
     };
@@ -16604,8 +16607,91 @@ setInterval(function () {
         ctx.restore();
       } catch (e) {}
     };
+    // ---- Stage 1 (v2): every off-map place in 3D. Ashford, the hubs, towns, villages, castles, roads, caves, the yard and
+    // the overland walk all draw through g3d/area3d.js. The area simulation (AR) runs untouched: movement, collision,
+    // enemies, chests, exits, quests and dialogue (dlgOpen) are the same code as before, so saves and numbers don't change.
+    // The 2D area view is kept only as a silent fallback when WebGL or the module fails.
+    var A3 = null, a3busy = false, a3fail = false, a3on = false, mv3 = { x: 0, y: 0, k: 1 }, amod = null;
+    function a3ok() { return glOk() && !a3fail; }
+    function loadArea() { if (amod) return Promise.resolve(amod); return import("./g3d/area3d.js").then(function (m) { amod = m; return m; }); }
+    var a3api = {
+      host: function () { return $("area"); },
+      AR: function () { return AR; },
+      on: function (v) { a3on = !!v; var el = $("area"); if (el) el.classList.toggle("v3on", a3on); mv3.x = mv3.y = 0; },
+      fail: function (e) { api.fail(e); }, sfx: function (n) { api.sfx(n); },
+      sheetOpen: function () { return !!sheet; },
+      inDlg: function () { return !!(AR && AR.dlg); },
+      closeDlg: function () { try { dlgClose(); } catch (e) {} },
+      move: function (x, y, k) { mv3.x = x; mv3.y = y; mv3.k = k || 1; },
+      strike: function () { aPress = true; },
+      use: function () { window.aUsePress = true; },
+      leave: function () { if (AR && !AR.dlg && !sheet) leaveArea(); },
+      useInfo: function () { if (!AR || AR.dlg) return null; var tk = nearTalk(); if (!tk) return null; return { l: useLabel(tk) || "Talk", n: tk.npc ? (tk.npc.chest ? "" : tk.npc.name || "") : (tk.en && tk.en.d ? tk.en.d.name : "") }; },
+      target: function () { try { return cp().on && AR ? targetPos() : null; } catch (e) { return null; } },
+      exitName: function (e) { try { var to = e.to; if (!to || to === "world") return "The map"; var sp = getSpec(to); return sp ? sp.name : ""; } catch (x) { return ""; } },
+      siteLook: function (id) { var s = site(id); return s ? { name: s.name, col: ownerCol(s), type: s.type, sub: s.owner && FAC[s.owner] ? FAC[s.owner].name : "walk in" } : null; },
+      regTint: function (ri) { try { if (!ri || !AR.sp.RN) return null; var rc = RCOL[AR.sp.RN[ri - 1]]; return rc ? "rgb(" + rc + ")" : null; } catch (e) { return null; } },
+      rarCol: function (it) { try { return RAR[it.item.rar].c; } catch (e) { return "#e8e8e8"; } },
+      itemName: function (it) { try { return it.item.name; } catch (e) { return ""; } },
+      openPlace: function (key) { var sid = AR && siteOfArea(AR.id); if (!sid || !site(sid)) return; if (!key) openSheet("site", sid); else openPlace(sid, key); },
+      info: function (A) {
+        var sid = siteOfArea(A.id), s = sid && site(sid), th = ATH[A.sp.th] || {};
+        return { realm: s ? realmOf(s) : realmAt(S.px, S.py), type: s ? s.type : (A.sp.over ? "over" : ""), cave: !!th.cave, siteId: s && A.sp.safe && canWalk(s) ? sid : null,
+          kinds: A.sp.hk || (A.sp.houses && !ATH[A.sp.th].cave ? ovHKinds(A.sp) : []), banner: api.banner(), voidNear: voidNear(S.px, S.py), menuLabel: s ? (s.type === "village" ? "Village menu" : s.type === "castle" ? "Castle menu" : "Town menu") : "" };
+      }
+    };
+    function a3ensure() {
+      if (!AR || A3 || a3busy || !a3ok() || cur) return;
+      a3busy = true; prepUi(); a3api.on(true);
+      loadArea().then(function (m) {
+        a3busy = false; if (!AR || A3) { if (!A3) a3api.on(false); return; }
+        A3 = m.area(a3api, function (how) { A3 = null; a3api.on(false); if (how === "fail") a3fail = true; });
+      }, function (e) { a3busy = false; a3fail = true; a3api.on(false); api.fail(e); });
+    }
+    // the sim reads its move vector, facing and draw call through these; in 3D they come from the camera-relative stick
+    var aiOld = aInput; aInput = function () { if (a3on && AR) { var k = mv3.k || 1; return [mv3.x * k, mv3.y * k]; } return aiOld.apply(this, arguments); };
+    var aaOld = aAttack; aAttack = function () { if (a3on && A3 && A3.ready && AR) { var f = A3.aim(0); if (f) AR.p.face = f; } return aaOld.apply(this, arguments); };
+    var asOld = aShoot; aShoot = function () { if (a3on && A3 && A3.ready && AR) { var bw = curBow(), f = A3.aim(bw ? bw.sp * bw.life * 0.95 : 120); if (f) AR.p.face = f; } return asOld.apply(this, arguments); };
+    var adOld = aDraw; aDraw = function () { if (a3on) { try { alertTick(); } catch (e) {} try { ovMiniTick(AR); } catch (e) {} return; } return adOld.apply(this, arguments); };
+    var saOld = startArea; startArea = function () { var r = saOld.apply(this, arguments); a3ensure(); return r; };
+    setInterval(a3ensure, 250);
+    // ---- caves are their own places on the world map, never a door inside a settlement (John, 1 Nov) ----
+    function caveTo(e) { try { var to = e && e.to; if (typeof to !== "string") return false; if (/^cave\d+(f\d)?$/.test(to)) return true; var sp = to !== "world" && to !== "overland" && to.indexOf("writ:") !== 0 ? getSpec(to) : null; return !!(sp && ATH[sp.th] && ATH[sp.th].cave); } catch (x) { return false; } }
+    function settlementArea(id, sp) { return !!(sp && sp.safe && !sp.over && siteOfArea(id)); }
+    var baOld = buildArea; buildArea = function (id) {
+      var sp = getSpec(id);
+      if (settlementArea(id, sp) && sp.exits) sp.exits = sp.exits.filter(function (e) { return !caveTo(e); });
+      return baOld.apply(this, arguments);
+    };
+    // ---- every village, town and castle has a local quest giver with a "!" (the week's writs, posted and paid locally) ----
+    var VQN = ["Hollis", "Brannoc", "Edda", "Morrow", "Tamsin", "Corwen", "Ilse", "Dunmore", "Agna", "Perrin"];
+    function vqWho(s) { var n = VQN[nhash("vq" + s.id) % VQN.length]; return (s.type === "village" ? "Reeve " : s.type === "castle" ? "Castellan " : "Watch Captain ") + n; }
+    function vqOpen(sid) { try { return writList(sid).filter(function (w) { return !w.done; }); } catch (e) { return []; } }
+    var gsOld = genSpec; genSpec = function (id) {
+      var sp = gsOld.apply(this, arguments), sid = id.slice(2), s = site(sid);
+      if (sp && s && !(sp.npcs || []).some(function (n) { return n.id === "vqg"; })) {
+        var cx = Math.floor(sp.w / 2) - 1, my = Math.floor(sp.h / 2) - 1;
+        sp.npcs.push({ id: "vqg", name: vqWho(s), x: cx + 1, y: my - 3, col: s.type === "village" ? "#6a5a3a" : "#4a4a5a", hair: "#4a3a2a", mk: function () { return vqOpen(sid).length ? 1 : 0; }, d: function () { return "vhq:" + sid; } });
+      }
+      return sp;
+    };
+    var gdOld = getDlg; getDlg = function (id) {
+      if (id && id.indexOf("vhq:") === 0) {
+        var sid = id.slice(4), s = site(sid); if (!s) return null;
+        var L = vqOpen(sid), vill = s.type === "village";
+        return { n: vqWho(s), t: (vill ? "“The Concord’s riders don’t come out this far, so we post our own trouble. Pick one. " + s.name + " pays what it promised, and it remembers who helped.”"
+            : "“The Watch has more trouble than spears this season. These are posted by " + s.name + " and paid by " + s.name + ". Ride out, finish it, come back.”") +
+            (L.length ? "" : "<br><span style=\"opacity:.75\">Nothing left on the board this week. Come back when the week turns.</span>"),
+          c: function () {
+            var out = L.map(function (w) { var tag = ["", "Easy", "Fair", "Hard", "Grim", "Deadly", "Mythic"][w.lv] || "Deadly"; return { t: w.title + " · " + tag + " · " + w.cr + " crowns", fn: function () { var wid = w.id; setTimeout(function () { if (AR) leaveArea(); writGo(wid); }, 60); } }; });
+            out.push({ t: L.length ? "Not today." : "Goodbye." }); return out;
+          } };
+      }
+      return gdOld.apply(this, arguments);
+    };
     // test and debug hooks (read-only views plus the two entry points)
-    window.__vh = { S: function () { return S; }, B: function () { return B; }, sheet: function () { return sheet; }, site: site, T: T, startWalk: startWalk, startFight: startFight, scene: function () { return cur; },
+    window.__vh = { S: function () { return S; }, B: function () { return B; }, sheet: function () { return sheet; }, site: site, T: T, startWalk: startWalk, startFight: startFight, scene: function () { return cur || (A3 ? { kind: "area", ctl: A3 } : null); },
+      AR: function () { return AR; }, spec: function (id) { return getSpec(id); }, caveTo: caveTo, caves: function () { try { return ovPoi().caves.map(function (c, k) { return { id: "cave" + k, name: c.name }; }); } catch (e) { return []; } }, writs: function (sid) { return vqOpen(sid); }, area3d: function () { return A3; }, a3on: function () { return a3on; }, startArea: function (id) { startArea(id); return !!AR; }, dlg: function () { return AR && AR.dlg; }, cp: function () { return cp(); },
       battleWith: function (n, kind) { var e = kind ? null : (S.enemies.filter(function (x) { return x.kind === "bandit"; })[0] || S.enemies[0]); if (kind) { e = { id: 990000 + Math.floor(Math.random() * 9999), kind: kind, n: n || 10, q: 1, x: S.px + 40, y: S.py, cool: 0 }; S.enemies.push(e); } if (!e) return false; if (n) e.n = n; startBattle(e); return true; },
       give: function (n) { S.from.merc = (S.from.merc || 0) + n; return T(); }, pref: pref };
   })();

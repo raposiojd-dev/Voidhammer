@@ -100,14 +100,14 @@ function styleOnce() {
   document.head.appendChild(st);
 }
 
-function makeStage(loadText) {
-  styleOnce();
+function makeStage(loadText, opts) {
+  styleOnce(); opts = opts || {};
   const old = document.getElementById("vh3d"); if (old) old.remove();
   const sh = document.getElementById("sheet");
-  const host = (sh && sh.parentNode) || document.body;
-  const root = document.createElement("div"); root.id = "vh3d";
+  const host = opts.host || (sh && sh.parentNode) || document.body;
+  const root = document.createElement("div"); root.id = "vh3d"; if (opts.cls) root.className = opts.cls;
   root.innerHTML = '<canvas tabindex="-1"></canvas><div class="v3-grain"></div><div class="v3-vig"></div><div class="v3-hud"></div><div class="v3-msg"></div><div class="v3-prompt" hidden></div><div class="v3-hp" hidden></div><div class="v3-keys"></div><div class="v3-act"></div><div class="v3-top"></div><div class="v3-stick" hidden><i></i></div><div class="v3-end"></div><div class="v3-load">' + loadText + "</div>";
-  host.appendChild(root);
+  if (opts.host && host.firstChild) host.insertBefore(root, host.firstChild); else host.appendChild(root);
   const $ = (q) => root.querySelector(q);
   const canvas = $("canvas");
   $(".v3-grain").style.backgroundImage = "url(" + grainURL() + ")";
@@ -136,7 +136,7 @@ function makeStage(loadText) {
 
   // input: keyboard, mouse (drag to turn, click to act, right button to block), touch (left stick, right drag)
   const inp = { keys: {}, turn: 0, pitch: 0, click: 0, rmb: false, stick: { x: 0, y: 0, on: false }, blocked: () => false, onKey: null };
-  const KEYS = new Set(["w", "a", "s", "d", "q", "e", "f", "c", "h", "r", "1", "2", "3", " ", "shift", "control", "arrowup", "arrowdown", "arrowleft", "arrowright", "enter", "tab", "escape"]);
+  const KEYS = new Set(opts.keys || ["w", "a", "s", "d", "q", "e", "f", "c", "h", "r", "1", "2", "3", " ", "shift", "control", "arrowup", "arrowdown", "arrowleft", "arrowright", "enter", "tab", "escape"]);
   listen(window, "keydown", (e) => {
     if (inp.blocked()) return;
     const k = e.key.toLowerCase();
@@ -151,6 +151,7 @@ function makeStage(loadText) {
   let drag = null, stickId = -1;
   const stickEl = $(".v3-stick"), knob = stickEl.firstChild;
   listen(canvas, "pointerdown", (e) => {
+    if (opts.host) e.stopPropagation();
     canvas.focus({ preventScroll: true });
     if (e.pointerType === "touch") {
       if (e.clientX < root.clientWidth * 0.45 && stickId < 0) {
@@ -180,6 +181,7 @@ function makeStage(loadText) {
   };
   listen(canvas, "pointerup", up); listen(canvas, "pointercancel", up);
   listen(canvas, "contextmenu", (e) => e.preventDefault());
+  if (opts.host) { listen(canvas, "pointermove", (e) => e.stopPropagation()); listen(canvas, "pointerup", (e) => e.stopPropagation()); listen(canvas, "touchstart", (e) => { e.stopPropagation(); e.preventDefault(); }, { passive: false }); }
 
   let raf = 0, last = 0, dead = false, frameFn = null, firstFrame = true, slowAcc = 0, slowN = 0, pr = renderer.getPixelRatio();
   function loop(t) {
@@ -1212,3 +1214,7 @@ function buildBattle(st, api, info, done) {
   });
   return { stop: () => finish("flee"), fast(n) { st.substeps = Math.max(1, n | 0); }, hero, scene: st, info, units, state: () => ({ over, t: t0, order, pW: sideW("p", true) / p0w, eW: sideW("e", true) / e0w, heroDown, NP, NE }) , _finish: finish };
 }
+
+// shared pieces for the other scene modules (area3d.js, siege3d.js)
+export const K3 = { THREE, REALMS, VOIDC, WALL_STYLE, ROOF_TEX, GROUND_TEX, GRASS_TINT, GRASS_N, CLOUD, COLD, tree, hashStr, rng, vnoise, clamp, lerp, angLerp, shade, mix,
+  makeStage, makeKit, whenChars, charLook, heroLook, kaelLook, figure, animFigure, Batch, lights, particles, pool, torch, followCam, moveIntent, labelSprite, radialTex, esc };
