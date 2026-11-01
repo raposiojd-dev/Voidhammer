@@ -355,7 +355,7 @@ function buildArea(st, api, A) {
   const npcs = [];
   A.npcs.forEach((n) => {
     const x = n.px * PX, z = n.py * PX, o = { n, x, z, obj: null, mark: null, mk: -1, label: null };
-    if (n.chest) o.obj = chest(x, z);
+    if (n.chest || /chest|stash/.test(String(n.id || ""))) o.obj = chest(x, z);
     else if (n.gate) o.obj = portal(x, z);
     else if (n.cell) o.obj = cage(x, z);
     else if (n.draw) o.obj = signpost(x, z);
@@ -648,9 +648,9 @@ function buildArea(st, api, A) {
     else if (!paused && barkPool.length && frameN % 12 === 0) {
       for (const o of npcs) { if (!o.fig || o.mk > 0 || o.d > 3.6 || (o.barkCd || 0) > t) continue; o.barkCd = t + 40; barkO = o; barkT = 4.5; barkEl.textContent = "“" + barkPool[Math.floor(Math.random() * barkPool.length)] + "”"; break; }
     }
-    // name plates: the person the Talk pill points at (or the nearest), plus up to two others close by, dimmer;
+    // name plates (people only: plots, signs and chests get none): the person the Talk pill points at (or the nearest), plus up to two others close by, dimmer;
     // a plate that would overlap one already placed is hidden, so they never stack
-    byD.length = 0; for (const o of npcs) if (o.d < 8) byD.push(o); byD.sort((a, b) => a.d - b.d);
+    byD.length = 0; for (const o of npcs) if (o.fig && o.d < 8) byD.push(o); byD.sort((a, b) => a.d - b.d);
     { const tn = useAct && !useAct.door ? useAct.n : ""; const ti = tn ? byD.findIndex((o) => o.n.name === tn) : -1; if (ti > 0) byD.unshift(byD.splice(ti, 1)[0]); }
     const placed = [];
     for (let i = 0; i < nameEls.length; i++) {

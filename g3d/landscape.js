@@ -28,7 +28,7 @@
     " #vh3d .b3-fan{bottom:calc(4.4rem + env(safe-area-inset-bottom,0px))!important;max-height:70vh;overflow:auto}",
     " #vh3d .b3-fan button{min-height:44px}",
     // the thumb arc: action buttons bottom-right, clear of the home bar and the notch
-    " #vh3d .b3-btns{right:calc(.8rem + env(safe-area-inset-right,0px));bottom:calc(.7rem + env(safe-area-inset-bottom,0px))}",
+    " #vh3d .b3-btns{right:calc(.8rem + var(--vh-sr,env(safe-area-inset-right,0px)));bottom:calc(.7rem + var(--vh-sb,env(safe-area-inset-bottom,0px)))}",
     " #vh3d .b3-btns [data-b=atk]{width:5rem;height:5rem}#vh3d .b3-btns [data-b=blk]{width:4rem;height:4rem}#vh3d .b3-btns [data-b=shoot],#vh3d .b3-btns [data-b=cast]{width:3.6rem;height:3.6rem}",
     " #aatk,#acast,#abow,#ause{margin-right:env(safe-area-inset-right,0px)}",
     " #vh3d .v3-use{bottom:calc(.9rem + env(safe-area-inset-bottom,0px))!important;min-width:9rem;max-width:34vw}",

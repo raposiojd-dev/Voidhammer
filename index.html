@@ -13303,8 +13303,14 @@ function vhInFight() {
 function useLabel(tk) {
   if (!tk) return null;
   if (tk.en) return "Parley";
-  var n = tk.npc; if (n.chest) return "Open"; if (n.gate) return "Enter"; if (n.cell) return "Open"; return "Talk";
+  var n = tk.npc; if (n.chest) return "Open"; if (n.gate) return "Enter"; if (n.cell) return "Open";
+  // things, not people: a fitting verb, never "Talk"
+  if (n.verb) return n.verb;
+  if (!useIsPerson(n)) { var id = String(n.id || ""); if (/^plot/.test(id)) return "Build"; if (/chest|stash/.test(id)) return "Open"; if (/gate/.test(id)) return "Enter"; return "Look"; }
+  return "Talk";
 }
+// a person has a body: anything the painter draws itself (signs, plots, chests) or flags as a container is an object
+function useIsPerson(n) { return !!n && !n.chest && !n.gate && !n.cell && !n.sign && !n.draw; }
 
 // ---- painted action buttons: the art is the button, the label sits in a small pill under it ----
 (function () {
@@ -14325,6 +14331,26 @@ function killEn(e) {
       btn.classList.toggle("cd", n < 1 || (AR.breadCd || 0) > AR.t);
     } catch (e) {}
   }, 200);
+})();
+// ---- the right-thumb cluster: one layout for every action button, all measured from the same notch/home-bar inset ----
+// Strike is the biggest and sits in the corner; Cast above it; Shoot beside it; Bread on the outer arc (bottom row in
+// landscape, the diagonal above Shoot when upright in 3D). Each has its own spot, so none can cover another, and every
+// button counts the same safe-area inset (it was only some of them, so on a notched iPhone Shoot slid onto Bread).
+(function () {
+  var R = "var(--vh-sr)", B = "var(--vh-sb)";
+  var pos = function (sel, r, b) { return "html body " + sel + "{right:calc(" + r + "rem + " + R + ")!important;bottom:calc(" + b + "rem + " + B + ")!important;margin-right:0!important;left:auto!important;top:auto!important}"; };
+  var st = document.createElement("style"); st.id = "vh-thumb";
+  st.textContent = [
+    ":root{--vh-sr:env(safe-area-inset-right,0px);--vh-sb:env(safe-area-inset-bottom,0px)}",
+    pos("#aatk", 1, 1.6), pos("#acast", 1.7, 8.6), pos("#abow", 7.2, 1.6), pos("#ause", 7.2, 7.1), pos("#abread", 11.9, 1.6),
+    "html body #abread{width:4.2rem!important;height:5.1rem!important}",
+    // upright in 3D the bottom row would run into the left thumb, so Bread takes the diagonal (Talk is the pill there)
+    "@media (orientation:portrait){" + pos("#area.v3on #abread", 7.4, 7.4) + "html body #area.v3on:has(.k2open) #abread{visibility:hidden}" +
+      "html body #vh3d.v3-area .v3-use{bottom:calc(13.4rem + " + B + ")!important}}",
+    // landscape 3D: the Talk pill sits left of centre and never reaches Bread
+    "@media (orientation:landscape){html body #vh3d.v3-area .v3-use{left:42%!important;max-width:30vw!important}}"
+  ].join("\n");
+  document.head.appendChild(st);
 })();
 function ovEatBread() {
   if (!AR || AR.dlg || !S) return; var c = cp(), p = AR.p;
@@ -16649,7 +16675,7 @@ setInterval(function () {
       strike: function () { aPress = true; },
       use: function () { window.aUsePress = true; },
       leave: function () { if (AR && !AR.dlg && !sheet) leaveArea(); },
-      useInfo: function () { if (!AR || AR.dlg) return null; var tk = nearTalk(); if (!tk) return null; return { l: useLabel(tk) || "Talk", n: tk.npc ? (tk.npc.chest ? "" : tk.npc.name || "") : (tk.en && tk.en.d ? tk.en.d.name : "") }; },
+      useInfo: function () { if (!AR || AR.dlg) return null; var tk = nearTalk(); if (!tk) return null; return { l: useLabel(tk) || "Talk", n: tk.npc ? (tk.npc.chest ? "" : tk.npc.name || "") : (tk.en && tk.en.d ? tk.en.d.name : ""), person: tk.npc ? useIsPerson(tk.npc) : true }; },
       target: function () { try { return cp().on && AR ? targetPos() : null; } catch (e) { return null; } },
       exitName: function (e) { try { var to = e.to; if (!to || to === "world") return "The map"; var sp = getSpec(to); return sp ? sp.name : ""; } catch (x) { return ""; } },
       siteLook: function (id) { var s = site(id); return s ? { name: s.name, col: ownerCol(s), type: s.type, sub: s.owner && FAC[s.owner] ? FAC[s.owner].name : "walk in" } : null; },
@@ -16838,7 +16864,7 @@ setInterval(function () {
       }, 300);
     }
     // test and debug hooks (read-only views plus the two entry points)
-    window.__vh = { S: function () { return S; }, B: function () { return B; }, sheet: function () { return sheet; }, site: site, T: T, startWalk: startWalk, startFight: startFight, scene: function () { return cur || (A3 ? { kind: "area", ctl: A3 } : null); },
+    window.__vh = { S: function () { return S; }, useLabel: function (tk) { return useLabel(tk); }, B: function () { return B; }, sheet: function () { return sheet; }, site: site, T: T, startWalk: startWalk, startFight: startFight, scene: function () { return cur || (A3 ? { kind: "area", ctl: A3 } : null); },
       AR: function () { return AR; }, spec: function (id) { return getSpec(id); }, caveTo: caveTo, caves: function () { try { return ovPoi().caves.map(function (c, k) { return { id: "cave" + k, name: c.name }; }); } catch (e) { return []; } }, writs: function (sid) { return vqOpen(sid); }, area3d: function () { return A3; }, a3on: function () { return a3on; }, startArea: function (id) { startArea(id); return !!AR; }, dlg: function () { return AR && AR.dlg; }, cp: function () { return cp(); },
       battleWith: function (n, kind) { var e = kind ? null : (S.enemies.filter(function (x) { return x.kind === "bandit"; })[0] || S.enemies[0]); if (kind) { e = { id: 990000 + Math.floor(Math.random() * 9999), kind: kind, n: n || 10, q: 1, x: S.px + 40, y: S.py, cool: 0 }; S.enemies.push(e); } if (!e) return false; if (n) e.n = n; startBattle(e); return true; },
       give: function (n) { S.from.merc = (S.from.merc || 0) + n; return T(); }, pref: pref,

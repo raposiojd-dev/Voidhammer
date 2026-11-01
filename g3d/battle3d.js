@@ -19,7 +19,7 @@ function styleOnce() {
   if (styled) return; styled = true;
   const st = document.createElement("style");
   st.textContent = `
-#vh3d .b3-btns{position:absolute;right:.7rem;bottom:calc(1rem + env(safe-area-inset-bottom,0px));display:grid;grid-template-columns:auto auto;grid-template-rows:auto auto;gap:.55rem;align-items:end;justify-items:center}
+#vh3d .b3-btns{position:absolute;right:calc(.7rem + var(--vh-sr,0px));bottom:calc(1rem + var(--vh-sb,env(safe-area-inset-bottom,0px)));display:grid;grid-template-columns:auto auto;grid-template-rows:auto auto;gap:.55rem;align-items:end;justify-items:center}
 #vh3d .b3-btns button{border-radius:50%;border:2px solid #c8a060;color:#fff2cf;font:700 .74rem 'Cinzel',Georgia,serif;letter-spacing:.06em;text-shadow:0 1px 2px #000;box-shadow:0 4px 14px #000a;touch-action:none;cursor:pointer;padding:0}
 #vh3d .b3-btns [data-b=atk]{grid-column:2;grid-row:2;width:5.6rem;height:5.6rem;background:radial-gradient(circle at 40% 30%,#c23a2a,#5a120c 70%)}
 #vh3d .b3-btns [data-b=blk]{grid-column:1;grid-row:2;width:4.4rem;height:4.4rem;background:radial-gradient(circle at 40% 30%,#6a7a8a,#1e2630 70%)}
