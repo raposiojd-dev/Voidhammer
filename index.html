@@ -16641,6 +16641,7 @@ setInterval(function () {
       AR: function () { return AR; },
       on: function (v) { a3on = !!v; var el = $("area"); if (el) el.classList.toggle("v3on", a3on); mv3.x = mv3.y = 0; },
       fail: function (e) { api.fail(e); }, sfx: function (n) { api.sfx(n); },
+      tod: function () { try { return clockH(); } catch (e) { return 12; } },
       sheetOpen: function () { return !!sheet; },
       inDlg: function () { return !!(AR && AR.dlg); },
       closeDlg: function () { try { dlgClose(); } catch (e) {} },

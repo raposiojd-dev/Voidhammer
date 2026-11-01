@@ -5,7 +5,7 @@
 // input calls (move, strike, talk, shoot). So every quest, flag, number and save key is untouched.
 // One sim pixel is PX metres; one 16 px tile is T metres. Sim x runs east (+x), sim y runs south (+z).
 import { K3 } from "./scene3d.js";
-import { Merge, paintedSky, grassField, groundMat } from "./art.js";
+import { Merge, paintedSky, grassField, groundMat, horizonBand, loadArt } from "./art.js";
 import { BARKS } from "./barks.js";
 const { THREE, REALMS, VOIDC, GROUND_TEX, GRASS_TINT, CLOUD, COLD, tree, rng, vnoise, clamp, lerp, angLerp, shade, mix,
   makeStage, makeKit, whenChars, heroLook, kaelLook, figure, animFigure, Batch, lights, particles, pool, torch, followCam, moveIntent, labelSprite, radialTex, esc } = K3;
@@ -59,6 +59,7 @@ function styleOnce() {
   document.head.appendChild(st);
 }
 
+const realmLook = (id) => { try { const C = window.VH_CANON, r = C && C.realm(id); return r && r.id === id ? r.look : null; } catch (e) { return null; } };
 const hex = (c, d) => { if (typeof c === "number") return c; try { return new THREE.Color(c || d || "#888888").getHex(); } catch (e) { return d || 0x888888; } };
 
 // ======================================================================
@@ -75,6 +76,7 @@ export function area(api, done) {
     try { st = makeStage(A.sp && A.sp.th === "cave" ? "Into the dark…" : "Walking in…", { host: api.host(), cls: "v3-area", keys: ["w", "a", "s", "d", "e", "f", "q", "shift", "arrowup", "arrowdown", "arrowleft", "arrowright", "escape", "r", "control"] }); }
     catch (e) { api.fail(e); finish("fail"); return; }
     ctl.st = st; api.on(true);
+    try { const i0 = api.info(A); loadArt(st, i0.cave ? "shadow" : i0.realm); } catch (e) {}
     whenChars(() => {
       if (ctl.off || ctl.st !== st || api.AR() !== A) return;
       try { ctl.w = buildArea(st, api, A); ctl.ready = true; }
@@ -127,7 +129,22 @@ function buildArea(st, api, A) {
     L = lights(st, P, centre, 26, { dim: info.realm === "shadow" || info.realm === "spirit", cold: COLD[info.realm] });
     const sky = paintedSky(P.sky, mix(P.fog, 0xffffff, 0.12), L.sun.position.clone().sub(centre), L.sun.color, info.voidNear, VOIDC, CLOUD[info.realm]); scene.add(sky);
     L.sky = sky;
+    // the Realm's painted horizon (its 2D poster art), faint and far, behind the hills
+    L.band = horizonBand(info.realm, P.fog, (x) => st.track(x), { amt: over ? 0.5 : 0.4 }); scene.add(L.band);
   }
+  st.setGrade(cave ? "cave" : info.realm);
+  // time of day from the game clock: warm low sun at dawn and dusk, cold blue night, windows brighter after dark
+  const tod = { sunI: L.sun.intensity, sunC: L.sun.color.clone(), hemiI: L.hemi.intensity, hemiC: L.hemi.color.clone(), top: L.sky && L.sky.material.uniforms.top.value.clone(), hor: L.sky && L.sky.material.uniforms.hor.value.clone(), night: 0 };
+  const WARM = new THREE.Color(0xff9a52), NIGHT = new THREE.Color(0x52628e), NSKY = new THREE.Color(0x0b1022);
+  function timeOfDay() {
+    if (cave || !api.tod) return; const h = api.tod(); if (!(h >= 0)) return;
+    const up = THREE.MathUtils.smoothstep(h, 4.5, 6.5) * (1 - THREE.MathUtils.smoothstep(h, 18.5, 20.5)), warm = Math.max(Math.exp(-Math.pow((h - 6.6) / 1.2, 2)), Math.exp(-Math.pow((h - 18.4) / 1.2, 2)));
+    tod.night = 1 - up;
+    L.sun.intensity = tod.sunI * (0.35 + 0.65 * up); L.sun.color.copy(tod.sunC).lerp(WARM, warm * 0.45).lerp(NIGHT, tod.night * 0.6);
+    L.hemi.intensity = tod.hemiI * (0.72 + 0.28 * up); L.hemi.color.copy(tod.hemiC).lerp(NIGHT, tod.night * 0.45);
+    if (L.sky) { const u = L.sky.material.uniforms; u.top.value.copy(tod.top).lerp(NSKY, tod.night * 0.7).lerp(WARM, warm * 0.08); u.hor.value.copy(tod.hor).lerp(WARM, warm * 0.18).lerp(NSKY, tod.night * 0.5); }
+  }
+  timeOfDay();
   // the hero carries a lantern underground
   const lantern = cave ? new THREE.PointLight(0xffb070, 30, 14, 1.6) : null; if (lantern) scene.add(lantern);
 
@@ -343,7 +360,8 @@ function buildArea(st, api, A) {
     else if (n.cell) o.obj = cage(x, z);
     else if (n.draw) o.obj = signpost(x, z);
     else {
-      const nm = n.name || "", female = FEMALE.test(nm), cloth = hex(n.col, 0x6a5a4a), hair = hex(n.hair, 0x3a2a18);
+      // townsfolk wear their Realm's palette (premium/canon.js), blended with their own colours so each still reads apart
+      const nm = n.name || "", female = FEMALE.test(nm), RL = realmLook(info.realm), cloth = RL ? mix(hex(n.col, 0x6a5a4a), (nm.length % 2 ? RL.cloth : RL.cloth2), 0.38).getHex() : hex(n.col, 0x6a5a4a), hair = hex(n.hair, 0x3a2a18);
       let ch;
       if (/kaelren/i.test(nm)) ch = kaelLook(false);
       else if (/elyndra/i.test(nm)) ch = { base: "woman", hood: 0xd8d8e0, cloth: 0xc8c8d0, cloth2: 0x8a90a8, legs: 0x4a4a58, skin: 0xe0c8b0, hair: 0xd8d0c0, lantern: 0xc8e0ff };
@@ -568,6 +586,10 @@ function buildArea(st, api, A) {
     const p = A.p, inDlg = api.inDlg(), paused = api.sheetOpen() || inDlg;
     if (st.onFrame) st.onFrame(t);
     torches.forEach((x) => x.tick(t)); kit.tickStatics(dt);
+    if (frameN % 240 === 0) timeOfDay();
+    // window glow breathes like a hearth behind the glass, stronger after dark
+    winMat.emissiveIntensity = 1.6 * (1 + tod.night * 0.5) * (0.9 + 0.06 * Math.sin(t * 2.3) + 0.04 * Math.sin(t * 7.1 + 1.3));
+    if (L.band) L.band.userData.tick(camera.position.x, camera.position.z);
     fx.userData.tick(dt, me.position.x, me.position.z); if (L.sky) L.sky.userData.tick(dt, camera.position.x, camera.position.z);
     for (const k of sparks) if (k.s.visible) { k.t -= dt; k.s.scale.setScalar(0.5 + (0.28 - k.t) * 3); k.s.material.opacity = k.t * 3.5; if (k.t <= 0) k.s.visible = false; }
 

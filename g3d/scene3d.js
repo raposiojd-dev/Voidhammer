@@ -6,7 +6,8 @@
 // The scene never changes game numbers itself: it reports back to the bridge, which runs the existing sheets and finishBattle.
 import * as THREE from "./three.module.min.js";
 import { loadChars, charsReady, makeCharKit, makeChar } from "./chars.js";
-import { makeArt, Merge, paintedSky, grassField, gfxGet, gfxSet, groundMat, grainURL } from "./art.js";
+import { makeArt, Merge, paintedSky, grassField, gfxGet, gfxSet, groundMat, grainURL, VH_TIME } from "./art.js";
+import { makePost } from "./post.js";
 
 // ---------- Realm looks (from GAME_CANON_SPEC.md and the Realm Codex §15b LOOK) ----------
 const REALMS = {
@@ -127,7 +128,7 @@ body.vh3d-stage #musbtn,body.vh3d-stage #savebtn{display:none!important}
 .v3-panel .v3p-sw::after{content:'';position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#8a7a5a;transition:transform .2s,background .2s}
 .v3-panel .v3p-r.on .v3p-sw{background:#7a4f1c;border-color:#c8873a}.v3-panel .v3p-r.on .v3p-sw::after{transform:translateX(18px);background:#f2d38a}
 .v3-panel .v3p-seg{flex:none;display:flex;border:1px solid #5a4424;border-radius:6px;overflow:hidden}
-.v3-panel .v3p-seg button{min-width:3.4rem;min-height:44px;padding:0 .5rem;border:0;background:#140f09;color:#a8936a;font:600 .64rem 'IBM Plex Mono',ui-monospace,monospace;letter-spacing:.12em;text-transform:uppercase;cursor:pointer}
+.v3-panel .v3p-seg button{min-width:3rem;min-height:44px;padding:0 .5rem;border:0;background:#140f09;color:#a8936a;font:600 .64rem 'IBM Plex Mono',ui-monospace,monospace;letter-spacing:.12em;text-transform:uppercase;cursor:pointer}
 .v3-panel .v3p-seg button.on{background:linear-gradient(#c8873a,#8a5a20);color:#1a1208}
 @media (orientation:landscape) and (max-height:520px){.v3-panel .v3p-sheet{width:min(25rem,62vw)}.v3-panel .v3p-grid{grid-template-columns:repeat(4,1fr)}.v3-panel .v3p-t{min-height:52px}.v3-panel h4{margin:.45rem 0 .3rem}.v3-panel .v3p-set{display:grid;grid-template-columns:1fr 1fr;gap:0 .4rem}.v3-panel .v3p-set .v3p-r.wide{grid-column:1/-1}.v3-panel .v3p-r small{display:none}.v3-panel .v3p-hd{margin-bottom:.1rem}}`;
   document.head.appendChild(st);
@@ -219,6 +220,7 @@ function makeStage(loadText, opts) {
 
   const menu = makeMenu(root, listen, () => stage);
   document.body.classList.add("vh3d-stage");
+  let post = null, postFail = false, postAuto = false, grade = "none";
   let raf = 0, last = 0, dead = false, frameFn = null, firstFrame = true, slowAcc = 0, slowN = 0, pr = renderer.getPixelRatio();
   function loop(t) {
     if (dead) return;
@@ -227,8 +229,14 @@ function makeStage(loadText, opts) {
     stage.frames++;
     if (frameFn) for (let i = 0; i < stage.substeps; i++) frameFn(dt, t / 1000 + i * dt);
     // keep it smooth on slow machines: drop the render resolution step by step if frames run long
-    if (!firstFrame && raw < 1) { slowAcc += raw; slowN++; if (slowN >= 45) { if (slowAcc / slowN > 1 / 34 && pr > 0.6) { pr = Math.max(0.6, pr * 0.8); renderer.setPixelRatio(pr); resize(); } slowAcc = 0; slowN = 0; } }
-    renderer.render(scene, camera);
+    // and if the resolution is already at its floor, High's post-processing switches itself off for this scene
+    if (!firstFrame && raw < 1) { slowAcc += raw; slowN++; if (slowN >= 45) { if (slowAcc / slowN > 1 / 34) { if (pr > 0.6) { pr = Math.max(0.6, pr * 0.8); renderer.setPixelRatio(pr); resize(); } else if (post && !postAuto) postAuto = true; } slowAcc = 0; slowN = 0; } }
+    VH_TIME.value = t / 1000;
+    if (gfx === "high" && !postFail && !postAuto) {
+      if (!post) { try { post = makePost(renderer); post.setGrade(grade); } catch (e) { postFail = true; post = null; } }
+      if (post) { try { post.render(scene, camera); } catch (e) { postFail = true; renderer.setRenderTarget(null); renderer.render(scene, camera); } }
+      else renderer.render(scene, camera);
+    } else renderer.render(scene, camera);
     if (firstFrame) { firstFrame = false; setTimeout(() => { const l = $(".v3-load"); if (l) l.classList.add("off"); }, 60); }
   }
   let msgT = 0;
@@ -237,18 +245,21 @@ function makeStage(loadText, opts) {
     // graphics quality (Low / High) is a setting in the menu panel: Low drops shadows, grass and resolution
     gfxButton() { stage.hasGfx = true; },
     setGfx(q) {
-      q = q === "low" ? "low" : "high"; if (q === gfx) return;
+      q = q === "low" || q === "medium" ? q : "high"; if (q === gfx) return;
       gfx = q; gfxSet(gfx); root.classList.toggle("lowfx", gfx === "low");
       renderer.shadowMap.enabled = gfx !== "low"; pr = prCap(); renderer.setPixelRatio(pr); resize();
       scene.traverse((o) => { const ms = o.material ? (Array.isArray(o.material) ? o.material : [o.material]) : []; ms.forEach((m) => { m.needsUpdate = true; }); });
       stage.onGfx.forEach((f) => f(gfx));
     },
     menu: null, menuSrc: null, menuToggles: [],
+    // the Realm's colour grade (used by High's post-processing)
+    setGrade(k) { grade = k || "none"; if (post) post.setGrade(grade); },
+    get post() { return !!post && gfx === "high" && !postFail && !postAuto; },
     start(fn) { frameFn = fn; raf = requestAnimationFrame(loop); },
     msg(t, secs) { const m = $(".v3-msg"); m.textContent = t; m.classList.add("on"); clearTimeout(msgT); msgT = setTimeout(() => m.classList.remove("on"), (secs || 3) * 1000); },
     dispose() {
       if (dead) return; dead = true; cancelAnimationFrame(raf); clearTimeout(msgT);
-      disposers.forEach((d) => d()); menu.dispose(); if (!document.querySelectorAll("#vh3d").length || document.getElementById("vh3d") === root) document.body.classList.remove("vh3d-stage");
+      disposers.forEach((d) => d()); menu.dispose(); if (!document.querySelectorAll("#vh3d").length || document.getElementById("vh3d") === root) document.body.classList.remove("vh3d-stage"); if (post) { try { post.dispose(); } catch (e) {} post = null; }
       const seen = new Set();
       scene.traverse((o) => {
         if (o.geometry && !seen.has(o.geometry)) { seen.add(o.geometry); o.geometry.dispose(); }
@@ -318,7 +329,7 @@ function makeMenu(root, listen, getStage) {
     it.toggles.forEach((t) => { h += '<button type="button" class="v3p-r' + (t.on() ? " on" : "") + '" data-mi="' + act(t) + '" role="switch" aria-checked="' + (t.on() ? "true" : "false") + '">' + svgI(t.icon) + "<span>" + esc(t.label) + (t.sub ? "<small>" + esc(t.sub) + "</small>" : "") + '</span><i class="v3p-sw"></i></button>'; });
     const mb = document.getElementById("musbtn");
     if (mb) { const on = !/off/i.test(mb.getAttribute("aria-label") || ""); h += '<button type="button" class="v3p-r' + (on ? " on" : "") + '" data-mi="' + act({ keep: true, run: () => mb.click() }) + '" role="switch" aria-checked="' + on + '">' + svgI("music") + '<span>Music</span><i class="v3p-sw"></i></button>'; }
-    if (stg.hasGfx) { const g = stg.gfx; h += '<div class="v3p-r wide" role="group" aria-label="Graphics quality">' + svgI("gfx") + '<span>Graphics quality<small>Low saves battery: no shadows or grass</small></span><div class="v3p-seg"><button type="button" data-gq="low" class="' + (g === "low" ? "on" : "") + '">Low</button><button type="button" data-gq="high" class="' + (g !== "low" ? "on" : "") + '">High</button></div></div>'; }
+    if (stg.hasGfx) { const g = stg.gfx; h += '<div class="v3p-r wide" role="group" aria-label="Graphics quality">' + svgI("gfx") + '<span>Graphics quality<small>Low saves battery; High adds glow and colour grading</small></span><div class="v3p-seg">' + ["low", "medium", "high"].map((q) => '<button type="button" data-gq="' + q + '" class="' + (g === q ? "on" : "") + '">' + (q[0].toUpperCase() + q.slice(1)) + "</button>").join("") + "</div></div>"; }
     h += "</div>";
     sheet.innerHTML = h;
   }
@@ -450,7 +461,11 @@ function roundRect(x, a, b, w, h, r) { x.beginPath(); x.moveTo(a + r, b); x.arcT
 
 // a low-poly person. o: { cloth, cloth2, skin, metal, helm: "cap"|"spike"|"hood"|"bare"|"crown", cloak, weapon: "sword"|"spear"|null, shield, eyes, scale }
 // the player: mail and a surcoat and cloak in the banner colour, bare-headed
-function heroLook(banner, armed) { return { base: "soldier", cloth: banner, cloth2: shade(banner, 0.55).getHex(), metal: 0x9a9ea4, dark: 0x4a4440, leather: 0x5a3e28, legs: 0x3a2e24, skin: 0xc89a78, hair: 0x2e2018, helm: false, weapon: "sword", shieldKind: armed ? "round" : null, shield: banner }; }
+// the player's people (chosen in the character select, premium/canon.js) dress the hero in their Realm palette;
+// the banner colour stays on the shield, and the hero keeps a sword for the strike animations
+function canonLook() { try { const o = window.__vh && window.__vh.S() && window.__vh.S().opt, C = window.VH_CANON; if (!o || !o.people || !C) return null; const r = C.realm(o.people); return r && r.id === o.people ? r.look : null; } catch (e) { return null; } }
+function heroLook(banner, armed) { const c = canonLook(), h = heroLook0(banner, armed); if (!c) return h; return Object.assign(h, { cloth: c.cloth, cloth2: c.cloth2, legs: c.legs, boots: c.boots, metal: c.metal, dark: c.dark, leather: c.leather, trim: c.trim, skin: c.skin, hair: c.hair, lantern: c.lantern, helm: false }); }
+function heroLook0(banner, armed) { return { base: "soldier", cloth: banner, cloth2: shade(banner, 0.55).getHex(), metal: 0x9a9ea4, dark: 0x4a4440, leather: 0x5a3e28, legs: 0x3a2e24, skin: 0xc89a78, hair: 0x2e2018, helm: false, weapon: "sword", shieldKind: armed ? "round" : null, shield: banner }; }
 // Kaelren in the prequel era (John, J-9): Flameborne charcoal coat, madder-red undershirt, copper buttons, dark hair, warm tawny-brown skin
 function kaelLook(armed) { return { base: "man", cloth: 0x2e2a28, cloth2: 0x9e2a2b, trim: 0xb87333, metal: 0x7a7c80, skin: 0xa0663e, hair: 0x1e1612, legs: 0x3a322c, boots: 0x2a201a, leather: 0x4a3626, weapon: "sword", shieldKind: armed ? "round" : null, shield: 0x8a5a34 }; }
 function figure(kit, o) {

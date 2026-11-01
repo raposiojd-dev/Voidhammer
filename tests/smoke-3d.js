@@ -254,6 +254,8 @@ const ok = (c, m) => { console.log((c ? "PASS " : "FAIL ") + m); if (!c) fails++
         const c = __vh.scene().ctl, k2 = c.k2(), s = __vh.S().sk2, hero = c.hero;
         // the hero is put beside a foe nine times over; keep him on his feet so a slow machine can't end the test early
         if (hero.hp > 0) hero.hp = hero.hpm;
+        c.units.forEach((u) => { if (u.side === "e" && !u.dead && !u.gone && u.hpm) u.hp = u.hpm; }); // and the bandits standing, so the battle outlasts nine casts
+        const cs = c.state(); if (cs.over || cs.heroDown) return { ended: (cs.over ? "over " : "") + (cs.heroDown ? "hero down" : "") };
         s.r[id] = Math.max(1, s.r[id] || 0); s.eq[0] = id; __vh.k2().bump(); k2.core.cds = {}; k2.core.chg = {};
         // stand a few yards from the nearest living foe, facing it
         const foes = c.units.filter((u) => u.side === "e" && !u.dead && !u.gone); if (!foes.length) return { none: 1 };
@@ -263,7 +265,7 @@ const ok = (c, m) => { console.log((c ? "PASS " : "FAIL ") + m); if (!c) fails++
         const okc = k2.cast(0); window.__k2t = t0;
         return { okc, hp0, x0, z0, st0, m0 };
       }, id);
-      if (r.gone) { ok(false, id + ": the battle had already ended"); continue; }
+      if (r.gone || r.ended) { ok(false, id + ": the battle had already ended " + (r.ended || "")); continue; }
       if (r.none) { ok(false, id + ": no foes left to test on"); continue; }
       // headless frames are slow: wait on the battle's own clock, not the wall clock
       await until(() => __vh.scene().ctl.k2().core.t > window.__k2t + 0.7, 30000, 100);

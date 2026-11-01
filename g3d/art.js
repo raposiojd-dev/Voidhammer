@@ -5,11 +5,39 @@
 import * as THREE from "./three.module.min.js";
 import { mergeGeometries } from "./lib/BufferGeometryUtils.js";
 
-// ---------- graphics setting (Low / High), kept per device ----------
+// ---------- graphics setting (Low / Medium / High), kept per device ----------
+// Low: no shadows, grass or post, lower resolution. Medium: shadows, grass, height fog, rim light, sway (the old High).
+// High: Medium plus post-processing (bloom, FXAA, the Realm's colour grade; g3d/post.js).
 const GFX_KEY = "vh3d-gfx";
 // High by default everywhere, phones included (John, 1 Nov); a stored choice wins, and Low stays the manual fallback
-export function gfxGet(touch) { try { const v = localStorage.getItem(GFX_KEY); if (v === "low" || v === "high") return v; } catch (e) {} return "high"; }
+export function gfxGet(touch) { try { const v = localStorage.getItem(GFX_KEY); if (v === "low" || v === "medium" || v === "high") return v; } catch (e) {} return "high"; }
 export function gfxSet(v) { try { localStorage.setItem(GFX_KEY, v); } catch (e) {} }
+
+// ---------- shader patches, applied once to three's built-in mesh shaders ----------
+// Every lit or basic mesh gets its world position (vVhW) and, where fog is on, a low ground mist that thickens with distance
+// (height fog on top of the scene's distance haze). Opt-in by define: VH_MACRO breaks up flat colour and tiling with a
+// large-scale world-space tone and roughness variation; VH_RIM gives figures a warm rim so they read against the background.
+// Grass sways with VH_TIME (driven by the stage loop). All of it is a few ALU ops per pixel; no extra textures or passes.
+export const VH_TIME = { value: 0 };
+let patched = false;
+export function patchShaders() {
+  if (patched) return; patched = true;
+  const L = THREE.ShaderLib;
+  const noise = "varying vec3 vVhW;\nfloat vhH(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }\nfloat vhN(vec2 p){ vec2 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f); return mix(mix(vhH(i), vhH(i + vec2(1.0, 0.0)), f.x), mix(vhH(i + vec2(0.0, 1.0)), vhH(i + vec2(1.0, 1.0)), f.x), f.y); }\n";
+  const vcode = "#include <fog_vertex>\n  { vec4 vhw = vec4(transformed, 1.0);\n  #ifdef USE_INSTANCING\n  vhw = instanceMatrix * vhw;\n  #endif\n  vVhW = (modelMatrix * vhw).xyz; }";
+  const hfog = "#include <fog_fragment>\n#ifdef USE_FOG\n  { float vhf = exp(-max(vVhW.y, 0.0) * 0.42) * (1.0 - exp(-vFogDepth * 0.028)) * 0.5; gl_FragColor.rgb = mix(gl_FragColor.rgb, fogColor, clamp(vhf, 0.0, 0.5)); }\n#endif";
+  const macro = "#include <map_fragment>\n#ifdef VH_MACRO\n  { vec2 mp = vVhW.xz * 0.09 + vVhW.y * 0.06; float mn = vhN(mp) * 0.6 + vhN(mp * 3.7 + 1.7) * 0.4; diffuseColor.rgb *= 0.86 + 0.28 * mn; }\n#endif";
+  const rough = "#include <roughnessmap_fragment>\n#ifdef VH_MACRO\n  roughnessFactor = clamp(roughnessFactor * (0.84 + 0.32 * vhN(vVhW.xz * 0.43 + 3.1)), 0.05, 1.0);\n#endif";
+  const rim = "#ifdef VH_RIM\n  { float vr = 1.0 - clamp(dot(normal, normalize(vViewPosition)), 0.0, 1.0); outgoingLight += vec3(1.0, 0.86, 0.66) * (vr * vr * vr * vr) * 0.16 * (0.4 + 0.6 * clamp(dot(outgoingLight, vec3(0.33)) * 3.0, 0.0, 1.0)); }\n#endif\n#include <opaque_fragment>";
+  for (const k of ["standard", "physical", "lambert", "phong", "basic"]) {
+    const sh = L[k]; if (!sh || sh.vertexShader.indexOf("vVhW") >= 0) continue;
+    sh.vertexShader = "varying vec3 vVhW;\n" + sh.vertexShader.replace("#include <fog_vertex>", vcode);
+    let f = noise + sh.fragmentShader.replace("#include <fog_fragment>", hfog).replace("#include <map_fragment>", macro);
+    if (k === "standard" || k === "physical") f = f.replace("#include <roughnessmap_fragment>", rough).replace("#include <opaque_fragment>", rim);
+    sh.fragmentShader = f;
+  }
+}
+patchShaders();
 
 // ---------- tiny noise ----------
 function hash2(x, y, s) { let h = Math.imul(x, 374761393) + Math.imul(y, 668265263) + Math.imul(s, 2147483647); h = Math.imul(h ^ (h >>> 13), 1274126177); return ((h ^ (h >>> 16)) >>> 0) / 4294967296; }
@@ -104,6 +132,7 @@ export function makeArt(track, quality) {
     const key = name + JSON.stringify(o || {});
     if (mats[key]) return mats[key];
     const m = track(new THREE.MeshStandardMaterial(Object.assign({ map: tex(name), vertexColors: true, roughness: 0.92, metalness: 0 }, o || {})));
+    m.defines = { VH_MACRO: "" };
     m.color.setScalar(tex(name).userData.gain); m.userData.size = tex(name).userData.size; mats[key] = m; return m;
   }
   return { tex, mat };
@@ -113,6 +142,7 @@ export function makeArt(track, quality) {
 export function groundMat(art, a, b, puddles) {
   const tA = art.tex(a), tB = art.tex(b);
   const m = new THREE.MeshStandardMaterial({ map: tA, vertexColors: true, roughness: 1, metalness: 0 });
+  m.defines = { VH_MACRO: "" };
   m.color.setScalar(tA.userData.gain);
   m.onBeforeCompile = (sh) => {
     sh.uniforms.mapB = { value: tB }; sh.uniforms.gainB = { value: tB.userData.gain / tA.userData.gain }; sh.uniforms.pud = { value: puddles ? 1 : 0 };
@@ -234,6 +264,39 @@ export function paintedSky(top, horizon, sunDir, sunCol, voidAmt, voidCol, cloud
   return s;
 }
 
+// ---------- painted horizon: the Realm's 2D poster art as a faint, distant band behind the 3D world ----------
+// The upper part of each poster (sky and far silhouettes) is wrapped around a ring inside the sky dome, mirrored so the
+// seams never show, blended into the fog colour and faded out at the top and bottom. Loaded lazily, one small webp per scene.
+const BACKDROP = { ember: 1, stone: 1, storm: 1, light: 1, frost: 1, spirit: 1, shadow: 1, metal: 1, march: 1 };
+export function backdropURL(realm) { return new URL("./assets/backdrops/" + (BACKDROP[realm] ? realm : "march") + ".webp", import.meta.url).href; }
+export function horizonBand(realm, fogCol, track, opts) {
+  opts = opts || {};
+  const R = opts.r || 300, Hh = opts.h || 120, reps = opts.reps || 6;
+  const geo = track(new THREE.CylinderGeometry(R, R, Hh, 64, 1, true));
+  const uni = { map: { value: null }, fogC: { value: new THREE.Color(fogCol) }, amt: { value: opts.amt || 0.5 }, reps: { value: reps }, ready: { value: 0 } };
+  const m = track(new THREE.ShaderMaterial({
+    side: THREE.BackSide, transparent: true, depthWrite: false, fog: false, uniforms: uni,
+    vertexShader: "varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }",
+    fragmentShader: `uniform sampler2D map; uniform vec3 fogC; uniform float amt, reps, ready; varying vec2 vUv;
+      void main(){
+        float u = vUv.x * reps; u = abs(mod(u, 2.0) - 1.0);           // mirrored repeat
+        vec3 c = texture2D(map, vec2(u, 0.42 + vUv.y * 0.56)).rgb;     // the poster's upper part: sky and far shapes
+        c = mix(fogC, c, 0.55);
+        float a = smoothstep(0.0, 0.22, vUv.y) * (1.0 - smoothstep(0.62, 1.0, vUv.y)) * amt * ready;
+        gl_FragColor = vec4(c, a);
+        #include <tonemapping_fragment>
+        #include <colorspace_fragment>
+      }`
+  }));
+  const mesh = new THREE.Mesh(geo, m); mesh.renderOrder = -0.5; mesh.frustumCulled = false; mesh.position.y = Hh / 2 - 14;
+  new THREE.TextureLoader().load(backdropURL(realm), (t) => { t.colorSpace = THREE.SRGBColorSpace; track(t); uni.map.value = t; uni.ready.value = 1; }, undefined, () => {});
+  mesh.userData.tick = (cx, cz) => { mesh.position.x = cx; mesh.position.z = cz; };
+  return mesh;
+}
+
+// the loading card shows the Realm's painted poster (one small webp, loaded only now)
+export function loadArt(st, realm) { try { const l = st.$(".v3-load"); l.style.backgroundImage = "linear-gradient(rgba(11,9,7,.35),rgba(11,9,7,.82)),url(" + backdropURL(realm) + ")"; l.style.backgroundSize = "cover"; l.style.backgroundPosition = "center"; l.style.alignItems = "end"; l.style.paddingBottom = "12vh"; l.style.textShadow = "0 2px 8px #000"; } catch (e) {} }
+
 // ---------- scattered grass tufts (instanced crossed cards) ----------
 export function grassField(track, count, place, tint, tint2) {
   if (count <= 0) return null;
@@ -250,6 +313,12 @@ export function grassField(track, count, place, tint, tint2) {
   // normals point up, so tufts take the same light as the ground they stand on
   { const nr = geo.attributes.normal; for (let i = 0; i < nr.count; i++) nr.setXYZ(i, 0, 1, 0); }
   const m = track(new THREE.MeshStandardMaterial({ map: t, alphaTest: 0.45, roughness: 1, color: tint }));
+  // the tufts sway in the wind: tips move, roots stay; each tuft has its own phase from where it stands
+  m.onBeforeCompile = (sh) => {
+    sh.uniforms.vhT = VH_TIME;
+    sh.vertexShader = "uniform float vhT;\n" + sh.vertexShader.replace("#include <begin_vertex>", "#include <begin_vertex>\n#ifdef USE_INSTANCING\n  { float ph = instanceMatrix[3].x * 0.7 + instanceMatrix[3].z * 0.45; float k = position.y * position.y; transformed.x += (sin(vhT * 1.7 + ph) * 0.11 + sin(vhT * 3.9 + ph * 2.3) * 0.03) * k; transformed.z += cos(vhT * 1.3 + ph) * 0.07 * k; }\n#endif");
+  };
+  m.customProgramCacheKey = () => "vh-grass-sway";
   const im = new THREE.InstancedMesh(geo, m, count);
   const m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), e = new THREE.Euler(), p = new THREE.Vector3(), s = new THREE.Vector3(), col = new THREE.Color(), c1 = new THREE.Color(tint), c2 = new THREE.Color(tint2 || tint);
   let n = 0;
