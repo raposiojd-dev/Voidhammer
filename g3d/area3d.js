@@ -378,6 +378,52 @@ function buildArea(st, api, A) {
     else gatePosts(o, nm);
     exits.push(o);
   });
+
+  // ---------- props (Medium/High): a well on the green, market stalls, a campfire, barrels and crates by doors, banners ----------
+  // Only where they are clear of every NPC's spot, every door's enter point and every exit, so no one ends up inside a barrel.
+  const fires = [];
+  if (mm && pack("village") && !cave && !over) {
+    const PB = new Batch(kit), RL = realmLook(info.realm), flagC = (RL && RL.cloth) || P.accent;
+    const npcAt = A.npcs.map((n) => [n.px * PX, n.py * PX]), exAt = exits.map((o) => [o.x, o.z]);
+    const free = (x, z, r) => {
+      const tx = Math.floor(x / T), tz = Math.floor(z / T), t = at(tx, tz); if (t !== 0 && t !== 9 && t !== 1 && t !== 8) return false; if (covered[tz * W + tx]) return false;
+      for (const q of npcAt) if (Math.hypot(q[0] - x, q[1] - z) < r + 0.9) return false;
+      for (const q of doors) if (Math.hypot(q.x - x, q.z - z) < r + 1.6) return false;
+      for (const q of exAt) if (Math.hypot(q[0] - x, q[1] - z) < r + 3) return false;
+      for (const q of placed) if (Math.hypot(q[0] - x, q[1] - z) < r + q[2]) return false;
+      return true;
+    }, placed = [], put = (x, z, r) => { placed.push([x, z, r]); };
+    // the well: the middle of the plaza (or of the settlement), on the first clear spot spiralling out
+    if (sp.houses && sp.houses.length) {
+      let px = 0, pz = 0, pn = 0; for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (g[y][x] === 9) { px += (x + 0.5) * T; pz += (y + 0.5) * T; pn++; }
+      if (!pn) { px = W * T / 2; pz = H * T / 2; pn = 1; }
+      px /= pn; pz /= pn;
+      for (let k = 0; k < 40; k++) { const a = k * 2.4, r = k * 0.45, wx = px + Math.cos(a) * r, wz = pz + Math.sin(a) * r; if (free(wx, wz, 1.3)) { modelProp(PB, "well", mm.solid, wx, 0, wz, 1.9, rand() * 6); put(wx, wz, 1.3); break; } }
+    }
+    // by the doors: a barrel or crate stack beside some doors, and two stalls in front of the market
+    doors.forEach((d0) => {
+      for (const sd of [-1, 1]) {
+        const bx = d0.x + sd * (1.6 + rand() * 0.5), bz = d0.z - 0.7;
+        if (rand() < 0.55 && free(bx, bz, 0.5)) { const r = rand(); if (r < 0.5) { modelProp(PB, "barrel", mm.solid, bx, 0, bz, 0.6, rand() * 6); if (r < 0.25) modelProp(PB, "barrel", mm.solid, bx + sd * 0.55, 0, bz + 0.1, 0.58, rand() * 6); } else { modelProp(PB, "crate", mm.solid, bx, 0, bz, 0.62, rand()); if (r > 0.8) modelProp(PB, "crate", mm.solid, bx, 0.62, bz, 0.56, rand()); } put(bx, bz, 0.6); }
+      }
+      if (d0.key === "market") for (const sd of [-1, 1]) { const sx = d0.x + sd * 3.4, sz = d0.z + 1.6; if (free(sx, sz, 1.1)) { modelProp(PB, rand() < 0.5 ? "stall1" : "stall2", mm.solid, sx, 0, sz, 2.2, Math.PI + (rand() - 0.5) * 0.2, 0xffffff); put(sx, sz, 1.3); } }
+    });
+    // villages and camps: a campfire with benches; it flickers (light on High only, the rest is a cheap glow)
+    if (isV || info.type === "camp" || !info.type) {
+      for (let k = 0; k < 60; k++) {
+        const fx = (2 + rand() * (W - 4)) * T, fz = (2 + rand() * (H - 4)) * T;
+        if (!free(fx, fz, 2.2) || at(Math.floor(fx / T), Math.floor(fz / T)) === 1) continue;
+        modelProp(PB, "bonfire", mm.solid, fx, 0, fz, 1.1, rand() * 6);
+        modelProp(PB, "bench", mm.solid, fx, 0, fz - 1.5, 1.4, 0); modelProp(PB, "bench", mm.solid, fx + 1.4, 0, fz + 0.4, 1.4, Math.PI / 2 + 0.3);
+        fires.push(torch(kit, scene, fx, 0.55, fz, 0xff9a40, st.gfx === "high"));
+        put(fx, fz, 2.4); break;
+      }
+    }
+    // banners in the Realm's colours on the posts where the roads leave
+    const banG = recoloured("castle", "banner", { 7: flagC, 0: flagC, 4: 0x5a4632 }, "ban" + info.realm);
+    if (banG) { kit.g["v:banner"] = banG; for (const o of exits) { if (!o.veil) continue; const horiz = o.e.w >= o.e.h, half = (horiz ? o.e.w : o.e.h) * T / 2 + 0.4; for (const sd of [-1, 1]) { const bx = horiz ? o.x + sd * half : o.x, bz = horiz ? o.z : o.z + sd * half; PB.add("v:banner", mm.sway, bx, 2.7, bz, 1.4, 1.4, 1.4, (horiz ? 0 : Math.PI / 2) + (sd < 0 ? Math.PI : 0), 0xffffff); } } }
+    PB.build(scene);
+  }
   function gatePosts(o, nm) {
     const { e, x, z } = o, horiz = e.w >= e.h, half = (horiz ? e.w : e.h) * T / 2 + 0.4;
     const M = new Merge();
@@ -652,7 +698,7 @@ function buildArea(st, api, A) {
     frameN++;
     const p = A.p, inDlg = api.inDlg(), paused = api.sheetOpen() || inDlg;
     if (st.onFrame) st.onFrame(t);
-    torches.forEach((x) => x.tick(t)); kit.tickStatics(dt);
+    torches.forEach((x) => x.tick(t)); fires.forEach((x) => x.tick(t)); kit.tickStatics(dt);
     if (frameN % 240 === 0) timeOfDay();
     // window glow breathes like a hearth behind the glass, stronger after dark
     winMat.emissiveIntensity = 1.6 * (1 + tod.night * 0.5) * (0.9 + 0.06 * Math.sin(t * 2.3) + 0.04 * Math.sin(t * 7.1 + 1.3));
