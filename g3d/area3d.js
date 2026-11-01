@@ -7,11 +7,13 @@
 import { K3 } from "./scene3d.js";
 import { Merge, paintedSky, grassField, groundMat, horizonBand, loadArt } from "./art.js";
 import { BARKS } from "./barks.js";
+import { setBiome, modelProp, pickW, biomeOf, recoloured, pack, FIRE } from "./models.js";
 const { THREE, REALMS, VOIDC, GROUND_TEX, GRASS_TINT, CLOUD, COLD, tree, rng, vnoise, clamp, lerp, angLerp, shade, mix,
   makeStage, makeKit, whenChars, heroLook, kaelLook, figure, animFigure, Batch, lights, particles, pool, torch, followCam, moveIntent, labelSprite, radialTex, esc } = K3;
 
 export const T = 1.35, PX = T / 16;
 const CH = 24; // tiles per culling chunk
+const LODR = 28; // metres: chunks further than this draw their cheap twin instead of the model trees
 const WALL_STYLE = { ember: "frame", stone: "stone", storm: "frame", light: "ashlar", frost: "planks", spirit: "ashlar", shadow: "stone", metal: "brick" };
 const ROOF_TEX = { ember: "tile", stone: "stone", storm: "slate", light: "tile", frost: "slate", spirit: "slate", shadow: "slate", metal: "slate" };
 // house kinds (from the 2D town painter) that open a section of the settlement sheet
@@ -81,7 +83,7 @@ export function area(api, done) {
       if (ctl.off || ctl.st !== st || api.AR() !== A) return;
       try { ctl.w = buildArea(st, api, A); ctl.ready = true; }
       catch (e) { api.fail(e); finish("fail"); }
-    });
+    }, ["nature", "village"]);
   }
   function finish(how) { if (ctl.off) return; ctl.off = true; clearInterval(watch); teardown(); api.on(false); done(how || "left"); }
   // follow the sim: a new AR object means a new place; no AR means we are back on the map
@@ -102,6 +104,7 @@ export function area(api, done) {
 // ======================================================================
 function buildArea(st, api, A) {
   const sp = A.sp, W = A.W, H = A.H, g = A.g, info = api.info(A);
+  setBiome(info.cave ? "shadow" : info.realm);
   const cave = !!info.cave, over = !!sp.over;
   const P = REALMS[info.realm] || REALMS.ember, kit = makeKit(st), { scene, camera, inp } = st, rand = rng((A.id || "a") + "|3d");
   const art = kit.art, white = kit.mat(0xffffff);
@@ -200,8 +203,11 @@ function buildArea(st, api, A) {
   const chunks = [], solidH = new Float32Array(W * H); // tile heights for the camera
   const nCX = Math.ceil(W / CH), nCZ = Math.ceil(H / CH), small = W * H <= 48 * 48;
   const mStone = art.mat("stone"), mPlank = art.mat("planks", { roughness: 0.85 }), mBeam = art.mat("beam", { roughness: 0.85 });
+  const mm = kit.mm; // model materials on Medium and High (null on Low or if the packs did not load)
+  const kitS = Object.assign({}, kit, { mm: null }); // the same kit, drawing the simple shapes (far chunks)
   for (let cz = 0; cz < nCZ; cz++) for (let cx = 0; cx < nCX; cx++) {
-    const grp = new THREE.Group(), B = new Batch(kit), M = new Merge(); let any = false;
+    // with models, each chunk also gets a cheap twin (the old cone trees and plain rocks), shown when the chunk is far away
+    const grp = new THREE.Group(), B = new Batch(kit), M = new Merge(), Bs = mm ? new Batch(kitS) : null; let any = false;
     for (let y = cz * CH; y < Math.min(H, (cz + 1) * CH); y++) for (let x = cx * CH; x < Math.min(W, (cx + 1) * CH); x++) {
       const t = g[y][x], wx = (x + 0.5) * T, wz = (y + 0.5) * T, r1 = rand(), r2 = rand();
       if (t === 2) {
@@ -213,14 +219,37 @@ function buildArea(st, api, A) {
         } else {
           solidH[y * W + x] = 7; // the camera won't sit inside a tree
           const h = 3.6 + r1 * 3.4;
-          tree(B, white, wx + (r2 - 0.5) * T * 0.4, 0, wz + (r1 - 0.5) * T * 0.4, h, (r2 < 0.5 ? cTree : cTree2).getHex(), rand);
+          const tx = wx + (r2 - 0.5) * T * 0.4, tz = wz + (r1 - 0.5) * T * 0.4, tcol = (r2 < 0.5 ? cTree : cTree2).getHex();
+          tree(B, white, tx, 0, tz, h, tcol, rand);
+          if (Bs) tree(Bs, white, tx, 0, tz, h, tcol, rand);
         }
-      } else if (t === 7) { any = true; const s = 0.7 + r1 * 0.6; B.add("rock", white, wx, s * 0.3, wz, s * 1.2, s * 0.9, s * 1.1, r2 * 6, shade(cRock.getHex(), 0.75 + r2 * 0.3)); }
-      else if (t === 8 && st.gfx !== "low") { any = true; for (let k = 0; k < 3; k++) B.add("cone", white, wx + (rand() - 0.5) * T * 0.8, 0.12, wz + (rand() - 0.5) * T * 0.8, 0.12, 0.24, 0.12, 0, [0xd8b040, 0xe8e0d0, 0xb04040, 0x9a70d0][Math.floor(rand() * 4)]); }
+        // forest edge (Medium/High): undergrowth where the trees meet open ground, so woods have a skirt, not a wall
+        if (mm && !cave && r1 < 0.4 && (at(x - 1, y) !== 2 || at(x + 1, y) !== 2 || at(x, y - 1) !== 2 || at(x, y + 1) !== 2)) {
+          const bo = biomeOf(), k = rand(), ex = wx + (rand() - 0.5) * T, ez = wz + (rand() - 0.5) * T;
+          if (k < 0.5) modelProp(B, pickW(bo.bush, null, rand()), mm.sway, ex, 0, ez, 0.9 + rand() * 0.7, rand() * 6, shade(bo.tint, 0.85 + rand() * 0.25));
+          else if (k < 0.75 && info.realm !== "frost") modelProp(B, "fern", mm.sway, ex, 0, ez, 0.5 + rand() * 0.4, rand() * 6, shade(bo.tint, 0.8 + rand() * 0.3));
+          else if (k < 0.87) modelProp(B, rand() < 0.5 ? "stump" : "log", mm.solid, ex, 0, ez, 0.9 + rand() * 0.5, rand() * 6, 0xffffff);
+          else modelProp(B, pickW(bo.rock, null, rand()), mm.solid, ex, 0, ez, 0.6 + rand() * 0.5, rand() * 6, shade(cRock.getHex(), 1.6));
+        }
+      } else if (t === 7) {
+        any = true; const s = 0.7 + r1 * 0.6;
+        if (Bs) Bs.add("rock", white, wx, s * 0.3, wz, s * 1.2, s * 0.9, s * 1.1, r2 * 6, shade(cRock.getHex(), 0.75 + r2 * 0.3));
+        if (mm) { const bo = biomeOf(); modelProp(B, pickW(bo.rock, null, r2), mm.solid, wx, -0.05, wz, s * 1.25, r2 * 6, shade(cRock.getHex(), 1.5 + r2 * 0.4)); if (r1 < 0.4) modelProp(B, "grass", mm.sway, wx + 0.5, 0, wz + 0.4, 0.45, r1 * 6, shade(bo.tint, 0.9)); }
+        else B.add("rock", white, wx, s * 0.3, wz, s * 1.2, s * 0.9, s * 1.1, r2 * 6, shade(cRock.getHex(), 0.75 + r2 * 0.3));
+      }
+      else if (t === 8 && st.gfx !== "low") {
+        any = true;
+        if (mm) { for (let k = 0; k < 2; k++) modelProp(B, rand() < 0.65 ? "flowers" : "grass", mm.sway, wx + (rand() - 0.5) * T * 0.8, 0, wz + (rand() - 0.5) * T * 0.8, 0.32 + rand() * 0.2, rand() * 6, [0xffe070, 0xffffff, 0xff8080, 0xc8a0ff, 0x9ad8ff][Math.floor(rand() * 5)]); }
+        else for (let k = 0; k < 3; k++) B.add("cone", white, wx + (rand() - 0.5) * T * 0.8, 0.12, wz + (rand() - 0.5) * T * 0.8, 0.12, 0.24, 0.12, 0, [0xd8b040, 0xe8e0d0, 0xb04040, 0x9a70d0][Math.floor(rand() * 4)]);
+      }
+      // open ground (Medium/High): the odd grass clump or wild flowers, never on paths, plazas or water
+      else if (mm && !cave && t === 0 && r1 < 0.05) { any = true; const bo = biomeOf(); modelProp(B, r2 < 0.6 ? "grass" : "flowers", mm.sway, wx + (r2 - 0.5) * T, 0, wz + (r1 * 10 - 0.25) * T, 0.3 + r2 * 0.25, r2 * 6, r2 < 0.6 ? shade(bo.tint, 0.85) : [0xffe070, 0xffffff, 0xc8a0ff][Math.floor(r2 * 3)]); }
     }
     if (!any) continue;
-    B.build(grp); M.build(grp, (x) => st.track(x)); scene.add(grp);
-    chunks.push({ grp, x: (cx + 0.5) * CH * T, z: (cz + 0.5) * CH * T });
+    let near = null, far = null;
+    if (Bs) { near = new THREE.Group(); far = new THREE.Group(); B.build(near); Bs.build(far); far.visible = false; grp.add(near, far); } else B.build(grp);
+    M.build(grp, (x) => st.track(x)); scene.add(grp);
+    chunks.push({ grp, near, far, x: (cx + 0.5) * CH * T, z: (cz + 0.5) * CH * T });
   }
 
   // ---------- buildings: the 2D town's houses, raised in the Realm's style ----------
@@ -709,7 +738,7 @@ function buildArea(st, api, A) {
     if (beacon.visible) { const d = Math.hypot(beacon.position.x - hx, beacon.position.z - hz); beacon.material.opacity = 0.08 * clamp((d - 7) / 12, 0, 1); beacon.visible = beacon.material.opacity > 0.003; beaconLab.material.opacity = clamp((d - 3) / 4, 0, 1); }
 
     // culling: far chunks off
-    if (!small && frameN % 8 === 0) for (const c of chunks) c.grp.visible = Math.hypot(c.x - hx, c.z - hz) < 72;
+    if (frameN % 8 === 0) for (const c of chunks) { const d = Math.hypot(c.x - hx, c.z - hz); if (!small) c.grp.visible = d < 72; if (c.near) { const nv = d < LODR; c.near.visible = nv; c.far.visible = !nv; } }
 
     // camera: over the shoulder; in a conversation, frame the speaker; never through a wall
     if (inDlg && !talkTo) { talkTo = nearN && nd < 4 ? nearN : null; dlgCamT = 0; } else if (!inDlg) talkTo = null;

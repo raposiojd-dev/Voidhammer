@@ -7,6 +7,7 @@
 // The scene never touches game numbers: it reports how much of each side is left, and the bridge feeds that to
 // finishBattle exactly as the 2D field does.
 import { K3 } from "./scene3d.js";
+import { setBiome } from "./models.js";
 import { Merge, paintedSky, grassField, groundMat, horizonBand, loadArt } from "./art.js";
 import { buildSiege } from "./siege3d.js";
 const { THREE, REALMS, VOIDC, GROUND_TEX, GRASS_TINT, GRASS_N, CLOUD, COLD, tree, rng, vnoise, clamp, lerp, angLerp, shade, mix,
@@ -53,11 +54,12 @@ export function battle(api, info, done) {
     if (ctl.off) return;
     try { Object.assign(ctl, buildBattle(st, api, info, done)); ctl.ready = true; }
     catch (e) { api.fail(e); st.dispose(); setTimeout(() => done({ how: "fail" }), 0); }
-  });
+  }, ["nature"]);
   return ctl;
 }
 
 function buildBattle(st, api, info, done) {
+  setBiome(info.realm);
   const isVoid = info.kind === "void" || info.kind === "rift";
   const P = REALMS[info.realm] || REALMS.ember, kit = makeKit(st), { scene, camera, inp } = st, rand = rng((info.title || "") + "|" + Math.floor(info.p0 * 100));
   const white = kit.mat(0xffffff), art = kit.art;
