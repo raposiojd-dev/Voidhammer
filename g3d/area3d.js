@@ -253,7 +253,8 @@ function buildArea(st, api, A) {
   }
 
   // ---------- buildings: the 2D town's houses, raised in the Realm's style ----------
-  const MH = new Merge(), BH = new Batch(kit);
+  const MH = new Merge(), BH = new Batch(kit), VB = new Batch(kit);
+  const useModels = !!(mm && pack("village") && !cave && P.roofType !== "dome" && P.roofType !== "spire");
   const WS = WALL_STYLE[info.realm] || "frame", isV = info.type === "village";
   const mWall = art.mat(WS === "frame" ? "plaster" : WS);
   const roofTex = cave ? "stone" : isV && (P.roofType === "gable" || P.roofType === "steep") && info.realm !== "frost" ? "thatch" : (ROOF_TEX[info.realm] || "slate");
@@ -265,8 +266,9 @@ function buildArea(st, api, A) {
   houses.forEach((h, i) => {
     const [hx, hy, hw, hd] = h; for (let y = hy; y < hy + hd; y++) for (let x = hx; x < hx + hw; x++) if (x >= 0 && y >= 0 && x < W && y < H) covered[y * W + x] = 1;
     const x = (hx + hw / 2) * T, z = (hy + hd / 2) * T, w = hw * T - 0.1, d = hd * T - 0.1, ht = (2.8 + Math.min(2.4, hw * hd * 0.06)) * (P.tall || 1) * (P.squat || 1);
-    house(x, z, w, d, ht, kinds[i]);
-    for (let y = hy; y < hy + hd; y++) for (let xx = hx; xx < hx + hw; xx++) if (xx >= 0 && y >= 0 && xx < W && y < H) solidH[y * W + xx] = ht + 1.5;
+    const mh = useModels ? modelHouse(x, z, w, d, kinds[i], i) : 0;
+    if (!mh) house(x, z, w, d, ht, kinds[i]);
+    for (let y = hy; y < hy + hd; y++) for (let xx = hx; xx < hx + hw; xx++) if (xx >= 0 && y >= 0 && xx < W && y < H) solidH[y * W + xx] = (mh || ht) + 1.5;
     const kd = KIND[kinds[i]];
     if (kd && info.siteId) {
       const dx = x, dz = (hy + hd) * T + 1.0;
@@ -278,6 +280,40 @@ function buildArea(st, api, A) {
   // any other solid structure tiles (walls, ruins, pens) become stone blocks
   for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
     const t = g[y][x]; if ((t === 4 || t === 5 || t === 6) && !covered[y * W + x]) { const h = cave ? 3.2 : 2.4 + vnoise(x * 0.5, y * 0.5) * 0.8; solidH[y * W + x] = h; MH.box(mStone, (x + 0.5) * T, h / 2, (y + 0.5) * T, T, h, T, 0, shade(cWall.getHex(), 0.75 + vnoise(x, y) * 0.25)); }
+  }
+  // ---------- model buildings (Medium/High, Realms with pitched roofs or plain villages): Quaternius cottages, inn, smithy ----------
+  // The model sits on the same footprint as the 2D house (colliders, doors and NPC spots are unchanged). It is scaled to the
+  // footprint's depth, stretched a little at most, and any spare width becomes a fenced yard with barrels, crates and hay.
+  // Roofs, plaster, stone and timber take the Realm's canon palette (models.js recolouring by material role).
+  function modelHouse(x, z, w, d, kind, idx) {
+    const pick = kind === "tavern" ? "inn" : kind === "smithy" ? "smithy" : kind === "barracks" || kind === "farm" ? "stable" : kind === "mill" || kind === "granary" ? "mill" : kind === "yard" ? "sawmill"
+      : (info.realm === "stone" || info.realm === "shadow") && rand() < 0.45 ? "house3" : ["house1", "house2", "house1", "house3"][Math.floor(rand() * 4)];
+    const VP = pack("village"); if (!VP || !VP.geo[pick]) return 0;
+    const g = vGeo(pick); if (!g) return 0;
+    const inf = VP.info[pick] || {}, mw = inf.w || 1, md = inf.d || 1, mhh = inf.h || 1;
+    let s = Math.min(w / mw, d / md); const sx = s * Math.min(1.15, (w / mw) / s), sz = s * Math.min(1.08, (d / md) / s);
+    const tint = shade(0xffffff, 0.92 + rand() * 0.16);
+    VB.add(g, mm.solid, x, 0, z, sx, s, sz, 0, tint);
+    // spare width: a fenced yard on each side, with a few props
+    const spare = (w - mw * sx) / 2;
+    if (spare > 0.9) for (const sd of [-1, 1]) {
+      const yx = x + sd * (w / 2 - spare / 2), fz = z + d / 2 - 0.15, L = spare;
+      const nF = Math.max(1, Math.round(L / 1.25)); for (let k = 0; k < nF; k++) modelProp(VB, "fence", mm.solid, yx - L / 2 + (k + 0.5) * L / nF, 0, fz, L / nF * 1.02, 0, 0xffffff);
+      const nS = Math.max(1, Math.round(d * 0.7 / 1.25)); for (let k = 0; k < nS; k++) modelProp(VB, "fence", mm.solid, x + sd * (w / 2 - 0.12), 0, z + d / 2 - (k + 0.5) * d * 0.7 / nS, d * 0.7 / nS * 1.02, Math.PI / 2, 0xffffff);
+      const r = rand(), px = yx, pz = z + d * 0.05;
+      if (r < 0.3) { modelProp(VB, "barrel", mm.solid, px - 0.3, 0, pz, 0.62, rand() * 6); modelProp(VB, "barrel", mm.solid, px + 0.35, 0, pz + 0.3, 0.6, rand() * 6); modelProp(VB, "crate", mm.solid, px, 0, pz - 0.6, 0.62, rand()); }
+      else if (r < 0.55) { modelProp(VB, "hay", mm.solid, px, 0, pz, 0.7, rand() * 6); modelProp(VB, "hay", mm.solid, px + 0.6, 0, pz - 0.5, 0.62, rand() * 6); }
+      else if (r < 0.75 && spare > 1.5) modelProp(VB, "cart", mm.solid, px, 0, pz, 1.9, sd * Math.PI / 2 + (rand() - 0.5) * 0.4);
+      else { modelProp(VB, "crate", mm.solid, px, 0, pz, 0.66, rand()); modelProp(VB, "crate", mm.solid, px + 0.2, 0.66, pz + 0.05, 0.6, rand()); modelProp(VB, "bags", mm.solid, px - 0.55, 0, pz + 0.4, 0.75, rand() * 6); }
+    }
+    return Math.max(2.6, mhh * s);
+  }
+  // the Realm-coloured copy of a village model, registered on the kit for instancing
+  function vGeo(key) {
+    const gk = "v:" + key; if (kit.g[gk]) return gk;
+    const wallT = WS === "frame" || WS === "planks" ? mix(P.wall, 0xe6dcc8, 0.5).getHex() : P.wall;
+    const geo = recoloured("village", key, { 1: mix(0x7a5636, beamC, 0.35).getHex(), 2: wallT, 3: shade(mix(P.roof, cRoof.getHex(), 0.3).getHex(), 1.05).getHex(), 4: shade(P.stone, 1.05).getHex(), 7: P.accent, 8: FIRE }, info.realm + (cave ? "c" : ""));
+    if (!geo) return null; kit.g[gk] = geo; return gk;
   }
   function W2(x, z, lx, lz) { return [x + lx, z + lz]; }
   function windowAt(x, z, lx, lz, y, side, wm) {
@@ -329,7 +365,7 @@ function buildArea(st, api, A) {
     if (kind === "tavern" || kind === "market") { const q = rand() < 0.5 ? -1 : 1; MH.add("cyl", mPlank, x + q * (w / 2 - 0.6), 0.45, z + d / 2 + 0.75, 0.7, 0.9, 0.7, 0, shade(0x8a6038, 0.9)); }
     if (rand() < 0.5) MH.box(mPlank, x - w / 2 + 0.6, 0.36, z + d / 2 + 0.7, 0.7, 0.7, 0.7, rand(), shade(0x9a7448, 0.85 + rand() * 0.25));
   }
-  MH.build(scene, (x) => st.track(x)); BH.build(scene);
+  MH.build(scene, (x) => st.track(x)); BH.build(scene); VB.build(scene);
 
   // ---------- exits: lit posts and a sign where a road leaves; settlements, caves and the yard on the overland ----------
   const exits = [];
