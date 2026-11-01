@@ -463,6 +463,7 @@
     }
     function hudTick(cdLeft) {
       if (!hud) return; const s = st(); if (!s) return;
+      hud.n = (hud.n || 0) + 1; if (hud.n % 30 === 1) layout(); // the HUD rows above it fill in after mount
       const eq = s.eq;
       hud.btns.forEach((b, i) => {
         const id = eq[i], n = id && NODE[id];

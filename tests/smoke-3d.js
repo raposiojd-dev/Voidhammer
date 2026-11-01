@@ -14,6 +14,8 @@ const ok = (c, m) => { console.log((c ? "PASS " : "FAIL ") + m); if (!c) fails++
   const b = await chromium.launch();
   const phone = process.env.VP === "phone", VW = phone ? 390 : 1280, VH = phone ? 844 : 720;
   const p = await b.newPage(phone ? { viewport: { width: VW, height: VH }, hasTouch: true, isMobile: true, deviceScaleFactor: 2 } : { viewport: { width: VW, height: VH } });
+  // a phone held upright gets the "turn your phone sideways" card in 3D; this run plays upright anyway (tested on its own below)
+  if (phone) await p.addInitScript(() => { try { sessionStorage.setItem("vh-rot-ok", "1"); } catch (e) {} });
   const errs = [];
   p.on("pageerror", (e) => errs.push("pageerror: " + e.message));
   p.on("console", (m) => { if (m.type() === "error") errs.push("console: " + m.text()); });
@@ -200,6 +202,104 @@ const ok = (c, m) => { console.log((c ? "PASS " : "FAIL ") + m); if (!c) fails++
   ok(await until(() => __vh.B() && __vh.B().stage === "result", 30000), "auto-resolve still reaches a result");
   await js(() => { const d = document.querySelector("#sbody [data-act=done]"); if (d) d.click(); });
 
+  // ---- skills v2: the Realm Arts (g3d/skills2.js) ----
+  if (!process.env.NOSK2) {
+    const K = "__vh.k2()";
+    ok(await js(() => !!(__vh.k2() && __vh.S().sk2 && __vh.S().sk2.v === 1)), "Realm Arts installed; the save carries the new sk2 key");
+    await js(() => { __vh.S().xp = 25 * 20 * 20; __vh.S().crowns = Math.max(__vh.S().crowns, 2000); });
+    const pts0 = await js(() => __vh.k2().points());
+    ok(pts0 >= 18, "points come from levels (" + pts0 + " at level " + (await js(() => Math.floor(Math.sqrt(__vh.S().xp / 25)) + 1)) + ")");
+    // unlock through the sheet: pick a tree, a node, Learn, and the Recognition moment makes it your Spark
+    await js(() => { const b = document.querySelector("[data-act=menu][data-a=skills]"); if (b) b.click(); }); await wait(700);
+    ok(await js(() => __vh.sheet() && __vh.sheet().kind === "skills" && !!document.querySelector("#sbody .k2s") && document.querySelectorAll("#sbody .k2tr").length === 9), "the skill sheet shows the Realm Arts: Commander + eight Realm trees");
+    await js(() => document.querySelector("[data-k2tree=ember]").click()); await wait(250);
+    await js(() => document.querySelector("[data-k2sel=em_brand]").click()); await wait(250);
+    ok(await js(() => /What it changes/.test(document.querySelector("#sbody .k2d").textContent) && /Temper/.test(document.querySelector("#sbody .k2d").textContent)), "detail panel shows the one-line fantasy, the price and the 'what changes' preview");
+    await js(() => document.querySelector("[data-k2learn=em_brand]").click()); await wait(250);
+    ok(await js(() => !!document.querySelector(".k2modal") && /Recognition/.test(document.querySelector(".k2modal").textContent)), "first Realm art: the Recognition choice appears");
+    await shot("k2-01-recognition.png");
+    await js(() => document.querySelector("[data-k2modal=yes]").click()); await wait(300);
+    ok(await js(() => { const s = __vh.S().sk2; return s.r.em_brand === 1 && s.spark === "ember" && s.eq[0] === "em_brand"; }), "Brand unlocked; Embercraft is your Spark; Brand sits on button 1");
+    // keystone exclusivity
+    await js(() => { const k = __vh.k2(); ["em_hot", "em_hot", "em_hot", "em_cracks", "em_cracks", "em_cracks", "em_refusal", "em_refusal", "em_refusal"].forEach((id) => k.learn(id)); }); await wait(100);
+    await js(() => { document.querySelector("[data-k2sel=em_ks_patient]").click(); }); await wait(200);
+    await js(() => document.querySelector("[data-k2learn=em_ks_patient]").click()); await wait(250);
+    ok(await js(() => !!document.querySelector(".k2modal .k2ksc") && document.querySelectorAll(".k2modal .k2ksb").length === 2), "keystone: the choose-who-you-become moment shows both roads");
+    await shot("k2-02-keystone.png");
+    await js(() => document.querySelector("[data-k2modal=yes]").click()); await wait(250);
+    const ks = await js(() => { const k = __vh.k2(), N = window.VHSK2.NODE; return { a: k.R("em_ks_patient"), b: k.learn("em_ks_unbanked"), why: k.why(N.em_ks_unbanked) }; });
+    ok(ks.a === 1 && ks.b === false && /chose Patient Fire/.test(ks.why), "keystones are exclusive: Patient Fire taken, Unbanked refused (" + ks.why + ")");
+    await shot("k2-03-sheet.png");
+    await js(() => { const b = document.querySelector("#sx"); if (b) b.click(); }); await wait(400);
+    // battle: every tree's first active fires on the 3D field, with a price where there is magic
+    ok(await js(() => __vh.battleWith(18, "bandit")), "Realm Arts battle started");
+    await wait(500); await js(() => __vh.startFight());
+    ok(await until(() => !!(__vh.scene() && __vh.scene().ctl && __vh.scene().ctl.ready && __vh.scene().ctl.k2 && __vh.scene().ctl.k2()), 20000), "3D battle opened with the Realm Arts controller");
+    await wait(1500);
+    ok(await js(() => !!document.querySelector("#vh3d [data-b=cast]") && document.querySelectorAll("#vh3d .k2ab").length === 3), "battle HUD: a Cast button and three ability buttons");
+    await js(() => document.querySelector("#vh3d [data-b=cast]").dispatchEvent(new PointerEvent("pointerdown", { bubbles: true }))); await wait(400);
+    ok(await js(() => document.querySelectorAll("#vh3d .k2ab.on").length === 3 && !!document.querySelector("#vh3d .k2price .k2m")), "Cast opens the ability set; the price meter is on the HUD");
+    const FIRST = ["cmd_rally", "em_brand", "fr_echo", "li_shield", "st_step", "sg_press", "vw_lantern", "sh_step", "mt_bolt"];
+    const ART = { em_brand: "ember", fr_echo: "frost", li_shield: "light", st_step: "storm", sg_press: "stone", vw_lantern: "veil", sh_step: "shadow", mt_bolt: "metal" };
+    const fired = [];
+    for (const id of FIRST) {
+      const r = await js((id) => {
+        const c = __vh.scene().ctl, k2 = c.k2(), s = __vh.S().sk2, hero = c.hero;
+        s.r[id] = Math.max(1, s.r[id] || 0); s.eq[0] = id; __vh.k2().bump(); k2.core.cds = {}; k2.core.chg = {};
+        // stand a few yards from the nearest living foe, facing it
+        const foes = c.units.filter((u) => u.side === "e" && !u.dead && !u.gone); if (!foes.length) return { none: 1 };
+        foes.sort((a, b) => Math.hypot(a.x - hero.x, a.z - hero.z) - Math.hypot(b.x - hero.x, b.z - hero.z)); const f = foes[0];
+        const d = Math.hypot(f.x - hero.x, f.z - hero.z) || 1; hero.x = f.x - (f.x - hero.x) / d * 2.6; hero.z = f.z - (f.z - hero.z) / d * 2.6; hero.yaw = Math.atan2(f.x - hero.x, f.z - hero.z);
+        const hp0 = foes.reduce((a, u) => a + u.hp, 0), st0 = k2.state(), m0 = Object.assign({}, s.m), x0 = hero.x, z0 = hero.z, t0 = k2.core.t;
+        const okc = k2.cast(0); window.__k2t = t0;
+        return { okc, hp0, x0, z0, st0, m0 };
+      }, id);
+      if (r.none) { ok(false, id + ": no foes left to test on"); continue; }
+      // headless frames are slow: wait on the battle's own clock, not the wall clock
+      await until(() => __vh.scene().ctl.k2().core.t > window.__k2t + 0.7, 30000, 100);
+      const a = await js((id) => { const c = __vh.scene().ctl, k2 = c.k2(); return { hp1: c.units.filter((u) => u.side === "e" && !u.dead && !u.gone).reduce((s, u) => s + u.hp, 0) + c.units.filter((u) => u.side === "e" && u.dead).length * 0, dead: c.units.filter((u) => u.side === "e" && u.dead).length, st: k2.state(), m: Object.assign({}, __vh.S().sk2.m), again: k2.cast(0) }; }, id);
+      const moved = Math.hypot(a.st.hero.x - r.x0, a.st.hero.z - r.z0) > 0.8, hit = a.hp1 < r.hp0 - 0.01, zone = a.st.zones > r.st0.zones, summon = a.st.summons > r.st0.summons, buff = a.st.buffs > r.st0.buffs || a.st.shield || a.st.ahead > 0;
+      const art = ART[id], paid = !art || (a.m[art] || 0) > (r.m0[art] || 0);
+      const did = moved || hit || zone || summon || buff;
+      fired.push(id);
+      ok(r.okc && did && paid && a.again === false, id + " fires in battle: " + [moved && "moved", hit && "hurt them", zone && "zone", summon && "summoned", buff && "buff/ward"].filter(Boolean).join(", ") + (art ? "; " + art + " price " + Math.round(r.m0[art] || 0) + " -> " + Math.round(a.m[art] || 0) : "; no price (Commander)") + "; on cooldown after");
+      if (id === "em_brand" || id === "st_step" || id === "sg_press" || id === "li_shield") await shot("k2-b-" + id + ".png");
+      await js(() => { __vh.scene().ctl.k2().core.cds = {}; });
+    }
+    // the price: push Embercraft into the Arrears; it marks you and takes your Block
+    // the price: push Radiance into the Arrears (the Clear); it marks you and you can no longer fall back.
+    // (Embercraft is capped at the Debt here: the test took Patient Fire.)
+    const pr = await js(() => { const k = __vh.k2(); k.pay("ember", 90); k.pay("light", 90); const s = __vh.S().sk2; return { e: s.m.ember, m: s.m.light, marks: s.marks.light || 0, st: __vh.scene().ctl.k2().state() }; });
+    ok(pr.e <= 74, "Patient Fire holds Temper at the Debt (" + Math.round(pr.e) + ")");
+    ok(pr.m >= 75 && pr.marks >= 1 && pr.st.noFlee, "Radiance at the Clear (" + Math.round(pr.m) + "): a mark that never walks back (" + pr.marks + "), and you cannot fall back");
+    await shot("k2-b-price.png");
+    await js(() => __vh.scene() && __vh.scene().ctl.fast(10));
+    ok(await until(() => !__vh.scene(), 150000, 1000), "Realm Arts battle finished and the scene closed");
+    ok(await js(() => !document.querySelector(".k2hud")), "battle HUD removed with the scene");
+    await js(() => { const d = document.querySelector("#sbody [data-act=done]"); if (d) d.click(); }); await wait(600);
+    // town and road fights: Cast opens the set, 1 casts, the price moves
+    await js(() => __vh.startArea("millroad"));
+    ok(await until(() => !!(__vh.area3d() && __vh.area3d().ready && __vh.AR() && __vh.AR().id === "millroad"), 30000), "Millbrook Road opens for an on-foot Realm Arts test");
+    await wait(1500);
+    await js(() => { const s = __vh.S().sk2; s.eq = ["em_brand", "cmd_rally", "em_refusal"]; s.m.ember = 0; s.marks.ember = 0; __vh.k2().bump(); });
+    await js(() => { const A = __vh.AR(), e = A.en.find((q) => !q.dead && !q.gone); if (e) { A.p.x = e.x - 26; A.p.y = e.y; A.p.face = { x: 1, y: 0 }; } }); await wait(800);
+    ok(await until(() => !!document.querySelector("#area .k2hud"), 3000), "on foot: the Realm Arts HUD is mounted beside Cast");
+    await js(() => document.querySelector("#acast").dispatchEvent(new PointerEvent("pointerdown", { bubbles: true }))); await wait(400);
+    ok(await js(() => document.querySelectorAll("#area .k2ab.on").length === 3 && !__vh.dlg()), "Cast opens the ability set (not the old dialogue)");
+    const fh0 = await js(() => __vh.AR().en.reduce((a, e) => a + Math.max(0, e.hp), 0));
+    await js(() => { window.__k2t = __vh.k2a().t; }); await p.keyboard.press("1");
+    await until(() => __vh.k2a().t > window.__k2t + 0.6, 30000, 100);
+    const fa = await js(() => ({ hp: __vh.AR().en.reduce((a, e) => a + Math.max(0, e.hp), 0), m: __vh.S().sk2.m.ember || 0 }));
+    ok(fa.hp < fh0 && fa.m > 0, "key 1 throws Brand on foot: foes " + fh0.toFixed(1) + " -> " + fa.hp.toFixed(1) + ", Temper " + fa.m.toFixed(0));
+    await shot("k2-a-brand.png");
+    await js(() => { __vh.k2a().cds = {}; __vh.k2a().cast(2); }); await wait(250);
+    await shot("k2-a-refusal.png");
+    // respec: the Contradiction (crowns), marks stay
+    const rs = await js(() => { const k = __vh.k2(), s = __vh.S().sk2; s.marks.ember = 2; const c0 = __vh.S().crowns, cost = k.respecCost(), ok1 = k.respec(); return { ok1, paid: c0 - __vh.S().crowns === cost, spark: s.spark, spent: k.spent(), marks: s.marks.ember, contra: s.contra > __vh.S().day }; });
+    ok(rs.ok1 && rs.paid && rs.spark === null && rs.spent === 0 && rs.marks === 2 && rs.contra, "unlearning costs crowns and five days of contradiction; marks stay");
+    await js(() => { const b = document.querySelector("[data-act=aleave]"); if (b) b.click(); }); await until(() => !__vh.AR(), 15000);
+  }
+
   // ---- v2 stage 3: sieges (walls, gate, towers, ladders, ram), both sides playable, ends feed finishBattle ----
   if (!process.env.NOSIEGE) {
     for (const defend of [false, true]) {
@@ -223,6 +323,57 @@ const ok = (c, m) => { console.log((c ? "PASS " : "FAIL ") + m); if (!c) fails++
       await js(() => { const d = document.querySelector("#sbody [data-act=done]"); if (d) d.click(); }); await wait(600);
     }
   }
+
+  // ---- skills v2: an old save (v1 skills, no sk2 key) loads, refunds its points and keeps story flags ----
+  // ---- and landscape phone play: this page is a phone held sideways (844x390), then turned upright ----
+  if (!process.env.NOSK2) {
+    const old = await js(() => { const o = JSON.parse(JSON.stringify(__vh.S())); delete o.sk2; delete o.skLegacy; o.skills = { drill: 2, haggler: 1, sv_footwork: 3, ms_gate: 1 }; o.skStart = { haggler: 1 }; o.xp = 25 * 9 * 9; return JSON.stringify(o); });
+    await p.close();
+    const ctx = await b.newContext({ viewport: { width: 844, height: 390 }, hasTouch: true, isMobile: true, deviceScaleFactor: 2 });
+    const p2 = await ctx.newPage();
+    p2.on("pageerror", (e) => errs.push("pageerror(old save): " + e.message));
+    p2.on("console", (m) => { if (m.type() === "error") errs.push("console(old save): " + m.text()); });
+    await p2.addInitScript((o) => { if (!sessionStorage.getItem("k2mig")) { sessionStorage.setItem("k2mig", "1"); localStorage.setItem("voidhammer-campaign-v3", o); } }, old);
+    await p2.goto(URL); await p2.waitForTimeout(4000);
+    await p2.evaluate(() => { const b = document.getElementById("tcont"); if (b) b.click(); }); await p2.waitForTimeout(2500);
+    const mig = await p2.evaluate(() => { const S = __vh.S(); __vh.k2().st(); return { sk2: !!S.sk2, ref: S.sk2 && S.sk2.refunded, skills: S.skills, legacy: S.skLegacy, pts: __vh.k2().points() }; });
+    ok(mig.sk2 && mig.ref === 5 && mig.skills.ms_gate === 1 && mig.skills.haggler === 1 && !mig.skills.drill && !mig.skills.sv_footwork && mig.legacy && mig.legacy.drill === 2 && mig.pts >= 8,
+      "old save migrates: 5 points refunded, Gatewalker and the upbringing's Haggler kept, old map kept as skLegacy, " + mig.pts + " points to spend");
+    const j2 = (f, a) => p2.evaluate(f, a), shot2 = async (n) => { if (SHOTS) await p2.screenshot({ path: path.join(SHOTS, n) }); };
+    const until2 = async (f, ms) => { const t = Date.now(); while (Date.now() - t < ms) { if (await j2(f)) return true; await p2.waitForTimeout(500); } return false; };
+    await j2(() => { const s = __vh.S().sk2; ["em_brand", "cmd_rally", "st_step"].forEach((id) => { s.r[id] = 1; }); s.spark = "ember"; s.half = "storm"; s.eq = ["em_brand", "cmd_rally", "st_step"]; __vh.k2().bump(); });
+    await j2(() => __vh.startArea("millroad"));
+    ok(await until2(() => !!(__vh.area3d() && __vh.area3d().ready && __vh.AR() && __vh.AR().id === "millroad"), 40000), "landscape 844x390: Millbrook Road opens in 3D");
+    await p2.waitForTimeout(1500);
+    await j2(() => document.querySelector("#acast").dispatchEvent(new PointerEvent("pointerdown", { bubbles: true }))); await p2.waitForTimeout(500);
+    const La = await j2(() => { const r = (q) => { const e = document.querySelector(q); if (!e) return null; const b = e.getBoundingClientRect(); return { l: b.left, t: b.top, r: b.right, b: b.bottom, w: b.width, h: b.height }; }; const W = innerWidth, H = innerHeight;
+      const ab = [...document.querySelectorAll("#area .k2ab.on")].map((e) => e.getBoundingClientRect()), tops = [...document.querySelectorAll("#vh3d .v3-top button")].map((e) => e.getBoundingClientRect());
+      return { W, H, atk: r("#aatk"), cast: r("#acast"), ab: ab.map((b) => ({ l: b.left, t: b.top, w: b.width, h: b.height })), top: tops.map((b) => ({ t: b.top, h: b.height, r: b.right })), rot: window.__vhRot.on() }; });
+    const right = (b) => b && b.l > La.W * 0.55 && b.b > La.H * 0.4;
+    ok(La.W > La.H && !La.rot && right(La.atk) && right(La.cast), "landscape: no turn-sideways card; Strike and Cast sit bottom-right (" + Math.round(La.atk.l) + "," + Math.round(La.atk.t) + ")");
+    ok(La.ab.length === 3 && La.ab.every((b) => b.w >= 44 && b.h >= 44 && b.l > La.W * 0.5 && b.t >= 0 && b.t + b.h <= La.H), "landscape: the three ability buttons are in the right-thumb arc, on screen, 44px or more (" + La.ab.map((b) => Math.round(b.w)).join(",") + ")");
+    ok(La.top.length >= 2 && La.top.every((b) => b.h >= 44 && b.t < La.H * 0.35), "landscape: the scene buttons run along the top edge, 44px or more");
+    await shot2("k2-L-area.png");
+    // a 3D battle in landscape
+    await j2(() => { const b = document.querySelector("[data-act=aleave]"); if (b) b.click(); }); await until2(() => !__vh.AR(), 15000);
+    await j2(() => { __vh.give(30); return __vh.battleWith(16, "bandit"); }); await p2.waitForTimeout(500); await j2(() => __vh.startFight());
+    ok(await until2(() => !!(__vh.scene() && __vh.scene().ctl && __vh.scene().ctl.ready), 30000), "landscape: 3D battle opens");
+    await p2.waitForTimeout(1500);
+    await j2(() => document.querySelector("#vh3d [data-b=cast]").dispatchEvent(new PointerEvent("pointerdown", { bubbles: true }))); await p2.waitForTimeout(500);
+    const Lb = await j2(() => { const g = (q) => { const e = document.querySelector(q); return e ? e.getBoundingClientRect() : null; }; const W = innerWidth, H = innerHeight; const ab = [...document.querySelectorAll("#vh3d .k2ab.on")].map((e) => e.getBoundingClientRect());
+      const atk = g("#vh3d [data-b=atk]"), blk = g("#vh3d [data-b=blk]"), cast = g("#vh3d [data-b=cast]"), hp = g("#vh3d .v3-hp"), ord = g("#vh3d .b3-ordbtn");
+      return { W, H, ok: [atk, blk, cast].every((b) => b && b.left > W * 0.55 && b.bottom > H * 0.45 && b.width >= 44), ab: ab.length === 3 && ab.every((b) => b.width >= 44 && b.left > W * 0.45 && b.top >= 0), hpTop: hp && hp.top < H * 0.25, ord: ord && ord.height >= 44 && ord.left > W * 0.2 && ord.right < W * 0.8 }; });
+    ok(Lb.ok && Lb.ab && Lb.hpTop && Lb.ord, "landscape battle: Strike/Block/Cast and the ability arc bottom-right, health at the top, Orders between the thumbs");
+    await shot2("k2-L-battle.png");
+    // turned upright mid-fight: the card asks for sideways
+    await p2.setViewportSize({ width: 390, height: 844 }); await p2.waitForTimeout(900);
+    ok(await j2(() => window.__vhRot.on() && /sideways/i.test(document.getElementById("vhrot").textContent) && getComputedStyle(document.getElementById("vhrot")).display !== "none"), "portrait 390x844 during 3D play: the 'Turn your phone sideways' card appears");
+    await shot2("k2-P-turn-sideways.png");
+    await j2(() => document.querySelector("#vhrot [data-rot=stay]").click()); await p2.waitForTimeout(500);
+    ok(await j2(() => !window.__vhRot.on()), "'Play upright anyway' dismisses it");
+    await j2(() => __vh.scene() && __vh.scene().ctl.fast(10)); await until2(() => !__vh.scene(), 150000);
+    await p2.close();
+  } else await p.close();
 
   ok(errs.length === 0, "no console errors" + (errs.length ? ":\n  " + errs.join("\n  ") : ""));
   await b.close();
