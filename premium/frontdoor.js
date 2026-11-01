@@ -60,11 +60,17 @@
       inner = '<rect x="10" y="88" width="80" height="26" fill="#141416"/><path d="M20 96 Q30 93 40 96 T60 96 T80 96" fill="none" stroke="#C0C4C8" stroke-width="1.2"/><path d="M26 104 Q36 101 46 104 T66 104" fill="none" stroke="#C0C4C8" stroke-width="1" opacity=".6"/>' +
         '<path d="M50 24 L50 32" stroke="#C0C4C8" stroke-width="2"/><path d="M40 40 L60 40 L57 34 L43 34 Z" fill="#C0C4C8"/><rect x="40" y="40" width="20" height="30" rx="2" fill="rgba(232,240,255,.25)" stroke="#E6EAF0" stroke-width="2"/>' +
         '<path d="M50 46 Q56 54 50 62 Q44 54 50 46 Z" fill="#E8F0FF"/><path d="M38 70 L62 70 L58 76 L42 76 Z" fill="#C0C4C8"/><path d="M50 78 L50 90" stroke="rgba(232,240,255,.5)" stroke-width="3"/>';
+    } else if (id === "march") {
+      // per pale, fire and stone: a Flameborne flame and a Stonehold hearthstone set side by side on the Warm Rock
+      inner = '<rect x="0" y="0" width="50" height="130" fill="#9E2B25"/><path d="M50 4 V126" stroke="#B87333" stroke-width="1.6"/>' +
+        '<path d="M32 76 Q22 62 30 50 Q32 58 36 58 Q34 46 42 36 Q42 50 48 56 Q52 66 46 76 Z" fill="#FF7A1A" stroke="#ffcf7a" stroke-width=".8"/>' +
+        '<rect x="54" y="50" width="22" height="26" fill="#9a9a94" stroke="#3a3a36" stroke-width="1.4"/><path d="M54 63 H76 M65 50 V63" stroke="#3a3a36" stroke-width="1"/>' +
+        '<path d="M18 80 Q50 72 82 80 L84 92 Q50 98 16 92 Z" fill="#141210" stroke="#3a2a22" stroke-width="1.4"/><path d="M30 84 Q50 80 70 84" stroke="#ff7a1a" stroke-width="1" opacity=".55" fill="none"/>';
     } else if (id === "metal") {
       inner = '<path d="M26 74 L26 52 L33 58 L38 44 L44 56 L50 40 L56 56 L62 44 L67 58 L74 52 L74 74 Z" fill="#1B1B1C" stroke="#B08D57" stroke-width="1.4"/><rect x="26" y="74" width="48" height="9" fill="#1B1B1C" stroke="#B08D57" stroke-width="1.4"/>' +
         '<g fill="#B08D57"><circle cx="32" cy="78.5" r="1.6"/><circle cx="41" cy="78.5" r="1.6"/><circle cx="50" cy="78.5" r="1.6"/><circle cx="59" cy="78.5" r="1.6"/><circle cx="68" cy="78.5" r="1.6"/></g><circle cx="50" cy="51" r="2.6" fill="#FF6A13"/><circle cx="50" cy="51" r="6" fill="#FF6A13" opacity=".3"/>';
     }
-    var field = { light: "#F4EFE3", shadow: "#2E2F33", storm: "#1F2E4A", frost: "#A9C9DB", stone: "#6E6E6A", ember: "#9E2B25", spirit: "#C9CCCB", metal: "#8E3B2A" }[id] || p.a;
+    var field = { light: "#F4EFE3", shadow: "#2E2F33", storm: "#1F2E4A", frost: "#A9C9DB", stone: "#6E6E6A", ember: "#9E2B25", spirit: "#C9CCCB", metal: "#8E3B2A", march: "#6E6E6A" }[id] || p.a;
     return '<svg class="' + (cls || "") + '" viewBox="0 0 100 130" aria-hidden="true"><defs><linearGradient id="' + g + 'f" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff0c8"/><stop offset=".35" stop-color="#b98a40"/><stop offset=".6" stop-color="#4a3416"/><stop offset="1" stop-color="#e3c27a"/></linearGradient>' +
       '<linearGradient id="' + g + 's" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="rgba(255,255,255,.22)"/><stop offset=".5" stop-color="rgba(255,255,255,0)"/><stop offset="1" stop-color="rgba(0,0,0,.35)"/></linearGradient>' +
       '<clipPath id="' + g + 'c"><path d="' + SHIELD + '"/></clipPath></defs>' +

@@ -100,6 +100,7 @@ Rule: **gold means "you can act", ember means "now", violet means "the Void or a
 | Stonehold | Ochre `#B07A2E` | Granite `#6E6E6A` | Deep slate `#2F4256` | Gravem blue `#9FD3F0` | A brass mile-marker, your initials beneath |
 | Spiritveil | Mist-green `#B9C8BC` | Veil grey `#C9CCCB` | Bone `#E6E0D2` | Silver flame `#E8F0FF` | A lantern over black water |
 | Metalcrown | Rust-red `#8E3B2A` | Soot-black `#1B1B1C` | Brass `#B08D57` | Reactor ember `#FF6A13` | A crown of iron teeth with one ember glint |
+| Hearthward (frontier-born) | Madder-red `#9E2B25` | Granite `#6E6E6A` | Copper `#B87333` | Ember `#FF7A1A` | Per pale: a flame and a hearthstone side by side on the Warm Rock |
 
 ### 3.2 Typography (self-hosted under `fonts/`, SIL OFL 1.1, licences in `fonts/licenses/`)
 - **Display: Cinzel** 600 / 900. Titles, buttons, labels in spaced caps (letter-spacing .14–.5em). The wordmark is Cinzel 900.
@@ -162,10 +163,10 @@ All new files, wired into `index.html` with two marked edits (three lines in `<h
 | `fonts/` | Cinzel 600/900, Cormorant Garamond, Inter, plus OFL licences for every font in the folder |
 | `tests/smoke-frontdoor.js` | Title, settings, credits, every Realm and Road, the opening, play, old-save migration, first map |
 
-### The canon character choice
+### The canon character choice (canon since 2 Nov: John approved "your people plus your road" and the Realm gifts)
 The canon question was "who is the player?" The spec never names the player; it sets the game in **the Concord's last season, just before Squad 0** (J-10), starting in **Ashford on the Flameborne shard**. The game already tells you that a Lantern archivist writes your name in her book there. So creation asks the two questions every person in this world can answer:
 
-1. **Your people:** one of the eight peopled Realms. Not Emberhold (it does not exist until ~400 YB1) and not the Unstable Shard (no native people). Fan names, crests and colours from the approved Realm Identities and Visual Kit; arts, prices and governments from Lore Bible v2 and the spec patch (Radiance costs **Clarity**; Chrona costs **emotional numbness**; Tempest ages about a year a charge; Metalcrown has no Spark and pays with its humanity).
+1. **Your people:** one of the eight peopled Realms, or **Hearthward frontier-born** (added 2 Nov on John's approval). Not Emberhold (it does not exist until ~400 YB1) and not the Unstable Shard (no native people). Hearthward's card is built from canon only: the joint Flameborne–Stonehold keep on the Ember March (spec patch §2, Lore Bible v2 §3, C20), built by Brannoc the Paired on the Warm Rock with a Flameborne hearth and a Stonehold hearthstone in one fireplace (World Book Part 01, Codex #73), hearth-and-hold (Part 06 M18), Stonekindle (Languages), no whistling in the yard (Part 01 E19), and a seam-spark whose price is the Quarrel (Part 06 §IX). Its crest is that fireplace, per pale: flame on madder-red, hearthstone on granite. Nothing about its arch's reach or the Gate. Fan names, crests and colours from the approved Realm Identities and Visual Kit; arts, prices and governments from Lore Bible v2 and the spec patch (Radiance costs **Clarity**; Chrona costs **emotional numbness**; Tempest ages about a year a charge; Metalcrown has no Spark and pays with its humanity).
 2. **Your road:** what brought you to Ashford. Eight canon-safe backgrounds (Concord levy, Bridge trader, journeyman smith, lamp-house reader, hired hand, outlaw, exiled retainer, grey-edge survivor). Each maps onto one of the game's existing upbringing triples, so **every starting number is one the game already used**. Each Realm adds one small gift built from existing kit fields.
 3. **Your name:** name (with Realm-appropriate suggestions from the canon naming guide, held names excluded), banner name and colour (the game's own eight colours), difficulty.
 

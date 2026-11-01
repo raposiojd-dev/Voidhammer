@@ -42,7 +42,7 @@ const ok = (c, m) => { console.log((c ? "PASS " : "FAIL ") + m); if (!c) fails++
   await p.click(".fd-modal [data-close]"); await wait(300);
 
   const C = await js(() => ({ realms: VH_CANON.REALMS.map((r) => r.id), roads: VH_CANON.ROADS.map((r) => r.id) }));
-  ok(C.realms.length === 8 && C.roads.length === 8, "canon choices: 8 Realms (" + C.realms.join(",") + ") and 8 Roads (" + C.roads.join(",") + ")");
+  ok(C.realms.length === 9 && C.realms[8] === "march" && C.roads.length === 8, "canon choices: 9 peoples incl. Hearthward frontier-born (" + C.realms.join(",") + ") and 8 Roads (" + C.roads.join(",") + ")");
   // canon guard: no god words, no sealed names, Australian "towards" only, in every display string of the front door
   const leak = await js(() => {
     const txt = JSON.stringify(VH_CANON) + document.getElementById("fd-title").textContent;
@@ -52,19 +52,20 @@ const ok = (c, m) => { console.log((c ? "PASS " : "FAIL ") + m); if (!c) fails++
   ok(leak.length === 0, "front-door text has no god words, sealed names or US spellings" + (leak.length ? ": " + leak.join(" ") : ""));
 
   for (let i = 0; i < C.realms.length; i++) {
-    const realm = C.realms[i], road = C.roads[i];
+    const realm = C.realms[i], road = C.roads[i % C.roads.length];
     // from the title into the creator
     await until(() => !document.getElementById("title").hidden && document.getElementById("tnew").offsetParent, 8000);
     await p.click("#tnew");
     ok(await until(() => { const c = document.getElementById("fd-cc"); return c && !c.hidden; }, 4000), realm + ": creator opens");
     await p.click('.fd-chip-realm[data-realm="' + realm + '"]'); await wait(300);
     const card = await js(() => ({ h: document.querySelector(".fd-h1").textContent, price: (document.querySelector(".fd-fact.price dd") || {}).textContent || "", gift: (document.querySelector(".fd-fact.gift dd") || {}).textContent || "", crest: !!document.querySelector("#fd-crest-hero svg"), line: (document.querySelector(".fd-oneline") || {}).textContent || "" }));
+    if (realm === "march") ok(card.h === "Hearthward" && /Quarrel/.test(card.price) && /seam-spark/.test(card.price), "Hearthward frontier-born: card shows the seam-spark and the Quarrel");
     ok(card.h && card.price.length > 20 && card.gift.length > 5 && card.crest && card.line.length > 10, realm + ": hero card shows name, one-line identity, price, gift and crest (" + card.h + ")");
     if (i === 0) {
       ok(await until(() => { const s = VHFD._cc() && VHFD._cc().pv && VHFD._cc().pv.state(); return s && s.ready && s.hasFig; }, 30000), "3D preview: the rigged person stands on the plinth in Realm colours");
       await wait(1200);
     }
-    if (i < 3 || realm === "spirit" || realm === "metal") { await wait(900); await shot("1" + i + "-people-" + realm + ".png"); }
+    if (i < 3 || realm === "spirit" || realm === "metal" || realm === "march") { await wait(900); await shot("1" + i + "-people-" + realm + ".png"); }
     await p.click("#fd-next"); await wait(300);
     await p.click('.fd-road[data-road="' + road + '"]'); await wait(300);
     const kit = await js(() => [...document.querySelectorAll('.fd-road[aria-pressed="true"] .fd-kit i')].map((x) => x.textContent));
@@ -78,7 +79,7 @@ const ok = (c, m) => { console.log((c ? "PASS " : "FAIL ") + m); if (!c) fails++
     const expect = await js((r) => ({ gift: VH_CANON.realm(r).gift }), realm);
     await p.click("#fd-next");
     ok(await until(() => !!document.getElementById("fd-intro"), 6000), realm + ": Begin opens the opening cinematic");
-    if (i === 0 || i === 6) {
+    if (i === 0 || i === 6 || realm === "march") {
       await wait(2600); await shot(i ? "31-intro-title-" + realm + ".png" : "30-intro-title.png");
       // tap through to the Realm card
       for (let k = 0; k < 8 && (await js(() => VHFD._in() && VHFD._in().list[VHFD._in().i].kind !== "realm")); k++) { await p.mouse.click(VW / 2, VH / 2); await wait(250); }

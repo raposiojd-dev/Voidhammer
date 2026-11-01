@@ -119,6 +119,25 @@
       open: "You made your First Tool alone at ten, as every Metalcrown child does, and it is still in your pack with your name stamped on the handle. You left Iron Throne City before the gates closed. Nobody would say what the foundries were building, and the people who asked twice stopped coming to work.",
       arrive: "She writes your name and, beside it, nothing at all, which in your experience is rarer than it ought to be."
     }
+    ,{
+      // Hearthward frontier-born (John, 2 Nov). Canon: Hearthward is the joint Flameborne-Stonehold keep on the Ember March,
+      // raised ~1,600 YB1 (spec patch §2, Lore Bible v2 §3, C20); built by Brannoc the Paired on the Warm Rock with a Flameborne
+      // hearth and a Stonehold hearthstone in one fireplace (World Book Part 01, Codex #73); hearth-and-hold (Part 06 M18);
+      // Stonekindle (Languages); no whistling in the yard (Part 01 E19); seam-sparks and the Quarrel (Part 06 §IX); the Stonehold
+      // road counts from its gate (Codex #73). Nothing about its arch's reach or the Gate.
+      id: "march", name: "Hearthward", people: "the March-born", art: "Seam-spark", home: "Hearthward",
+      motto: "Hearth and hold.",
+      line: "You were raised by both sides of the fire, and you answer to both.",
+      blurb: "The joint keep of Flameborne and Stonehold on the Ember March, built by Brannoc the Paired on the Warm Rock with a Flameborne hearth and a Stonehold hearthstone set side by side in one fireplace. Its garrison is half fire and half stone, and its children speak a Kindle so full of Holdspeech that Hearthmount barely counts it.",
+      price: "A child of two Realms may carry a seam-spark, which is neither. Its price is the Quarrel: Embercraft's lost temper and Gravem's creeping stone, each at about half strength, and the two arts arguing over which of them you are.",
+      gift: { text: "Garrison issue from both sides of the keep: +2 mail, +1 blade", loot: { mail: 2, blades: 1 } },
+      start: "Standard start. A soldier's kit, and a welcome at either hearth.",
+      pal: { a: "#9E2B25", b: "#6E6E6A", c: "#B87333", glow: "#FF7A1A", ink: "#f0d8c0" },
+      look: { cloth: 0x6e6e6a, cloth2: 0x9e2b25, legs: 0x2b2523, boots: 0x1e1a18, metal: 0x2f4256, dark: 0x22303e, leather: 0x4a3a2a, trim: 0xb87333, skin: 0x9a6c4c, hair: 0x241a14, weapon: "axe", shieldKind: "round", shield: 0x9e2b25, helm: true },
+      names: ["Brann", "Coll", "Taran", "Ren", "Rudd", "Davan", "Dilys", "Brekka", "Agna", "Helka", "Kester", "Dell", "Harrow", "Jarn", "Wyn"],
+      open: "You were born under Hearthward's wall on the Ember March, where the Stonehold road begins its count and half the words your family used were borrowed from the other side. Nobody whistles in the yard there. You still don't, though you stopped asking why somewhere around your tenth winter.",
+      arrive: "She writes your name, and you tell her both halves of where you come from, because on the March anything less would be rude."
+    }
   ];
 
   // Roads: each is one of the game's existing upbringing triples, so the kit (skills, crowns, grain, men, gear) is exactly
