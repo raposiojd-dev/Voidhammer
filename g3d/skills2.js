@@ -793,7 +793,9 @@
       const NSP = 90, sps = [];
       for (let i = 0; i < NSP; i++) { const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: glow, color: 0xffffff, transparent: true, depthWrite: false, blending: add, fog: false })); s.visible = false; s.renderOrder = 9; scene.add(s); sps.push({ s, t: 0, T: 1, vx: 0, vy: 0, vz: 0, g: 0, sz: 1 }); }
       let spi = 0;
-      const light = new THREE.PointLight(0xffffff, 0, 18, 1.6); light.position.set(0, -50, 0); scene.add(light); let lightT = 0, lightI = 0;
+      // no real light: a permanent PointLight would add a light to every material's shader (slower on phones, and a
+      // recompile whenever it toggled). A big additive glow over the spot reads the same at this distance.
+      const glowS = new THREE.Sprite(new THREE.SpriteMaterial({ map: glow, color: 0xffffff, transparent: true, opacity: 0, depthWrite: false, blending: add, fog: false })); glowS.visible = false; glowS.renderOrder = 7; scene.add(glowS); let lightT = 0, lightI = 0;
       const flashEl = document.createElement("div"); flashEl.className = "k2flash"; root.appendChild(flashEl);
       const zones = []; // persistent decals bound to core zones
       let shakeA = 0, shakeT = 0, shakeT0 = 1; const off = new THREE.Vector3();
@@ -815,7 +817,7 @@
         slam(x, z, r, c) { api.ring(x, z, r * (o.Y || 1) * 1.2, c, 0.45); const d = take(discs); d.m.position.set(x, gy(x, z) + 0.12, z); d.m.scale.setScalar(r * (o.Y || 1)); d.m.material.color.set(c); d.m.visible = true; d.t = d.T = 0.5; d.kind = "slam"; api.burst(x, z, c, 14, 1.2); },
         flash(c, a) { flashEl.style.transition = "none"; flashEl.style.background = "radial-gradient(circle at 50% 55%, transparent 25%, " + c + " 120%)"; flashEl.style.opacity = String(Math.min(0.75, a * 1.4)); void flashEl.offsetWidth; flashEl.style.transition = "opacity .45s ease-out"; flashEl.style.opacity = "0"; },
         shake(a, T) { if (a > shakeA * (shakeT / shakeT0 || 0)) { shakeA = a; shakeT = shakeT0 = T; } },
-        light(x, z, c, i) { light.position.set(x, gy(x, z) + 2.2, z); light.color.set(c); lightI = (i || 1) * (low() ? 25 : 45); light.intensity = lightI; lightT = 0.45; },
+        light(x, z, c, i) { glowS.position.set(x, gy(x, z) + 1.4, z); glowS.material.color.set(c); lightI = Math.min(1, 0.45 + 0.2 * (i || 1)); glowS.scale.setScalar(5 + 2.5 * (i || 1)); glowS.visible = true; lightT = 0.45; },
         pillar(x, z, c, T) { const a = take(pillars); a.m.position.set(x, gy(x, z) + 9, z); a.m.scale.set(1.3, 18, 1.3); a.m.material.color.set(c); a.m.visible = true; a.t = a.T = T || 0.8; a.kind = "pillar"; api.ring(x, z, 3.5 * (o.Y || 1), c, 0.6); api.burst(x, z, c, 24, 2); },
         target(x, z, c, T) { const a = take(rings); a.m.position.set(x, gy(x, z) + 0.15, z); a.m.material.color.set(c); a.m.visible = true; a.t = a.T = T; a.r = 1.6 * (o.Y || 1); a.kind = "target"; },
         gather(x, z, c, T) { for (let i = 0; i < 18; i++) { const a = Math.random() * 6.283, r = 3 + Math.random() * 2; sprite(x + Math.cos(a) * r, gy(x, z) + 0.5 + Math.random() * 2, z + Math.sin(a) * r, c, 0.5, T, -Math.cos(a) * r / T, 0.5, -Math.sin(a) * r / T, 0); } },
@@ -836,7 +838,7 @@
         for (const a of discs) if (a.m.visible) { a.t -= dt; if (a.t <= 0) { a.m.visible = false; a.zd = null; continue; }
           if (a.kind === "zone") { const zd = a.zd; if (zd && zd.follow) { a.m.position.set(hx, gy(hx, hz) + 0.14, hz); } const pul = 0.5 + 0.12 * Math.sin((a.T - a.t) * 6); a.m.material.opacity = Math.min(1, a.t * 2) * (zd && zd.kind === "line" ? 0.95 : zd && zd.silence ? 0.55 : pul); if (zd && zd.kind === "well") a.m.rotation.y += dt * 4; if (zd && (zd.burn || zd.kind === "line")) for (let q = 0, nq = zd.kind === "line" ? (low() ? 1 : 3) : (low() ? 0 : 1); q < nq; q++) { const px = zd.kind === "line" ? zd.x1 + (zd.x2 - zd.x1) * Math.random() : a.m.position.x + (Math.random() - 0.5) * zd.r * (o.Y || 1) * 1.4, pz = zd.kind === "line" ? zd.z1 + (zd.z2 - zd.z1) * Math.random() : a.m.position.z + (Math.random() - 0.5) * zd.r * (o.Y || 1) * 1.4; sprite(px, gy(px, pz) + 0.3, pz, Math.random() < 0.5 ? 0xff7a2a : 0xffc86a, 0.7 + Math.random() * 0.6, 0.6, 0, 2.4 + Math.random() * 1.5, 0, 0); } if (zd && zd.kind === "well" && Math.random() < 0.5) { const an = Math.random() * 6.283, rr = zd.r * (o.Y || 1); sprite(zd.x + Math.cos(an) * rr, gy(zd.x, zd.z) + 0.3, zd.z + Math.sin(an) * rr, zd.col, 0.5, 0.7, -Math.cos(an) * rr / 0.7, 0.4, -Math.sin(an) * rr / 0.7, 0); } }
           else { a.m.material.opacity = 0.8 * a.t / a.T; } }
-        if (lightT > 0) { lightT -= dt; light.intensity = Math.max(0, lightI * lightT / 0.45); if (lightT <= 0) light.position.y = -50; }
+        if (lightT > 0) { lightT -= dt; glowS.material.opacity = Math.max(0, lightI * lightT / 0.45); if (lightT <= 0) glowS.visible = false; }
         if (shakeT > 0) { shakeT -= dt; const a = shakeA * Math.max(0, shakeT / shakeT0) * 0.35; off.set((Math.random() - 0.5) * a, (Math.random() - 0.5) * a, (Math.random() - 0.5) * a); camera.position.add(off); }
       };
       api.dispose = () => { geos.forEach((g) => g.dispose()); try { flashEl.remove(); } catch (e) {} };

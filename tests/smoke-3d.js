@@ -19,7 +19,8 @@ const ok = (c, m) => { console.log((c ? "PASS " : "FAIL ") + m); if (!c) fails++
   const errs = [];
   p.on("pageerror", (e) => errs.push("pageerror: " + e.message));
   p.on("console", (m) => { if (m.type() === "error") errs.push("console: " + m.text()); });
-  const shot = async (n) => { if (SHOTS) await p.screenshot({ path: path.join(SHOTS, n) }); };
+  // a screenshot that times out on a loaded machine is noted, not a failure
+  const shot = async (n) => { if (SHOTS) await p.screenshot({ path: path.join(SHOTS, n), timeout: 120000 }).catch((e) => console.log("  (screenshot " + n + " skipped: " + String(e.message).split("\n")[0] + ")")); };
   const js = (f, a) => p.evaluate(f, a);
   const wait = (ms) => p.waitForTimeout(ms);
   const until = async (f, ms, step) => { const t = Date.now(); while (Date.now() - t < ms) { if (await js(f)) return true; await wait(step || 500); } return false; };
@@ -339,7 +340,7 @@ const ok = (c, m) => { console.log((c ? "PASS " : "FAIL ") + m); if (!c) fails++
     const mig = await p2.evaluate(() => { const S = __vh.S(); __vh.k2().st(); return { sk2: !!S.sk2, ref: S.sk2 && S.sk2.refunded, skills: S.skills, legacy: S.skLegacy, pts: __vh.k2().points() }; });
     ok(mig.sk2 && mig.ref === 5 && mig.skills.ms_gate === 1 && mig.skills.haggler === 1 && !mig.skills.drill && !mig.skills.sv_footwork && mig.legacy && mig.legacy.drill === 2 && mig.pts >= 8,
       "old save migrates: 5 points refunded, Gatewalker and the upbringing's Haggler kept, old map kept as skLegacy, " + mig.pts + " points to spend");
-    const j2 = (f, a) => p2.evaluate(f, a), shot2 = async (n) => { if (SHOTS) await p2.screenshot({ path: path.join(SHOTS, n) }); };
+    const j2 = (f, a) => p2.evaluate(f, a), shot2 = async (n) => { if (SHOTS) await p2.screenshot({ path: path.join(SHOTS, n), timeout: 120000 }).catch(() => {}); };
     const until2 = async (f, ms) => { const t = Date.now(); while (Date.now() - t < ms) { if (await j2(f)) return true; await p2.waitForTimeout(500); } return false; };
     await j2(() => { const s = __vh.S().sk2; ["em_brand", "cmd_rally", "st_step"].forEach((id) => { s.r[id] = 1; }); s.spark = "ember"; s.half = "storm"; s.eq = ["em_brand", "cmd_rally", "st_step"]; __vh.k2().bump(); });
     await j2(() => __vh.startArea("millroad"));
@@ -347,7 +348,7 @@ const ok = (c, m) => { console.log((c ? "PASS " : "FAIL ") + m); if (!c) fails++
     await p2.waitForTimeout(1500);
     await j2(() => document.querySelector("#acast").dispatchEvent(new PointerEvent("pointerdown", { bubbles: true }))); await p2.waitForTimeout(500);
     const La = await j2(() => { const r = (q) => { const e = document.querySelector(q); if (!e) return null; const b = e.getBoundingClientRect(); return { l: b.left, t: b.top, r: b.right, b: b.bottom, w: b.width, h: b.height }; }; const W = innerWidth, H = innerHeight;
-      const ab = [...document.querySelectorAll("#area .k2ab.on")].map((e) => e.getBoundingClientRect()), tops = [...document.querySelectorAll("#vh3d .v3-top button")].map((e) => e.getBoundingClientRect());
+      const ab = [...document.querySelectorAll("#area .k2ab.on")].map((e) => { const b = e.getBoundingClientRect(), w = e.offsetWidth, h = e.offsetHeight, cx = b.left + b.width / 2, cy = b.top + b.height / 2; return { left: cx - w / 2, top: cy - h / 2, width: w, height: h }; }), tops = [...document.querySelectorAll("#vh3d .v3-top button")].map((e) => e.getBoundingClientRect());
       return { W, H, atk: r("#aatk"), cast: r("#acast"), ab: ab.map((b) => ({ l: b.left, t: b.top, w: b.width, h: b.height })), top: tops.map((b) => ({ t: b.top, h: b.height, r: b.right })), rot: window.__vhRot.on() }; });
     const right = (b) => b && b.l > La.W * 0.55 && b.b > La.H * 0.4;
     ok(La.W > La.H && !La.rot && right(La.atk) && right(La.cast), "landscape: no turn-sideways card; Strike and Cast sit bottom-right (" + Math.round(La.atk.l) + "," + Math.round(La.atk.t) + ")");
@@ -360,10 +361,10 @@ const ok = (c, m) => { console.log((c ? "PASS " : "FAIL ") + m); if (!c) fails++
     ok(await until2(() => !!(__vh.scene() && __vh.scene().ctl && __vh.scene().ctl.ready), 30000), "landscape: 3D battle opens");
     await p2.waitForTimeout(1500);
     await j2(() => document.querySelector("#vh3d [data-b=cast]").dispatchEvent(new PointerEvent("pointerdown", { bubbles: true }))); await p2.waitForTimeout(500);
-    const Lb = await j2(() => { const g = (q) => { const e = document.querySelector(q); return e ? e.getBoundingClientRect() : null; }; const W = innerWidth, H = innerHeight; const ab = [...document.querySelectorAll("#vh3d .k2ab.on")].map((e) => e.getBoundingClientRect());
+    const Lb = await j2(() => { const g = (q) => { const e = document.querySelector(q); return e ? e.getBoundingClientRect() : null; }; const W = innerWidth, H = innerHeight; const ab = [...document.querySelectorAll("#vh3d .k2ab.on")].map((e) => { const b = e.getBoundingClientRect(), w = e.offsetWidth, h = e.offsetHeight, cx = b.left + b.width / 2, cy = b.top + b.height / 2; return { left: cx - w / 2, top: cy - h / 2, width: w, height: h, right: cx + w / 2, bottom: cy + h / 2 }; });
       const atk = g("#vh3d [data-b=atk]"), blk = g("#vh3d [data-b=blk]"), cast = g("#vh3d [data-b=cast]"), hp = g("#vh3d .v3-hp"), ord = g("#vh3d .b3-ordbtn");
-      return { W, H, ok: [atk, blk, cast].every((b) => b && b.left > W * 0.55 && b.bottom > H * 0.45 && b.width >= 44), ab: ab.length === 3 && ab.every((b) => b.width >= 44 && b.left > W * 0.45 && b.top >= 0), hpTop: hp && hp.top < H * 0.25, ord: ord && ord.height >= 44 && ord.left > W * 0.2 && ord.right < W * 0.8 }; });
-    ok(Lb.ok && Lb.ab && Lb.hpTop && Lb.ord, "landscape battle: Strike/Block/Cast and the ability arc bottom-right, health at the top, Orders between the thumbs");
+      return { W, H, atk, blk, cast, hp, ord, abl: ab, ok: [atk, blk, cast].every((b) => b && b.left > W * 0.55 && b.bottom > H * 0.45 && b.width >= 44), ab: ab.length === 3 && ab.every((b) => b.width >= 44 && b.left > W * 0.45 && b.top >= 0), hpTop: hp && hp.top < H * 0.25, ord: ord && ord.height >= 44 && ord.left > W * 0.2 && ord.right < W * 0.8 }; });
+    ok(Lb.ok && Lb.ab && Lb.hpTop && Lb.ord, "landscape battle: Strike/Block/Cast and the ability arc bottom-right, health at the top, Orders between the thumbs" + (Lb.ok && Lb.ab && Lb.hpTop && Lb.ord ? "" : " " + JSON.stringify(Lb)));
     await shot2("k2-L-battle.png");
     // turned upright mid-fight: the card asks for sideways
     await p2.setViewportSize({ width: 390, height: 844 }); await p2.waitForTimeout(900);
