@@ -8,7 +8,7 @@ import { mergeGeometries } from "./lib/BufferGeometryUtils.js";
 // ---------- graphics setting (Low / High), kept per device ----------
 const GFX_KEY = "vh3d-gfx";
 // phones and tablets start on Low (phone-first); desktops on High
-export function gfxGet(touch) { try { const v = localStorage.getItem(GFX_KEY); if (v === "low" || v === "high") return v; } catch (e) {} return touch ? "low" : "high"; }
+export function gfxGet(touch) { try { const v = localStorage.getItem(GFX_KEY); if (v === "low" || v === "high") return v; } catch (e) {} return "high"; }
 export function gfxSet(v) { try { localStorage.setItem(GFX_KEY, v); } catch (e) {} }
 
 // ---------- tiny noise ----------
