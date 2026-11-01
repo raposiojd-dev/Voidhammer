@@ -1,5 +1,9 @@
 <meta charset="utf-8">
 <title>Voidhammer Campaign</title>
+<!-- PREMIUM FRONT DOOR (game/premium-v1): canon data, title, creator, opening, premium styles. Remove these three lines to fall back. -->
+<link rel="stylesheet" href="premium/premium.css" data-fd-css>
+<script src="premium/canon.js"></script>
+<script src="premium/frontdoor.js"></script>
 <style>@font-face{font-family:"Cinzel";font-style:normal;font-weight:500;font-display:swap;src:url(fonts/cinzel-latin-500-normal.woff2) format("woff2")}@font-face{font-family:"Cinzel";font-style:normal;font-weight:700;font-display:swap;src:url(fonts/cinzel-latin-700-normal.woff2) format("woff2")}@font-face{font-family:"IBM Plex Mono";font-style:normal;font-weight:400;font-display:swap;src:url(fonts/ibm-plex-mono-latin-400-normal.woff2) format("woff2")}@font-face{font-family:"IBM Plex Mono";font-style:normal;font-weight:500;font-display:swap;src:url(fonts/ibm-plex-mono-latin-500-normal.woff2) format("woff2")}@font-face{font-family:"IM Fell English";font-style:normal;font-weight:400;font-display:swap;src:url(fonts/im-fell-english-latin-400-normal.woff2) format("woff2")}@font-face{font-family:"IM Fell English";font-style:italic;font-weight:400;font-display:swap;src:url(fonts/im-fell-english-latin-400-italic.woff2) format("woff2")}</style>
 <style>
 /* Layout: full-screen campaign map, HUD pinned top, three menu buttons pinned bottom, slide-up sheets for places and menus. */
@@ -16715,6 +16719,34 @@ setInterval(function () {
       give: function (n) { S.from.merc = (S.from.merc || 0) + n; return T(); }, pref: pref };
   })();
   setInterval(function () { if (!sheet || sheet.kind !== "battle") save(); }, 4000);
+  // ===== PREMIUM FRONT DOOR bridge (game/premium-v1) ===========================================================
+  // premium/frontdoor.js owns the title, the canon character creator and the opening cinematic. This block hands it
+  // the few internals it needs and wraps four functions. If premium/ is missing, window.VHFD is undefined and nothing
+  // here runs: the old title, creator and intro work as before. Ids, save keys, quest ids and numbers are untouched.
+  (function () {
+    var FD = window.VHFD; if (!FD || !FD.attach) return;
+    try {
+      var act0 = act, showTitle0 = showTitle, openSheet0 = openSheet, originApply0 = originApply;
+      FD.attach({
+        act: function (a, x, y) { return act0(a, x, y); },
+        S: function () { return S; }, OPT: function () { return OPT; },
+        NG: function (v) { if (v !== undefined) NG = v; return NG; },
+        hasSave: hasSave, slotLabel: function () { return S ? slotLabelOf(S) : ""; }, hideTitle: hideTitle,
+        kitOf: function (u) { return upbKit([upbPick(0, u.c), upbPick(1, u.a), upbPick(2, u.y)]); },
+        skName: skName, lootName: function (k) { return LOOT[k] ? LOOT[k].name : k; }, BCOLS: BCOLS.slice(),
+        music: function (v) { if (v !== undefined && !!v !== mOn) { mOn = !!v; try { localStorage.setItem(MUSK, mOn ? "on" : "off"); } catch (e) {} if (mOn) mInit(); mApply(); } return mOn; },
+        audioUnlock: function () { try { mFirst(); } catch (e) {} },
+        setWho: function (t) { if (t && ORIGINS.wanderer) ORIGINS.wanderer.name = t; }
+      });
+      act = function (a, x, y) { if (FD.onAct(a, x, y) === true) return; return act0(a, x, y); };
+      showTitle = function () { showTitle0(); try { FD.onTitle(); } catch (e) { console.error(e); } };
+      openSheet = function (kind, id) { if (kind === "intro") { try { if (FD.onIntro() === true) return; } catch (e) { console.error(e); } } return openSheet0(kind, id); };
+      // the new game reads the upbringing from OPT (the old S.opt.upb of the save being replaced used to win), then adds the Realm gift
+      originApply = function (NS, byId) { var so = S && S.opt, su = so && so.upb; if (so) so.upb = OPT.upb; try { originApply0(NS, byId); } finally { if (so) so.upb = su; } FD.onOrigin(NS, OPT); };
+      FD.migrate(S);
+    } catch (e) { console.error("premium front door", e); }
+  })();
+  // ===== /PREMIUM FRONT DOOR ===================================================================================
   resize();
   showTitle();
   requestAnimationFrame(frame);
