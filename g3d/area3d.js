@@ -6,6 +6,7 @@
 // One sim pixel is PX metres; one 16 px tile is T metres. Sim x runs east (+x), sim y runs south (+z).
 import { K3 } from "./scene3d.js";
 import { Merge, paintedSky, grassField, groundMat } from "./art.js";
+import { BARKS } from "./barks.js";
 const { THREE, REALMS, VOIDC, GROUND_TEX, GRASS_TINT, CLOUD, COLD, tree, rng, vnoise, clamp, lerp, angLerp, shade, mix,
   makeStage, makeKit, whenChars, heroLook, kaelLook, figure, animFigure, Batch, lights, particles, pool, torch, followCam, moveIntent, labelSprite, radialTex, esc } = K3;
 
@@ -40,6 +41,8 @@ function styleOnce() {
 #vh3d .v3-hb.boss{width:90px;margin-left:-45px;height:8px}
 #vh3d .v3-hb.y i{background:#e0d070}
 #vh3d .v3-tag{position:absolute;left:0;top:0;pointer-events:none;padding:.2rem .45rem;background:#0c0906d8;border:1px solid #6a5535;border-radius:3px;font:600 .72rem 'IBM Plex Mono',monospace;white-space:nowrap;transform-origin:50% 100%;will-change:transform}
+#vh3d .v3-bark{position:absolute;left:0;top:0;max-width:15rem;padding:.45rem .65rem;background:#f4ead2f0;color:#22180e;border-radius:10px;font:italic .82rem/1.3 Georgia,serif;pointer-events:none;box-shadow:0 3px 10px #0008;will-change:transform;transition:opacity .3s}
+#vh3d .v3-bark:after{content:'';position:absolute;left:50%;bottom:-7px;margin-left:-6px;border:6px solid transparent;border-top-color:#f4ead2f0;border-bottom:0}
 #vh3d .v3-hurt{position:absolute;inset:0;pointer-events:none;box-shadow:inset 0 0 90px 30px #b0201088;opacity:0;transition:opacity .08s}
 #vh3d.touch .v3-keys{display:none}
 #vh3d.v3-area .v3-keys{right:auto;left:1rem;bottom:1rem;text-align:left}
@@ -421,6 +424,8 @@ function buildArea(st, api, A) {
   const tagEl = document.createElement("div"); tagEl.className = "v3-tag"; tagEl.hidden = true; root.appendChild(tagEl);
   const nameEls = []; for (let i = 0; i < 3; i++) { const d = document.createElement("div"); d.className = "v3-tag v3-nm"; d.hidden = true; root.appendChild(d); nameEls.push(d); }
   const byD = [];
+  const barkEl = document.createElement("div"); barkEl.className = "v3-bark"; barkEl.hidden = true; root.appendChild(barkEl);
+  const barkPool = (BARKS[info.realm] || []).concat(BARKS.any || []); let barkO = null, barkT = 0;
   const hurtEl = document.createElement("div"); hurtEl.className = "v3-hurt"; root.appendChild(hurtEl);
   const useBtn = document.createElement("button"); useBtn.className = "v3-use"; useBtn.hidden = true; root.appendChild(useBtn);
   const top = st.$(".v3-top");
@@ -573,6 +578,11 @@ function buildArea(st, api, A) {
       if (o.fig && vis) { if (d < 5) o.fig.rotation.y = angLerp(o.fig.rotation.y, Math.atan2(hx - o.x, hz - o.z), 1 - Math.exp(-dt * 4)); if (d < 40 || frameN % 4 === 0) animFigure(o.fig, t, 0, 0, false, d < 40 ? dt : dt * 4, d > 25 ? 2 : 0); }
       if (o.obj && o.obj.userData.veil) o.obj.userData.veil.material.opacity = 0.35 + 0.15 * Math.sin(t * 3);
       if (vis && d < nd) { nd = d; nearN = o; }
+    }
+    // a passer-by speaks: era-checked barks per Realm, one at a time, never from a quest giver or mid-conversation
+    if (barkO) { barkT -= dt; if (barkT <= 0 || paused || barkO.d > 6) { barkEl.hidden = true; barkO = null; } else if (proj(barkO.x, barkO.n.small ? 2.1 : 2.6, barkO.z, barkEl)) barkEl.style.transform += " translate(-50%,-100%)"; }
+    else if (!paused && barkPool.length && frameN % 12 === 0) {
+      for (const o of npcs) { if (!o.fig || o.mk > 0 || o.d > 3.6 || (o.barkCd || 0) > t) continue; o.barkCd = t + 40; barkO = o; barkT = 4.5; barkEl.textContent = "“" + barkPool[Math.floor(Math.random() * barkPool.length)] + "”"; break; }
     }
     // names over the nearest three people
     byD.length = 0; for (const o of npcs) if (o.d < 8) byD.push(o); byD.sort((a, b) => a.d - b.d);

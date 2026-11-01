@@ -16468,7 +16468,7 @@ setInterval(function () {
       }, function (e) { api.fail(e); cur = null; document.body.classList.remove("vh3d-on"); S.speed = walkSpeed; openSheet("site", sid); });
       return true;
     }
-    function startFight() {
+    function startFight(test) {
       if (!B || cur || !glOk() || T() < 1) return false;
       prepUi();
       clearTimeout(B.timer);
@@ -16477,10 +16477,20 @@ setInterval(function () {
         siege: !!B.siegeId, realm: realmAt(S.px, S.py), voidNear: voidNear(S.px, S.py), banner: api.banner(), ecol: fcol(), kael: S.kael === "alive" && !B.kaelDone, kaelAlive: S.kael === "alive",
         allies: (B.allies || []).map(function (h) { var d = hdef(h); return { name: h.name.split(",")[0], col: d.col || "#f0d060", s: allyStr(h) * 0.9 }; }),
         heroW: hs.w, heroHp: hs.hp, hb: hs.hb, held: S.held.length, hasKael: has("kael"), pname: (S.pname || OPT.pname || "") };
+      // v2: the roster's troop types (infantry, spears, archers, cavalry) and their strength, read only
+      try {
+        var tt = Math.max(1, T()), fr = { inf: 0, spear: 0, arch: 0, cav: 0 }, ml = { inf: 0, spear: 0, arch: 0, cav: 0 }, seen = 0;
+        ovKindOrder().forEach(function (q) { var n = S.vets[q] || 0, k = TROOPT[q - 1]; if (!n || !k) return; var c = k.horse ? "cav" : (k.ranged || k.cls === "ranged") ? "arch" : k.cls === "spear" ? "spear" : "inf"; fr[c] += n; ml[c] += n * (k.mult || 1); seen += n; });
+        if (seen < tt) { fr.inf += tt - seen; ml.inf += tt - seen; }
+        var nb = Math.min(Math.round(((S.gear.bows || 0) + (S.gear.longbows || 0))), Math.floor(tt * 0.4)), mv = Math.max(0, Math.min(nb - fr.arch, fr.inf)); if (mv > 0) { var mi = ml.inf / Math.max(1, fr.inf); fr.inf -= mv; ml.inf -= mv * mi; fr.arch += mv; ml.arch += mv * mi; }
+        info.mix = {}; info.mult = {}; ["inf", "spear", "arch", "cav"].forEach(function (c) { info.mix[c] = fr[c] / tt; info.mult[c] = fr[c] ? ml[c] / fr[c] : 1; });
+      } catch (e) { info.mix = { inf: 1 }; info.mult = { inf: 1 }; }
+      info.hasBow = !!curBow(); info.defend = !!(B.siegeId && site(B.siegeId) && site(B.siegeId).owner === "player");
+      if (test && typeof test === "object") { if (test.siege) info.siege = true; if (test.defend !== undefined) info.defend = !!test.defend; } // test hook: a siege layout without touching B
       cur = { kind: "battle" };
       $("sheet").hidden = true; $("dim").hidden = true; document.body.classList.add("vh3d-on");
       var back = function () { cur = null; document.body.classList.remove("vh3d-on"); $("sheet").hidden = false; $("dim").hidden = false; };
-      load().then(function (m) {
+      import("./g3d/battle3d.js").then(function (m) {
         cur.ctl = m.battle(api, info, function (r) {
           back();
           if (!B) return;
@@ -16526,7 +16536,8 @@ setInterval(function () {
     var bsOld = battleSheet;
     battleSheet = function () {
       var h = bsOld();
-      if (B && B.stage === "ask" && glOk() && T() > 0) h = h.replace('<button class="solid" data-act="field">', '<button class="solid" data-act="vh3dfight">Fight in person</button><button data-act="field">');
+      // v2: you always fight in person in 3D; the 2D field stays only as the no-WebGL fallback
+      if (B && B.stage === "ask" && glOk() && T() > 0) h = h.replace('<button class="solid" data-act="field">Take the field</button>', '<button class="solid" data-act="vh3dfight">Fight in person</button>');
       return h;
     };
     var arOld = arrive;
@@ -16553,6 +16564,7 @@ setInterval(function () {
     var zclamp = function (v) { return Math.max(0.3, Math.min(1.8, v)); };
     var actOld3 = act;
     act = function (a, x, y) {
+      if (a === "field" && glOk() && B && T() > 0 && !cur) { startFight(); return; }
       if (a === "zoom" && !sheet) { var b0 = zt == null ? cam.z : zt; zt = zclamp(b0 + (+x) * (b0 < 0.7 ? 0.1 : 0.2)); return; }
       return actOld3(a, x, y);
     };

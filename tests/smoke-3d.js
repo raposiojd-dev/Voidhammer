@@ -92,6 +92,9 @@ const ok = (c, m) => { console.log((c ? "PASS " : "FAIL ") + m); if (!c) fails++
   ok(await js(() => /^vhq:/.test(__vh.dlg() || "") && document.querySelectorAll("#adlg [data-act=adc]").length >= 2), "the quest giver offers the local jobs");
   await shot("18-village-quest-dialogue.png");
   await js(() => { const bs = document.querySelectorAll("#adlg [data-act=adc]"); bs[bs.length - 1].click(); }); await wait(500);
+  await js(() => __vh.area3d().goTo("v1"));
+  ok(await until(() => { const b = document.querySelector("#vh3d .v3-bark"); return !!b && !b.hidden && b.textContent.length > 5; }, 50000, 300), "a villager passing by speaks a Realm bark");
+  await shot("19-village-bark.png");
   // a cave and the overland walk build too
   await js(() => __vh.startArea("cave0")); await wait(800);
   ok(await until(() => !!(__vh.area3d() && __vh.area3d().ready && __vh.AR().id === "cave0"), 30000), "a cave opens in 3D");
@@ -146,20 +149,41 @@ const ok = (c, m) => { console.log((c ? "PASS " : "FAIL ") + m); if (!c) fails++
   }
 
   // battle: fight in person to the end, and check finishBattle ran
-  const before = await js(() => { __vh.give(30); return { T: __vh.T(), c: __vh.S().crowns, xp: __vh.S().xp }; });
+  const before = await js(() => { __vh.give(30); const S = __vh.S(); S.vets = S.vets || {}; S.vets[30] = 6; S.gear.bows = Math.max(S.gear.bows || 0, 10); return { T: __vh.T(), c: __vh.S().crowns, xp: __vh.S().xp }; });
   ok(await js(() => __vh.battleWith(14)), "battle started");
   await wait(600);
-  ok(await js(() => !!document.querySelector("#sbody [data-act=vh3dfight]")), "battle sheet offers Fight in person");
+  ok(await js(() => !!document.querySelector("#sbody [data-act=vh3dfight]") && !document.querySelector("#sbody [data-act=field]")), "battle sheet: Fight in person (3D) replaces the 2D field");
   await shot("06-battle-sheet.png");
   await p.click("#sbody [data-act=vh3dfight]");
   ok(await until(() => !!(__vh.scene() && __vh.scene().ctl && __vh.scene().ctl.ready !== false), 15000), "3D battle opened");
   await wait(2500);
   await shot("07-battle-lines.png");
-  await p.keyboard.press("c"); await wait(400);
-  await p.mouse.click(VW / 2, VH / 2); await wait(300);
+  // ---- v2 stage 2: formations by troop type, orders, volleys, cavalry, morale, the hero under your thumb ----
+  const bs0 = await js(() => __vh.scene().ctl.state());
+  ok(bs0.groups.inf > 0 && bs0.groups.arch > 0 && bs0.groups.cav > 0, "troops stand by type: " + bs0.groups.inf + " infantry, " + bs0.groups.arch + " archers, " + bs0.groups.cav + " cavalry (enemy " + bs0.groups.earch + " archers, " + bs0.groups.ecav + " horse)");
+  ok(bs0.NP + bs0.NE >= 40, "both armies on the field (" + bs0.NP + " v " + bs0.NE + ")");
+  await p.keyboard.press("5"); await wait(500);
+  ok((await js(() => __vh.scene().ctl.state().orders.inf)) === "wall", "5 orders the infantry into a shield wall");
+  await p.keyboard.press("1"); await wait(500);
+  ok((await js(() => __vh.scene().ctl.state().orders.arch)) === "follow", "1 orders Follow me");
+  await p.click(".b3-ordbtn"); await wait(400);
+  ok(await js(() => document.querySelector(".b3-fan").classList.contains("on") && document.querySelectorAll(".b3-fan [data-o]").length === 6), "the Orders button opens the thumb order fan (6 orders)");
+  await shot("07b-battle-orders.png");
+  await p.click(".b3-fan [data-o=advance]"); await wait(400);
+  ok((await js(() => __vh.scene().ctl.state().orders.inf)) === "advance", "Advance from the fan");
+  const hx0 = await js(() => __vh.scene().ctl.hero.z);
+  await p.keyboard.down("w"); await wait(2000); await p.keyboard.up("w");
+  ok((await js(() => __vh.scene().ctl.hero.z)) < hx0 - 0.1, "the hero moves under direct control (no auto-fight)");
   await js(() => __vh.scene().ctl.fast(3));
-  await until(() => !__vh.scene() || __vh.scene().ctl.state().eW < 0.85, 60000, 500);
+  let maxArrows = 0; for (let i = 0; i < 24 && maxArrows === 0; i++) { maxArrows = Math.max(maxArrows, await js(() => __vh.scene() ? __vh.scene().ctl.state().arrows : 0)); await wait(500); }
+  ok(maxArrows > 0, "archers loose arcing volleys (" + maxArrows + " arrows in the air)");
+  await shot("07c-battle-volleys.png");
+  await p.keyboard.press("3"); await wait(400);
+  ok((await js(() => __vh.scene().ctl.state().orders.cav)) === "charge", "3 orders the charge");
+  await p.mouse.click(VW / 2, VH / 2); await wait(300);
+  await until(() => !__vh.scene() || __vh.scene().ctl.state().eW < 0.85, 90000, 500);
   await shot("08-battle-melee.png");
+  ok(await js(() => !__vh.scene() || __vh.scene().ctl.state().eW < 1), "the enemy takes losses in the melee");
   await js(() => __vh.scene() && __vh.scene().ctl.fast(10));
   ok(await until(() => !__vh.scene(), 150000, 1000), "battle finished and the scene closed");
   const after = await js(() => ({ stage: __vh.B() && __vh.B().stage, won: __vh.B() && __vh.B().won, T: __vh.T(), c: __vh.S().crowns, xp: __vh.S().xp, out: __vh.B() && __vh.B().out }));
