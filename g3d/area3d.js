@@ -601,7 +601,17 @@ function buildArea(st, api, A) {
     if (v === "menu") api.openPlace(null);
   });
   st.listen(useBtn, "pointerdown", (e) => { e.stopPropagation(); e.preventDefault(); doUse(); });
-  function doUse() { if (!useAct) return; if (useAct.door) { api.sfx("door"); inp.keys = {}; api.openPlace(useAct.door.key); } else api.use(); }
+  // what the Use button does from here: talk / open / enter / parley from the sim, or a door into the town's menus
+  function refreshUse(hx, hz) {
+    const u = api.useInfo(); nearDoor = null;
+    if (!u && doors.length) { let bd = 9; for (const dr of doors) { const d = Math.hypot(dr.x - hx, dr.z - hz); if (d < dr.r && d < bd) { bd = d; nearDoor = dr; } } }
+    const act = u ? { l: u.l, n: u.n } : nearDoor ? { l: "Go in", n: nearDoor.label, door: nearDoor } : null;
+    const key = act ? act.l + "|" + act.n : "";
+    if (key !== (useBtn._k || "")) { useBtn._k = key; useBtn.innerHTML = act ? esc(act.l) + (act.n ? "<small>" + esc(act.n) + "</small>" : "") : ""; }
+    useAct = act;
+  }
+  // E / the button: re-check first, so a press right after arriving (or on a slow frame) still acts on what is here now
+  function doUse() { refreshUse(A.p.x * PX, A.p.y * PX); if (!useAct) return; if (useAct.door) { api.sfx("door"); inp.keys = {}; api.openPlace(useAct.door.key); } else api.use(); }
   inp.blocked = () => api.sheetOpen();
   inp.onKey = (k) => {
     if (k === "e" || k === "f") doUse();
@@ -802,14 +812,7 @@ function buildArea(st, api, A) {
     for (const s of signs) { const d = Math.hypot(s.position.x - hx, s.position.z - hz); s.material.opacity = clamp(1.6 - d / 12, 0, 1); s.visible = s.material.opacity > 0.02; }
 
     // the Use button: talk / open / enter / parley from the sim, or a door into the town's menus
-    if (frameN % 2 === 0) {
-      const u = api.useInfo(); nearDoor = null;
-      if (!u && doors.length) { let bd = 9; for (const dr of doors) { const d = Math.hypot(dr.x - hx, dr.z - hz); if (d < dr.r && d < bd) { bd = d; nearDoor = dr; } } }
-      const act = u ? { l: u.l, n: u.n } : nearDoor ? { l: "Go in", n: nearDoor.label, door: nearDoor } : null;
-      const key = act ? act.l + "|" + act.n : "";
-      if (key !== (useBtn._k || "")) { useBtn._k = key; useBtn.innerHTML = act ? esc(act.l) + (act.n ? "<small>" + esc(act.n) + "</small>" : "") : ""; }
-      useAct = act; useBtn.hidden = !act || paused;
-    }
+    if (frameN % 2 === 0) { refreshUse(hx, hz); useBtn.hidden = !useAct || paused; }
     // the objective beacon
     if (frameN % 20 === 1) {
       const tp = api.target();

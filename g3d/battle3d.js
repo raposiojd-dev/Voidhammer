@@ -87,21 +87,25 @@ function buildBattle(st, api, info, done) {
   const BGT = isVoid ? "dirt" : GROUND_TEX[info.realm] || "grass";
   const terr = new THREE.Mesh(tg, groundMat(art, BGT, BGT === "grass" || BGT === "plaster" ? "dirt" : "grass", !isVoid && info.realm !== "frost" && info.realm !== "light")); terr.receiveShadow = true; scene.add(terr); st.track(tg);
   const B = new Batch(kit), M = new Merge();
+  // The soldiers' weapons, timings and spacing come from the same seeded stream as the scenery. The model scenery draws
+  // its own choices from a second stream, while the battle stream takes exactly the draws the simple scenery always took,
+  // so a battle plays out the same as before, on every preset.
+  const srand = rng((info.title || "") + "|" + Math.floor(info.p0 * 100) + "|scenery"), Bdry = kit.mm ? new Batch(Object.assign({}, kit, { mm: null })) : null;
   const tc = info.realm === "frost" ? 0x3a5048 : info.realm === "light" ? 0x7a8a3a : isVoid ? 0x2a2434 : 0x2e4a2a;
-  for (let i = 0; i < 150; i++) { const x = (rand() - 0.5) * 220, z = (rand() - 0.5) * 220; if (Math.abs(x) < 34 && Math.abs(z) < (siegeOn ? 62 : 42) && rand() < 0.94) continue; tree(B, white, x, H0(x, z) * (siegeOn ? 0.35 : 1), z, 3 + rand() * 5, tc, rand); }
+  for (let i = 0; i < 150; i++) { const x = (rand() - 0.5) * 220, z = (rand() - 0.5) * 220; if (Math.abs(x) < 34 && Math.abs(z) < (siegeOn ? 62 : 42) && rand() < 0.94) continue; const y0 = H0(x, z) * (siegeOn ? 0.35 : 1), th = 3 + rand() * 5; if (Bdry) { tree(Bdry, white, x, y0, z, th, tc, rand); tree(B, white, x, y0, z, th, tc, srand); } else tree(B, white, x, y0, z, th, tc, rand); }
   for (let i = 0; i < 36; i++) {
     const x = (rand() - 0.5) * 120, z = (rand() - 0.5) * 140; if (siegeOn && z < -20) continue; const s = 0.6 + rand() * 1.6, y = H0(x, z) * (siegeOn ? 0.35 : 1);
-    if (kit.mm) modelProp(B, pickW(biomeOf().rock, null, rand()), kit.mm.solid, x, y - 0.1, z, s * 1.5, rand() * 6, shade(P.stone, 1.4 + rand() * 0.4));
+    if (kit.mm) { const ry = rand() * 6, sh = 0.75 + rand() * 0.3; modelProp(B, pickW(biomeOf().rock, null, srand()), kit.mm.solid, x, y - 0.1, z, s * 1.5, ry, shade(P.stone, sh * 1.9)); }
     else B.add("rock", white, x, y + s * 0.25, z, s, s * 0.8, s, rand() * 6, shade(P.stone, 0.75 + rand() * 0.3));
   }
   // Medium/High: bushes, ferns, stumps and wild flowers out on the flanks and beyond the lines (never where the lines meet)
   if (kit.mm && !isVoid) for (let i = 0; i < 90; i++) {
-    const x = (rand() - 0.5) * 150, z = (rand() - 0.5) * 160; if (Math.abs(x) < 26 && Math.abs(z) < (siegeOn ? 60 : 34)) continue; if (siegeOn && z < -20) continue;
-    const y = H0(x, z) * (siegeOn ? 0.35 : 1), k = rand(), bo = biomeOf();
-    if (k < 0.45) modelProp(B, pickW(bo.bush, null, rand()), kit.mm.sway, x, y, z, 1 + rand() * 0.9, rand() * 6, shade(bo.tint, 0.85 + rand() * 0.25));
-    else if (k < 0.65 && info.realm !== "frost") modelProp(B, "fern", kit.mm.sway, x, y, z, 0.6 + rand() * 0.4, rand() * 6, shade(bo.tint, 0.85));
-    else if (k < 0.75) modelProp(B, rand() < 0.5 ? "stump" : "log", kit.mm.solid, x, y, z, 1 + rand() * 0.6, rand() * 6, 0xffffff);
-    else modelProp(B, rand() < 0.5 ? "flowers" : "grass", kit.mm.sway, x, y, z, 0.35 + rand() * 0.25, rand() * 6, rand() < 0.5 ? shade(bo.tint, 0.9) : [0xffe070, 0xffffff, 0xc8a0ff][Math.floor(rand() * 3)]);
+    const x = (srand() - 0.5) * 150, z = (srand() - 0.5) * 160; if (Math.abs(x) < 26 && Math.abs(z) < (siegeOn ? 60 : 34)) continue; if (siegeOn && z < -20) continue;
+    const y = H0(x, z) * (siegeOn ? 0.35 : 1), k = srand(), bo = biomeOf();
+    if (k < 0.45) modelProp(B, pickW(bo.bush, null, srand()), kit.mm.sway, x, y, z, 1 + srand() * 0.9, srand() * 6, shade(bo.tint, 0.85 + srand() * 0.25));
+    else if (k < 0.65 && info.realm !== "frost") modelProp(B, "fern", kit.mm.sway, x, y, z, 0.6 + srand() * 0.4, srand() * 6, shade(bo.tint, 0.85));
+    else if (k < 0.75) modelProp(B, srand() < 0.5 ? "stump" : "log", kit.mm.solid, x, y, z, 1 + srand() * 0.6, srand() * 6, 0xffffff);
+    else modelProp(B, srand() < 0.5 ? "flowers" : "grass", kit.mm.sway, x, y, z, 0.35 + srand() * 0.25, srand() * 6, srand() < 0.5 ? shade(bo.tint, 0.9) : [0xffe070, 0xffffff, 0xc8a0ff][Math.floor(srand() * 3)]);
   }
   if (isVoid) for (let i = 0; i < 14; i++) { const a = rand() * Math.PI * 2, r = 16 + rand() * 40, x = Math.cos(a) * r, z = Math.sin(a) * r - 10; const m = new THREE.Mesh(kit.g.cone, kit.mat(0x6a4aa0, { emissive: VOIDC, emissiveIntensity: 0.8, roughness: 0.3 })); const s = 0.6 + rand() * 1.4; m.scale.set(s, s * 3, s); m.position.set(x, H0(x, z) + s * 1.2, z); m.rotation.set(rand() - 0.5, 0, rand() - 0.5); m.castShadow = true; scene.add(m); }
   for (let i = 0; i < 16; i++) { const a = i / 16 * Math.PI * 2, r = 175 + rand() * 30; B.add("cone", white, Math.cos(a) * r, 16, Math.sin(a) * r, 70 + rand() * 50, 40 + rand() * 40, 70 + rand() * 50, rand(), shade(P.ground, 0.5), { noShadow: true }); }
