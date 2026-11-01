@@ -9,7 +9,7 @@
 import { K3 } from "./scene3d.js";
 import { setBiome, pack as mpack, modelProp, biomeOf, pickW } from "./models.js";
 import { clone as skClone } from "./lib/SkeletonUtils.js";
-import { Merge, paintedSky, grassField, groundMat, horizonBand, loadArt } from "./art.js";
+import { Merge, paintedSky, grassField, groundMat, horizonBand, loadArt, useSkyEnv } from "./art.js";
 import { buildSiege } from "./siege3d.js";
 const { THREE, REALMS, VOIDC, GROUND_TEX, GRASS_TINT, GRASS_N, CLOUD, COLD, tree, rng, vnoise, clamp, lerp, angLerp, shade, mix,
   makeStage, makeKit, whenChars, heroLook, kaelLook, figure, animFigure, Batch, lights, particles, followCam, moveIntent, esc } = K3;
@@ -71,6 +71,8 @@ function buildBattle(st, api, info, done) {
   // the Realm's painted horizon behind the field (not in the Void), and its colour grade on High
   const band = isVoid ? null : horizonBand(info.realm, fogC, (x) => st.track(x), { amt: 0.42 }); if (band) scene.add(band);
   st.setGrade(isVoid ? "shadow" : info.realm);
+  // High: image-based light from the painted sky
+  { const env = useSkyEnv(st, scene, sky, L.hemi), h0 = L.hemi.intensity; st.track(env); const fit = () => { L.hemi.intensity = h0 * env.k.k; }; fit(); st.onGfx.push(fit); }
   if (isVoid) { L.sun.color = mix(P.sun, 0xb8a8ff, 0.5); const vl = new THREE.PointLight(VOIDC, 80, 70, 1.4); vl.position.set(0, 10, -34); scene.add(vl); }
 
   // ---------- terrain (flat where the lines meet, hills beyond; a siege flattens the approach to the walls) ----------

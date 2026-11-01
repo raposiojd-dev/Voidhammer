@@ -5,7 +5,7 @@
 // input calls (move, strike, talk, shoot). So every quest, flag, number and save key is untouched.
 // One sim pixel is PX metres; one 16 px tile is T metres. Sim x runs east (+x), sim y runs south (+z).
 import { K3 } from "./scene3d.js";
-import { Merge, paintedSky, grassField, groundMat, horizonBand, loadArt } from "./art.js";
+import { Merge, paintedSky, grassField, groundMat, horizonBand, loadArt, useSkyEnv } from "./art.js";
 import { BARKS } from "./barks.js";
 import { setBiome, modelProp, pickW, biomeOf, recoloured, pack, FIRE } from "./models.js";
 const { THREE, REALMS, VOIDC, GROUND_TEX, GRASS_TINT, CLOUD, COLD, tree, rng, vnoise, clamp, lerp, angLerp, shade, mix,
@@ -144,9 +144,11 @@ function buildArea(st, api, A) {
     const up = THREE.MathUtils.smoothstep(h, 4.5, 6.5) * (1 - THREE.MathUtils.smoothstep(h, 18.5, 20.5)), warm = Math.max(Math.exp(-Math.pow((h - 6.6) / 1.2, 2)), Math.exp(-Math.pow((h - 18.4) / 1.2, 2)));
     tod.night = 1 - up;
     L.sun.intensity = tod.sunI * (0.35 + 0.65 * up); L.sun.color.copy(tod.sunC).lerp(WARM, warm * 0.3).lerp(NIGHT, tod.night * 0.6);
-    L.hemi.intensity = tod.hemiI * (0.72 + 0.28 * up); L.hemi.color.copy(tod.hemiC).lerp(NIGHT, tod.night * 0.45);
+    L.hemi.intensity = tod.hemiI * (0.72 + 0.28 * up) * (L.env ? L.env.k.k : 1); L.hemi.color.copy(tod.hemiC).lerp(NIGHT, tod.night * 0.45);
     if (L.sky) { const u = L.sky.material.uniforms; u.top.value.copy(tod.top).lerp(NSKY, tod.night * 0.7).lerp(WARM, warm * 0.08); u.hor.value.copy(tod.hor).lerp(WARM, warm * 0.12).lerp(NSKY, tod.night * 0.5); }
   }
+  // High: the painted sky lights the scene too (image-based light); rebuilt as the day moves on
+  if (L.sky) { L.env = useSkyEnv(st, scene, L.sky, L.hemi); st.track(L.env); st.onGfx.push(() => timeOfDay()); }
   timeOfDay();
   // the hero carries a lantern underground
   const lantern = cave ? new THREE.PointLight(0xffb070, 30, 14, 1.6) : null; if (lantern) scene.add(lantern);
@@ -699,7 +701,7 @@ function buildArea(st, api, A) {
     const p = A.p, inDlg = api.inDlg(), paused = api.sheetOpen() || inDlg;
     if (st.onFrame) st.onFrame(t);
     torches.forEach((x) => x.tick(t)); fires.forEach((x) => x.tick(t)); kit.tickStatics(dt);
-    if (frameN % 240 === 0) timeOfDay();
+    if (frameN % 240 === 0) { const n0 = tod.night; timeOfDay(); if (L.env && Math.abs(tod.night - (tod.envN === undefined ? -1 : tod.envN)) > 0.06) { tod.envN = tod.night; L.env.refresh(); } }
     // window glow breathes like a hearth behind the glass, stronger after dark
     winMat.emissiveIntensity = 1.6 * (1 + tod.night * 0.5) * (0.9 + 0.06 * Math.sin(t * 2.3) + 0.04 * Math.sin(t * 7.1 + 1.3));
     if (L.band) L.band.userData.tick(camera.position.x, camera.position.z);
