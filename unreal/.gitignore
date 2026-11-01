@@ -1,0 +1,45 @@
+# Unreal Engine 5 (VoidhammerSR) - generated files never go in git.
+Binaries/
+Intermediate/
+Saved/
+DerivedDataCache/
+Build/
+!Build/**/*.ini
+Plugins/**/Binaries/
+Plugins/**/Intermediate/
+
+# IDE / project files (regenerate with "Generate Visual Studio project files")
+.vs/
+.vscode/
+.idea/
+*.sln
+*.slnx
+*.suo
+*.opensdf
+*.sdf
+*.VC.db
+*.VC.opendb
+*.xcodeproj/
+*.xcworkspace/
+.DS_Store
+
+# Build products
+*.pdb
+*.obj
+*.dll
+*.exe
+*.lib
+*.exp
+*.ilk
+*.dylib
+*.so
+
+# Packaged builds
+/Packaged/
+/Archive/
+
+# Local-only config and studio session state
+Config/User*.ini
+.claude/settings.local.json
+production/session-state/
+production/session-logs/
