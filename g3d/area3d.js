@@ -140,9 +140,9 @@ function buildArea(st, api, A) {
     if (cave || !api.tod) return; const h = api.tod(); if (!(h >= 0)) return;
     const up = THREE.MathUtils.smoothstep(h, 4.5, 6.5) * (1 - THREE.MathUtils.smoothstep(h, 18.5, 20.5)), warm = Math.max(Math.exp(-Math.pow((h - 6.6) / 1.2, 2)), Math.exp(-Math.pow((h - 18.4) / 1.2, 2)));
     tod.night = 1 - up;
-    L.sun.intensity = tod.sunI * (0.35 + 0.65 * up); L.sun.color.copy(tod.sunC).lerp(WARM, warm * 0.45).lerp(NIGHT, tod.night * 0.6);
+    L.sun.intensity = tod.sunI * (0.35 + 0.65 * up); L.sun.color.copy(tod.sunC).lerp(WARM, warm * 0.3).lerp(NIGHT, tod.night * 0.6);
     L.hemi.intensity = tod.hemiI * (0.72 + 0.28 * up); L.hemi.color.copy(tod.hemiC).lerp(NIGHT, tod.night * 0.45);
-    if (L.sky) { const u = L.sky.material.uniforms; u.top.value.copy(tod.top).lerp(NSKY, tod.night * 0.7).lerp(WARM, warm * 0.08); u.hor.value.copy(tod.hor).lerp(WARM, warm * 0.18).lerp(NSKY, tod.night * 0.5); }
+    if (L.sky) { const u = L.sky.material.uniforms; u.top.value.copy(tod.top).lerp(NSKY, tod.night * 0.7).lerp(WARM, warm * 0.08); u.hor.value.copy(tod.hor).lerp(WARM, warm * 0.12).lerp(NSKY, tod.night * 0.5); }
   }
   timeOfDay();
   // the hero carries a lantern underground
@@ -428,8 +428,10 @@ function buildArea(st, api, A) {
   const orbMat = st.track(new THREE.MeshBasicMaterial({ color: 0xffb070 })), boltMat = st.track(new THREE.MeshBasicMaterial({ color: 0xc8a8ff }));
   const waveRing = new THREE.Mesh(st.track(new THREE.RingGeometry(0.85, 1, 40)), new THREE.MeshBasicMaterial({ color: 0xc8b0ff, transparent: true, opacity: 0.7, depthWrite: false, side: THREE.DoubleSide, blending: THREE.AdditiveBlending })); waveRing.rotation.x = -Math.PI / 2; waveRing.visible = false; scene.add(waveRing);
   // the objective: a soft pillar of light where the quest wants you
-  const beacon = new THREE.Mesh(st.track(new THREE.CylinderGeometry(0.3, 0.55, 22, 10, 1, true)), new THREE.MeshBasicMaterial({ color: 0xffe0a0, transparent: true, opacity: 0.08, depthWrite: false, side: THREE.DoubleSide, blending: THREE.AdditiveBlending, fog: false }));
-  beacon.position.y = 11; beacon.visible = false; scene.add(beacon);
+  // a short glow that fades upward (an alpha ramp), seen only from a distance: close by, the Talk pill and the marker say enough
+  const bAlpha = (() => { const c = document.createElement("canvas"); c.width = 2; c.height = 64; const x = c.getContext("2d"), gr = x.createLinearGradient(0, 64, 0, 0); gr.addColorStop(0, "#fff"); gr.addColorStop(1, "#000"); x.fillStyle = gr; x.fillRect(0, 0, 2, 64); return st.track(new THREE.CanvasTexture(c)); })();
+  const beacon = new THREE.Mesh(st.track(new THREE.CylinderGeometry(0.3, 0.5, 7, 10, 1, true)), new THREE.MeshBasicMaterial({ color: 0xffe0a0, alphaMap: bAlpha, transparent: true, opacity: 0.08, depthWrite: false, side: THREE.DoubleSide, blending: THREE.AdditiveBlending, fog: false }));
+  beacon.position.y = 3.5; beacon.visible = false; scene.add(beacon); let beaconOn = false;
   let beaconLab = labelSprite(st, " ", ""), beaconTxt = " "; beaconLab.visible = false; scene.add(beaconLab);
 
   // particles (ash, snow, motes) and the Void glow on the horizon
@@ -699,12 +701,12 @@ function buildArea(st, api, A) {
     if (frameN % 20 === 1) {
       const tp = api.target();
       if (tp && !inDlg) {
-        beacon.visible = true; beacon.position.set(tp.x * PX, 11, (tp.y + 8) * PX); const lab = tp.lab || "";
+        beaconOn = true; beacon.visible = true; beacon.position.set(tp.x * PX, 3.5, (tp.y + 8) * PX); const lab = tp.lab || "";
         if (lab !== beaconTxt) { beaconTxt = lab; scene.remove(beaconLab); const nl = labelSprite(st, lab || "Here", "your objective"); beaconLab = nl; scene.add(nl); }
         beaconLab.position.set(tp.x * PX, 3.9, (tp.y + 8) * PX); beaconLab.visible = !!lab;
-      } else { beacon.visible = false; beaconLab.visible = false; }
+      } else { beaconOn = false; beacon.visible = false; beaconLab.visible = false; }
     }
-    if (beacon.visible) { const d = Math.hypot(beacon.position.x - hx, beacon.position.z - hz); beacon.material.opacity = 0.02 + 0.07 * clamp((d - 4) / 14, 0, 1); beaconLab.material.opacity = clamp((d - 3) / 4, 0, 1); }
+    if (beacon.visible) { const d = Math.hypot(beacon.position.x - hx, beacon.position.z - hz); beacon.material.opacity = 0.08 * clamp((d - 7) / 12, 0, 1); beacon.visible = beacon.material.opacity > 0.003; beaconLab.material.opacity = clamp((d - 3) / 4, 0, 1); }
 
     // culling: far chunks off
     if (!small && frameN % 8 === 0) for (const c of chunks) c.grp.visible = Math.hypot(c.x - hx, c.z - hz) < 72;
@@ -736,6 +738,6 @@ function buildArea(st, api, A) {
       if (best) heroYaw = Math.atan2(best.x, best.y);
       return best || { x: fx, y: fz };
     },
-    state: () => ({ x: A.p.x, y: A.p.y, hp: A.p.hp, foes: foes.size, npcs: npcs.length, marks: npcs.filter((o) => o.mark).length, beacon: beacon.visible, chunks: chunks.length, doors: doors.length, use: useAct ? useAct.l + "|" + (useAct.n || "") : "", frames: st.frames, dlg: api.inDlg() })
+    state: () => ({ x: A.p.x, y: A.p.y, hp: A.p.hp, foes: foes.size, npcs: npcs.length, marks: npcs.filter((o) => o.mark).length, beacon: beaconOn, chunks: chunks.length, doors: doors.length, use: useAct ? useAct.l + "|" + (useAct.n || "") : "", frames: st.frames, dlg: api.inDlg() })
   };
 }

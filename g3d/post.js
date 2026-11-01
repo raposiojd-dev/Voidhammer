@@ -63,6 +63,7 @@ void main(){
   float l = dot(c, vec3(0.2126, 0.7152, 0.0722));
   c = c * gain * mix(vec3(1.0), hi, smoothstep(0.35, 0.95, l)) + lift * (1.0 - l);
   c = mix(vec3(dot(c, vec3(0.2126, 0.7152, 0.0722))), c, sat);
+  c = clamp(c, 0.0, 1.0); c = mix(c, c * c * (3.0 - 2.0 * c), 0.18); // a gentle S-curve: deeper shadows, cleaner mid contrast
   gl_FragColor = vec4(toSRGB(clamp(c, 0.0, 1.0)), 1.0);
 }`;
 
@@ -88,7 +89,8 @@ export function makePost(renderer) {
   function pass(m, target) { quad.material = m; renderer.setRenderTarget(target); renderer.render(sc, cam); }
   const post = {
     hdr,
-    setGrade(key) { const g = GRADE[key] || GRADE.none, u = mComp.uniforms; u.gain.value.fromArray(g.gain); u.lift.value.fromArray(g.lift); u.hi.value.fromArray(g.hi); u.sat.value = g.sat; },
+    // the tints are pulled 30% back towards neutral and the lift halved, so the blacks stay deep and figures read
+    setGrade(key) { const g = GRADE[key] || GRADE.none, u = mComp.uniforms, k = (v) => v.map((x) => 1 + (x - 1) * 0.7); u.gain.value.fromArray(k(g.gain)); u.lift.value.fromArray(g.lift.map((x) => x * 0.5)); u.hi.value.fromArray(k(g.hi)); u.sat.value = 1 + (g.sat - 1) * 0.7; },
     render(scene, camera) {
       size();
       const ar = renderer.autoClear; renderer.autoClear = true;
