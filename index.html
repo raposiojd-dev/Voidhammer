@@ -360,7 +360,7 @@ window.__vhGame = function () { (function () {
     farmer: { name: "Farmer", desc: "You own a farm at Ashford, 60 crowns and a little grain. No men, no gear.", intro: "You come back to Ashford with your father’s deed in your coat. The farm is yours: a barn, a field and a debt of work. A Lantern archivist on the road from Spiritveil writes your name in her book." },
     trader: { name: "Trader", desc: "150 crowns, 40 grain and a sharp tongue (Haggler). No fighters, no gear.", intro: "You walk into Ashford leading a mule of grain sacks. A Lantern archivist writes your name beside the word “merchant”, and asks what you are carrying." },
     mercenary: { name: "Mercenary", desc: "Ten sellswords at your back and 40 crowns. Wages are high and the men leave if unpaid.", intro: "You ride into Ashford with ten sellswords behind you and forty crowns between you. A Lantern archivist writes your name and, beside it, a question mark." },
-    outlaw: { name: "Outlaw", desc: "Fourteen exiles and some stolen gear, but Flameborne lords hunt you from day one.", intro: "You come into Ashford at dusk with fourteen exiles and a price on your head in Emberfall. A Lantern archivist writes your name very slowly." }
+    outlaw: { name: "Outlaw", desc: "Fourteen exiles and some stolen gear, but Flameborne lords hunt you from day one.", intro: "You come into Ashford at dusk with fourteen exiles and a price on your head in Hearthmount. A Lantern archivist writes your name very slowly." }
     ,smith: { name: "Smith", desc: "Forge-hardened: 50 crowns and a stack of raw iron, mail and staves to work. No men.", intro: "You come into Ashford with a hammer on your belt and a cart of scrap iron. A Lantern archivist writes your name and, beside it, the word “smith”. Someone has already asked about swords." },
     noble: { name: "Noble exile", desc: "Eight loyal retainers, steel swords and 90 crowns, but Stonehold lords want you dead from day one.", intro: "You ride into Ashford under a cloak with no crest. Eight of your father’s retainers ride behind you, and there is a price on the name you no longer say. A Lantern archivist writes it down wrong, on purpose." },
     voidtouched: { name: "Void-touched", desc: "A forgotten name, void-glass and four exiles who follow you. Already hollow: you start having paid for it.", intro: "You walk into Ashford and cannot remember what you were called. The Void touched you once and let you go. Four people who knew you follow, and they say the name to you gently, as if to a child." }
@@ -446,10 +446,10 @@ window.__vhGame = function () { (function () {
     if (ex.indexOf("frost") >= 0) out.push(mkT("stillcity", "The Still City", 640, 640, 50, 3.2, 4.2, "frost", "town"), mkT("rimewatch", "Rimewatch", 900, 500, 50, 3, 4, "frost", "castle"),
       mkV("hoarfen", "Hoarfen", 480, 880, 60, 24, 34, 60, 32, "", "stillcity"), mkV("glassmere", "Glassmere", 780, 780, 70, 22, 40, 70, 34, "", "rimewatch"),
       mkT("icewatch", "Icewatch", 520, 560, 50, 3, 4, "frost", "town"), mkV("snowmere", "Snowmere", 380, 700, 60, 22, 36, 60, 32, "", "icewatch"));
-    if (ex.indexOf("spirit") >= 0) out.push(mkT("lanterncity", "The Lantern City", 1000, 2280, 52, 3.2, 4.4, "spirit", "town"), mkT("wickhaven", "Wickhaven", 1250, 2100, 50, 3, 4, "spirit", "castle"),
+    if (ex.indexOf("spirit") >= 0) out.push(mkT("lanterncity", "Lanthys Vale", 1000, 2280, 52, 3.2, 4.4, "spirit", "town"), mkT("wickhaven", "Wickhaven", 1250, 2100, 50, 3, 4, "spirit", "castle"),
       mkV("echomere", "Echo Mere", 780, 2160, 66, 22, 38, 64, 34, "", "lanterncity"), mkV("graveglass", "Graveglass", 1180, 2480, 60, 24, 34, 56, 32, "", "lanterncity"),
       mkT("mournhaven", "Mournhaven", 640, 2480, 50, 3, 4, "spirit", "town"), mkV("lanternreach", "Lantern Reach", 420, 2320, 60, 22, 36, 60, 32, "", "mournhaven"));
-    if (ex.indexOf("shadow") >= 0) out.push(mkT("unmadecity", "The Unmade City", 2480, 1750, 50, 3.0, 4.6, "shadow", "town"), mkT("hollowgate", "Hollowgate", 2400, 1550, 50, 3, 4, "shadow", "castle"),
+    if (ex.indexOf("shadow") >= 0) out.push(mkT("unmadecity", "Hush", 2480, 1750, 50, 3.0, 4.6, "shadow", "town"), mkT("hollowgate", "Hollowgate", 2400, 1550, 50, 3, 4, "shadow", "castle"),
       mkV("quietwater", "Quietwater", 2600, 1500, 60, 24, 34, 60, 32, "", "hollowgate"), mkV("nightfen", "Nightfen", 2420, 2000, 62, 22, 36, 62, 32, "", "unmadecity"),
       mkT("duskhollow", "Duskhollow", 2660, 2100, 50, 3, 4, "shadow", "town"), mkV("murkwater", "Murkwater", 2700, 1850, 60, 24, 34, 60, 32, "", "duskhollow"));
     return out;
@@ -467,15 +467,15 @@ window.__vhGame = function () { (function () {
 
   function fresh0() {
     var sites = [
-      mkT("emberfall", "Emberfall", 1400, 1280, 60, 3.4, 4.6, "ember", "town"),
+      mkT("emberfall", "Hearthmount", 1400, 1280, 60, 3.4, 4.6, "ember", "town"),
       mkT("highmarch", "Highmarch", 1040, 860, 55, 3.0, 3.6, "stone", "town"),
-      mkT("windspire", "The Wind Spire", 2300, 760, 55, 3.2, 4.2, "storm", "town"),
-      mkT("luminant", "Luminant", 2200, 2100, 55, 3.6, 4.4, "light", "town"),
+      mkT("windspire", "Skyrend", 2300, 760, 55, 3.2, 4.2, "storm", "town"),
+      mkT("luminant", "Meridian", 2200, 2100, 55, 3.6, 4.4, "light", "town"),
       mkT("keep", "Vashen’s Keep", 1760, 940, 50, 3, 4, "ember", "castle"),
-      mkT("granite", "Granite Keep", 600, 1700, 50, 3, 4, "stone", "castle"),
+      mkT("granite", "Gravenhall", 600, 1700, 50, 3, 4, "stone", "castle"),
       mkT("tempest", "Tempest Hold", 2350, 1350, 50, 3, 4, "storm", "castle"),
       mkT("dawnwatch", "Dawnwatch", 1750, 2250, 50, 3, 4, "light", "castle"),
-      mkV("ashford", "Ashford", 1280, 1580, 70, 34, 56, 18, 35, "The Stonehold levy came east, and the price of grain rose in Emberfall.", "emberfall"),
+      mkV("ashford", "Ashford", 1280, 1580, 70, 34, 56, 18, 35, "The Stonehold levy came east, and the price of grain rose in Hearthmount.", "emberfall"),
       mkV("millbrook", "Millbrook", 1460, 1800, 120, 22, 68, 140, 42, "", "emberfall"),
       mkV("redbank", "Redbank", 1720, 1520, 112, 20, 58, 120, 40, "", "keep"),
       mkV("greywater", "Greywater", 700, 1120, 52, 40, 28, 30, 30, "The soil is thin and there is little to do here.", "highmarch"),
@@ -700,13 +700,13 @@ window.__vhGame = function () { (function () {
         ["Citadel Guardsman", "sword", "B", 0, "Lightforge city guard with spear-and-law drill. They ask once."],
         ["Lightforged Paladin", "sword", "Citadel Guardsman", 33, "Law in radiant armour. They answer to the Assize, and the Assize answers to the light. They answer to the Council, and the Council answers to the light."],
         ["Dawnblade", "sword", "Lightforged Paladin", 0, "Order knights who fight on foot. Their swords are forged of light."],
-        ["Luminant Praetorian", "sword", "Dawnblade", 0, "The Citadel's elite. Radiant plate, and almost nothing left in them that can forgive."],
+        ["Meridian Praetorian", "sword", "Dawnblade", 0, "The Citadel's elite. Radiant plate, and almost nothing left in them that can forgive."],
         ["Radiance Archers", "ranged", "B", 32, "Lightforge archers whose arrows burn bright. Long use costs them their doubt, and then their mercy."],
-        ["Beacon Toxotai", "ranged", "Radiance Archers", 0, "Composite-bow archers of the Citadel. Disciplined volleys, every arrow accounted for."],
-        ["Sunpiercer", "ranged", "Beacon Toxotai", 0, "Marksmen whose shafts burn through plate."],
-        ["Dawn Kavallarios", "horse", "B", 0, "Light cavalry of the Citadel. They arrive at noon."],
-        ["Radiant Cataphract", "horse", "Dawn Kavallarios", 0, "Armoured lancers in glowing scale. The Lightforge hammer."],
-        ["Luminant Kataphraktos", "horse", "Radiant Cataphract", 0, "Horse and rider both armoured in white plate. Nothing charges harder."]
+        ["Beacon Bowmen", "ranged", "Radiance Archers", 0, "Composite-bow archers of the Citadel. Disciplined volleys, every arrow accounted for."],
+        ["Sunpiercer", "ranged", "Beacon Bowmen", 0, "Marksmen whose shafts burn through plate."],
+        ["Dawn Riders", "horse", "B", 0, "Light cavalry of the Citadel. They arrive at noon."],
+        ["Radiant Cataphract", "horse", "Dawn Riders", 0, "Armoured lancers in glowing scale. The Lightforge hammer."],
+        ["Meridian Whiteplate", "horse", "Radiant Cataphract", 0, "Horse and rider both armoured in white plate. Nothing charges harder."]
       ],
       shadow: [
         ["Shadow Knife", "sword", "B", 38, "Shadowdeep assassins, quick and quiet. Hard to remember."],
@@ -724,7 +724,7 @@ window.__vhGame = function () { (function () {
         ["Cinderblades", "axe", "B", 26, "Flameborne rebels who fight on rage, with axe and fire."],
         ["Ember Reaver", "axe", "Cinderblades", 0, "Raiders who burn what they cannot carry."],
         ["Pyre Berserkers", "axe", "Ember Reaver", 27, "Passion made flesh. Brilliant in attack. Each fight burns a few out."],
-        ["Ashen Ulfhednar", "axe", "Pyre Berserkers", 0, "Wolf-skinned champions of the Hearth Court. They cannot be reasoned with."],
+        ["Ashen Wolfcoats", "axe", "Pyre Berserkers", 0, "Wolf-skinned champions of the Hearth Court. They cannot be reasoned with."],
         ["Emberhurler", "jav", "B", 0, "Throw fire-tipped javelins. Light skirmishers of the forge-towns."],
         ["Flame Skirmisher", "jav", "Emberhurler", 0, "Veteran javelin-throwers whose spears burn on landing."],
         ["Cinder Hurler", "jav", "Flame Skirmisher", 0, "They set whole shield walls alight."],
@@ -742,7 +742,7 @@ window.__vhGame = function () { (function () {
         ["Stormriders", "horse", "B", 30, "Stormreach riders who race the weather. Fastest horse in the realms."],
         ["Thunder Lancers", "horse", "Stormriders", 31, "Each charge rolls like thunder. Each charge ages the rider."],
         ["Tempest Rider", "horse", "Thunder Lancers", 0, "Heavy steppe cavalry in lamellar. They ride the storm front."],
-        ["Wind Spire Khan-guard", "horse", "Tempest Rider", 0, "The Assembly's bodyguard, chosen by shout. Fastest and deadliest of all."]
+        ["Skyrend Shout-guard", "horse", "Tempest Rider", 0, "The Assembly's bodyguard, chosen by shout. Fastest and deadliest of all."]
       ],
       stone: [
         ["Granite Wardens", "spear", "B", 28, "Stonehold duty-soldiers. The slowest line in the world, and the hardest to move."],
@@ -777,14 +777,14 @@ window.__vhGame = function () { (function () {
         ["Rime Guard", "sword", "Snow Spearman", 0, "Frost-rimed infantry who hold the line without breath or complaint."],
         ["Stillwatch Halberdier", "spear", "Rime Guard", 0, "Halberds that never tire. The Still City's veteran guard."],
         ["Winter Riders", "horse", "B", 35, "Pale cavalry out of the snow. They ride to where the prophets saw you."],
-        ["Druzhina Rider", "horse", "Winter Riders", 0, "The Prophet Court's mounted retinue. They ride where they were foreseen."],
-        ["Prophet's Lance", "horse", "Druzhina Rider", 0, "Heavy cavalry that arrives exactly when it was foreseen."]
+        ["Foreseen Rider", "horse", "Winter Riders", 0, "The Prophet Court's mounted retinue. They ride where they were foreseen."],
+        ["Prophet's Lance", "horse", "Foreseen Rider", 0, "Heavy cavalry that arrives exactly when it was foreseen."]
       ],
       metal: [
         ["Dominion Legionaries", "sword", "B", 40, "Metalcrown armoured infantry. Efficient. Loyal only to fear."],
-        ["Dominion Principes", "sword", "Dominion Legionaries", 0, "Veterans in segmented iron. Second shift, every shift."],
-        ["Ironclad Triarius", "sword", "Dominion Principes", 0, "Old soldiers of the last rank. Down to the last part. They do not break."],
-        ["Steel Praetorian", "sword", "Ironclad Triarius", 0, "The Synthesis Council's guard in black plate. Half machine already."],
+        ["Dominion Second-Shift", "sword", "Dominion Legionaries", 0, "Veterans in segmented iron. Second shift, every shift."],
+        ["Ironclad Last-Rank", "sword", "Dominion Second-Shift", 0, "Old soldiers of the last rank. Down to the last part. They do not break."],
+        ["Steel Praetorian", "sword", "Ironclad Last-Rank", 0, "The Synthesis Council's guard in black plate. Half machine already."],
         ["Dominion Crossbowman", "ranged", "B", 0, "Mass-drilled crossbowmen. Quantity is their quality."],
         ["Windlass Arbalest", "ranged", "Dominion Crossbowman", 0, "Winched crossbows that punch through anything."],
         ["Sparkbolt Gunner", "ranged", "Windlass Arbalest", 0, "Synthetic spark fired through a barrel. Loud, accurate, and joyless."],
@@ -975,7 +975,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
   }
 
   function dailyTick1() {
-    if (S.kael === "wounded" && S.day >= (S.kaelBack || 0)) { S.kael = "alive"; delete S.kaelBack; log("Kaelren rode back into camp with his ribs strapped and his grin intact. He asked whether anyone had been looking after his horse. Everyone had.", "e"); try { toast("Kaelren is back."); } catch (e) {} }
+    if (S.kael === "wounded" && S.day >= (S.kaelBack || 0) && !(S.kaelErrand && vhVoyagerBusy())) { S.kael = "alive"; delete S.kaelBack; if (S.kaelErrand) { delete S.kaelErrand; log("Kaelren rode back from Hearthmount with the King’s answers in his coat and road dust in his hair. He asked whether anyone had been looking after his horse. Everyone had.", "e"); } else log("Kaelren rode back into camp with his ribs strapped and his grin intact. He asked whether anyone had been looking after his horse. Everyone had.", "e"); try { toast("Kaelren is back."); } catch (e) {} }
     var t = T();
     if (t > 0) {
       var dg = daysOf(S.grain, eatDay()), dc = daysOf(S.crowns, wageDay());
@@ -1456,11 +1456,11 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
   var FELLTXT = {
     stone: "Highmarch has fallen. The Hold-Senate stayed in session until the doors came in, and did not rise to run. Stonehold holds on in its last keeps, and carves the names.",
     ember: "The Ember Throne is cold. The Hearth Court was told to kneel and, for once, did not burn. Flameborne holds on in its last hearths, and refuses.",
-    storm: "The Wind Spire is silent. The Free Assembly never agreed on a defence in time, and the Dominion needed no agreement. Stormreach holds on in its last citadels, and is louder for it.",
+    storm: "Skyrend is silent. The Free Assembly never agreed on a defence in time, and the Dominion needed no agreement. Stormreach holds on in its last citadels, and is louder for it.",
     frost: "The Still City is silent. The Seers saw this winter years ago, and no one acted on what they saw. Frostgrave holds on in its last halls, and keeps what it said.",
-    spirit: "The Lantern City is dark. The Lanterns went out one by one, and the Lantern Codex went blank in places. Spiritveil holds on in its last lamps, and keeps the names.",
-    shadow: "The Unmade City has been unmade. Shadowdeep always expected betrayal, and sold every secret but its own. Shadowdeep holds on somewhere nobody can find, which it prefers.",
-    light: "The Luminant Citadel is dark. The First Light was meant to burn away every lie, and the Dominion told none. It simply walked in. Lightforge holds on in its last courts, and writes it all down."
+    spirit: "Lanthys Vale is dark. The Lanterns went out one by one, and the Lantern Codex went blank in places. Spiritveil holds on in its last lamps, and keeps the names.",
+    shadow: "Hush has been unmade. Shadowdeep always expected betrayal, and sold every secret but its own. Shadowdeep holds on somewhere nobody can find, which it prefers.",
+    light: "The Meridian Citadel is dark. The First Light was meant to burn away every lie, and the Dominion told none. It simply walked in. Lightforge holds on in its last courts, and writes it all down."
   };
   var HEROES = {
     sera: { name: "Sera Ironvow", fac: "stone", col: "#b9c2d0", title: "Shield-captain of Stonehold", wound: "She has never left a post. Not once, not even when it was already lost.", trait: "Her shield-line holds. Her men take a quarter fewer losses.", price: 180, n: 28, q: 1.25, spd: 0.9, loss: 0.75, regrow: 0.35, need: "began", needTxt: "She will answer once the Dominion marches." },
@@ -1495,6 +1495,8 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
       if (M.fell[f] && holdings(f).length > 0) { M.fell[f] = false; news(FAC[f].name + " stands again. Someone has taken a hold back from the Dominion."); toast(FAC[f].name + " stands again."); log(FAC[f].name + " stands again.", "e"); }
     });
     if (S.day >= 3 && !M.beats.r1) { M.beats.r1 = 1; news("Traders from the north say the foundries at Iron Throne City have not gone quiet in a month."); }
+    // John (J-8): the Dominion marches only once the Radiant Edict has passed; in the sandbox the Edict passes a week before the march
+    if (M.on && !cp().on && !cp().f.edict && S.day >= M.start - 7) { cp().f.edict = 1; applyEdict(); }
     if (S.day >= M.start - 5 && !M.beats.r2 && domOpen()) { M.beats.r2 = 1; news("Marshal Dravik has called the banners. Wagons marked with an iron crown pass Ironwatch day and night."); }
     if (!M.began && S.day >= M.start && domOpen()) {
       M.began = true;
@@ -1801,7 +1803,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
   function storyOn() { return !!(S.story && S.story.on && S.mc && S.mc.on); }
   var STORY = {
     p0: { t: "The name under the world", sub: "Prologue",
-      body: ["Before the Realms there was only the Void: awareness without a self, stillness without end. Then it dreamed, and the dream struck a First Spark, and the Spark was the first thing that was not the Void. It was the first refusal of sameness.", "From the Spark came the Codex that writes what might be, and the Hammer that makes it real. The Void reached for the Hammer and had never learned to shape. It struck, and reality shattered into the Realms. That is the First Sundering, and every war since has been an echo of it.", "That was a very long time ago. Now it is the last season of the Concord. The Realms sit at one table in Luminant under the Aetherguard High Council and argue, mostly about Metalcrown, which is not invited. The foundries in the north have not gone quiet in a month. You are one person in a coat, and nobody has asked you anything yet."],
+      body: ["Before the Realms there was only the Void: awareness without a self, stillness without end. Then it dreamed, and the dream struck a First Spark, and the Spark was the first thing that was not the Void. It was the first refusal of sameness.", "From the Spark came the Codex that writes what might be, and the Hammer that makes it real. The Void reached for the Hammer and had never learned to shape. It struck, and reality shattered into the Realms. That is the First Sundering, and every war since has been an echo of it.", "That was a very long time ago. Now it is the last season of the Concord. The Realms sit at one table in Meridian under the Aetherguard High Council and argue, mostly about Metalcrown, which is not invited. The foundries in the north have not gone quiet in a month. You are one person in a coat, and nobody has asked you anything yet."],
       ok: "Walk on" },
     b1: { t: "The Order", sub: "Chapter I",
       body: ["Metalcrown has stopped asking. The Iron Dominion’s decree is nailed to every gate its armies pass: power is forged, not gifted, and every Realm will be forged to the Dominion’s measure, gently or not.", "The Synthesis Council’s seal is at the bottom. Under it, in a different hand, small and almost shy, one word. Valek.", "No lord you ask will say who Valek is. Some go quiet. One touches the iron nail he keeps in his pocket, for luck."],
@@ -1835,15 +1837,15 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
     sh: { t: "The quiet knife", sub: "Interlude", cond: function () { return !!(S.mc.fell.shadow) || ((cp().f.coup || !cp().on) && mcAbroad() >= 8); },
       body: ["Shadowdeep always expected betrayal. It spent a thousand years making itself too quiet to be worth the trouble, and the Dominion came anyway.", "A Nightblade’s last message reaches you in a dead drop, unsigned: the Dominion does not find its spark-bearers by force. It finds them by what they have forgotten they are."],
       ok: "Go on" },
-    fin: { t: "The Iron Throne", sub: "Finale", body: ["The Iron Throne City is half empty. Its armies are in the south, under the walls of Luminant, and from the high windows of the hall you can see the Citadel burning. The reactors have stopped to listen.", "On a seat far too big for him sits Valek: slight, grey at the eyes, with a spark under his skin for every Realm you have crossed. “Everyone asks the same thing,” he says. “Who gets to decide what I become? Nobody asked me. They only ever asked what I was for.”", "The reactors are waiting. So is he. Something behind his eyes is listening too."],
+    fin: { t: "The Iron Throne", sub: "Finale", body: ["The Iron Throne City is half empty. Its armies are in the south, under the walls of Meridian, and from the high windows of the hall you can see the Citadel burning. The reactors have stopped to listen.", "On a seat far too big for him sits Valek: slight, grey at the eyes, with a spark under his skin for every Realm you have crossed. “Everyone asks the same thing,” he says. “Who gets to decide what I become? Nobody asked me. They only ever asked what I was for.”", "The reactors are waiting. So is he. Something behind his eyes is listening too."],
       choices: [{ k: "break", t: "Break the reactors. Cut the Dominion’s heart out from under him. (Costs a third of your column)", fx: function () { loseFrac(0.33); } },
                 { k: "name", t: "Say his name. Elyon. (Needs your heroes to hear it, a case kept close, or that you reached for him at Ironwatch.)", fx: function () { if (!(S.story.ch.b4 === "tell" || S.story.ch.b3 === "keep" || cp().f.reach)) { S.story.ch.nameFail = 1; loseFrac(0.2); } } },
                 { k: "throne", t: "Take the Iron Throne yourself. Run the reactors. Make the war yours.", fx: function () {} }] }
   };
   var STORY_FIN = {
-    break: "The reactors scream and stop. For the length of a breath there is only a boy in the chair. Then Valek stands, and the sparks are still burning under his skin, because they were never in the machines. He walks past you as if you were furniture. The Dominion has lost its foundries and kept its heir. By morning Luminant has fallen, every Realm that refused the Edict is at war with every Realm that kept it, and all of them are at war with Metalcrown. It cost you a third of those who followed you. The Thousand-Year War begins.",
-    name: "“Elyon.” Nobody has said it to him in a long time. Two sparks stir in one body, and for one heartbeat the boy comes up: thirteen and small for it, frightened, looking at you as if you were the first door he has seen open. He lowers his hand. He lets you live. Then the other one comes back the way a tide comes back, and Valek looks at that hand as if it had disobeyed him. “Go,” he says, “before I remember why I let you.” You go. Behind you the reactors wake. In the south the Citadel of Luminant falls before dawn. The Thousand-Year War begins.",
-    namefail: "“Elyon.” He does not turn. Nobody who knew him was there to make the name mean anything. The reactors flare, and you get out with what you can carry. Luminant falls the same night. He never saw you. The Thousand-Year War begins.",
+    break: "The reactors scream and stop. For the length of a breath there is only a boy in the chair. Then Valek stands, and the sparks are still burning under his skin, because they were never in the machines. He walks past you as if you were furniture. The Dominion has lost its foundries and kept its heir. By morning Meridian has fallen, every Realm that refused the Edict is at war with every Realm that kept it, and all of them are at war with Metalcrown. It cost you a third of those who followed you. The Thousand-Year War begins.",
+    name: "“Elyon.” Nobody has said it to him in a long time. Two sparks stir in one body, and for one heartbeat the boy comes up: thirteen and small for it, frightened, looking at you as if you were the first door he has seen open. He lowers his hand. He lets you live. Then the other one comes back the way a tide comes back, and Valek looks at that hand as if it had disobeyed him. “Go,” he says, “before I remember why I let you.” You go. Behind you the reactors wake. In the south the Citadel of Meridian falls before dawn. The Thousand-Year War begins.",
+    namefail: "“Elyon.” He does not turn. Nobody who knew him was there to make the name mean anything. The reactors flare, and you get out with what you can carry. Meridian falls the same night. He never saw you. The Thousand-Year War begins.",
     throne: "You sit where he sat. The reactors wake and find a new hand. Valek watches from the doorway, curious, then goes south to take Lightforge without you. Now the Dominion has two heads, and Metalcrown’s engineers love nothing more than a spare. The Realms look north and see you on the Iron Throne. Whatever you meant by it, they will call it war. The Thousand-Year War begins."
   };
   function storyQueue() {
@@ -2122,7 +2124,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
       var wx = x * k, wy = y * k, e = elevAt(wx, wy), m = moistAt(wx, wy), sd = 1e9;
       if (e < 0.34) for (var q = 0; q < sp.length; q++) { var dd = Math.hypot(wx - sp[q].x, wy - sp[q].y); if (dd < sd) sd = dd; }
       var sh = (e - elevAt(wx + 7, wy + 7)) * 5, r, gr, b;
-      if (e < 0.34 && sd > 95) { var dp = (0.34 - e) * 6; r = 62 - dp * 14; gr = 104 - dp * 16; b = 128 - dp * 14; sh = 0; }
+      if (e < 0.34 && sd > 95) { var dp = (0.34 - e) * 6, hz = (elevAt(wx * 3.1 + 77, wy * 3.1) - 0.5) * 22; r = 104 - dp * 22 + hz; gr = 98 - dp * 22 + hz; b = 118 - dp * 16 + hz; sh = 0; } // the Between: not sea, not sky (John, J-7)
       else {
         var lush = Math.min(1, Math.max(0, (m - 0.18) * 2.6));
         r = 138 + (66 - 138) * lush; gr = 140 + (128 - 140) * lush; b = 74 + (46 - 74) * lush;
@@ -2760,7 +2762,8 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
       h += '<div class="choices">' + CHOICES.filter(function (c) { return !c.needs || S.burned.indexOf(c.needs) < 0; }).map(function (c) {
         return '<button data-act="say" data-a="' + c.id + '">' + c.text + "</button>";
       }).join("") + "</div>";
-    } else if (S.kael === "wounded") h += '<p class="dim-t">Kaelren is in the surgeon’s wagon with his ribs strapped. He sends word that he is fine, which is a lie, and that he will be back in ' + Math.max(1, (S.kaelBack || 0) - Math.floor(S.day)) + ' days, which may not be.</p>';
+    } else if (S.kael === "wounded" && S.kaelErrand) h += '<p class="dim-t">Kaelren has ridden to Hearthmount with letters for the King. He will be back when the road allows.</p>';
+    else if (S.kael === "wounded") h += '<p class="dim-t">Kaelren is in the surgeon’s wagon with his ribs strapped. He sends word that he is fine, which is a lie, and that he will be back in ' + Math.max(1, (S.kaelBack || 0) - Math.floor(S.day)) + ' days, which may not be.</p>';
     return h;
   }
   function booksCalc() {
@@ -2824,7 +2827,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
   }
   function introSheet() {
     return "<h2>Ashford</h2><p class=\"sub\">Day 1</p>" + sceneImg("village") +
-      "<p>" + (ORIGINS[OPT.origin] || ORIGINS.wanderer).intro + "</p>" + (OPT.dom !== "off" ? "<p class=\"dim-t\">Far to the north, Iron Throne City has closed its gates. Merchants say the foundries have not gone quiet in a month. The realms argue about who it is for.</p>" : "") +
+      "<p>" + (ORIGINS[OPT.origin] || ORIGINS.wanderer).intro + "</p>" + (OPT.dom !== "off" ? "<p class=\"dim-t\">Far to the north, Iron Throne City has closed its gates. Merchants say the foundries have not gone quiet in a month. The realms argue about who it is for.</p>" : "") + "<p class=\"dim-t\">It is the Concord’s last season. At Korrhaven the Academy has not yet gathered the squad they will one day call Squad 0.</p>" +
       "<p>Your coat still smells of " + R("[[forge|the forge where my father worked]]") + ". Ashford is short of grain. Redbank, an hour east, is not.</p>" +
       (noVoid() ? '<p>' + nwd(realmList().length) + ' realms are at each other’s throats, and nothing stands behind them but sky.</p>' : '<p>' + nwd(realmList().length) + ' realms are at each other’s throats. Out past the edges the Void is stirring, and lately it has started to pay attention.</p>')+
       '<p class="dim-t">Tap a place to go there. Menus pause the world. Take work, buy cheap, sell dear, and find men who will follow you. Later, take a town of your own, and close the grey edges.</p><div class="btns"><button class="solid" data-act="begin">Begin</button></div>';
@@ -2847,7 +2850,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
     return "<h2>The winter ends</h2><p class=\"sub\">Day " + dayN() + "</p>" +
       "<p>" + vs + " of " + S.total + " places still stand. " + T() + " men follow you. " + hollow() + " memories are gone. " + kt + "</p>" +
       (S.sealed ? "<p class=\"dim-t\">The Void has drawn back from the edge. It has not gone far, and it is still looking north.</p>" : (noVoid() ? "<p class=\"dim-t\">The realms still stand, for now.</p>" : "<p class=\"dim-t\">The edge has not stopped. You have only learned how far it is.</p>")) +
-      "<p>In the spring the Edict’s wardens ride out of Luminant to count every spark, and Metalcrown’s foundries open their gates to meet them.</p>" + tkwEnd() +
+      "<p>In the spring the Edict’s wardens ride out of Meridian to count every spark, and Metalcrown’s foundries open their gates to meet them.</p>" + tkwEnd() +
       '<div class="btns"><button class="solid" data-act="keepgoing">Keep playing</button><button data-act="again">Begin again</button></div>';
   }
 
@@ -4044,7 +4047,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
       enemies: [["bandit", 20, 9], ["bandit", 23, 12], ["bandit", 26, 8], ["slinger", 29, 12], ["bandit", 31, 9], ["rusk", 35, 10]],
       clear: function () { if (!cfl("q1clear")) { cp().f.q1clear = 1; aToast("The road is clear. Return to Elder Mara."); } },
       npcs: [{ id: "tam", name: "Tam the Drover", x: 4, y: 8, col: "#8a6a3a", hair: "#5a3a1a", mk: function () { var f = cp().f; return !f.sq1 ? 1 : (f.sq1clear && !f.sq1done) ? 2 : 0; }, d: function () { var f = cp().f; return f.sq1done ? "tam_done" : f.sq1clear ? "tam_back" : f.sq1 ? "tam_wait" : "tam_1"; } }] },
-    emberfall: { name: "Emberfall", th: "ember", w: 36, h: 28, seed: 31, safe: 1, spawn: [2, 13], chests: [[31, 18]],
+    emberfall: { name: "Hearthmount", th: "ember", w: 36, h: 28, seed: 31, safe: 1, spawn: [2, 13], chests: [[31, 18]],
       paths: [[0, 13, 35, 13], [17, 0, 17, 27]], plaza: [14, 10, 7, 7], water: [[28, 21, 6, 5]],
       houses: [[3, 5, 6, 5], [26, 5, 6, 5], [3, 17, 6, 5], [24, 17, 5, 5], [10, 4, 5, 4], [21, 4, 4, 4]], trees: 40,
       exits: [{ x: 0, y: 13, w: 1, h: 2, to: "millroad", tx: 37, ty: 10 },
@@ -4096,7 +4099,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
       chests: [[9, 18], [26, 12]], lv: 2,
       enemies: [["scout", 15, 21], ["scout", 20, 20], ["slinger", 12, 16], ["scout", 22, 15], ["scout", 14, 12], ["slinger", 21, 10], ["scout", 17, 8], ["sable", 17, 4]],
       npcs: [] },
-    luminantc: { name: "Luminant", th: "stone", w: 36, h: 28, seed: 177, safe: 1, spawn: [29, 14], chests: [[4, 17]],
+    luminantc: { name: "Meridian", th: "stone", w: 36, h: 28, seed: 177, safe: 1, spawn: [29, 14], chests: [[4, 17]],
       paths: [[0, 14, 35, 14], [17, 0, 17, 27]], plaza: [14, 11, 8, 8], water: [[30, 23, 4, 3]],
       houses: [[3, 4, 6, 5], [27, 4, 6, 5], [3, 20, 6, 5], [24, 20, 5, 5], [10, 4, 5, 4], [21, 4, 4, 4]], trees: 20,
       exits: [{ x: 35, y: 14, w: 1, h: 2, to: "world" },
@@ -4107,7 +4110,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
         { id: "ardyn", name: "High Councillor Ardyn", x: 16, y: 12, col: "#d8c060", hair: "#e8e8e8", mk: function () { var f = cp().f; return f.q5 && !f.metArdyn ? 1 : (f.vaultclear && !f.q5done) ? 2 : 0; }, d: function () { var f = cp().f; return f.coup ? "ardyn_after2" : f.edict ? "ardyn_after" : f.vaultclear ? "ardyn_vote" : f.metArdyn ? "ardyn_wait" : f.q5 ? "ardyn_1" : "ardyn_idle"; } },
         { id: "seraphine", name: "Seraphine Skyrend", x: 21, y: 12, col: "#5fb4e0", hair: "#f0f0ff", d: function () { return cp().f.edict ? "sera_after" : "sera_before"; } },
         { id: "aldreth", name: "Archmarshal Aldreth", x: 16, y: 17, col: "#e8c75a", hair: "#c8a050", mk: function () { var f = cp().f; return f.edict && !f.q6 ? 1 : 0; }, d: function () { var f = cp().f; return f.q6done ? "aldreth_after" : f.q6 ? "aldreth_wait" : f.edict ? "aldreth_1" : "aldreth_idle"; } },
-        { id: "ltrader", name: "Luminant Trader", x: 11, y: 16, col: "#8a7a3a", hair: "#5a3a1a", d: function () { return "shop:luminant"; } },
+        { id: "ltrader", name: "Meridian Trader", x: 11, y: 16, col: "#8a7a3a", hair: "#5a3a1a", d: function () { return "shop:luminant"; } },
         { id: "lsmith", name: "Citadel Smith", x: 24, y: 16, col: "#5a5a6a", hair: "#2a2a2a", d: function () { return "smith:luminant"; } }] },
     archive: { name: "The Drowned Archive", th: "cave", w: 42, h: 26, seed: 113, spawn: [3, 13], lv: 2, trees: 240, rocks: 30, houses: [], water: [],
       paths: [[0, 13, 40, 13], [10, 3, 10, 13], [22, 14, 22, 22], [32, 4, 32, 13]],
@@ -4151,9 +4154,9 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
     mara_acc: { n: "Elder Mara", t: "Take the east road, past the edge of the village. Five or six of them, led by a man called Rusk. Be careful. Frightened men are the ones who kill." },
     mara_wait: { n: "Elder Mara", t: "The road, child. East of the village. Come back when it is quiet." },
     mara_back: { n: "Elder Mara", t: function () { var r = cp().f.rusk; return r === "spared" ? "You let Rusk walk. I heard. Some here will call that foolish. I call it a choice, made with your eyes open." : r === "killed" ? "It is done, then. I will not ask how. The carts are moving. Ashford will remember this, and it will remember how you did it too." : "The carts are moving. Thank you."; }, c: [
-      { t: "Take the reward.", go: "mara_done2", give: { crowns: 80, xp: 40 }, set: { q1done: 1 }, toast: "+80 crowns. Emberfall is open." }] },
-    mara_done2: { n: "Elder Mara", t: "Emberfall lies past the Millbrook road. Their steward, Corbet, has been asking about men who attack grain. Go and tell him what you found. Before you go, speak to me again. Ashford's storehouse worries me." },
-    mara_done: { n: "Elder Mara", t: "The road is open. Go on to Emberfall, and be careful what you become there." },
+      { t: "Take the reward.", go: "mara_done2", give: { crowns: 80, xp: 40 }, set: { q1done: 1 }, toast: "+80 crowns. Hearthmount is open." }] },
+    mara_done2: { n: "Elder Mara", t: "Hearthmount lies past the Millbrook road. Their steward, Corbet, has been asking about men who attack grain. Go and tell him what you found. Before you go, speak to me again. Ashford's storehouse worries me." },
+    mara_done: { n: "Elder Mara", t: "The road is open. Go on to Hearthmount, and be careful what you become there." },
     tobb: { n: "Tobb", t: "I grow barley and bad luck. A loaf is ten crowns and mends what hurts.", c: [
       { t: "Buy bread (10 crowns)", cost: 10, fn: function () { AR.p.hp = AR.p.max; }, go: "tobb_ate" }, { t: "Not now." }] },
     tobb_ate: { n: "Tobb", t: "There. Eat slowly. Nobody ever regretted that." },
@@ -4164,7 +4167,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
     wen: { n: "Old Wen", t: "Foundry smoke over Highmarch way, black as a mourning veil. Nobody builds that many hammers for peace." },
     rusk_y: { n: "Rusk", t: "Enough. Enough! I have a daughter in Millbrook. They paid us in silver sealed with grey wax. I did not know what the grey meant.", c: [
       { t: "Walk away. Do not come back.", fn: function () { campRusk("spared"); } }, { t: "Finish it.", fn: function () { campRusk("killed"); } }] },
-    hale_1: { n: "Steward Corbet", t: "Steward Corbet of Emberfall. Lady Cinder is at the front and I am holding her house together with string. Mara sent word of the bandits. Tell me, did they carry anything? Foundry coin? Grey wax seals?", c: [
+    hale_1: { n: "Steward Corbet", t: "Steward Corbet of Hearthmount. Lady Cinder is at the front and I am holding her house together with string. Mara sent word of the bandits. Tell me, did they carry anything? Foundry coin? Grey wax seals?", c: [
       { t: "They were paid. Grey seals.", go: "hale_2" }, { t: "Not yet.", go: "hale_no" }] },
     hale_no: { n: "Steward Corbet", t: "Then look again. Someone is paying men to starve villages. That is not banditry. That is a plan." },
     hale_2: { n: "Steward Corbet", t: "Then it is the foundries. There is a hideout south of here, in the old quarry they call the Hollow. Grath runs it. Bring me whatever proves who pays him. A writ, a seal. Anything with a name on it, and I will make Lady Cinder listen.", c: [
@@ -4199,17 +4202,17 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
       { t: "Accept.", go: "b_end", give: { crowns: 300, xp: 150 }, set: { q3done: 1 }, toast: "Act I complete." }] },
     b_end: { n: "Lord Brannoch", t: "The Dominion has a name on its orders now: Valek. Whatever it is, someone is making it. The world is yours, wanderer. Go, and keep choosing." },
     b_done: { n: "Lord Brannoch", t: "The roads are yours. Go." },
-    b_4: { n: "Lord Brannoch", t: "You are back from the pass with a grey-coated figure on your mind. Good. He is on mine. The name Valek is in no Stonehold ledger, and Stonehold records everything that can be weighed. The one place that keeps what cannot be weighed is the Lantern Archive. Spiritveil keeps an annex of it in Luminant, under Archivist Lume. Take the writ there. And be careful. Luminant is a city that has only just started to be afraid.", c: [
-      { t: "I will go to Luminant.", set: { q4: 1 }, toast: "New quest: The Lantern Page." }, { t: "Why not send a rider?", go: "b_4why" }] },
-    b_4why: { n: "Lord Brannoch", t: "A rider brings back an answer. You bring back a reason to act on it. Go.", c: [{ t: "I will go to Luminant.", set: { q4: 1 }, toast: "New quest: The Lantern Page." }] },
-    b_4wait: { n: "Lord Brannoch", t: "Luminant. The Lantern Annex. Archivist Lume. Take the writ." },
+    b_4: { n: "Lord Brannoch", t: "You are back from the pass with a grey-coated figure on your mind. Good. He is on mine. The name Valek is in no Stonehold ledger, and Stonehold records everything that can be weighed. The one place that keeps what cannot be weighed is the Lantern Archive. Spiritveil keeps an annex of it in Meridian, under Archivist Lume. Take the writ there. And be careful. Meridian is a city that has only just started to be afraid.", c: [
+      { t: "I will go to Meridian.", set: { q4: 1 }, toast: "New quest: The Lantern Page." }, { t: "Why not send a rider?", go: "b_4why" }] },
+    b_4why: { n: "Lord Brannoch", t: "A rider brings back an answer. You bring back a reason to act on it. Go.", c: [{ t: "I will go to Meridian.", set: { q4: 1 }, toast: "New quest: The Lantern Page." }] },
+    b_4wait: { n: "Lord Brannoch", t: "Meridian. The Lantern Annex. Archivist Lume. Take the writ." },
     b_7: { n: "Lord Brannoch", t: "It is done, then. The boy is gone and what stepped out of that wagon wears his face. Every foundry from Iron Throne City to Steelgate has opened its gates. The Dominion does not need a pretext any more. Steelgate builds the reactors that make Iron Wraiths. If it keeps building, there will be nothing left to defend. Break it, and Marshal Dravik with it.", c: [
       { t: "I will break Steelgate.", set: { q7: 1 }, toast: "New quest: The Steelgate Foundry." }, { t: "Is that enough?", go: "b_7enough" }] },
     b_7enough: { n: "Lord Brannoch", t: "No. Nothing is enough. But it buys the Realms a season, and a season is how a stranger becomes a banner.", c: [{ t: "I will break Steelgate.", set: { q7: 1 }, toast: "New quest: The Steelgate Foundry." }] },
     b_7wait: { n: "Lord Brannoch", t: "Steelgate. Dravik. Do not go in with a light heart." },
     b_7back: { n: "Lord Brannoch", t: "Steelgate is dark. Dravik is dead and the reactors are cold. Take Stonehold's thanks, and take this. It was made for someone who would still be alive in a year.", c: [
       { t: "Accept.", go: "b_7end", give: { crowns: 400, xp: 200 }, fn: function () { dropAtP(genItem(3, null, 3)); }, set: { q7done: 1 }, toast: "The Steelgate Foundry is broken." }] },
-    b_7end: { n: "Lord Brannoch", t: "The Dominion is loose, but it is no longer unstoppable. Its main host is marching on Luminant, and Lightforge will not hold forever. Call the heroes of the Realms. Hold what you can. The Iron Throne is where the boy sits. Whatever you mean to do about him, decide before you get there." },
+    b_7end: { n: "Lord Brannoch", t: "The Dominion is loose, but it is no longer unstoppable. Its main host is marching on Meridian, and Lightforge will not hold forever. Call the heroes of the Realms. Hold what you can. The Iron Throne is where the boy sits. Whatever you mean to do about him, decide before you get there." },
     lume_idle: { n: "Archivist Lume", t: "Spiritveil keeps what the world forgets. If you need something remembered, ask Lord Brannoch to send you." },
     lume_1: { n: "Archivist Lume", t: "Spiritveil keeps the memory of the world, and I keep this annex of it in a city that has stopped wanting to remember. You carry a grey writ. May I? There. Valek. In the Lantern Codex that name is a blank line, a hole where ink should be. It is not erased. Erasure leaves marks. It was never written, and yet it is everywhere. The page that explains it was moved to the Drowned Archive when the ink began to crawl off the paper. What crawls there now is not ink any more. Bring me the page.", c: [
       { t: "I will go down.", set: { lumeok: 1 }, toast: "New objective: the Drowned Archive.", go: "lume_go" }, { t: "What is crawling?", go: "lume_ink" }] },
@@ -4240,7 +4243,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
     ardyn_after: { n: "High Councillor Ardyn", t: "The Edict is law. I have never been so certain, or so sorry. Find Aldreth Veil. The ward is her charge." },
     ardyn_after2: { n: "High Councillor Ardyn", t: "I wrote the line that made them take him. I will carry that for as long as I can still remember it." },
     sera_before: { n: "Seraphine Skyrend", t: "I will speak against it, and I will lose. Do not let that stop you from speaking." },
-    sera_after: { n: "Seraphine Skyrend", t: "Stormreach rides at dawn. If you are ever tired of being told where to stand, you know the road to the Wind Spire." },
+    sera_after: { n: "Seraphine Skyrend", t: "Stormreach rides at dawn. If you are ever tired of being told where to stand, you know the road to Skyrend." },
     aldreth_idle: { n: "Archmarshal Aldreth", t: "Archmarshal Aldreth Veil. The Council is in session. Come to me when it is done." },
     aldreth_1: { n: "Archmarshal Aldreth", t: "The Edict is law, and the law gave me a child to guard. I have guarded him for an hour. He asked me one question: whether he was going to be allowed to be anyone. I did not have an answer. Something has just broken the seals of the north ward. Grey coats. I can hear reactor-song. Hold the stair.", c: [
       { t: "I will go up.", set: { q6: 1 }, toast: "New quest: The Iron Child." }, { t: "Is he dangerous?", go: "aldreth_dang" }] },
@@ -4313,7 +4316,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
   BN("reaper", "The Iron Reaper", 28, 40, 3, "#3a3a44", "#ff3a3a");
 
   var HUBSITE = { ashford: "ashford", emberfall: "emberfall", highmarch: "highmarch", luminantc: "luminant", windspire: "windspire", granitekeep: "granite" };
-  var HUBNAME = { ashford: "Ashford", emberfall: "Emberfall", highmarch: "Highmarch", luminantc: "Luminant", windspire: "the Wind Spire", granitekeep: "Granite Keep" };
+  var HUBNAME = { ashford: "Ashford", emberfall: "Hearthmount", highmarch: "Highmarch", luminantc: "Meridian", windspire: "Skyrend", granitekeep: "Gravenhall" };
   function mkHub(id, name, th, seed, siteId) {
     AREAS[id] = { name: name, th: th, w: 36, h: 28, seed: seed, safe: 1, spawn: [29, 14], chests: [[4, 17]],
       paths: [[0, 14, 35, 14], [17, 0, 17, 27]], plaza: [14, 11, 8, 8], water: [[30, 23, 4, 3]],
@@ -4322,8 +4325,8 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
       npcs: [{ id: "trader", name: "Trader", x: 11, y: 16, col: "#8a7a3a", hair: "#5a3a1a", d: function () { return "shop:" + siteId; } },
         { id: "smith", name: "Smith", x: 24, y: 16, col: "#5a5a6a", hair: "#2a2a2a", d: function () { return "smith:" + siteId; } }] };
   }
-  mkHub("windspire", "The Wind Spire", "stone", 191, "windspire");
-  mkHub("granitekeep", "Granite Keep", "stone", 203, "granite");
+  mkHub("windspire", "Skyrend", "stone", 191, "windspire");
+  mkHub("granitekeep", "Gravenhall", "stone", 203, "granite");
 
   function roadSpots(sp) {
     var out = [];
@@ -4448,11 +4451,11 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
   }
   function leg(id, act, name, loc, st, obj) { var o = { id: id, act: act, name: name, loc: loc, leg: st, obj: obj }; QS.push(o); QMAP[id] = o; }
   leg("L1", 1, "The Millbrook Road", "Elder Mara, Ashford", function (f) { return f.q1done ? 4 : f.q1clear ? 3 : f.q1 ? 2 : 1; }, "Clear the bandits on the Millbrook Road.");
-  leg("L2", 1, "The Hollow", "Steward Corbet, Emberfall", function (f) { return f.q2done ? 4 : f.writ ? 3 : f.q2 ? 2 : f.q1done ? 1 : 0; }, "Defeat Grath in the Hollow and take the writ.");
+  leg("L2", 1, "The Hollow", "Steward Corbet, Hearthmount", function (f) { return f.q2done ? 4 : f.writ ? 3 : f.q2 ? 2 : f.q1done ? 1 : 0; }, "Defeat Grath in the Hollow and take the writ.");
   leg("L3", 1, "Greywater Pass", "Lord Brannoch, Highmarch", function (f) { return f.q3done ? 4 : f.sable ? 3 : f.q3 ? 2 : f.q2done ? 1 : 0; }, "Defeat Warden Sable at Greywater Pass.");
   leg("L4", 2, "The Lantern Page", "Lord Brannoch, Highmarch", function (f) { return f.q4done ? 4 : f.page ? 3 : f.lumeok ? 2 : f.q3done ? 1 : 0; }, "Take the Twin-Spark page from the Drowned Archive.");
-  leg("L5", 3, "The Radiant Edict", "Archivist Lume, Luminant", function (f) { return f.q5done ? 4 : f.vaultclear ? 3 : f.q5 ? 2 : 0; }, "Stop the saboteurs in the Citadel undercroft.");
-  leg("L6", 4, "The Iron Child", "Archmarshal Aldreth, Luminant", function (f) { return f.q6done ? 4 : f.q6 ? 2 : f.edict ? 1 : 0; }, "Follow the wagon from the ward to Ironwatch.");
+  leg("L5", 3, "The Radiant Edict", "Archivist Lume, Meridian", function (f) { return f.q5done ? 4 : f.vaultclear ? 3 : f.q5 ? 2 : 0; }, "Stop the saboteurs in the Citadel undercroft.");
+  leg("L6", 4, "The Iron Child", "Archmarshal Aldreth, Meridian", function (f) { return f.q6done ? 4 : f.q6 ? 2 : f.edict ? 1 : 0; }, "Follow the wagon from the ward to Ironwatch.");
   leg("L7", 5, "The Steelgate Foundry", "Lord Brannoch, Highmarch", function (f) { return f.q7done ? 4 : f.foundry ? 3 : f.q7 ? 2 : f.domRule ? 1 : 0; }, "Break the Steelgate foundry and Marshal Dravik.");
 
   // ---- ACT I ----
@@ -4479,7 +4482,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
     opts: [{ t: "Give it to Veyra. Let your body remember being stronger.", reward: { xp: 90, perm: "dmg" }, text: "She holds it a long time. \"You will not know why you stand straighter,\" she says. \"That is the price, and the gift.\"" },
       { t: "Give it to Orla. Let her make something that lasts.", reward: { xp: 90, perm: "hp" }, text: "Veyra does not argue. \"Orla will make you something lasting,\" she says, \"and it will not remember where it came from. Good. Some fires should only warm.\"" }] });
 
-  // ---- ACT II (Luminant) ----
+  // ---- ACT II (Meridian) ----
   Q({ id: "ink", act: 2, hub: "luminantc", npc: "ione", npcDef: { name: "Brother Ione", col: "#9a7fd6", hair: "#d8c8ff", idle: "The Codex is thick with things we forgot. I am trying to remember them before they remember us." }, name: "The Ink Wells", zone: "ink", zname: "The Ink Wells", th: "cave", lv: 2, seed: 311, pal: ["inkling", "inkspit"], boss: "blot", obj: "Destroy the Blotmother in the Ink Wells.",
     gate: "A stair behind the annex, down to the wells where the Codex ink is drawn.", intro: "The ink we use for the Lantern Codex comes from wells below the annex. Lately it rises when no one is writing. It forms shapes, and they are always shapes of things we forgot.", turn: "The wells are still. I wrote your name in the Lantern Codex, with the date. I hope you do not mind. Nothing should be forgotten twice.", reward: { xp: 120, crowns: 90, perm: "pts" } });
   Q({ id: "crypt", act: 2, hub: "luminantc", npc: "cael", npcDef: { name: "Sentinel Cael", col: "#e8c75a", hair: "#2a1a10", idle: "Truth without action is cowardice. I am trying very hard not to be a coward." }, name: "The Solbrand Crypt", zone: "crypt", zname: "The Solbrand Crypt", th: "cave", lv: 2, seed: 312, pal: ["hollowsent", "hollowsent"], boss: "orrick", kind: "relic", obj: "Take the Halberd of First Light from the Solbrand Crypt.",
@@ -4493,12 +4496,12 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
   Q({ id: "glass", act: 2, hub: "luminantc", npc: "hesk", npcDef: { name: "Quartermaster Ostrand", col: "#8a7a3a", hair: "#4a3a2a", idle: "Memory-glass is the richest trade in the world, and I have never once been able to look at it." }, name: "The Memory-Glass Vault", zone: "glass", zname: "The Memory-Glass Vault", th: "stone", lv: 2, seed: 314, pal: ["glasswraith", "knife"], boss: "maren", obj: "Defeat Glass-cutter Tesk in the Memory-Glass Vault.",
     gate: "A vault door in the Citadel wall. Panels of glass glint inside, each holding something that was once a person's.", intro: "Spiritveil draws the memory-glass. Lightforge keeps it here as testimony, because under the First Light a memory cannot lie. Each panel is something a living person saw. Someone is cutting panels from the vault and selling them to Metalcrown. I would stop them. I would also like to know whose memories they are.",
     turn: "She is dead, and the glass is yours to decide. The Council wants it back in the vault. The people in it, I think, want something else.",
-    opts: [{ t: "Smash the glass. Let the memories go home.", reward: { xp: 160, perm: "pts" }, text: "The panels break with a sound like a held breath. Somewhere in Luminant a hundred people stop in the street and wonder why they are crying." },
+    opts: [{ t: "Smash the glass. Let the memories go home.", reward: { xp: 160, perm: "pts" }, text: "The panels break with a sound like a held breath. Somewhere in Meridian a hundred people stop in the street and wonder why they are crying." },
       { t: "Return it to the vault. It is the law.", reward: { xp: 100, crowns: 300, item: 2 }, text: "The vault door closes. Hesk does not look at you. \"The law is the law,\" he says, and it sounds like a thing he is trying to believe." }] });
   Q({ id: "echoes", act: 2, hub: "luminantc", npc: "talla", npcDef: { name: "Wren", col: "#9a7fd6", hair: "#d0b8ff", idle: "I remember every grief I have ever held. It is a lot of grief." }, name: "The Field of Echoes", zone: "echoes", zname: "The Field of Echoes", th: "grass", lv: 2, seed: 315, pal: ["echo", "echo"], boss: "ysen", obj: "Tell Echo of Captain Ysen that the battle is over.",
-    gate: "A field outside the walls where the grass never moves. The soldiers in it are fighting an hour that ended long ago.", intro: "Remember a grief and it lives. A battle was fought outside Luminant and not one of us remembers the end of it, and now the field remembers for us. The dead are still fighting the last hour. There is a captain. He will not stop until someone tells him it is over.", turn: "He heard you? Good. Good. I will remember him for the both of us. That is what we do.", reward: { xp: 140, crowns: 100, perm: "hp" } });
+    gate: "A field outside the walls where the grass never moves. The soldiers in it are fighting an hour that ended long ago.", intro: "Remember a grief and it lives. A battle was fought outside Meridian and not one of us remembers the end of it, and now the field remembers for us. The dead are still fighting the last hour. There is a captain. He will not stop until someone tells him it is over.", turn: "He heard you? Good. Good. I will remember him for the both of us. That is what we do.", reward: { xp: 140, crowns: 100, perm: "hp" } });
 
-  // ---- ACT III (Wind Spire) ----
+  // ---- ACT III (Skyrend) ----
   Q({ id: "beacon", act: 3, hub: "windspire", npc: "orrin", npcDef: { name: "Orrin Gale", col: "#6cc0e8", hair: "#f0e8d0", idle: "I have outrun every grave I owed a visit. Do not stand still near me." }, name: "The Skybridge Relay", zone: "beacon", zname: "The Skybridge Relay", th: "pass", lv: 2, seed: 321, pal: ["stormling", "edictguard"], boss: "valda", obj: "Defeat Enforcer Valda and relight the Skybridge relay.",
     gate: "A rope-bridge path up to the Skybridge relay, dark against the clouds.", intro: "The Edict's enforcers have taken the Skybridge relay. No beacon, no messengers, and Stormreach cannot talk to its own towers. I could ride in and die gloriously. I would rather you did it slowly and well.", turn: "Lit. Look at it! Every tower in the Spire answers. Take this, and take my thanks; I am not good at the second part.", reward: { xp: 170, crowns: 130, perm: "pts" } });
   Q({ id: "roost", act: 3, hub: "windspire", npc: "aeris", npcDef: { name: "Captain Aeris Galeheart", col: "#5fb4e0", hair: "#e0f4ff", idle: "Warden-captains die young. I intend to be a very annoying exception." }, name: "The Drake Roost", zone: "roost", zname: "The Drake Roost", th: "pass", lv: 2, seed: 322, pal: ["stormling", "stormling"], boss: "drake", obj: "Kill the Skyrazor Drake in the Drake Roost.",
@@ -4516,9 +4519,9 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
     prop: { name: "The council seal", t: "A seal of seven points around a single flame. The Aetherguard's last. It is cold.", act: "Take it.", obj: "Take the council seal.", toast: "You take the council seal." },
     turn: "The stone shifts. He takes it, and carves one word into the table, deep enough to keep: LATE. Then he gives you something. It is the first thing he has given in a hundred years.", reward: { xp: 200, item: 3, perm: "pts" } });
 
-  // ---- ACT IV (Granite Keep) ----
+  // ---- ACT IV (Gravenhall) ----
   Q({ id: "quarry", act: 4, hub: "granitekeep", npc: "orm", npcDef: { name: "Senator Orm", col: "#8a94a4", hair: "#c8c8c8", idle: "I have sat in the Hold-Senate for two hundred years. I am very tired and I am not leaving." }, name: "The Runaway Quarry", zone: "quarry", zname: "The Runaway Quarry", th: "mine", lv: 3, seed: 331, pal: ["golem", "golem"], boss: "colossus", obj: "Stop the Runaway Colossus in the quarry.",
-    gate: "The quarry road, where the ground shakes in steady, patient steps.", intro: "Stonehold builds golems for the wall. One heard the Edict read aloud and decided that no one regulates stone. It is in the quarry and it will not stop walking until it reaches Luminant. I do not want to kill it. I will, if I have to.", turn: "It is still. I wish I had been there to speak to it. Stone listens, in the end. Take this from the Senate.", reward: { xp: 220, crowns: 160, perm: "hp" } });
+    gate: "The quarry road, where the ground shakes in steady, patient steps.", intro: "Stonehold builds golems for the wall. One heard the Edict read aloud and decided that no one regulates stone. It is in the quarry and it will not stop walking until it reaches Meridian. I do not want to kill it. I will, if I have to.", turn: "It is still. I wish I had been there to speak to it. Stone listens, in the end. Take this from the Senate.", reward: { xp: 220, crowns: 160, perm: "hp" } });
   Q({ id: "road", act: 4, hub: "granitekeep", npc: "sera", npcDef: { name: "Sera Ironvow", col: "#b9c2d0", hair: "#3a3a3a", idle: "I have never left a post. I would like to know what leaving one feels like." }, name: "The Wagon Road", zone: "road", zname: "The Wagon Road", th: "grass", lv: 3, seed: 332, pal: ["outrider", "wraithgun"], boss: "kess", obj: "Break Outrider Captain Kess on the Wagon Road.",
     gate: "The Iron Road, rutted by heavy wheels, running north towards Ironwatch.", intro: "Dominion outriders have been seen escorting a sealed wagon north along the Iron Road. It is not the boy's wagon, not yet, but it is its escort. Break them before they close up with the rest.", turn: "Kess is dead and the road is ours. I held it with my shield and your hands. I do not usually say that.", reward: { xp: 230, crowns: 170, perm: "pts" } });
   Q({ id: "prison", act: 4, hub: "granitekeep", npc: "tamsin", npcDef: { name: "Tamsin Ashveil", col: "#e0743c", hair: "#d84a1a", idle: "I burned my own village once to stop a siege. It worked. I have not forgiven it for working." }, name: "The Slag Prison", zone: "prison", zname: "The Slag Prison", th: "ember", lv: 3, seed: 333, pal: ["wraith", "wraithgun"], boss: "tull", kind: "captive", obj: "Free the Flameborne prisoners from the Slag Prison.",
@@ -4548,7 +4551,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
     prop: { name: "A spark-core", t: "A reactor core the size of a child's head. It beats.", act: "Take it.", obj: "Take the spark-core.", toast: "The core beats against your palm." },
     turn: "It still beats. Do not tell me what it sounds like. Take this, and tell me when to turn it off.", reward: { xp: 340, item: 3, perm: "dmg" } });
   Q({ id: "furnace", act: 5, hub: "highmarch", npc: "vael", npcDef: { name: "Senator Vael", col: "#8a94a4", hair: "#d8d8d8", idle: "The Senate serves for life. I have decided life is long enough to be worth fighting for." }, name: "Furnace Row Barracks", zone: "furnace", zname: "Furnace Row Barracks", th: "stone", lv: 3, seed: 344, pal: ["wraith", "wraithgun"], boss: "voss", obj: "Defeat Magistrate Voss at Furnace Row Barracks.",
-    gate: "A long barracks street where the Dominion drills its newest column.", intro: "Magistrate Voss drills the Dominion's next column in Furnace Row. If it marches, every village between here and Luminant burns. The Senate cannot move. You can.", turn: "The column is scattered. Voss threw down her seal and walked off the field. I did not think I would be glad to see a Magistrate walk. I am glad.", reward: { xp: 360, crowns: 300, perm: "hp" } });
+    gate: "A long barracks street where the Dominion drills its newest column.", intro: "Magistrate Voss drills the Dominion's next column in Furnace Row. If it marches, every village between here and Meridian burns. The Senate cannot move. You can.", turn: "The column is scattered. Voss threw down her seal and walked off the field. I did not think I would be glad to see a Magistrate walk. I am glad.", reward: { xp: 360, crowns: 300, perm: "hp" } });
   Q({ id: "gate", act: 5, hub: "highmarch", npc: "hald", name: "The Iron Gate", zone: "irongate", zname: "The Iron Gate", th: "pass", lv: 3, seed: 345, pal: ["wraith", "wraithgun"], boss: "reaper", obj: "Destroy the Iron Reaper at the Iron Gate.",
     need: function (f) { return f.qd_slagmoor && f.qd_pitmouth && f.qd_rivet && f.qd_furnace; },
     gate: "The last road before Iron Throne City. A gate of black iron, taller than any wall you have seen.", intro: "Four holdings are broken. The road to Iron Throne City runs through one last gate, and the thing that guards it was built before Valek had a name. The Iron Reaper. Whatever you mean to do about the boy, you will have to get past it first.",
@@ -4916,7 +4919,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
     if (!f.q1clear) return { text: "Clear the bandits on the Millbrook Road.", site: "millbrook", area: "millroad", en: "*" };
     if (!f.q1done) return { text: "Return to Elder Mara in Ashford.", site: "ashford", area: "ashford", npc: "mara" };
     if (!f.q2) { var fo = fmObj(f); if (fo) return fo; }
-    if (!f.q2) return { text: "Find Steward Corbet in Emberfall.", site: "emberfall", area: "emberfall", npc: "hale" };
+    if (!f.q2) return { text: "Find Steward Corbet in Hearthmount.", site: "emberfall", area: "emberfall", npc: "hale" };
     if (!f.writ) return { text: f.grathdead ? "Open the chest in the Hollow." : "Find the bandit hideout at Redbank and defeat Grath.", site: "redbank", area: "hollow", npc: f.grathdead ? "chest" : "", en: f.grathdead ? "" : "grath" };
     if (!f.q2done) return { text: "Bring the writ to Steward Corbet.", site: "emberfall", area: "emberfall", npc: "hale" };
     if (!f.q3) return { text: "Find Lord Brannoch in Highmarch.", site: "highmarch", area: "highmarch", npc: "brannoch" };
@@ -4924,7 +4927,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
     if (!f.q3done) return { text: "Report to Lord Brannoch.", site: "highmarch", area: "highmarch", npc: "brannoch" };
     var hasDom = !!site("ironwatch");
     if (!f.q4) return { text: "Speak to Lord Brannoch about the name Valek.", site: "highmarch", area: "highmarch", npc: "brannoch" };
-    if (!f.lumeok) return { text: "Find Archivist Lume at the Lantern Annex in Luminant.", site: "luminant", area: "luminantc", npc: "lume" };
+    if (!f.lumeok) return { text: "Find Archivist Lume at the Lantern Annex in Meridian.", site: "luminant", area: "luminantc", npc: "lume" };
     if (!f.page) return { text: "Descend into the Drowned Archive and take the Twin-Spark page.", site: "luminant", area: "archive", en: "unwritten" };
     if (!f.q4done) return { text: "Bring the page to Archivist Lume.", site: "luminant", area: "luminantc", npc: "lume" };
     if (!f.metArdyn) return { text: "Speak with High Councillor Ardyn Solbrand.", site: "luminant", area: "luminantc", npc: "ardyn" };
@@ -5038,7 +5041,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
       { t: "The Dominion marches", on: !!(S.mc && S.mc.began), txt: "The foundries are open. Every realm it takes makes it stronger.", lock: "the Iron Heir" }];
     if (EV.some(function (e) { return e.on; })) h += '<div class="sec">World events</div>';
     EV.forEach(function (e) { h += e.on ? "<p><b>" + e.t + "</b><br>" + e.txt + "</p>" : ""; });
-    var SQ = [["sq1", "Thornfall Cave", "Tam on the Millbrook Road"], ["sq2", "Emberdeep Mine", "Dask in Emberfall"], ["sq3", "The Warden's Barrow", "Serra in Highmarch"]], sqh = "";
+    var SQ = [["sq1", "Thornfall Cave", "Tam on the Millbrook Road"], ["sq2", "Emberdeep Mine", "Dask in Hearthmount"], ["sq3", "The Warden's Barrow", "Serra in Highmarch"]], sqh = "";
     SQ.forEach(function (x) { var k = x[0]; if (f[k + "done"]) sqh += '<p class="dim-t">' + x[1] + ": done.</p>"; else if (f[k + "clear"]) sqh += "<p>" + x[1] + ": clear. Report to " + x[2] + ".</p>"; else if (f[k]) sqh += "<p>" + x[1] + ": clear out the bandits. Chests inside.</p>"; });
     if (sqh) h += '<div class="sec">Side quests</div>' + sqh;
     var pick = [];
@@ -5696,7 +5699,7 @@ var BIMG_SRC={"farm": "data:image/webp;base64,UklGRqyAAABXRUJQVlA4WAoAAAAQAAAAZw
     lantern: { n: "Lanternkeeper", p: { w: "Lanternkeeper Staff-blade", a: "Lanternkeeper Robe", r: "Lanternkeeper Sling-bow", k: "Lanternkeeper Mantle" }, b: { 2: { life: 0.25 }, 4: { life: 0.75, gold: 0.25, hp: 1, blk: 0.1 } }, d: { 2: "heal 0.25 on a kill", 4: "heal 0.75 on a kill, +25% crowns, +1 heart, blocks +10%" } },
     dawn: { n: "Dawnforged", p: { w: "Dawnforged Brand", a: "Dawnforged Harness", r: "Dawnforged Arc", k: "Dawnforged Greaves" }, b: { 2: { dmg: 0.1 }, 4: { dmg: 0.45, army: 0.15, cdr: 0.1 } }, d: { 2: "+10% strike", 4: "+45% strike, −10% attack time, +15% army strength in map battles" } }
   }, SETK = Object.keys(SETS);
-  var MYTH = { w: ["Voidhammer", "Worldsplitter", "The Verdict of Nine"], a: ["Aegis of the Shattered Realms", "Nine-Realm Bulwark"], r: ["Lastlight", "The Unmaking Arc"], k: ["Mantle of Broken Stillness", "Shroud of Nine Names"] };
+  var MYTH = { w: ["Shardmaul", "Worldsplitter", "The Verdict of Nine"], a: ["Aegis of the Shattered Realms", "Nine-Realm Bulwark"], r: ["Lastlight", "The Unmaking Arc"], k: ["Mantle of Broken Stillness", "Shroud of Nine Names"] };
   var HEROB = { dravik: 0.16, sable: 0.1, quill: 0.1, hollowknife: 0.08, unwritten: 0.08 };
   var AFN = [0, 1, 2, 3, 2, 3], AFV = [0, 1, 2, 3, 2.5, 4.5];
   function pickSet(slot) {
@@ -6073,7 +6076,7 @@ var BIMG_SRC={"farm": "data:image/webp;base64,UklGRqyAAABXRUJQVlA4WAoAAAAQAAAAZw
   DLG.fm_how = { n: "Elder Mara", t: "On the big map open a village and use Take idle men: free, five at a time. Taking men from the fields costs the village its harvest and goodwill. Your men eat grain and draw wages every day. The top bar shows how many days of each you have. When either runs out, men walk home. Open Party to see them, and promote them as they earn experience.", c: [{ t: "Go on.", go: "fm_wait" }] };
   DLG.fm_use = { n: "Elder Mara", t: "Your column is your strength on the map. Tap to march. Bands weaker than you run from you; bands stronger than you hunt you. Keep a week of grain and crowns in hand, avoid anything bigger than you, and fight what you can beat for loot and experience.", c: [{ t: "Go on.", go: "fm_wait" }] };
   DLG.fm_fight = { n: "Elder Mara", t: "Touch a band and the battle sheet opens with both strengths side by side. Your numbers, your gear and your skills decide it. Even a win costs you some men, so rest in a village, recruit again and keep the column fed.", c: [{ t: "Go on.", go: "fm_wait" }] };
-  DLG.fm_back = { n: "Elder Mara", t: "I watched from the wall. Enough men, fed and paid, and a road kept clear. That is the whole art of it, and your column will grow as you do. Emberfall is waiting.", c: [{ t: "Take the reward.", give: { crowns: 100, xp: 80 }, set: { fmdone: 1 }, toast: "+100 crowns. The column is mustered." }] };
+  DLG.fm_back = { n: "Elder Mara", t: "I watched from the wall. Enough men, fed and paid, and a road kept clear. That is the whole art of it, and your column will grow as you do. Hearthmount is waiting.", c: [{ t: "Take the reward.", give: { crowns: 100, xp: 80 }, set: { fmdone: 1 }, toast: "+100 crowns. The column is mustered." }] };
   leg("L1b", 1, "The Grain Debt", "Elder Mara, Ashford", function (f) { return f.fqdone ? 4 : fqStage() === 4 ? 3 : f.fq1 ? 2 : f.q1done ? 1 : 0; }, "Build a farm in Ashford and set it to feed the village.");
   leg("L1c", 1, "First Muster", "Elder Mara, Ashford", function (f) { return f.fmdone ? 4 : f.fmwon ? 3 : f.fm1 ? 2 : f.fqdone ? 1 : 0; }, "Raise five men and beat the bandit band.");
   function fmObj(f) {
@@ -6274,6 +6277,7 @@ var BIMG_SRC={"farm": "data:image/webp;base64,UklGRqyAAABXRUJQVlA4WAoAAAAQAAAAZw
   function dipGift(f) { if (S.crowns < 100) return; S.crowns -= 100; opAdd(f, 8); dipSay("Your gift is received. " + dnm(f) + " thinks a little better of you."); }
   // --- UI ---
   function tag(t, c) { return '<span style="display:inline-block;border:1px solid ' + c + ";color:" + c + ';padding:0 .35rem;margin:0 .25rem .2rem 0;font-size:.7rem;letter-spacing:.06em">' + t + "</span>"; }
+  function vhVoyagerBusy() { try { return QS.some(function (q) { if (q.npc !== "voyager") return false; var v = qSt(q); return v === 2 || v === 3; }); } catch (e) { return false; } }
   function vhMetalRaids(f) { try { var c = cp().f; return f === "metal" && !c.edict && !c.domRule && !(S.mc && S.mc.began); } catch (e) { return false; } }
   function realmTags(f) {
     var o = opOf(f), h = tag(regard(o) + " " + Math.round(o), regCol(o)); if (S.pwar[f]) h += vhMetalRaids(f) ? tag("RAIDERS HUNT YOU · NOT YET WAR", "#ff9a5a") : tag("AT WAR WITH YOU", "#ff6a5a"); if (isAlly("player", f)) h += tag("YOUR ALLY", "#7fd88a"); if (dip().vas === f) h += tag("YOUR LIEGE", "#e8c75a"); if (truced("player", f)) h += tag("TRUCE", "#9fb4e8");
@@ -6488,8 +6492,8 @@ var BIMG_SRC={"farm": "data:image/webp;base64,UklGRqyAAABXRUJQVlA4WAoAAAAQAAAAZw
       off: "“A king swore on a sword and the sword swore back. Warden Sable guards what is left of both. I will not call it a duel. It is a war with a very small army and you are the other side.”", hint: "Defeat Warden Sable and the oath-guard.", done: "“It still burns. Careful. It is not angry with you. It is only warm.”" },
     { id: "r4", n: "Lastlight, Reborn", who: "Lantern-Keeper Maud", lv: 18, fee: 1300, boss: "unwritten", hpx: 3.4, esc: ["inkling", "inkling", "inkling", "inkling", "inkspit", "inkspit", "inkspit", "knife"], wn: "Lastlight Reborn", slot: "r", aff: { cdr: 0.25, free: 0.3, gold: 0.3 }, wk: 1.6,
       off: "“There is a bow made of every last thing a lantern ever saw, and The Unfiled has been writing over it. Take it back before the page is blank. I will pay nothing. I can only ask.”", hint: "File The Unfiled, permanently.", done: "“I can read it again. It says your name. I did not teach it that.”" },
-    { id: "r5", n: "The Hammer Between Worlds", who: "The Last Marshal", lv: 22, fee: 2000, boss: "dravik", hpx: 4.0, esc: ["wraith", "wraith", "wraith", "wraith", "wraithgun", "wraithgun", "wraithgun", "hollowknife"], wn: "The Voidhammer", slot: "w", aff: { cdr: 0.3, vig: 3, life: 0.6, gold: 0.5 }, wk: 1.8,
-      off: "“The Voidhammer is not a weapon. It is a question with a handle. Marshal Dravik carries it because no one else has dared to answer. If you win, you will have it. If you lose, it will have been another small wound in a very large world.”", hint: "Defeat Marshal Dravik and his elite guard.", done: "“Then the question has an answer. I hope you like it. Take the Hammer.”" }
+    { id: "r5", n: "The Hammer Between Worlds", who: "The Last Marshal", lv: 22, fee: 2000, boss: "dravik", hpx: 4.0, esc: ["wraith", "wraith", "wraith", "wraith", "wraithgun", "wraithgun", "wraithgun", "hollowknife"], wn: "The Shardmaul", slot: "w", aff: { cdr: 0.3, vig: 3, life: 0.6, gold: 0.5 }, wk: 1.8,
+      off: "“The Shardmaul is not a weapon. It is a question with a handle. Marshal Dravik carries it because no one else has dared to answer. If you win, you will have it. If you lose, it will have been another small wound in a very large world.”", hint: "Defeat Marshal Dravik and his elite guard.", done: "“Then the question has an answer. I hope you like it. Take the Maul.”" }
   ];
   var RTM = {}; RT.forEach(function (q) { RTM[q.id] = q; });
   function rtIdx(q) { return RT.indexOf(q); }
@@ -7300,7 +7304,7 @@ var BIMG_SRC={"farm": "data:image/webp;base64,UklGRqyAAABXRUJQVlA4WAoAAAAQAAAAZw
     // shorelines: wet sand + foam
     for (var y = 0; y < WORLD; y += 4) for (var x = 0; x < WORLD; x += 4) {
       var wx = x + rng() * 4, wy = y + rng() * 4, e = elevAt(wx, wy);
-      if (e >= 0.332 && e < 0.34) { g.fillStyle = "rgba(235,242,236," + (0.25 + rng() * 0.35) + ")"; g.fillRect(wx, wy, 2.2, 1.1); }
+      if (e >= 0.332 && e < 0.34) { g.fillStyle = "rgba(214,208,228," + (0.2 + rng() * 0.3) + ")"; g.fillRect(wx, wy, 2.2, 1.1); }
       else if (e >= 0.34 && e < 0.375) { if (!nearSite(wx, wy, 100)) { g.fillStyle = "rgba(" + (186 + (rng() * 30 | 0)) + "," + (166 + (rng() * 24 | 0)) + ",112," + (0.35 + rng() * 0.3) + ")"; g.fillRect(wx, wy, 2.4, 2); } }
       else if (e >= 0.3 && e < 0.332 && rng() < 0.12) { g.fillStyle = "rgba(160,200,215,0.22)"; g.fillRect(wx, wy, 5, 0.8); }
     }
@@ -10919,7 +10923,7 @@ function qFinish(q, opt, idx) { qFinish0(q, opt, idx); if (opt && typeof opt.eff
   ch({ id: "tithe", act: 1, hub: "ashford", npc: "dessa", npcDef: { name: "Cooper Dessa", col: "#a8683a", hair: "#3a2a1a", idle: "I count barrels for a living. Somebody has been counting them wrong on purpose." },
     need: d1, name: "The Missing Tithe", zone: "tithe", zname: "The Smugglers' Cellar", th: "cave", lv: 1, seed: 401, pal: ["bandit", "slinger"], boss: "tollmaster", obj: "Find the stolen tithe grain in the Smugglers' Cellar.",
     gate: "A hatch behind the old drover's yard, kept shut with a very new lock.",
-    intro: "The village tithe, forty sacks, left the granary and never reached Emberfall. Somebody in Ashford opened a door with a key. I will not say a name until I am sure. Follow the cart-ruts to the cellar behind the drover's yard. See who is counting my barrels.",
+    intro: "The village tithe, forty sacks, left the granary and never reached Hearthmount. Somebody in Ashford opened a door with a key. I will not say a name until I am sure. Follow the cart-ruts to the cellar behind the drover's yard. See who is counting my barrels.",
     turn: "Brek is dead and the sacks are what is left of them. He had a ledger. The signature at the bottom is not his. You know whose it is, and so do I. What do I tell the village?",
     opts: [{ t: "“Bandits took it. Brek had help from outside.”", reward: { xp: 90, crowns: 70 }, set: { ash_lie: 1 }, text: "Dessa looks at you a long moment, then nods and puts the ledger in her coat. “Outside. Yes. If that is what you saw.” She does not sound like she believes you, and she does not argue." },
       { t: "“The miller sold it. Haldan's name is on the page.”", reward: { xp: 90, item: 1 }, set: { ash_truth: 1 }, text: "“Thank you,” Dessa says, and it costs her. “Somebody had to say it out loud. I only hope it was worth it.”" }] });
@@ -10939,7 +10943,7 @@ function qFinish(q, opt, idx) { qFinish0(q, opt, idx); if (opt && typeof opt.eff
 
   // ---------------- CHAIN 2 · EMBERFALL · THE CINDER COURT ----------------
   var d2 = function (f) { return !!f.q2done; };
-  ch({ id: "embertrial", act: 1, hub: "emberfall", npc: "pyrrha", npcDef: { name: "Pyrrha Ashgrove", col: "#e0602a", hair: "#ff7a2a", idle: "In Emberfall a leader is chosen by who can stand closest to the fire. I intend to stand in it." },
+  ch({ id: "embertrial", act: 1, hub: "emberfall", npc: "pyrrha", npcDef: { name: "Pyrrha Ashgrove", col: "#e0602a", hair: "#ff7a2a", idle: "In Hearthmount a leader is chosen by who can stand closest to the fire. I intend to stand in it." },
     need: d2, name: "The Trial of Cinders", zone: "embertrial", zname: "The Cinder Trial", th: "ember", lv: 2, seed: 411, pal: ["cinderling", "slinger"], boss: "trialwarden", obj: "Stand witness at Pyrrha's Trial of Cinders.",
     gate: "A ring of fired brick outside the walls. The heat is a wall of its own.",
     intro: "The Hearth Court meets at the turn of the moon. Seven contend for the throne's right hand. I am one. The old law says every contender walks the Trial with a witness who is not Flameborne, so that nobody can say the fire lied. Walk it with me.",
@@ -10957,9 +10961,9 @@ function qFinish(q, opt, idx) { qFinish0(q, opt, idx); if (opt && typeof opt.eff
   ch({ id: "passion", act: 2, hub: "emberfall", npc: "pyrrha", need: function (f) { return f.qd_cassforge && f.q3done; }, name: "The Hearth Court", zone: "passionhall", zname: "The Court of Ash", th: "ember", lv: 3, seed: 413, pal: ["cinderling", "bandit"], boss: "passionchamp", obj: "Survive the Court of Ash and its champion.",
     gate: "The Court meets in a hall with no roof. Ash falls like snow.",
     intro: function () { return "The Court begins. " + (F().ember_recipe === "pyrrha" ? "I have the recipe, and the Court will see it as strength or as theft. Possibly both, on alternate days." : F().ember_recipe === "burn" ? "They say the recipe was burned. Half the Court wants to hang whoever did it. Half wants to thank them." : "They are afraid of what you carry, whether or not they know it.") + " The champion of the old order will meet any challenger in the ash. I need a second."; },
-    turn: "It is done. The Court has chosen. Whatever comes next, Emberfall will be different, and you were in the room when it changed.",
-    opts: [{ t: "Raise Pyrrha to the King's right hand. Let the Court burn bright and young.", reward: { xp: 300, crowns: 200, item: 3 }, set: { ember_end: "pyrrha" }, eff: gift({ troops: 12, say: "Emberfall's berserkers swear to Pyrrha. Twelve ride with you." }), text: "Pyrrha steps into the fire and does not step out. The crowd roars. She says your name before her own." },
-      { t: "Break the contest. Let the Hearth Court choose by vote, not by fire.", reward: { xp: 300, perm: "pts" }, set: { ember_end: "vote" }, eff: gift({ grain: 40, say: "Emberfall remembers who ended the burning." }), text: "It is the first Court in two hundred years that ends without a body. Pyrrha does not forgive you. She is alive to be angry, and that is the point." }] });
+    turn: "It is done. The Court has chosen. Whatever comes next, Hearthmount will be different, and you were in the room when it changed.",
+    opts: [{ t: "Raise Pyrrha to the King's right hand. Let the Court burn bright and young.", reward: { xp: 300, crowns: 200, item: 3 }, set: { ember_end: "pyrrha" }, eff: gift({ troops: 12, say: "Hearthmount's berserkers swear to Pyrrha. Twelve ride with you." }), text: "Pyrrha steps into the fire and does not step out. The crowd roars. She says your name before her own." },
+      { t: "Break the contest. Let the Hearth Court choose by vote, not by fire.", reward: { xp: 300, perm: "pts" }, set: { ember_end: "vote" }, eff: gift({ grain: 40, say: "Hearthmount remembers who ended the burning." }), text: "It is the first Court in two hundred years that ends without a body. Pyrrha does not forgive you. She is alive to be angry, and that is the point." }] });
 
   // ---------------- CHAIN 3 · HIGHMARCH · THE HOLLOW GARRISON ----------------
   var d3 = function (f) { return !!f.q3done; };
@@ -11010,10 +11014,10 @@ function qFinish(q, opt, idx) { qFinish0(q, opt, idx); if (opt && typeof opt.eff
       { t: "“Some of those lies kept people alive.”", reward: { xp: 250, crowns: 250 }, set: { el_defend: 1 }, text: "“Some did,” Elyndra says gently. “And some kept you comfortable. I will remember both. I always do.”" }] });
   ch({ id: "lanterns", act: 3, hub: "luminantc", npc: "elyndra", need: function (f) { return f.qd_promises && f.q5done; }, name: "The Lantern Procession", zone: "lanternhall", zname: "The Lantern Road", th: "cave", lv: 3, seed: 433, pal: ["inkling", "echo"], boss: "lanternking", obj: "Walk the Lantern Road and end the Lantern-King's procession.",
     gate: "A road of lanterns that burn a hundred years of someone's memories.",
-    intro: "The Spiritveil dead do not rest, because the living will not let go. A procession walks the Lantern Road every night, led by a king who was never crowned. He carries every grief anyone has put down. Someone has to take it from him, or the Lantern City goes mad. It will cost you something.",
+    intro: "The Spiritveil dead do not rest, because the living will not let go. A procession walks the Lantern Road every night, led by a king who was never crowned. He carries every grief anyone has put down. Someone has to take it from him, or Lanthys Vale goes mad. It will cost you something.",
     turn: "He has set it down. The lanterns are going out one by one, quietly. Elyndra stands in the middle of the road, looking at her hands. She is crying, and she is smiling.",
     opts: [{ t: "Carry one grief yourself. Choose the lightest and remember it.", reward: { xp: 400, perm: "hp" }, set: { lantern_carry: 1 }, text: "The grief is not yours, and it is. A stranger's last day, in your head forever. She had soup for lunch and argued with her sister about a goat." },
-      { t: "Let the lanterns go dark. The dead have earned it.", reward: { xp: 400, crowns: 400, item: 3 }, set: { lantern_dark: 1 }, text: "The road goes black, one lamp at a time. In the Lantern City, a hundred people sleep through the night." }] });
+      { t: "Let the lanterns go dark. The dead have earned it.", reward: { xp: 400, crowns: 400, item: 3 }, set: { lantern_dark: 1 }, text: "The road goes black, one lamp at a time. In Lanthys Vale, a hundred people sleep through the night." }] });
 
   // ---------------- CHAIN 5 · WINDSPIRE · THE WIND OWES ----------------
   var d4 = function (f) { return !!f.q4done; };
@@ -11075,7 +11079,7 @@ function qFinish(q, opt, idx) { qFinish0(q, opt, idx); if (opt && typeof opt.eff
   EB("shardkeeper", "The Shard-Keeper", 13, "#b8a060", "#fff0b0");
   EB("galewyrm", "The Gale-Warden", 15, "#4a7a9a", "#c0f0ff");
   EB("deepshard", "The Keep's Memory", 17, "#7a7a86", "#e0e0f0");
-  EB("hammerghost", "The First Hammerer", 20, "#5a4a3a", "#ffd080");
+  EB("hammerghost", "The First Smith", 20, "#5a4a3a", "#ffd080");
   EB("quarryking", "The Petrified Foreman", 16, "#6a6a70", "#c0c0c8");
   EB("senatorstone", "Senator of Stone", 17, "#7a7a82", "#d8d8e0");
   EB("stillseer", "The Still Seer", 15, "#a0c8d0", "#f0ffff");
@@ -11090,19 +11094,19 @@ function qFinish(q, opt, idx) { qFinish0(q, opt, idx); if (opt && typeof opt.eff
   var m = function (id) { return function (f) { return !!f["qd_" + id]; }; };
 
   // ------------- MAIN CHAIN · THE SHARDS OF THE VOIDHAMMER (non-optional; required before the Iron Gate) -------------
-  ch({ id: "shard1", opt: 0, act: 2, hub: "luminantc", npc: "lume", need: function (f) { return !!f.q4done; }, name: "The First Shard", zone: "shard1", zname: "The Sealed Vault of Lumen", th: "cave", lv: 2, seed: 461, pal: ["inkling", "hollowsent"], boss: "shardkeeper", obj: "Recover the first shard of the Voidhammer from the sealed vault.",
+  ch({ id: "shard1", opt: 0, act: 2, hub: "luminantc", npc: "lume", need: function (f) { return !!f.q4done; }, name: "The First Shard", zone: "shard1", zname: "The Sealed Vault of Lumen", th: "cave", lv: 2, seed: 461, pal: ["inkling", "hollowsent"], boss: "shardkeeper", obj: "Recover the first starmetal splinter from the sealed vault.",
     gate: "A vault door that was never on any map. It has been waiting for the Twin-Spark page.",
-    intro: "The page you carried is not a prophecy. It is a key. The Voidhammer, the thing the Realms named their world after, was broken into four shards before there were Realms. The Assize hid the first, wrote down where, and filed the note under a word nobody uses. The page knows the word. Take it down. Do not touch the shard bare-handed.",
+    intro: "The page you carried is not a prophecy. It is a key. There are four splinters of starmetal that fell when the Realms broke. The smiths say they remember the Hammer, the way an echo remembers a voice. The Assize hid the first, wrote down where, and filed the note under a word nobody uses. The page knows the word. Take it down. Do not touch the shard bare-handed.",
     turn: "You hold the first shard. It is warm and it weighs more than it should. When you hold it, you see a smith with no face, hammering at nothing, and every blow is a world beginning. I will not ask what you saw. I am afraid that I would remember it.",
     opts: [{ t: "Carry the shard yourself. Someone has to.", reward: { xp: 300, perm: "pts" }, set: { shard1_kept: 1 }, text: "It settles against your ribs like a second heartbeat. Lume turns away, as if ashamed to have asked." },
       { t: "Leave it with the Council. Let the law guard it.", reward: { xp: 300, crowns: 300, item: 2 }, set: { shard1_council: 1 }, text: "Lume takes it with shaking hands. The Council will keep it safe, or misfile it again. Neither of you says which you expect." }] });
   ch({ id: "shard2", opt: 0, act: 3, hub: "windspire", npc: "orrin", need: m("shard1"), name: "The Second Shard", zone: "shard2", zname: "The Gale Citadel", th: "pass", lv: 3, seed: 462, pal: ["scout", "slinger"], boss: "galewyrm", obj: "Climb the Gale Citadel and take the second shard.",
     gate: "A tower of wind-carved stone, so high the clouds come in at the doors.",
     intro: "Stormreach does not keep things. We lose them to the wind. The second shard fell from the sky a thousand years ago and the Free Assembly argued for nine hundred of them about who owned it. The wind keeps it in a tower no one has climbed. I want to see if you can.",
-    turn: "The shard sings when the wind passes through it. Fast, bright, the sound of someone running away from something and not minding. Whatever the Voidhammer was, it was not made to be still.",
+    turn: "The shard sings when the wind passes through it. Fast, bright, the sound of someone running away from something and not minding. Whatever the Hammer was, this remembers it moving.",
     opts: [{ t: "Give the shard to Stormreach. Let it ride the wind.", reward: { xp: 400 }, set: { shard2_storm: 1 }, eff: gift({ troops: 10, say: "Stormreach's riders swear to you." }), text: "Orrin laughs until he is coughing. “Ride the wind. Yes. Nobody has ever had the nerve.”" },
       { t: "Keep it. You will need all four.", reward: { xp: 400, perm: "pts" }, set: { shard2_kept: 1 }, text: "Orrin nods. He does not argue, which is unlike him. “Be quick,” he says. “It does not like waiting.”" }] });
-  ch({ id: "shard3", opt: 0, act: 4, hub: "granitekeep", npc: "orm", need: m("shard2"), name: "The Third Shard", zone: "shard3", zname: "The Foundation Stone", th: "mine", lv: 3, seed: 463, pal: ["slagimp", "wraith"], boss: "deepshard", obj: "Descend beneath Granite Keep and take the third shard.",
+  ch({ id: "shard3", opt: 0, act: 4, hub: "granitekeep", npc: "orm", need: m("shard2"), name: "The Third Shard", zone: "shard3", zname: "The Foundation Stone", th: "mine", lv: 3, seed: 463, pal: ["slagimp", "wraith"], boss: "deepshard", obj: "Descend beneath Gravenhall and take the third shard.",
     gate: "A stair that goes down past the Keep's foundations, past the oldest stone, into older stone.",
     intro: "The Keep was not built on a mountain. It was built on a shard. We did not know until the Hold-Senate sat for two hundred years and noticed the stone was warm. Take it, and the Keep may fall. Leave it, and the Dominion will come for it. I have been a senator a long time. This is the only decision I have never been able to vote on.",
     turn: "The Keep stands. For now. It stands because the shard wants it to. I have felt it in the floor for two hundred years and thought it was my heart.",
@@ -11110,14 +11114,14 @@ function qFinish(q, opt, idx) { qFinish0(q, opt, idx); if (opt && typeof opt.eff
       { t: "Leave it. Stonehold's duty is to keep it where it is.", reward: { xp: 500, crowns: 500, item: 3 }, set: { shard3_left: 1 }, eff: gift({ troops: 12, say: "The Hold-Senate commits twelve to your column." }), text: "Orm presses a hand to the wall. “Duty,” he says. “Thank you for understanding that.”" }] });
   ch({ id: "shard4", opt: 0, act: 5, hub: "highmarch", npc: "hald", need: m("shard3"), name: "The Hammer Remembered", zone: "shard4", zname: "The Forge Before Forges", th: "ember", lv: 4, seed: 464, pal: ["cinderling", "slagimp"], boss: "hammerghost", obj: "Carry the shards to the forge before forges and face the First Hammerer.",
     gate: "A forge with no fire and no walls. Three shards hum in your hands. A fourth is already on the anvil.",
-    intro: function () { var f = F(), kept = (f.shard1_kept ? 1 : 0) + (f.shard2_kept ? 1 : 0); return "The Voidhammer is not a weapon. I have read the Dominion's reports, the Council's page, and the oldest stones in Granite Keep, and the answer is the same. It is a tool for making the world change. Without it, the Void's stillness spreads. Four shards, one forge. " + (kept >= 2 ? "You kept two of them close, and that will let you reach the anvil yourself." : kept === 1 ? "You kept one, and the Realms hold the others. They will have to send them." : "The Realms hold all of them. You will have to ask each in turn.") + " The First Hammerer will not give it up easily. He has hammered the world into being for ten thousand years and no one has ever thanked him."; },
-    turn: "It is whole. The Voidhammer. It does not feel like a weapon. It feels like a question. The First Hammerer looked at you before he faded, and he said one word: “Finally.” I think he was waiting for someone to relieve him. The Iron Gate is open to you now. Everything past it is yours to answer.",
-    opts: [{ t: "Raise the Voidhammer. Let it be a hammer again.", reward: { xp: 900, crowns: 600, item: 3, perm: "hp" }, set: { hammer_raised: 1 }, text: "It rings once, across all nine Realms. In every city, someone who has been stuck for years takes a first step." },
+    intro: function () { var f = F(), kept = (f.shard1_kept ? 1 : 0) + (f.shard2_kept ? 1 : 0); return "The Shardmaul is not a weapon. I have read the Dominion's reports, the Council's page, and the oldest stones in Gravenhall, and the answer is the same. It is a tool for making the world change. Without it, the Void's stillness spreads. Four shards, one forge. " + (kept >= 2 ? "You kept two of them close, and that will let you reach the anvil yourself." : kept === 1 ? "You kept one, and the Realms hold the others. They will have to send them." : "The Realms hold all of them. You will have to ask each in turn.") + " The First Smith will not give it up easily. He has has been striking at nothing for ten thousand years, trying to make the sound he heard once, and no one has ever thanked him and no one has ever thanked him."; },
+    turn: "It is whole. The Shardmaul. It is not the Hammer. It only remembers it. It does not feel like a weapon. It feels like a question. The First Smith looked at you before he faded, and he said one word: “Finally.” I think he was waiting for someone to relieve him. The Iron Gate is open to you now. Everything past it is yours to answer.",
+    opts: [{ t: "Raise the Shardmaul.", reward: { xp: 900, crowns: 600, item: 3, perm: "hp" }, set: { hammer_raised: 1 }, text: "It rings once, across all nine Realms. In every city, someone who has been stuck for years takes a first step." },
       { t: "Set it down. Nobody should carry the world's will.", reward: { xp: 900, perm: "pts", item: 3 }, set: { hammer_down: 1 }, text: "It rests on the anvil. The forge goes quiet. Somewhere far off, a bell rings that has not rung in ten thousand years." }] });
   // the shard chain is required: the Iron Gate cannot be reached without the Voidhammer reforged
   (function () { var g = QMAP.gate; if (g) { var on = g.need; g.need = function (f) { return (!on || on(f)) && !!f.qd_shard4; }; } })();
 
-  // ------------- STONEHOLD · THE SENATE OF STONE (Granite Keep) -------------
+  // ------------- STONEHOLD · THE SENATE OF STONE (Gravenhall) -------------
   var s5 = function (f) { return !!f.q5done; };
   ch({ id: "quarry2", act: 4, hub: "granitekeep", npc: "carrow", npcDef: { name: "Mason Carrow", col: "#8a8a94", hair: "#4a4a4a", idle: "My left hand is stone to the wrist. I find I miss it less every day. That is the part that frightens me." },
     need: s5, name: "The Petrified Quarry", zone: "quarry2", zname: "The Stone Quarry", th: "mine", lv: 3, seed: 471, pal: ["slagimp", "wraith"], boss: "quarryking", obj: "Free the foreman at the bottom of the quarry.",
@@ -11141,7 +11145,7 @@ function qFinish(q, opt, idx) { qFinish0(q, opt, idx); if (opt && typeof opt.eff
       { t: "Decline. You will hold, but not forever.", reward: { xp: 600, crowns: 600 }, set: { st_nov: 1 }, text: "Carrow smiles with half his face. “That is honest. “That is honest,” Carrow says. “Heavy is honest.””" }] });
   ET.stoneking = { hp: 19, sp: 36, dmg: 2, col: "#6a6a72", band: "#e0e0e8", name: "The Stone King", big: 1, boss: 1 };
 
-  // ------------- FROSTGRAVE · THE STILL PROPHETS (Luminant) -------------
+  // ------------- FROSTGRAVE · THE STILL PROPHETS (Meridian) -------------
   var f4 = function (f) { return !!f.q4done; };
   ch({ id: "stillseer", act: 3, hub: "luminantc", npc: "iseult", npcDef: { name: "Prophet Iseult", col: "#a0d0d8", hair: "#f0ffff", idle: "I have seen what you will say. I will not tell you. It is so tiring to be right." },
     need: f4, name: "The Quiet Prophecy", zone: "stillseer", zname: "The Still Observatory", th: "cave", lv: 3, seed: 481, pal: ["frostshade", "inkling"], boss: "stillseer", obj: "Reach the Still Seer before the prophecy completes.",
@@ -11157,7 +11161,7 @@ function qFinish(q, opt, idx) { qFinish0(q, opt, idx); if (opt && typeof opt.eff
     opts: [{ t: "Let the future thaw. People should walk through what they cannot foresee.", reward: { xp: 450, perm: "hp" }, set: { fg_thaw: 1 }, text: "The ice runs in a thousand streams. In the Still City, someone cries for the first time in a century." },
       { t: "Freeze one door open. Keep one future safe.", reward: { xp: 450, item: 3, crowns: 300 }, set: { fg_keep: 1 }, text: "Iseult touches the frozen door. “One,” she whispers. “I will keep one. I will not tell anyone which.”" }] });
 
-  // ------------- SHADOWDEEP · THE FACELESS COUNCIL (Windspire) -------------
+  // ------------- SHADOWDEEP · THE FACELESS COUNCIL (Skyrend) -------------
   var f3 = function (f) { return !!f.q4done; };
   ch({ id: "unmade1", act: 3, hub: "windspire", npc: "vesper", npcDef: { name: "Vesper No-Name", col: "#2a2a3a", hair: "#1a1a22", idle: "My name was taken to protect me. I would like it back, but I do not remember who took it." },
     need: f3, name: "The Unmaking Dockside", zone: "unmade1", zname: "The Quiet Warehouse", th: "cave", lv: 3, seed: 491, pal: ["knife", "assassin"], boss: "facelessone", obj: "Follow Vesper into the Quiet Warehouse.",
@@ -11167,7 +11171,7 @@ function qFinish(q, opt, idx) { qFinish0(q, opt, idx); if (opt && typeof opt.eff
     opts: [{ t: "Trust Vesper. She has no reason to lie.", reward: { xp: 350, perm: "pts" }, set: { sh_trust: 1 }, text: "Vesper looks at you for a very long time. “That may be the kindest thing anyone has ever said to someone without a name.”" },
       { t: "Trust no one, including Vesper. Watch her closely.", reward: { xp: 350, crowns: 350 }, set: { sh_doubt: 1 }, text: "“Good,” Vesper says flatly. “That is the Shadowdeep way. I would worry if you did anything else.”" }] });
   ch({ id: "unmade2", act: 4, hub: "windspire", npc: "vesper", need: function (f) { return f.qd_unmade1 && f.q5done; }, name: "The Unmaker", zone: "unmade2", zname: "The Unmade Chamber", th: "cave", lv: 4, seed: 492, pal: ["knife", "assassin"], boss: "unmaker", obj: "Find and face the Unmaker.",
-    gate: "A chamber in the Unmade City's hidden depths. The walls are transparent, but you cannot walk through them.",
+    gate: "A chamber in Hush's hidden depths. The walls are transparent, but you cannot walk through them.",
     intro: function () { return "I have the Council's real names now. " + (F().sh_trust ? "You trusted me, and I will not waste it. " : "You doubted me, and you were right to. ") + "One of them is the Unmaker. One of them has been taking the others out of the world. I do not know which. If I name the wrong one, I unmake an innocent. If I name no one, we all go. Come with me. Be my other pair of eyes."; },
     turn: "It was Vesper. Or it was the part of Vesper that wanted to be the last one standing. We found the real culprit in the end, a Council elder who feared being forgotten more than being hated. He unmade the others so that someone would at least remember him. That is the saddest sentence I have ever said.",
     opts: [{ t: "Restore the unmade. Pay the price of memory.", reward: { xp: 550, perm: "hp" }, set: { sh_restore: 1 }, eff: gift({ troops: 10, say: "The restored Council members pledge a hundred knives." }), text: "Three chairs fill. Three faces return. They look at you with no memory of the years they lost, and then with sudden, terrible gratitude." },
@@ -11691,7 +11695,7 @@ var POW = {
   "Elyndra’s Remembrance Cloak": { fx: { xp: 0.12, dmg: -0.04 }, t: "+12% experience: you remember more, strike less" },
   "Boots of the Long Road": { fx: { speed: 0.1, escape: 0.08, tough: -0.04 }, t: "+10% speed and escape, thinner defence" },
   "Cloak of Quiet Steps": { fx: { dodge: 0.1, escape: 0.1, dmg: -0.05 }, t: "+10% dodge and escape, -5% damage" },
-  "Voidhammer": { fx: { dmg: 0.3, bossdmg: 0.3, regen: -0.8 }, t: "+30% damage and boss damage; the hammer drinks your healing" },
+  "Shardmaul": { fx: { dmg: 0.3, bossdmg: 0.3, regen: -0.8 }, t: "+30% damage and boss damage; the hammer drinks your healing" },
   "Worldsplitter": { fx: { dmg: 0.26, speed: -0.08 }, t: "+26% damage, slow as continents" },
   "The Verdict of Nine": { fx: { bossdmg: 0.5, loot: -0.12 }, t: "+50% boss damage, -12% loot" },
   "Aegis of the Shattered Realms": { fx: { tough: 0.3, speed: -0.1 }, t: "+30% toughness, -10% speed" },
@@ -11700,7 +11704,7 @@ var POW = {
   "The Unmaking Arc": { fx: { dmg: 0.3, loot: -0.15 }, t: "+30% damage; what it kills leaves less behind" },
   "Mantle of Broken Stillness": { fx: { dodge: 0.14, regen: 0.6, dmg: -0.08 }, t: "+14% dodge, mending, -8% damage" },
   "Shroud of Nine Names": { fx: { dodge: 0.12, escape: 0.14, xp: 0.1, tough: -0.08 }, t: "Hard to hold, harder to know: dodge, escape, xp, but fragile" }
-};
+}; POW["Voidhammer"] = POW["Shardmaul"]; // old saves: items named before the rename keep their effect
 function powOf(it) { return it && it.name ? POW[it.name] || null : null; }
 function powSig() { var s = ""; ["w", "a", "r", "k"].forEach(function (sl) { var it = eIt(sl); if (it && POW[it.name]) s += it.name + ";"; }); return s; }
 function powFx(k) { var t = 0; ["w", "a", "r", "k"].forEach(function (sl) { var it = eIt(sl), p = powOf(it); if (p && p.fx[k]) t += p.fx[k]; }); return t; }
@@ -13882,8 +13886,8 @@ function ovPortalSheet(kind) {
       for (var i = 0; i < 9; i++) { if (i === c || !S.gates[i]) continue; var f = ovConts()[i].f; h += row(ovConts()[i].n, f ? FAC[f].name + "'s shard." : "The ninth Realm. It broke the day it was born, and reality still cannot hold there.", "Pass", "gateto", String(i), "", S.crowns < ovGateToll(), f ? "" : "amber"); }
     }
   } else {
-    h += '<p class="sub">Shadowdeep digs under the sea. ' + (ovTunnelsOpen() ? "They have shown you the way." : "They have not shown you the way.") + '</p>';
-    if (!ovTunnelsOpen()) h += '<p>A black mouth in the hillside, and a cold draught that smells of nothing. The tunnels go everywhere, the Shadowdeep say, but only the Shadowdeep go. Do them a service at the Unmade City and they may show you.</p>';
+    h += '<p class="sub">Shadowdeep digs under the Between. ' + (ovTunnelsOpen() ? "They have shown you the way." : "They have not shown you the way.") + '</p>';
+    if (!ovTunnelsOpen()) h += '<p>A black mouth in the hillside, and a cold draught that smells of nothing. The tunnels go everywhere, the Shadowdeep say, but only the Shadowdeep go. Do them a service at Hush and they may show you.</p>';
     else {
       h += '<p>No toll. No light. Each passage takes two days underground, and the dark takes a little from you: <b>one in five</b> of your men come up Void-touched.</p><div class="sec">Where to</div>';
       for (var j = 0; j < 9; j++) { if (j === c || !S.tunnels[j]) continue; h += row(ovConts()[j].n, "Up through the " + (ovConts()[j].f ? FAC[ovConts()[j].f].name : "silent") + " hills.", "Go", "tunnelto", String(j), "", false, ""); }
@@ -13944,12 +13948,12 @@ try { Object.assign(UIPNG, { blades: "ui_blades", mail: "ui_mail", bows: "ui_bow
 // ---- Shadowdeep's side quest: do the Faceless a service and they show you the way under the sea ----
 (function () {
   try {
-    mkHub("unmadecity", "The Unmade City", "stone", 977, "unmadecity");
-    SITEAREA.unmadecity = "unmadecity"; HUBSITE.unmadecity = "unmadecity"; HUBNAME.unmadecity = "the Unmade City";
+    mkHub("unmadecity", "Hush", "stone", 977, "unmadecity");
+    SITEAREA.unmadecity = "unmadecity"; HUBSITE.unmadecity = "unmadecity"; HUBNAME.unmadecity = "Hush";
     Q({ opt: 1, id: "quietroad", act: 2, hub: "unmadecity", npc: "faceless", npcDef: { name: "A Faceless Voice", col: "#4a4860", hair: "#2a2838", idle: "You walked through a gate to get here. Loud. We prefer the quiet way. Everyone who takes it owes us something." },
-      name: "The Quiet Road", zone: "quietroad", zname: "The Drowned Tunnel", th: "mine", lv: 3, seed: 913, pal: ["hollowsent", "sealshade"], boss: "deepwarden", obj: "Clear the Deep-Warden from the tunnel under the Unmade City.",
+      name: "The Quiet Road", zone: "quietroad", zname: "The Drowned Tunnel", th: "mine", lv: 3, seed: 913, pal: ["hollowsent", "sealshade"], boss: "deepwarden", obj: "Clear the Deep-Warden from the tunnel under Hush.",
       gate: "A black mouth under the city, shored with timber. The draught that comes out of it smells of nothing at all.",
-      intro: "Shadowdeep digs. Under the hills, under the sea, under every realm that thinks the water keeps it safe. One tunnel has gone quiet: the Drowned Tunnel, under this city. Something is wearing our Warden's face down there and our own people will not go near it. Clear it. Then we will talk about what you are owed, and what you owe.",
+      intro: "Shadowdeep digs. Under the hills, under the Between, under every Realm that thinks the gulf keeps it safe. One tunnel has gone quiet: the Drowned Tunnel, under this city. Something is wearing our Warden's face down there and our own people will not go near it. Clear it. Then we will talk about what you are owed, and what you owe.",
       yes: "I will clear it.", accept: "Good. The Drowned Tunnel is below the city. Do not trust anything that knows your name.",
       turn: "The Warden is gone, or whatever was wearing him. The tunnel breathes again. The Faceless Voice does not thank you. It offers, which is more than thanks here.",
       opts: [{ t: "Show me the tunnels. I will owe Shadowdeep the favour.", reward: { xp: 400 }, set: { tunnels: 1 }, text: "A map that is not a map is pressed into your hand: a feel for the dark. Every shadow tunnel on every coast will know you now. Somewhere, a ledger with no names in it gains a line." },
@@ -14409,12 +14413,12 @@ document.addEventListener("click", function (e) { var t = e.target && e.target.c
   EB("hunterprime", "Hunter Prime", 19, "#4a4a5a", "#ffb060");
   EB("kingsignal", "A Signal Wearing a Crown", 20, "#18141c", "#ff7a3a");
   EB("gatewatcher", "The Watcher at the Gate", 22, "#101018", "#ffffff");
-  EB("harrowedking", "A Crown of Black Fire", 28, "#201010", "#ff5a2a");
+  EB("harrowedking", "The Crowned Presence", 28, "#201010", "#ff5a2a");
   function F() { return cp().f; }
   function m(id) { return function (f) { return !!f["qd_" + id]; }; }
   function ch(q) { q.opt = 0; q.act = 6; Q(q); }
   ch({ id: "eb_sera", hub: "luminantc", npc: "elyndra", need: m("silence1"), name: "The Statue That Disagrees", zone: "ebsera", zname: "The Erased Ward", th: "cave", lv: 4, seed: 461, pal: ["echo", "hollowsent"], boss: "unrecorded", obj: "Find what the city agreed to forget, in the Erased Ward.",
-    gate: "A ward of the Lantern City where every record has a clean white gap exactly the size of a person.",
+    gate: "A ward of Lanthys Vale where every record has a clean white gap exactly the size of a person.",
     intro: "I remember a captain called Sera. Nobody else does. The Council struck her from the record, and the city agreed so quickly that I think it was relieved. The Lantern shows me a plaza with no statue and a man who stands where she used to laugh. I need you to walk the ward with me. I cannot bear it alone, and I cannot put it down.",
     turn: "It is gone, the thing that wore the gap. Her name is back in my hands. It is a small, ordinary name. I think that is the cruelty of what was done to her. What do we do with it?",
     opts: [{ t: "“Write it where everyone can read it.”", reward: { xp: 450, crowns: 250 }, set: { eb_name: 1 }, text: "Elyndra writes it on the plaza stones in chalk. By evening three people have asked who she was. By morning there are flowers." },
@@ -14452,8 +14456,8 @@ document.addEventListener("click", function (e) { var t = e.target && e.target.c
     opts: [{ t: "“Hold the line around the grey edge. Nothing in, nothing out.”", reward: { xp: 680, crowns: 500 }, set: { eb_hold: 1 }, text: "Aeris posts watch around the arch. The grey shapes watch back. Nobody blinks for three days." },
       { t: "“Keep it open a crack. We need to understand it.”", reward: { xp: 680, item: 3 }, set: { eb_open: 1 }, text: "Aeris stares at you. “If you are wrong,” she says, “you will not be here to be wrong.” But she posts no guard." }] });
   ch({ id: "eb_king", hub: "highmarch", npc: "hald", need: m("eb_gate"), name: "He Kneels", zone: "ebking", zname: "The Ember Hall", th: "ember", lv: 5, seed: 467, pal: ["hollowsent", "wraith"], boss: "harrowedking", obj: "Walk into the grey edge over the ash-market.",
-    gate: "The ash-market in Emberfall. Over the stalls a grey edge hangs open, and through it, a hall of dead embers.",
-    intro: "A grey edge opened in the market at Emberfall at supper. The bread-sellers finished packing their stalls first. Through it there is a hall of dead embers, and something standing in it that makes grown soldiers look at the ground. Lyriel says it is a future, not a guest. I would like that confirmed by someone who has walked into it and come back. You, ideally.",
+    gate: "The ash-market in Hearthmount. Over the stalls a grey edge hangs open, and through it, a hall of dead embers.",
+    intro: "A grey edge opened in the market at Hearthmount at supper. The bread-sellers finished packing their stalls first. Through it there is a hall of dead embers, and something standing in it that makes grown soldiers look at the ground. Lyriel says it is a future, not a guest. I would like that confirmed by someone who has walked into it and come back. You, ideally.",
     turn: "You came back out. That was not guaranteed. The crowned shape hesitated, at the last, as if it had seen someone it did not expect this early. Then the grey edge closed. Kaelren went and bought the whole stall supper, which is what he does instead of talking. What did you do in there?",
     opts: [{ t: "Stand. Whatever it costs. (Costs a tenth of your column)", reward: { xp: 900, crowns: 700, perm: "hp" }, eff: function () { if (typeof loseFrac === "function") loseFrac(0.1); }, set: { eb_stand: 1 }, text: "You stood when every part of you wanted to rest. The hall remembers it. The crowned shape does not strike you down. It turns away, and the fire on its crown dims, once." },
       { t: "Kneel, and ask it why it came.", reward: { xp: 900, item: 3, perm: "pts" }, set: { eb_kneel: 1 }, text: "It listens. Neither of you says anything for a long time. Then it says, very quietly, one word you do not know. You carry it out of the hall like a stone in your pocket." }] });
@@ -14514,7 +14518,7 @@ var BOOK1 = [
     "The Voyager read it too. He sits at the end of the Aetherguard table, the one chair that belongs to no Realm, with the Hammer-Bearer’s plain iron band on his arm. He put the letter down very carefully, the way you put down something that might go off."
   ] },
   { id: "k2", t: "The Statue That Disagrees", sub: "The Concord Chronicle · II", cond: function () { return S.day >= 9; }, body: [
-    "There was a captain in the Lantern City called Sera. She laughed too loudly at funerals and was right about most things. Then one morning the Record had a clean white gap exactly the size of her.",
+    "There was a captain in Lanthys Vale called Sera. She laughed too loudly at funerals and was right about most things. Then one morning the Record had a clean white gap exactly the size of her.",
     "Nobody struck her out. The city simply agreed she had never been there, and agreed so quickly that it looked like relief. Her statue stayed in the plaza. Nobody could say who it was of, so they started calling it the Statue That Disagrees.",
     "Elyndra remembers her. Spiritveil archivists live a long time and forget nothing, which in a city of agreeable people makes them very poor company. She stood in the plaza and said the name aloud. Two people turned around. That was the first good day in a month."
   ] },
@@ -14525,8 +14529,8 @@ var BOOK1 = [
     function () { return S.kael !== "away" ? "Kaelren read this page over your shoulder and went and bought a sack of grain from the nearest merchant, just to hear the man finish a sentence." : ""; }
   ] },
   { id: "k4", t: "Under the Streets", sub: "The Concord Chronicle · IV", cond: function () { var f = cp().f; return f.q3done || S.day >= 40; }, body: [
-    "Under the lower streets of Windspire something was moving that the city’s logic did not account for. Not footsteps, not water. A shifting of agreements. A bell rang the wrong hour and then had always rung it. A bridge was a day’s walk longer than anyone remembered building.",
-    "Shadowdeep noticed first, because Shadowdeep notices everything and tells nobody. Jorren came back from one of his errands with chalk on his boots and would not say where he had been. He did say, at supper, unprompted, that he would not go under Windspire again for any money. Nobody had asked him to."
+    "Under the lower streets of Skyrend something was moving that the city’s logic did not account for. Not footsteps, not water. A shifting of agreements. A bell rang the wrong hour and then had always rung it. A bridge was a day’s walk longer than anyone remembered building.",
+    "Shadowdeep noticed first, because Shadowdeep notices everything and tells nobody. Jorren came back from one of his errands with chalk on his boots and would not say where he had been. He did say, at supper, unprompted, that he would not go under Skyrend again for any money. Nobody had asked him to."
   ] },
   { id: "k5", t: "The Man the Codex Cannot Write", sub: "The Concord Chronicle · V", cond: function () { return (cp().f.q3done && S.day >= 30) || S.day >= 70; }, body: [
     "The Lantern Codex has a line for every person who has ever lived. It has a line for the goat. It has nothing for the Voyager. Not a blank. Not an erasure. The page goes on past where he should be as if the paper had never heard of him.",
@@ -14534,9 +14538,9 @@ var BOOK1 = [
     "She told you this at the fire, quietly, without looking at him. Across the fire the Voyager was mending a strap and pretending not to listen, very badly, for someone who has had so long to practise."
   ] },
   { id: "k6", t: "The Sky Does Not Break", sub: "The Concord Chronicle · VI", cond: function () { return cp().f.q4done || S.day >= 95; }, body: [
-    "Over Windspire the sky lost agreement with itself. No sound. No crack. For three breaths the clouds over the eastern half of the city were going one way and the clouds over the western half another.",
+    "Over Skyrend the sky lost agreement with itself. No sound. No crack. For three breaths the clouds over the eastern half of the city were going one way and the clouds over the western half another.",
     "A child ran into the open square under it, and stood there looking up, not afraid. “It’s looking for somebody,” she said, with great confidence, to anyone who would listen. Then the sky corrected itself, and a man said, “Did you see that?” and immediately, “It was nothing.”",
-    "Seraphine Skyrend did see it, and said so from the Wind Spire, loudly, in a voice that had been raised in a storm. They filed that under weather too."
+    "Seraphine Skyrend did see it, and said so from Skyrend, loudly, in a voice that had been raised in a storm. They filed that under weather too."
   ] },
   { id: "k7", t: "Hunters Awake", sub: "The Concord Chronicle · VII", cond: function () { return mcFellCount() >= 1 || cp().f.q5done; }, body: [
     "Under Highmarch the Hunters woke. The Codex made them long ago to hunt whatever it cannot write, and then sealed them, because a thing like that is only safe asleep. Nobody gave the order to wake them. The Codex did that on its own.",
@@ -14549,12 +14553,12 @@ var BOOK1 = [
     "Nobody on the Council answered her. Ardyn Solbrand read the letter twice and added a line to the Edict's enforcement orders that night."
   ] },
   { id: "k9", t: "The Gate Appears", sub: "The Concord Chronicle · IX", cond: function () { return cp().f.q6done || mcFellCount() >= 2; }, body: [
-    "A grey edge opened above the old square in Windspire. Not a Realm Bridge. Nothing came out of it. Grey shapes drifted between the houses and watched the children, with no more malice than fog.",
+    "A grey edge opened above the old square in Skyrend. Not a Realm Bridge. Nothing came out of it. Grey shapes drifted between the houses and watched the children, with no more malice than fog.",
     "A soldier laid down his spear because lifting it felt pointless. A woman in the lower market lost every memory of her family while she was still standing there, and thanked her husband politely, as one thanks a stranger, when he took her hand.",
     "The grey edge did not grow. It did not close either. It hung there facing north, towards the Iron Throne, where a boy with two sparks no longer slept."
   ] },
   { id: "k10", t: "He Kneels", sub: "The Concord Chronicle · X", cond: function () { return cp().f.q7done || mcFellCount() >= 3; }, body: [
-    "A grey edge opened over the ash-market in Emberfall at supper. The bread-sellers finished packing their stalls first. People still talk about that.",
+    "A grey edge opened over the ash-market in Hearthmount at supper. The bread-sellers finished packing their stalls first. People still talk about that.",
     "In the grey edge there was a hall of dead embers and something standing in it, very still. Kaelren would not say what he saw. He came out with his hands shaking, and that night he baked bread for nobody in particular.",
     "Then it was gone. Kaelren got up off the cobbles on his own. Nobody has asked him what he saw."
   ] },
@@ -14651,11 +14655,11 @@ if (typeof storyEndingBlock === "function") {
 var CRISES = {
   light: { cell: 5, t: "The Unbearable Light", s: [
     "The First Light has started burning too bright. Under it nobody on the Assize can tell even a small lie, so nobody can negotiate, apologise or be polite. Sessions end in fistfights. Lightforge asks, quietly, whether you would sit with the Council and say the true things gently until the light settles.",
-    "Orders between Lightforge’s citadels arrive with every hard truth intact and no kindness at all. Two garrisons have stopped speaking to each other. A courier told a captain exactly what the men think of him and was promoted for accuracy. The Luminant Citadel’s walls have begun to dim, as if the light is embarrassed.",
-    "The Luminant Citadel’s walls went dark in the night. The garrison still stands at the gates, and every man in it has told every other man precisely what he thinks of him. Lightforge has not fallen. Nobody will stand next to anybody." ] },
+    "Orders between Lightforge’s citadels arrive with every hard truth intact and no kindness at all. Two garrisons have stopped speaking to each other. A courier told a captain exactly what the men think of him and was promoted for accuracy. The Meridian Citadel’s walls have begun to dim, as if the light is embarrassed.",
+    "The Meridian Citadel’s walls went dark in the night. The garrison still stands at the gates, and every man in it has told every other man precisely what he thinks of him. Lightforge has not fallen. Nobody will stand next to anybody." ] },
   shadow: { cell: 7, t: "The Unmaking", s: [
     "A seat on the Umbral Council is empty, and no one remembers who sat in it. Then another. Someone is unmaking the council one by one, and in Shadowdeep every face is a suspect. A Nightblade is asking whether you could find the knife before it finds the next name.",
-    "Two more seats gone. The Unmade City’s walls are thinner each morning, as though the city itself were being edited. No one in Shadowdeep trusts the person beside them, and the Realm’s agents have stopped reporting to one another.",
+    "Two more seats gone. Hush’s walls are thinner each morning, as though the city itself were being edited. No one in Shadowdeep trusts the person beside them, and the Realm’s agents have stopped reporting to one another.",
     "The Umbral Council no longer exists. Shadowdeep’s towns each decided, separately and in silence, that they answer to no one. The paranoia is done; the Realm that most feared its own magic has been taken apart by it." ] },
   ember: { cell: 4, t: "The Burning King", s: [
     "The Flameborne King is a warm man in a hot Realm, and the Edict has put him between his law and his people. He still carries the bread into Court himself. He has stopped sleeping. The Hearth Court asks whether you would stand beside him while he decides, so that somebody does.",
@@ -14663,7 +14667,7 @@ var CRISES = {
     "The King has shut himself in the Ember Hall with a stack of letters to people he failed, and he is not sending any of them. Flameborne’s castles woke to find no orders, and the riots started before the sun was up." ] },
   storm: { cell: 2, t: "The Ageing Wind", s: [
     "Every Stormreach rider who casts grows older by the day. The Free Assembly has noticed, and each rotating speaker is unwilling to be the one who orders the next casting. No one can decide who rides. The Assembly asks if you would take the command for one season.",
-    "The Assembly has voted, and voted again, and cannot agree. Riders are leaving the Wind Spire for lowlands to grow old slowly. Stormreach’s fastest couriers are now its eldest.",
+    "The Assembly has voted, and voted again, and cannot agree. Riders are leaving Skyrend for lowlands to grow old slowly. Stormreach’s fastest couriers are now its eldest.",
     "The Free Assembly dissolved. Each citadel of Stormreach decided for itself, and no two decided alike. The wind is still fast; there is simply no one to tell it where." ] },
   stone: { cell: 3, t: "The Stone Tide", s: [
     "The Gravem-masters of Stonehold are turning to stone, limb by limb. The Hold-Senate has lived through ten thousand winters and cannot decide, in this one, whether to forbid the magic or the mourning. A senator asks you to stand witness while they choose.",
@@ -14671,8 +14675,8 @@ var CRISES = {
     "The Hold-Senate has become a gallery of statues. Stonehold still stands, but every wall in it is waiting for an order that will not be spoken. A fortress that cannot move is only a very large stone." ] },
   spirit: { cell: 6, t: "The Crowded Dead", s: [
     "The Lantern Council consults the echoes of its dead leaders. Lately the echoes disagree, and the living cannot tell whose advice is older. Spiritveil asks whether you would speak in the Council, and say what the present wants.",
-    "The echoes have started to quarrel in the streets of the Lantern City. Past decisions walk into present rooms. A lantern-rider was arrested by a magistrate who died two hundred years ago.",
-    "The border between the past and the present went out like a candle. The Lantern City is now a city of the dead who believe they are alive, and the living, who are not sure. Spiritveil is not conquered. It is lost." ] },
+    "The echoes have started to quarrel in the streets of Lanthys Vale. Past decisions walk into present rooms. A lantern-rider was arrested by a magistrate who died two hundred years ago.",
+    "The border between the past and the present went out like a candle. Lanthys Vale is now a city of the dead who believe they are alive, and the living, who are not sure. Spiritveil is not conquered. It is lost." ] },
   frost: { cell: 0, t: "The Unreadable Hour", s: [
     "The Prophet Court can see ahead no further than a week. Beyond that the futures go blank, and a Court that has ruled by foresight does not know how to rule by guessing. Frostgrave asks whether you would be their guess.",
     "The Seers can no longer agree on tomorrow. Mercenaries hired on predictions are marching on contracts that were never signed, and the Still City has gone, as the prophets say, still.",
@@ -14780,7 +14784,7 @@ function ovCrisisSec() {
     ["emb_anvil", 1, "emberfall", "Smith Brogan", "#a05a30", "#2a1a10", "A forge remembers every blade it has made.", "The Anvil That Sang", "The Singing Foundry", "ember", ["bandit", "slinger"], "The Slag-Born", "A foundry gone cold, with one anvil still ringing.",
       "My old anvil rings at night with no hammer near it. The foundry has been cold for a year. Something has made a home in the iron. Go and tell it we are not done with the fire.", "It was a smith’s ghost, finishing a blade he never finished. I let him. The sword is yours if you want it, or the foundry’s if you do not.",
       "“Keep the blade. It was a gift for someone who earns it.”", "The blade is warm in your hand, and it hums once, as if surprised.", "“Leave it with the foundry. Let the fires be lit again.”", "Brogan lights the forge that night. The whole district smells of iron and promise."],
-    ["emb_duel", 2, "emberfall", "Marshal Ysra", "#d04a2a", "#4a1a10", "In Emberfall a duel is a conversation. Most of them are shouted.", "The Emberduel", "The Ember Ring", "ember", ["bandit", "knife"], "The Unbroken Duellist", "A ring of fire pools that flare when the crowd shouts.",
+    ["emb_duel", 2, "emberfall", "Marshal Ysra", "#d04a2a", "#4a1a10", "In Hearthmount a duel is a conversation. Most of them are shouted.", "The Emberduel", "The Ember Ring", "ember", ["bandit", "knife"], "The Unbroken Duellist", "A ring of fire pools that flare when the crowd shouts.",
       "A duellist has beaten forty challengers and will not stop. It is not skill; the fire in him is feeding on the fights. If he does not lose soon, he will burn. Beat him, and do it gently.", "He lost. He sat down on the sand and wept like a child. The fire went out of him, and what was left was a tired man. Thank you for letting him be that.",
       "“Offer him a place in your column.”", "He looks at your banner, then at his hands. “I will carry it,” he says. “If it is not heavy.”", "“Let him rest. He has earned it.”", "“Rest,” the duellist says, as if tasting the word. He sleeps until the following night."],
     ["emb_crown", 3, "emberfall", "Courtier Liss", "#c08a50", "#7a3a20", "The Hearth Court admires one thing: being seen to feel.", "The Borrowed Crown", "The Ember Vault", "ember", ["knife", "assassin"], "The Vault-Thief", "A vault behind the Court’s great hall that nobody has opened in a century.",
@@ -14793,7 +14797,7 @@ function ovCrisisSec() {
       "A reactor in the old annex is warm. Nobody has fed it in ten years. Something inside is using it to remember how to be a person. I want you to see what.", "There was a child in it. Not a whole one. A pattern of one, afraid of the quiet. I do not know if we can free it, or if it should be freed.",
       "“Switch it off. A machine cannot be a child.”", "Jun does it with a steady hand. The light goes out. Jun does not eat that night.", "“Leave it running. It deserves its pattern.”", "The reactor hums on in the annex, and Jun starts reading to it in the evenings."],
     ["unm_face", 2, "unmadecity", "A Nameless Clerk", "#3a3a52", "#1a1a22", "I would give you my name. I do not have one today.", "The Missing Face", "The Gallery of Masks", "cave", ["assassin", "knife"], "The Face-Taker", "A gallery of masks, each one hung over a space where a face should be.",
-      "I came to the city with a face. Last night it was gone from the mirror. Someone has been taking faces from the Unmade City’s sleepers. I need you to recover mine, or else tell me which one I should wear.", "I have my face back. It is not quite mine. It is better than none. Thank you.",
+      "I came to the city with a face. Last night it was gone from the mirror. Someone has been taking faces from Hush’s sleepers. I need you to recover mine, or else tell me which one I should wear.", "I have my face back. It is not quite mine. It is better than none. Thank you.",
       "“Keep it. It looks like it belongs to you.”", "The clerk touches their cheek, surprised. “Then I will answer to it.”", "“Give it up. A new one would suit you better.”", "They pause, then laugh softly. “A fresh one. Yes. I think that might be the point of this city.”"],
     ["unm_door", 2, "unmadecity", "Locksmith Ney", "#4a4a5e", "#2a2a36", "Every door in this city opens somewhere. Most close behind you.", "The Door Without a House", "The Unbuilt Hall", "cave", ["echo", "assassin"], "The Gatekeeper of Nothing", "A door standing alone in an alley, with no wall around it.",
       "There is a door in the alley behind my shop. It does not belong to any building. Last night it opened, and I could hear someone breathing on the other side. I would like you to go through.", "It led to a room where the city had stored everything it wanted to forget. I took nothing. You may have taken something.",
@@ -14810,7 +14814,7 @@ function ovCrisisSec() {
     ["lum_lamp", 2, "luminantc", "Lamplighter Ida", "#c8b050", "#7a6a3a", "A lamp is a small argument against the dark.", "The Lamp That Remembered", "The Glass Gardens", "cave", ["echo", "hollowsent"], "The Forgotten Flame", "A garden of glass flowers lit from inside by nothing.",
       "One of the great lamps has started to speak. It names the people it has lit for. Some of them are dead. The Council wants it silenced. I would like it heard first.", "It said every name. Four hundred. I wrote them down. What do I do with a list like that?",
       "“Carve them into the Citadel wall.”", "Ida carves for six nights. By the last, strangers are standing beside her, holding the lamps.", "“Burn the list and the lamp. The dead should rest.”", "Ida does it with a bowed head. The garden is dark afterwards, and strangely peaceful."],
-    ["lum_memory", 3, "luminantc", "Glass-Blower Corvin", "#a0c8d8", "#6a6a6a", "Memory-glass is the only witness in Luminant nobody can bribe.", "The Glass of Strangers", "The Memory Foundry", "cave", ["hollowsent", "echo"], "The Glass-Master", "A foundry where the furnaces burn white and the glass remembers what it was made from.",
+    ["lum_memory", 3, "luminantc", "Glass-Blower Corvin", "#a0c8d8", "#6a6a6a", "Memory-glass is the only witness in Meridian nobody can bribe.", "The Glass of Strangers", "The Memory Foundry", "cave", ["hollowsent", "echo"], "The Glass-Master", "A foundry where the furnaces burn white and the glass remembers what it was made from.",
       "Memory-glass sold in the market has begun to show images nobody agreed to. Memories of strangers. Someone is extracting without consent. Find the foundry and put it out.", "They had been taking from the dying. Some of them agreed, some did not, and I cannot tell which. Blame needs a name, and I have forty.",
       "“Smash every piece. No memory should be sold.”", "The market is silent when the first shard breaks. By evening there is a line of people asking to keep theirs.", "“Return each piece to its owner’s family.”", "Cobb works for a month tracing lineages. Most of the families weep. A few ask for the glass to be hidden."],
     ["lum_judge", 4, "luminantc", "Judge Aldric", "#d8c070", "#cfcfc0", "Law is what we agreed to be, written down so nobody can pretend otherwise.", "The Trial of the Forgetful", "The Court of First Light", "cave", ["knife", "hollowsent"], "The Last Witness", "A court where the accused remember nothing, and the light shows everything.",
@@ -14914,7 +14918,7 @@ function silFade(n) {
 })();
 if (typeof skWhy === "function") {
   var skWhySIL = skWhy;
-  skWhy = function (it) { if (it && it.storyq === "sil_init" && !(S.camp && S.camp.f && S.camp.f.sil_init)) return "The Quiet Order has not taught you yet. Find the courier in the Unmade City."; return skWhySIL(it); };
+  skWhy = function (it) { if (it && it.storyq === "sil_init" && !(S.camp && S.camp.f && S.camp.f.sil_init)) return "The Quiet Order has not taught you yet. Find the courier in Hush."; return skWhySIL(it); };
 }
 if (typeof skSecs === "function") {
   var skSecsSIL = skSecs;
@@ -14999,7 +15003,7 @@ function ovSilSec() {
       { t: "“Teach me where to put the knife.”", reward: { xp: 540, item: 3 }, set: { sh_floor_b: 1 }, text: "“Behind the third rib,” she says, and demonstrates on an air that is suddenly very cold. “Never in front. The front watches you back.”" }] });
   sq({ id: "sh_contract1", act: 2, npc: "shcourier", need: m("sh_floors"), name: "The First Contract", zone: "shtoll", zname: "The Toll House", th: "cave", lv: 3, seed: 603, pal: ["bandit", "assassin"], boss: "sh_toll", obj: "Reach Tollmaster Orsk in the Toll House.",
     gate: "A toll house on a road no one has used in a year, its lamp still burning.",
-    intro: "Your first contract. Tollmaster Orsk taxes the roads past the Unmade City and sends none of it home. The Order would like him to stop. There are three ways to do this, and I have been told not to say which one I prefer. Go quietly, if you can. See him. Decide.",
+    intro: "Your first contract. Tollmaster Orsk taxes the roads past Hush and sends none of it home. The Order would like him to stop. There are three ways to do this, and I have been told not to say which one I prefer. Go quietly, if you can. See him. Decide.",
     turn: "Orsk is finished one way or another. I will not ask which. The Order will know. It always does. The question I will ask is whether you slept.",
     opts: [{ t: "“He is dead. It was quiet.”", reward: { xp: 600, crowns: 450 }, set: { sh_killed_orsk: 1 }, eff: stats(2), text: "The courier slides a coin across the table, then a second. “For the work,” they say. “The second is for the sleep. You will want it.”" },
       { t: "“He lives. I made him afraid enough to stop.”", reward: { xp: 600, item: 2, perm: "hp" }, set: { sh_spared_orsk: 1 }, text: "“Hm,” the courier says. “A mercy. The Order will say it was weakness. The Order has never once been right about what weakness is.”" }] });
@@ -15019,11 +15023,11 @@ function ovSilSec() {
       { t: "“Keep it. A knife with a name is more dangerous.”", reward: { xp: 800, perm: "hp", item: 2 }, set: { sh_named: 1 }, text: "The Name-Warden is silent for a long moment. Then, unexpectedly, he laughs. “They always say that,” he says. “Almost none of them are right. Almost.”" }] });
   sq({ id: "sh_tunnels", act: 3, npc: "shpale", npcDef: { name: "Underway-Guide Pale", col: "#3a3a4e", hair: "#8a8aa0", idle: "The roads are for people who want to be seen. I know the other ones." }, need: m("sh_oath"),
     name: "The Underways", zone: "shunderway", zname: "The Black Underway", th: "mine", lv: 4, seed: 606, pal: ["hollowsent", "wraith"], boss: "sh_deepwalker", obj: "Walk the Black Underway to its end.",
-    gate: "A stair that goes down for longer than the Unmade City is deep, and into a cold that smells of nothing.",
+    gate: "A stair that goes down for longer than Hush is deep, and into a cold that smells of nothing.",
     intro: "Under every Realm there is a road no one built. The Underways connect Lightforge’s cellars to Flameborne’s forges to Frostgrave’s ice. I will give you the way. But the Underway is not empty. Something walks it that was once a courier, and has been walking since before the first Bridge. Make it let you pass.",
     turn: "You walked it and it let you. Now every mouth of the Underway in every Realm will open for you. Tell me which you want, and I will mark it. Not all of your men will come up the other side whole. That cost is the road’s.",
     opts: [{ t: "“Open every tunnel mouth. I will go everywhere.”", reward: { xp: 900, crowns: 400 }, set: { tunnels: 1, sh_tunnels_all: 1 }, eff: function () { cp().f.tunnels = 1; }, text: "Pale draws a line across the back of your hand with a cold finger. Nothing is left there, and everything is. From now on the shadow tunnels in every Realm will open when you touch them. The Walker skill will make them kinder." },
-      { t: "“Open only Shadowdeep’s way, to and from the Unmade City.”", reward: { xp: 900, perm: "pts", item: 2 }, set: { tunnels: 1, sh_tunnels_one: 1 }, eff: function () { cp().f.tunnels = 1; }, text: "Pale nods. “A cautious road is a longer-lived one.” The tunnels are still open to you, but the Order will watch which you use, and for what." }] });
+      { t: "“Open only Shadowdeep’s way, to and from Hush.”", reward: { xp: 900, perm: "pts", item: 2 }, set: { tunnels: 1, sh_tunnels_one: 1 }, eff: function () { cp().f.tunnels = 1; }, text: "Pale nods. “A cautious road is a longer-lived one.” The tunnels are still open to you, but the Order will watch which you use, and for what." }] });
   sq({ id: "sh_unmaker", act: 4, npc: "shfaceless", npcDef: { name: "A Umbral Councillor", col: "#26263a", hair: "#12121c", idle: "Do not say my name. I do not have it today." }, need: m("sh_tunnels"),
     name: "The One Who Unmakes", zone: "shunmaker", zname: "The Unmade Hall", th: "cave", lv: 4, seed: 607, pal: ["assassin", "inkling"], boss: "sh_unmaker", obj: "Find the one who unmakes the Umbral Council.",
     gate: "A hall in which every bench has a clean gap where somebody used to sit.",
@@ -15035,7 +15039,7 @@ function ovSilSec() {
     gate: "A chamber of seven seats, where six of the chairs are empty and one of them is humming.",
     intro: "Councillor Seven wants to rule alone. He is the last of the old guard and he has been buying the Order’s loyalty one name at a time. I am not asking you to kill him. I am telling you what he will do if no one does. Choose.",
     turn: "It is done. Seven’s seat is empty. Whatever you chose, the Order will say it was meant. They always do.",
-    opts: [{ t: "“He dies. Quietly.”", reward: { xp: 1200, crowns: 900 }, set: { sh_seven_dead: 1 }, eff: stats(3), text: "The humming stops. The Order never mentions it again, but when you walk through the Unmade City, people clear a little more room than before." },
+    opts: [{ t: "“He dies. Quietly.”", reward: { xp: 1200, crowns: 900 }, set: { sh_seven_dead: 1 }, eff: stats(3), text: "The humming stops. The Order never mentions it again, but when you walk through Hush, people clear a little more room than before." },
       { t: "“Warn him, and let the Council judge him in the open.”", reward: { xp: 1200, item: 3, perm: "hp" }, set: { sh_seven_warned: 1 }, text: "Seven is taken alive. The trial is loud and public and unprecedented. In Shadowdeep, where nothing is ever said aloud, it changes everything." }] });
   sq({ id: "sh_veil", act: 4, npc: "shvoice", need: m("sh_knife"), name: "Veilrend’s Last Contract", zone: "shveilrend", zname: "The Hollow Sanctum", th: "cave", lv: 5, seed: 609, pal: ["hollowsent", "wraith"], boss: "sh_veilrend", obj: "Answer Veilrend’s last contract in the Hollow Sanctum.",
     gate: "A chamber at the bottom of the Order, where something once great sits very still.",
@@ -15060,11 +15064,11 @@ function ovSilSec() {
   ct("witness", "The Silent Witness", "", "The Court Annex", "The Witness-Bailiff", "A witness will speak at dawn. Their words would hang three good people. Reach them first. Silence them, or convince them. The Order does not care how.", "The witness will say nothing at dawn. I will not ask how you achieved it.", "“Silenced. For good.”", "The witness is not seen again. The three go free. Nobody asks about the witness.", "“Persuaded. They are on a ship tonight.”", "The witness boards a ship with a purse and a new name. The three go free, and a stranger in the south has a secret.", 4, 613);
   ct("crown", "The Borrowed Seal", "", "The Chancery Vault", "The Seal-Warden", "A noble’s seal is wanted for one night. Get into the Chancery and press it into wax, then replace it before dawn. They must never know it was missing.", "The wax is pressed. By dawn a letter will bear a name that never wrote it. This is how the Order moves a Realm.", "“Use it to forge the order.”", "The forged letter moves a garrison. A battle that would have happened does not.", "“Return it unpressed. I will not forge a noble’s hand.”", "You return the seal, wax-free. The courier looks at you for a long moment. “Principles are expensive in this trade,” they say. “Keep them.”", 5, 614);
 })();
-// ---- ovSPIR: the Lantern City (Spiritveil) and the Still City (Frostgrave): two hubs, two story chains, and side quests. ----
+// ---- ovSPIR: Lanthys Vale (Spiritveil) and the Still City (Frostgrave): two hubs, two story chains, and side quests. ----
 (function () {
   try {
-    mkHub("lanterncity", "The Lantern City", "stone", 1011, "lanterncity");
-    SITEAREA.lanterncity = "lanterncity"; HUBSITE.lanterncity = "lanterncity"; HUBNAME.lanterncity = "the Lantern City";
+    mkHub("lanterncity", "Lanthys Vale", "stone", 1011, "lanterncity");
+    SITEAREA.lanterncity = "lanterncity"; HUBSITE.lanterncity = "lanterncity"; HUBNAME.lanterncity = "Lanthys Vale";
     mkHub("stillcity", "The Still City", "stone", 1023, "stillcity");
     SITEAREA.stillcity = "stillcity"; HUBSITE.stillcity = "stillcity"; HUBNAME.stillcity = "the Still City";
   } catch (e) { if (window.console) console.log("hubs", e); }
@@ -15086,7 +15090,7 @@ function ovSilSec() {
       "The echoes of our first leaders vote on everything. This morning they voted to leave the Archive unguarded. Nothing is more dangerous than a vote that rolls on without anyone alive to count the cost. I would like you to stand before them and ask for one more vote.", "They voted again. They did not like it. But they heard you. That is rarer than agreement.",
       "“Tell them the living are afraid.”", "Valen smiles thinly. “Fear is a language they remember, even if they have forgotten everything else.”", "“Tell them the dead no longer decide.”", "Valen is silent for a long time. “That is either brave or treason,” she says. “I will find out which.”", 0],
     ["sp_sea", 4, "lanterncity", "sp_parliament", "Captain Dusk", "#4a5a8a", "#a8b8d8", "You cannot kill what is already dead. Everyone learns this at sea, once.", "The Ghost Sea", "The Drowned Fleet", "cave", ["echo", "wraith"], "The Dead Admiral", "A harbour that fills with fog each night, and ships that no sailor remembers launching.",
-      "A fleet of ghost ships sails the sea off the Lantern City and will not let us fish. They are crewed by echoes of dead sailors. They cannot be killed. They can be unmade, which is Shadowdeep’s way, or remembered, which is ours. Each has a cost. Choose.", "The ships are gone. What did you choose?",
+      "A fleet of ghost ships sails the sea off Lanthys Vale and will not let us fish. They are crewed by echoes of dead sailors. They cannot be killed. They can be unmade, which is Shadowdeep’s way, or remembered, which is ours. Each has a cost. Choose.", "The ships are gone. What did you choose?",
       "“I unmade them. The sea is clear and the sailors are no more.”", "Dusk is quiet. “Then the sea is clear, and the sailors are only a memory in a book. I will write them in.”", "“I remembered them. They have names again.”", "Dusk lights a candle on the quay for every name. The harbour has not been as busy for a century.", 0.05],
     ["sp_madness", 4, "lanterncity", "sp_sea", "Nurse Imre", "#7a8aa8", "#e8f0f8", "When the line between past and present goes, you stop being sure which of them is breathing.", "Where Past Becomes Present", "The Fading Ward", "cave", ["echo", "hollowsent"], "The Boundary", "A ward where the walls are different on each visit, and the patients cannot say what year it is.",
       "Spiritveil’s seers lose the border between then and now. They sit in the ward and speak to people who are not there. One of them is still lucid enough to ask for you by name. I would like you to go. I would like you not to stay too long.", "You were gone a day and a night. You say it was an hour. I believe you, which is the problem.",
@@ -15193,7 +15197,7 @@ function areaUnlocked(id) { if (id === "unmadecity" || id === "lanterncity" || i
     ["emb_ash", 2, "emberfall", "Hearthkeeper Sol", "#c06a3a", "#3a1a10", "A fire that is fed wrongly sulks. A fire that is fed rightly sings.", "The Fire That Sulked", "The Great Hearth of the Hearth Court", "ember", ["bandit", "slinger"], "The Sulking Flame", "A great hearth that has burned black for a month and warmed nobody.",
       "The great hearth of the Hearth Court has gone black and cold. It was lit by a will, and the will has been broken. Whoever broke it is in the cinder-hall. Go and ask them why.", "It was a young lord who had tried to take the hearth for himself. He failed, and the failure hollowed him. He wants to be unmade.",
       "“Forgive him. The hearth will follow.”", "Sol rekindles it with a cinder from your own banner. The hall warms by dawn.", "“Banish him. Let the hearth choose its own.”", "Sol lights the hearth with a stranger’s hand. The young lord leaves with only a coat."],
-    ["emb_trial", 3, "emberfall", "Judge-of-Fire Ravi", "#d0602a", "#4a1a0a", "In Emberfall a truth is something you survive.", "The Trial by Cinder", "The Walk of Ashes", "ember", ["bandit", "knife"], "The Cinder-Judge", "A long path of live coals where accusations are settled by who can cross it.",
+    ["emb_trial", 3, "emberfall", "Judge-of-Fire Ravi", "#d0602a", "#4a1a0a", "In Hearthmount a truth is something you survive.", "The Trial by Cinder", "The Walk of Ashes", "ember", ["bandit", "knife"], "The Cinder-Judge", "A long path of live coals where accusations are settled by who can cross it.",
       "A man stands accused of a murder. He swears he did not do it, and he will not take the walk. I believe him. The Court does not care what I believe. Walk it for him, and survive.", "You crossed. The coals were hot. The Court let him go. Whether he was innocent is between him and the coals.",
       "“I walked it for him. It was an honest risk.”", "Ravi nods. “The Court will remember you,” he says. “For good and ill.”", "“I did not walk it. I found the truth another way.”", "Ravi purses his lips. “The Court will not like that. But it is more reliable than coals.”"],
     ["ash_scar", 3, "ashford", "Old Hart", "#8a7a5a", "#cfc8b8", "Ashford remembers its scars. The scars remember back.", "The Scarecrow Who Walked", "The Barley Field", "pass", ["hound", "scout"], "The Walking Scarecrow", "A field where one scarecrow has moved a little closer to the farmhouse each night.",
@@ -15245,7 +15249,7 @@ function areaUnlocked(id) { if (id === "unmadecity" || id === "lanterncity" || i
       "The oldest Titan has opened one eye and asked for you. It wants to know what the world has become. I think it will not like the answer. I think it will ask you what to do about it.", "It was gentle. It wanted only to hear a story. I told it one. It is asleep again.",
       "“I told it the world was good.”", "Iseult closes her eyes. “Then the world is a little better for having been lied to kindly.”", "“I told it the truth.”", "Iseult is still. “Then it will wake one day,” she says. “And I think it will be ready.”", "frost"],
     // STORMREACH: the Storm Sovereign
-    ["sv_1", 2, "windspire", "", "Skyrunner Pell", "#6a9ac0", "#e8e0c0", "A storm that has a name is a storm that has an opinion.", "The Storm With a Name", "The Wind Spire Roof", "pass", ["scout", "slinger"], "The Named Storm", "A rooftop where a storm has been circling and calling out a name.",
+    ["sv_1", 2, "windspire", "", "Skyrunner Pell", "#6a9ac0", "#e8e0c0", "A storm that has a name is a storm that has an opinion.", "The Storm With a Name", "Skyrend Roof", "pass", ["scout", "slinger"], "The Named Storm", "A rooftop where a storm has been circling and calling out a name.",
       "A storm over the Spire keeps calling out a name. The name is mine, and I have never met the storm. It is not hostile. It is just very, very insistent. Go and tell it I do not know it.", "It asked me a question and I have forgotten the answer. It says it will wait. It says it has the time.",
       "“Tell it you remember. Humour it.”", "Pell nods. “A small lie. The wind forgives those.”", "“Tell it you do not. It is the truth.”", "Pell’s face falls. “Then it will keep calling,” he says. “And I will keep hearing.”", "storm"],
     ["sv_2", 3, "windspire", "sv_1", "Free Speaker Aelith", "#5a8ab0", "#d8d0b0", "The Free Assembly votes on everything. It voted not to speak to the Sovereign.", "The Storm Sovereign’s Court", "The Cloud Court", "pass", ["scout", "knife"], "The Sovereign’s Envoy", "A court of cloud hung under the Spire, lit from within by lightning.",
@@ -15265,7 +15269,7 @@ function areaUnlocked(id) { if (id === "unmadecity" || id === "lanterncity" || i
       "One of our golems has begun to weep. We do not know where the water comes from. It has stopped working. The Senate wants it broken for scrap. I want you to ask it why.", "It was grieving. It had watched its maker die and could not follow. I did not know a golem could.",
       "“Keep it. Let it grieve.”", "Bryn leaves it in the courtyard. Children sit beside it.", "“Break it. It is useless now.”", "Bryn does it with a heavy heart. The quarry is quiet for a month.", "stone"],
     ["co_2", 3, "granitekeep", "co_1", "Elder Maud", "#7a7a88", "#d0d0d0", "The mountain is not a mountain. It is a person lying on its side.", "The Mountain That Is Not a Mountain", "The Mountain’s Ribs", "mine", ["wraith", "hollowsent"], "The Rib-Warden", "A cavern whose ribs of stone rise and fall slowly, as if breathing.",
-      "The Granite Keep is built on a Colossus, asleep. We have always known it, and never spoken of it. It has begun to dream, and the dreams are cracking the walls. Go down and tell me what it dreams.", "It dreams of walking. It dreams of being a river. I do not know how to tell the Senate.",
+      "The Gravenhall is built on a Colossus, asleep. We have always known it, and never spoken of it. It has begun to dream, and the dreams are cracking the walls. Go down and tell me what it dreams.", "It dreams of walking. It dreams of being a river. I do not know how to tell the Senate.",
       "“Tell them. They have a right to know.”", "Maud tells the Senate. They sit in silence. Then, slowly, they begin to plan.", "“Say nothing. They are not ready.”", "Maud nods. “For a year,” she says. “Then I will tell them anyway.”", "stone"],
     ["co_3", 4, "granitekeep", "co_2", "Foreman Kast", "#6a6a78", "#a0a0a0", "A mason who cannot build is a mason who has started to dream.", "The Mason’s Dream", "The Unfinished Vault", "cave", ["hollowsent", "slinger"], "The Dreaming Mason", "A vault where a stone mason has been working for forty years on a wall that never ends.",
       "A mason has been laying the same wall for forty years. It grows by itself and he does not eat. I think he is building a door. I think the Colossus is behind it.", "He was building a door, and I opened it. There is a corridor behind it as long as the Keep. I do not want to see the end.",
@@ -15303,7 +15307,7 @@ function areaUnlocked(id) { if (id === "unmadecity" || id === "lanterncity" || i
       "The Radiant Forge burns the lies out of steel. Lately it has started burning the doubt out of the smiths. They no longer argue, apologise or stop. Production is up by half. The Assize wants it left alone. I want it understood.", "It takes doubt because it was told to burn whatever is not strictly true, and nobody is ever strictly sure.",
       "“Lower the Forge. Let the smiths keep their names.”", "Dael does it. Production falls. Nobody forgets their name again.", "“Keep it burning. Light is worth the price.”", "Dael nods. “The smiths will be remembered by their work,” she says. “If nothing else.”", "light"],
     ["dh_4", 5, "luminantc", "dh_3", "Elder Corvane", "#c8b878", "#f0e8c0", "The Assize can no longer say why it judges.", "The Council That Forgot", "The Hall of Judgment", "cave", ["knife", "echo"], "The Hollow Elder", "A chamber where seven elders sit and cannot say what they are meeting about.",
-      "The Assize can no longer say what it is for. Under the First Light every reason they give burns away as not quite true, and the Edict is the only thing they still agree on. I would like you to be the one who says it plainly.", "I remember the last meeting. They were deciding whether to dissolve. Nobody wrote down how they voted, which in Luminant is a crime.",
+      "The Assize can no longer say what it is for. Under the First Light every reason they give burns away as not quite true, and the Edict is the only thing they still agree on. I would like you to be the one who says it plainly.", "I remember the last meeting. They were deciding whether to dissolve. Nobody wrote down how they voted, which in Meridian is a crime.",
       "“Tell them. Let them decide with open eyes.”", "The Elder weeps. They vote again, aloud, and the result is binding.", "“Let them forget. It is a mercy.”", "The Elder sits, empty, content. The Council meets, and meets, and nothing is decided.", "light"],
     ["dh_5", 6, "luminantc", "dh_4", "Ardyn Solbrand", "#d8c880", "#f8f0d0", "I wrote the Radiant Edict. I regret it. I would not undo it.", "The Dawn Heresy", "The Dawn Throne", "cave", ["echo", "hollowsent"], "The First Dawn", "A throne on which the sun rises, sets, and rises again, every hour.",
       "The Dawn Heresy says the sun is a memory of a better world. The Council says it is a lie. Both are afraid. You are the only one who has walked in both. I would ask you to look at the dawn, and tell me what you see.", "You saw it. You will not tell me. I understand.",
@@ -15332,8 +15336,8 @@ function areaUnlocked(id) { if (id === "unmadecity" || id === "lanterncity" || i
       "The ghost sailors want their pay. Four hundred years of back wages, owed by a guild long dead. The Council says the debt dissolved with the guild. The sailors do not agree.", "I paid them in remembrance. I told each of them a story about their own life. It was not what they wanted. It was what they needed.",
       "“Pay them in memory. A story each.”", "Imre writes four hundred names. Each ghost takes a page and fades, content.", "“Pay them in coin. They have earned it.”", "Imre counts out the crowns. The ghosts take them and sink, and the coins glow faintly underwater.", "ghost"],
     ["gf_3", 5, "lanterncity", "gf_2", "Speaker Valen", "#6a5a8a", "#e8e0f0", "The remembered outvote the living on our Council. We call this tradition.", "The Council Votes to Drown", "The Drowning Chamber", "cave", ["echo", "inkling"], "The Voting Dead", "A chamber half-underwater in which the Lantern Council votes, and every vote is for the sea.",
-      "The echoes of the Council have voted that the Lantern City should sink. The vote is binding. The living are not permitted to oppose it. I need you to find a loophole, or a wonder.", "I found a loophole. It requires a living person to cast a dead man’s vote. I do not know whose.",
-      "“Cast it yourself. The living decide.”", "Valen watches you vote. The chamber shudders, and then, slowly, the water begins to recede.", "“Let the dead decide. They are the Council.”", "The water rises. By evening, the Lantern City is a sea of lanterns, glowing underwater.", "ghost"],
+      "The echoes of the Council have voted that Lanthys Vale should sink. The vote is binding. The living are not permitted to oppose it. I need you to find a loophole, or a wonder.", "I found a loophole. It requires a living person to cast a dead man’s vote. I do not know whose.",
+      "“Cast it yourself. The living decide.”", "Valen watches you vote. The chamber shudders, and then, slowly, the water begins to recede.", "“Let the dead decide. They are the Council.”", "The water rises. By evening, Lanthys Vale is a sea of lanterns, glowing underwater.", "ghost"],
     ["gf_4", 6, "lanterncity", "gf_3", "Elyndra", "#8a6ac0", "#e8e0f8", "I remember the first sailor. He is why I stay.", "The Last Voyage", "The Ghost Sea", "cave", ["echo", "wraith"], "The Last Admiral", "A fog-bound sea on which a single ship sails towards a horizon that retreats.",
       "The Ghost Fleet is sailing for the last time. They will not return. The Council has asked you to sail with them as far as the horizon. They want a living witness.", "I went with them as far as I could. They vanished at dawn, somewhere past the edge. I am not sure where matters.",
       "“I will witness. Let them go.”", "Elyndra weeps, and says the names of every ship. The fog lifts, and the sea is empty and bright.", "“I will not. The sea is not mine to witness.”", "Elyndra nods. “Then I will,” she says. “Someone must.”", "ghost"],
@@ -15378,8 +15382,8 @@ var ALLYS = [
   { id: "al_pip", name: "Pip", cond: function (f) { return f.sq_ash_well && f.qd_ash_well; }, day: 14, t: "Pip Was in the Baggage", sub: "A stowaway",
     body: ["You find the stable-boy from the Iron Well asleep on a sack of grain, with a goat. You did not pack a goat.", "“I heard you were going to kill monsters,” Pip says. “I can hold the horse. I can hold a lot of things. I brought a goat.”", "He is eleven, he is brave in the way of someone who has not been hurt yet, and the whole camp adores him within the hour."],
     ok: "Let him stay.", fx: function () { S.from.ashford = (S.from.ashford || 0) + 4; S.crowns += 60; log("Pip joins the column. He has named the goat Captain.", "e"); } },
-  { id: "al_orsk", name: "Orsk", cond: function (f) { return f.sh_spared_orsk; }, day: 28, t: "The Tollmaster Pays His Debt", sub: "Unmade City",
-    body: ["The man you frightened into stopping rides into your camp at dusk with forty men in grey and a cart of coin.", "“You could have killed me,” Orsk says. “You made me afraid instead, and I haven’t slept badly since. I have a debt, and I do not like debts.”", "His forty know every road past the Unmade City. They fall in behind you without being asked."],
+  { id: "al_orsk", name: "Orsk", cond: function (f) { return f.sh_spared_orsk; }, day: 28, t: "The Tollmaster Pays His Debt", sub: "Hush",
+    body: ["The man you frightened into stopping rides into your camp at dusk with forty men in grey and a cart of coin.", "“You could have killed me,” Orsk says. “You made me afraid instead, and I haven’t slept badly since. I have a debt, and I do not like debts.”", "His forty know every road past Hush. They fall in behind you without being asked."],
     ok: "Take his hand.", fx: function () { S.from.ashford = (S.from.ashford || 0) + 40; S.crowns += 300; log("Orsk and forty road-wardens ride under your banner.", "e"); } },
   { id: "al_brask", name: "Brask", cond: function (f) { return f.sh_fang_saved; }, day: 34, t: "The Fang Remembers", sub: "Omg, no way",
     body: ["A red banner on the ridge. You reach for your sword. It is the Fang: thirty of them, in the open, as they always are.", "At the front is the initiate you let live. He has a scar through his eyebrow and a new name, and he is grinning like a boy who has just won a fight.", "“The Veil said you were soft,” Brask calls. “The Fang says a debt is a debt. We’ve come to repay it. Loudly.”"],
@@ -15440,11 +15444,11 @@ ALLYS.push(
   { id: "tw_writ", name: "The Grey Writ", cond: function (f) { return f.q2done; }, day: 8, t: "The Hand That Wrote the Writ", sub: "Twist · The Grey Writ",
     body: ["You are reading the Grey Writ again by firelight, looking for the seal, when you notice the handwriting.", "The long tail on the g. The way the letter n leans as if it is tired. You have written your own name like that since you were a child.", "Under the seal, in ink that is older than the page, one line you missed: “If you are reading this, I chose differently. Choose better.”", "It is your hand. It is not a forgery. Someone who was you wrote it, and they are not here to explain."],
     ok: "Fold it carefully.", fx: function () { cp().qpts = (cp().qpts || 0) + 2; log("The Grey Writ is in your handwriting.", "e"); } },
-  { id: "tw_beggar", name: "The Old Beggar", cond: function (f) { return f.q3done; }, day: 18, t: "The Beggar Who Asked for Bread", sub: "Twist · Ashford",
-    body: ["An old man at the roadside asks for bread. You give him half your loaf. He has asked you before, in Ashford, in the first week. You remember him because he looked at you as though he knew how it ended.", "He is sitting very straight now. He has a ledger in his lap and a lantern at his feet, and he is writing your name.", "“I am the Archivist,” he says, gently. “I was never begging. I wanted to see what you would do when someone asked you for something and you owed them nothing. I have recorded it. I am pleased to say I will not have to correct the entry.”"],
-    ok: "Share the rest of the loaf.", fx: function () { S.crowns += 250; cp().qpts = (cp().qpts || 0) + 1; log("The beggar was the Archivist.", "e"); } },
+  { id: "tw_beggar", name: "The Man at the Roadside", cond: function (f) { return f.q3done; }, day: 18, t: "The Man at the Roadside", sub: "Twist · Ashford",
+    body: ["An old man sits at the roadside, writing. You give him half your loaf without being asked. You saw him once before, in Ashford, in the first week.", "He is sitting very straight now. He has a ledger in his lap and a lantern at his feet, and he is writing your name.", "“I am the Archivist,” he says, gently. “I never ask, and I never refuse. You did not owe me anything. I have recorded it.”"],
+    ok: "Share the rest of the loaf.", fx: function () { S.crowns += 250; cp().qpts = (cp().qpts || 0) + 1; log("The man at the roadside was the Archivist.", "e"); } },
   { id: "tw_shadow", name: "The Voyager", cond: function (f) { return f.q4done; }, day: 30, t: "He Casts No Shadow", sub: "Twist · The Voyager",
-    body: ["Elyndra stops walking. The whole column stops with her. The sun is low and everyone’s shadow lies long across the road, forty men and a banner.", "Everyone except the Voyager’s. He is standing in the middle of the light and there is nothing behind him at all.", "“I wondered when someone would notice,” he says, with the weary humour of a man who has waited a long time. “I gave it away. It is not a story I am ready to tell. But I will tell you this much: it was not stolen. I chose.”", "Elyndra writes something down. She does not show you what. She looks at him for slightly longer than the Record needs."],
+    body: ["Elyndra stops walking. The whole column stops with her. The sun is low and everyone’s shadow lies long across the road, forty men and a banner.", "Everyone except the Voyager’s. He is standing in the middle of the light and there is nothing behind him at all.", "“I wondered when someone would notice,” he says, with the weary humour of a man who has waited a long time. “It is not a story I am ready to tell.”", "Elyndra writes something down. She does not show you what. She looks at him for slightly longer than the Record needs."],
     ok: "Say nothing. Walk on.", fx: function () { cp().qpts = (cp().qpts || 0) + 1; log("The Voyager has no shadow, and chose it.", "e"); } },
   { id: "tw_jorren", name: "Jorren", cond: function (f) { return f.q5done; }, day: 44, t: "What Jorren Burned", sub: "Twist · Jorren",
     body: ["A smell of smoke in the night, and Jorren crouched by a dying fire with a bundle of folded paper. You think he is destroying evidence of a theft. He is.", "The paper is the Order’s reports. One a week, in his own hand, since the day he joined you. Veilrend sent him to watch you. He has written every one, and he has burned every one before it could be sent.", "“I was made into a weapon before I was a person,” he says, without looking up. “They told me what to see. I decided what to say. This is the first time I have ever lied for someone I wanted to protect.”", "He puts the last page into the fire. “They will notice soon,” he says. “I would like to be somewhere else when they do.”"],
@@ -15467,7 +15471,7 @@ function gateCanOpen() { var f = cp().f; return !!(f.q1done && (f.fmdone || f.q2
 var ovGateOpenGT = ovGateOpen;
 ovGateOpen = function () { return ovGateOpenGT() || !!(S && S.camp && S.camp.f && S.camp.f.gateopen); };
 (function () {
-  DLG.mara_gate = { n: "Elder Mara", t: "You raised a farm and a column, and Ashford slept easy for a change. There is one more thing before you go out into the world.<br><br>On the Flameborne coast stands a Realm Bridge: an old stone arch the first realms built in the first age of the Realms. It has not answered anyone in a century. It hums for the Grey Writ's seal, and you carry it. If you show it to the arch, it will wake, and not only for you. Caravans, lords and every column that follows will be able to pass.<br><br>Highmarch, Luminant and every other realm lie across the Between. The gate is how you reach them.", c: [{ t: "I will go to the gate.", set: { gatetold: 1 }, toast: "New quest: The Open Gate." }, { t: "What is the cost?", go: "mara_gatecost" }, { t: "Later." }] };
+  DLG.mara_gate = { n: "Elder Mara", t: "You raised a farm and a column, and Ashford slept easy for a change. There is one more thing before you go out into the world.<br><br>On the Flameborne coast stands a Realm Bridge: an old stone arch the first realms built in the first age of the Realms. It has not answered anyone in a century. It hums for the Grey Writ's seal, and you carry it. If you show it to the arch, it will wake, and not only for you. Caravans, lords and every column that follows will be able to pass.<br><br>Highmarch, Meridian and every other realm lie across the Between. The gate is how you reach them.", c: [{ t: "I will go to the gate.", set: { gatetold: 1 }, toast: "New quest: The Open Gate." }, { t: "What is the cost?", go: "mara_gatecost" }, { t: "Later." }] };
   DLG.mara_gatecost = { n: "Elder Mara", t: "Ten crowns and a day for each crossing, and more as you hold more land. The realm on the other side will know a stranger has come. The gate wakes for everyone, which means it wakes for your enemies too. Every crossing frays the arch a little, child. But nothing else will take you across the Between.", c: [{ t: "I will go to the gate.", set: { gatetold: 1 }, toast: "New quest: The Open Gate." }, { t: "Later." }] };
   DLG.mara_gatedone = { n: "Elder Mara", t: "I felt it from here. The whole coast hummed. Go on, child. Be kind to the people on the other side of that arch. They are afraid of what comes through." };
   var marDlgGT = marDlg;
@@ -16667,6 +16671,9 @@ setInterval(function () {
     var adOld = aDraw; aDraw = function () { if (a3on) { try { alertTick(); } catch (e) {} try { ovMiniTick(AR); } catch (e) {} return; } return adOld.apply(this, arguments); };
     var saOld = startArea; startArea = function () { var r = saOld.apply(this, arguments); a3ensure(); return r; };
     setInterval(a3ensure, 250);
+    setInterval(function () { try { if (S && S.kael === "alive" && vhVoyagerBusy() && !B && !AR && !sheet) { S.kael = "wounded"; S.kaelErrand = 1; S.kaelBack = Math.floor(S.day) + 10; log("Kaelren rode for Hearthmount at first light with letters for the King. He said he would be back before anyone missed him. Everyone already did.", "e"); try { toast("Kaelren rides to the King with letters."); } catch (e) {} } } catch (e) {} }, 3000);
+    var CAPN = { emberfall: ["Emberfall", "Hearthmount"], luminant: ["Luminant", "Meridian"], windspire: ["The Wind Spire", "Skyrend"], lanterncity: ["The Lantern City", "Lanthys Vale"], unmadecity: ["The Unmade City", "Hush"], granite: ["Granite Keep", "Gravenhall"] };
+    setInterval(function () { try { if (S && S.sites) S.sites.forEach(function (q) { var c = CAPN[q.id]; if (c && q.name === c[0]) q.name = c[1]; }); } catch (e) {} }, 1500);
     // ---- caves are their own places on the world map, never a door inside a settlement (John, 1 Nov) ----
     function caveTo(e) { try { var to = e && e.to; if (typeof to !== "string") return false; if (/^cave\d+(f\d)?$/.test(to)) return true; var sp = to !== "world" && to !== "overland" && to.indexOf("writ:") !== 0 ? getSpec(to) : null; return !!(sp && ATH[sp.th] && ATH[sp.th].cave); } catch (x) { return false; } }
     function settlementArea(id, sp) { return !!(sp && sp.safe && !sp.over && siteOfArea(id)); }

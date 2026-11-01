@@ -101,7 +101,7 @@ function buildArea(st, api, A) {
   const realmG = new THREE.Color(P.ground);
   [cG0, cG1].forEach((c) => c.lerp(realmG, cave ? 0.2 : 0.35).multiplyScalar(0.9));
   cPath.lerp(new THREE.Color(P.path), 0.3); cPlaza.lerp(new THREE.Color(P.path), 0.25);
-  const cWater = new THREE.Color(hex(th.water, 0x2d6aa8)), cTree = new THREE.Color(hex(th.tree, 0x1f4d2a)), cTree2 = new THREE.Color(hex(th.tree2, 0x2d6a38)), cRock = new THREE.Color(hex(th.rock, 0x7b7b80)), cRoof = new THREE.Color(hex(th.roof, P.roof)), cWall = new THREE.Color(hex(th.wall, P.wall));
+  const cWater = new THREE.Color(over ? 0x5e5a6e : hex(th.water, 0x2d6aa8)), cTree = new THREE.Color(hex(th.tree, 0x1f4d2a)), cTree2 = new THREE.Color(hex(th.tree2, 0x2d6a38)), cRock = new THREE.Color(hex(th.rock, 0x7b7b80)), cRoof = new THREE.Color(hex(th.roof, P.roof)), cWall = new THREE.Color(hex(th.wall, P.wall));
   const at = (x, y) => (x < 0 || y < 0 || x >= W || y >= H) ? 2 : g[y][x];
   const isWater = (x, y) => at(x, y) === 3;
 

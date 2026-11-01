@@ -341,8 +341,8 @@ function roundRect(x, a, b, w, h, r) { x.beginPath(); x.moveTo(a + r, b); x.arcT
 // a low-poly person. o: { cloth, cloth2, skin, metal, helm: "cap"|"spike"|"hood"|"bare"|"crown", cloak, weapon: "sword"|"spear"|null, shield, eyes, scale }
 // the player: mail and a surcoat and cloak in the banner colour, bare-headed
 function heroLook(banner, armed) { return { base: "soldier", cloth: banner, cloth2: shade(banner, 0.55).getHex(), metal: 0x9a9ea4, dark: 0x4a4440, leather: 0x5a3e28, legs: 0x3a2e24, skin: 0xc89a78, hair: 0x2e2018, helm: false, weapon: "sword", shieldKind: armed ? "round" : null, shield: banner }; }
-// Kaelren (Cosplay Kit): ash-grey watch coat, faded rust undershirt, copper buttons, dark hair, warm tawny-brown skin
-function kaelLook(armed) { return { base: "man", cloth: 0x8a8782, cloth2: 0xa0522d, trim: 0xb87333, metal: 0x7a7c80, skin: 0xa0663e, hair: 0x1e1612, legs: 0x3a322c, boots: 0x2a201a, leather: 0x4a3626, weapon: "sword", shieldKind: armed ? "round" : null, shield: 0x8a5a34 }; }
+// Kaelren in the prequel era (John, J-9): Flameborne charcoal coat, madder-red undershirt, copper buttons, dark hair, warm tawny-brown skin
+function kaelLook(armed) { return { base: "man", cloth: 0x2e2a28, cloth2: 0x9e2a2b, trim: 0xb87333, metal: 0x7a7c80, skin: 0xa0663e, hair: 0x1e1612, legs: 0x3a322c, boots: 0x2a201a, leather: 0x4a3626, weapon: "sword", shieldKind: armed ? "round" : null, shield: 0x8a5a34 }; }
 function figure(kit, o) {
   const f = figure0(kit, o);
   const b = new THREE.Mesh(kit.blobGeo, kit.blobMat); b.position.y = 0.03; b.renderOrder = 1; f.add(b);
