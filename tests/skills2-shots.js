@@ -44,18 +44,21 @@ fs.mkdirSync(OUT, { recursive: true });
   // battle
   await js(() => { const b = document.querySelector("[data-act=aleave]"); if (b) b.click(); });
   for (let i = 0; i < 40 && (await js(() => !!__vh.AR())); i++) await wait(500);
-  await js(() => { __vh.give(30); }); await js(() => __vh.battleWith(45, "bandit")); await wait(600);
+  await js(() => { __vh.give(4); }); await js(() => __vh.battleWith(45, "bandit")); await wait(600);
   await js(() => __vh.startFight());
   for (let i = 0; i < 120 && !(await js(() => __vh.scene() && __vh.scene().kind === "battle" && __vh.scene().ctl && __vh.scene().ctl.ready && __vh.scene().ctl.k2)); i++) await wait(500);
   await wait(2500);
   await js(() => document.querySelector("#vh3d [data-b=cast]").dispatchEvent(new PointerEvent("pointerdown", { bubbles: true }))); await wait(300);
   const fire = async (id, name, delay) => {
+    if (!(await js(() => !!(__vh.scene() && __vh.scene().kind === "battle")))) { console.log("battle over before " + name); return; }
+    // keep the shot alive: the hero cannot fall, and the field keeps its foes
+    await js(() => { const c = __vh.scene().ctl; c.hero.hp = c.hero.hpm = 1e6; c.units.forEach((u) => { if (u.side === "e" && !u.dead) { if (!u.k2tough) { u.k2tough = 1; u.hpm *= 8; } u.hp = u.hpm; u.rout = false; } }); });
     await js((id) => { const c = __vh.scene().ctl, k2 = c.k2(), s = __vh.S().sk2, hero = c.hero; s.r[id] = Math.max(1, s.r[id] || 0); s.eq[0] = id; __vh.k2().bump(); k2.core.cds = {};
       const foes = c.units.filter((u) => u.side === "e" && !u.dead && !u.gone); if (!foes.length) return; let cx = 0, cz = 0; foes.forEach((u) => { cx += u.x; cz += u.z; }); cx /= foes.length; cz /= foes.length;
       const d = Math.hypot(cx - hero.x, cz - hero.z) || 1, back = id === "st_step" || id === "sh_step" || id === "vw_lantern" ? 9 : 4.5; hero.x = cx - (cx - hero.x) / d * back; hero.z = cz - (cz - hero.z) / d * back; hero.yaw = Math.atan2(cx - hero.x, cz - hero.z);
       window.__k2t = k2.core.t; k2.cast(0); }, id);
     // wait on the battle's clock (headless frames are slow)
-    for (let i = 0; i < 200 && (await js((d) => __vh.scene().ctl.k2().core.t < window.__k2t + d, (delay || 220) / 1000)); i++) await wait(50);
+    for (let i = 0; i < 200 && (await js((d) => !!__vh.scene() && __vh.scene().kind === "battle" && __vh.scene().ctl.k2().core.t < window.__k2t + d, (delay || 220) / 1000)); i++) await wait(50);
     await shot(name);
   };
   await fire("em_refusal", "10-battle-refusal", 160);
@@ -66,7 +69,7 @@ fs.mkdirSync(OUT, { recursive: true });
   await fire("sg_well", "15-battle-well", 1200);
   await fire("vw_guard", "16-battle-echo-guard", 600);
   await fire("mt_vent", "17-battle-core-vent", 150);
-  await js(() => { __vh.k2().pay("ember", 80); }); await wait(500); await shot("18-battle-price-arrears");
+  if (await js(() => !!(__vh.scene() && __vh.scene().kind === "battle"))) { await js(() => { __vh.k2().pay("ember", 80); }); await wait(500); await shot("18-battle-price-arrears"); }
   await js(() => __vh.scene() && __vh.scene().ctl.fast(10));
   for (let i = 0; i < 150 && (await js(() => !!__vh.scene())); i++) await wait(1000);
   await js(() => { const d = document.querySelector("#sbody [data-act=done]"); if (d) d.click(); }); await wait(600);
