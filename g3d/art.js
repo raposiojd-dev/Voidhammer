@@ -109,6 +109,37 @@ export function makeArt(track, quality) {
   return { tex, mat };
 }
 
+// ---------- ground: two textures blended by noise and a per-vertex aBlend (paths, yards), with optional puddles ----------
+export function groundMat(art, a, b, puddles) {
+  const tA = art.tex(a), tB = art.tex(b);
+  const m = new THREE.MeshStandardMaterial({ map: tA, vertexColors: true, roughness: 1, metalness: 0 });
+  m.color.setScalar(tA.userData.gain);
+  m.onBeforeCompile = (sh) => {
+    sh.uniforms.mapB = { value: tB }; sh.uniforms.gainB = { value: tB.userData.gain / tA.userData.gain }; sh.uniforms.pud = { value: puddles ? 1 : 0 };
+    sh.vertexShader = "attribute float aBlend;\nvarying float vBlend;\n" + sh.vertexShader.replace("#include <uv_vertex>", "#include <uv_vertex>\n  vBlend = aBlend;");
+    sh.fragmentShader = "uniform sampler2D mapB;\nuniform float gainB, pud;\nvarying float vBlend;\nfloat gh(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }\nfloat gn(vec2 p){ vec2 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f); return mix(mix(gh(i), gh(i + vec2(1.0, 0.0)), f.x), mix(gh(i + vec2(0.0, 1.0)), gh(i + vec2(1.0, 1.0)), f.x), f.y); }\n" + sh.fragmentShader
+      .replace("#include <map_fragment>", `
+  vec4 gA = texture2D(map, vMapUv); vec4 gB = texture2D(mapB, vMapUv * 0.83 + 0.37) * gainB;
+  float gnz = gn(vMapUv * 0.8) * 0.6 + gn(vMapUv * 3.3) * 0.4;
+  float gk = clamp(smoothstep(0.5, 0.78, gnz) * 0.75 + vBlend, 0.0, 1.0);
+  diffuseColor *= mix(gA, gB, gk);
+  float pd = pud * smoothstep(0.8, 0.86, gn(vMapUv * 1.1 + 7.3)) * clamp(gk * 1.5, 0.0, 1.0);
+  diffuseColor.rgb *= 1.0 - pd * 0.5;`)
+      .replace("#include <roughnessmap_fragment>", "#include <roughnessmap_fragment>\n  roughnessFactor = mix(roughnessFactor, 0.15, pd);");
+  };
+  m.customProgramCacheKey = () => "vh-ground-" + (puddles ? 1 : 0);
+  return m;
+}
+
+// ---------- film grain (a small noise tile the CSS shifts every frame or so) ----------
+let GRAIN = null;
+export function grainURL() {
+  if (GRAIN) return GRAIN;
+  const c = canvas(128), x = c.getContext("2d"), d = x.createImageData(128, 128);
+  for (let i = 0; i < d.data.length; i += 4) { const v = Math.random() * 255; d.data[i] = d.data[i + 1] = d.data[i + 2] = v; d.data[i + 3] = 255; }
+  x.putImageData(d, 0, 0); GRAIN = c.toDataURL("image/png"); return GRAIN;
+}
+
 // ---------- merged geometry with world-scale UVs ----------
 const UNIT = {};
 function unitGeo(kind) {
@@ -116,6 +147,7 @@ function unitGeo(kind) {
   let g;
   if (kind === "box") g = new THREE.BoxGeometry(1, 1, 1);
   else if (kind === "cyl") g = new THREE.CylinderGeometry(0.5, 0.5, 1, 12);
+  else if (kind === "cyl6") g = new THREE.CylinderGeometry(0.5, 0.5, 1, 6);
   else if (kind === "cyl24") g = new THREE.CylinderGeometry(0.5, 0.5, 1, 24);
   else if (kind === "cone") g = new THREE.ConeGeometry(0.5, 1, 10);
   else if (kind === "prism") { // x in [-0.5, 0.5], y in [0, 1], ridge along z
@@ -182,7 +214,8 @@ export function paintedSky(top, horizon, sunDir, sunCol, voidAmt, voidCol, cloud
         vec3 c = mix(hor, top, smoothstep(-0.02, 0.55, y));
         c = mix(c, hor * 0.8, smoothstep(0.0, -0.25, y));
         float sd = max(dot(d, sunD), 0.0);
-        c += sunC * (pow(sd, 6.0) * 0.18 + pow(sd, 90.0) * 0.6);
+        c = mix(c, hor * 1.12 + sunC * 0.06, smoothstep(0.22, 0.0, abs(y)) * 0.55);
+        c += sunC * (pow(sd, 6.0) * 0.2 + pow(sd, 90.0) * 0.6 + smoothstep(0.9993, 0.9997, sd) * 1.2);
         if (y > 0.0) {
           vec2 uv = d.xz / (y + 0.18) * 1.6 + vec2(t * 0.012, t * 0.004);
           float k = fbm(uv) * 0.75 + fbm(uv * 3.1) * 0.25;

@@ -1,167 +1,126 @@
-// Rigged, animated people for the third-person scenes.
-// Bodies and clips: KayKit Adventurers 1.0 by Kay Lousberg (CC0), trimmed by assets/chars/build-chars.mjs.
-// One shared clip file drives every body (they share one rig). Each look gets its own recoloured copy of the
-// tiny palette texture, so Realm cloth, banners, skin and hair change without new downloads.
-// Proportions are nudged away from the chibi default: smaller head, longer legs.
+// Rigged, animated people for the third-person scenes, with realistic proportions.
+// Bodies and clips: Quaternius (quaternius.com) CC0 characters: Adventurer, Monarch (body only) and Hooded Adventurer,
+// merged by assets/people/build-people.mjs into one file: three bodies on one shared 62-bone rig and one clip set.
+// Each body is a single draw call; its parts index a 4 x 4 colour palette, so every look (Realm cloth, banner colours,
+// skin, hair, metal) is a recoloured 4 x 4 texture. Helmets, swords, spears and shields are small built meshes on the bones.
 import * as THREE from "./three.module.min.js";
 import { GLTFLoader } from "./lib/GLTFLoader.js";
 import { clone as skClone } from "./lib/SkeletonUtils.js";
 import { mergeGeometries } from "./lib/BufferGeometryUtils.js";
 
-const FILES = { knight: "knight.glb", barbarian: "barbarian.glb", rogue: "rogue.glb", hood: "rogue_hooded.glb", mage: "mage.glb" };
-// palette cells ("col,row" on the 8 x 4 grid) that carry each part of the outfit, per body
-const SLOTS = {
-  knight: { cloth: ["0,1", "2,2"], metal: ["3,0", "1,1", "2,1"], dark: ["4,0", "7,1"], leather: ["5,0", "6,0", "7,0"], skin: ["0,0"], hair: ["1,0"], shield: ["6,1"] },
-  barbarian: { cloth: ["0,1", "1,1", "2,2"], fur: ["2,1", "0,2"], legs: ["3,2"], leather: ["5,0", "6,0", "7,0", "7,1"], metal: ["3,0", "4,0"], skin: ["0,0"], hair: ["1,0"], shield: ["4,1"] },
-  rogue: { cloth: ["1,1", "1,2"], cloth2: ["0,1"], legs: ["3,2"], gloves: ["5,2"], leather: ["5,0", "6,0", "7,0", "7,1"], metal: ["3,0"], skin: ["0,0"], hair: ["1,0"] },
-  mage: { cloth: ["0,1", "1,1"], cloth2: ["7,1"], cape: ["2,1", "1,2"], metal: ["3,0", "4,0"], leather: ["5,0", "6,0", "7,0"], legs: ["3,2"], skin: ["0,0"], hair: ["1,0"] }
+// palette cells: 0 skin, 1 hair, 2 eyes, 3 eye-white, 4 cloth, 5 cloth2, 6 legs, 7 legs2, 8 boots, 9 metal, 10 dark metal,
+// 11 leather, 12 trim (buttons, buckles), 13 spare, 14 soles, 15 hood and cloak
+const DEF = {
+  man: [0xb99b78, 0x432d1b, 0x30251e, 0xb3b3b3, 0x403b26, 0x504b34, 0x534830, 0x695a3c, 0x252525, 0x595b5a, 0x484948, 0x453a33, 0x816835, 0, 0x3b3b3b, 0x34322f],
+  soldier: [0xb99b78, 0x432d1b, 0x30251e, 0xb3b3b3, 0x3b4250, 0x8c876f, 0x534830, 0x695a3c, 0x252525, 0x6a6c6b, 0x484948, 0x453a33, 0x816835, 0, 0x3b3b3b, 0x34322f],
+  woman: [0xcdac85, 0x352921, 0x30251e, 0xb3b3b3, 0x6e4729, 0x504b34, 0x534830, 0x695a3c, 0x252525, 0x737373, 0x505150, 0x4b321e, 0xae864a, 0, 0x3b3b3b, 0x34322f]
 };
-SLOTS.hood = SLOTS.rogue;
-const METAL_CELLS = ["3,0", "4,0", "1,1", "2,1", "3,1"];
-const ACC = { helm: ["Knight_Helmet", "Barbarian_Hat", "Mage_Hat"], cape: ["Knight_Cape", "Barbarian_Cape", "Rogue_Cape", "Mage_Cape"], shields: ["Round_Shield", "Badge_Shield", "Rectangle_Shield", "Barbarian_Round_Shield"], weapons: ["1H_Sword", "1H_Axe", "Knife", "Mug"] };
+const SLOT0 = { skin: [0], hair: [1], cloth: [4], cloth2: [5], legs: [6, 7], boots: [8], metal: [9], dark: [10], leather: [11], trim: [12], hood: [15] };
+// the hooded woman's parts sit in other cells: hood 1, hair 3, dark under-layers 15
+const SLOTS = { man: SLOT0, soldier: SLOT0, woman: Object.assign({}, SLOT0, { hood: [1], hair: [3], cloth2: [15] }) };
+const MESH = { man: "Man", soldier: "Soldier", woman: "Woman" };
+const BONE = { hand: "WristR", handL: "WristL", head: "Head", armL: "UpperArmL", foreL: "LowerArmL" };
 
 let loading = null, LIB = null;
 export function loadChars() {
   if (loading) return loading;
-  const url = (f) => new URL("./assets/chars/" + f, import.meta.url).href;
-  const loader = new GLTFLoader();
-  const get = (f) => loader.loadAsync(url(f));
-  const names = Object.keys(FILES);
-  loading = Promise.all([get("anims.glb"), ...names.map((k) => get(FILES[k]))]).then(([an, ...gl]) => {
-    const clips = {}; an.animations.forEach((c) => { clips[c.name] = c; });
-    const tpl = {};
-    names.forEach((k, i) => { tpl[k] = prepTemplate(gl[i].scene); });
-    LIB = { clips, tpl };
+  const url = new URL("./assets/people/people.glb", import.meta.url).href;
+  loading = new GLTFLoader().loadAsync(url).then((g) => {
+    const clips = {}; g.animations.forEach((c) => { clips[c.name] = c; });
+    LIB = { clips, root: g.scene };
     return LIB;
   });
   return loading;
 }
 export function charsReady() { return !!LIB; }
 
-// merge the skinned body parts into one draw call; keep rigid bits (helmets, shields, weapons) as their own meshes
-function prepTemplate(root) {
-  const skinned = []; let rig = null;
-  root.traverse((o) => { if (o.isSkinnedMesh) skinned.push(o); });
-  const base = skinned[0], mat = base.material, img = mat.map && mat.map.image;
-  rig = base.parent;
-  const geos = skinned.map((m) => { const g = m.geometry.clone(); for (const k of Object.keys(g.attributes)) if (!["position", "normal", "uv", "skinIndex", "skinWeight"].includes(k)) g.deleteAttribute(k); return g.index ? g.toNonIndexed() : g; });
-  const merged = mergeGeometries(geos, false);
-  const body = new THREE.SkinnedMesh(merged, mat); body.name = "Body";
-  body.bind(base.skeleton, base.bindMatrix);
-  skinned.forEach((m) => m.parent.remove(m));
-  rig.add(body);
-  geos.forEach((g) => g.dispose());
-  const acc = {}; root.traverse((o) => { if (o.isMesh && !o.isSkinnedMesh) acc[o.name] = o; });
-  return { root, img, mat, acc, handR: root.getObjectByName("handslot.r"), handL: root.getObjectByName("handslot.l") };
+function paletteCanvas(base, look) {
+  const cv = document.createElement("canvas"); cv.width = cv.height = 4; const x = cv.getContext("2d"), cols = DEF[base].slice();
+  const SLOT = SLOTS[base];
+  for (const k of Object.keys(SLOT)) if (look[k] !== undefined && look[k] !== null) SLOT[k].forEach((i, j) => { cols[i] = j ? new THREE.Color(look[k]).multiplyScalar(0.8).getHex() : new THREE.Color(look[k]).getHex(); });
+  cols.forEach((c, i) => { x.fillStyle = "#" + new THREE.Color(c).getHexString(); x.fillRect(i % 4, Math.floor(i / 4), 1, 1); });
+  return { cv, key: base + cols.join(",") };
 }
-
-// ---------- recoloured palette textures and materials (cached per scene kit) ----------
-function cellsOf(c) { const [x, y] = c.split(",").map(Number); return [x, y]; }
-function recolour(img, base, look, S) {
-  const N = 256, cv = document.createElement("canvas"); cv.width = cv.height = N;
-  const x = cv.getContext("2d"); x.drawImage(img, 0, 0, N, N);
-  const slots = SLOTS[base]; const cw = N / 8, ch = N / 4;
-  const want = [];
-  for (const k of Object.keys(slots)) if (look[k] !== undefined && look[k] !== null) for (const c of slots[k]) want.push([c, new THREE.Color(look[k])]);
-  if (!want.length) return cv;
-  const d = x.getImageData(0, 0, N, N), px = d.data;
-  for (const [c, col] of want) {
-    const [cx, cy] = cellsOf(c), x0 = cx * cw, y0 = cy * ch;
-    let sum = 0, n = 0;
-    for (let yy = y0; yy < y0 + ch; yy++) for (let xx = x0; xx < x0 + cw; xx++) { const i = (yy * N + xx) * 4; sum += px[i] * 0.3 + px[i + 1] * 0.59 + px[i + 2] * 0.11; n++; }
-    const mean = Math.max(8, sum / n);
-    // target in sRGB 0..255
-    const tr = col.r * 255, tg = col.g * 255, tb = col.b * 255;
-    for (let yy = y0; yy < y0 + ch; yy++) for (let xx = x0; xx < x0 + cw; xx++) {
-      const i = (yy * N + xx) * 4, l = (px[i] * 0.3 + px[i + 1] * 0.59 + px[i + 2] * 0.11) / mean, k = 0.55 + 0.45 * l;
-      px[i] = Math.min(255, tr * k); px[i + 1] = Math.min(255, tg * k); px[i + 2] = Math.min(255, tb * k);
-    }
-  }
-  x.putImageData(d, 0, 0);
+function mrCanvas() { // G roughness, B metalness: metal cells shine a little
+  const cv = document.createElement("canvas"); cv.width = cv.height = 4; const x = cv.getContext("2d");
+  x.fillStyle = "rgb(0,220,0)"; x.fillRect(0, 0, 4, 4); x.fillStyle = "rgb(0,120,70)"; for (const i of [9, 10, 12]) x.fillRect(i % 4, Math.floor(i / 4), 1, 1);
+  x.fillStyle = "rgb(0,140,0)"; x.fillRect(2, 0, 2, 1);
   return cv;
 }
-function metalRough() {
-  // G = roughness, B = metalness on the same 8 x 4 grid
-  const N = 32, cv = document.createElement("canvas"); cv.width = cv.height = N; const x = cv.getContext("2d");
-  x.fillStyle = "rgb(0,205,0)"; x.fillRect(0, 0, N, N);
-  x.fillStyle = "rgb(0,125,32)"; for (const c of METAL_CELLS) { const [cx, cy] = cellsOf(c); x.fillRect(cx * N / 8, cy * N / 4, N / 8, N / 4); }
-  return cv;
-}
+function tex4(cv, srgb, track) { const t = track(new THREE.CanvasTexture(cv)); t.flipY = false; t.magFilter = t.minFilter = THREE.NearestFilter; t.generateMipmaps = false; if (srgb) t.colorSpace = THREE.SRGBColorSpace; return t; }
 
 export function makeCharKit(track) {
-  const mats = new Map(); let mr = null, spearGeo = null, spearMat = null;
-  const getMR = () => { if (!mr) { mr = track(new THREE.CanvasTexture(metalRough())); mr.flipY = false; mr.magFilter = THREE.NearestFilter; } return mr; };
+  const mats = new Map(); let mr = null; const geos = {};
   function matFor(base, look) {
-    const slots = SLOTS[base], key = base + "|" + Object.keys(slots).map((k) => look[k] == null ? "" : new THREE.Color(look[k]).getHexString()).join(",");
-    if (mats.has(key)) return mats.get(key);
-    const t = LIB.tpl[base];
-    const tex = track(new THREE.CanvasTexture(recolour(t.img, base, look)));
-    tex.flipY = false; tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = 2;
-    const m = track(new THREE.MeshStandardMaterial({ map: tex, roughnessMap: getMR(), metalnessMap: getMR(), roughness: 1, metalness: 1, envMapIntensity: 0.6 }));
-    mats.set(key, m); return m;
+    const p = paletteCanvas(base, look);
+    if (mats.has(p.key)) return mats.get(p.key);
+    if (!mr) mr = tex4(mrCanvas(), false, track);
+    const m = track(new THREE.MeshStandardMaterial({ map: tex4(p.cv, true, track), roughnessMap: mr, metalnessMap: mr, roughness: 1, metalness: 1, flatShading: true }));
+    mats.set(p.key, m); return m;
   }
-  function spear() {
-    if (!spearGeo) {
-      const shaft = new THREE.CylinderGeometry(0.035, 0.04, 2.5, 6).translate(0, 0.35, 0);
-      const tip = new THREE.ConeGeometry(0.07, 0.32, 6).translate(0, 1.76, 0);
-      const cs = (g, c) => { const n = g.attributes.position.count, a = new Float32Array(n * 3), cc = new THREE.Color(c); for (let i = 0; i < n; i++) { a[i * 3] = cc.r; a[i * 3 + 1] = cc.g; a[i * 3 + 2] = cc.b; } g.setAttribute("color", new THREE.BufferAttribute(a, 3)); g.deleteAttribute("uv"); return g.index ? g.toNonIndexed() : g; };
-      spearGeo = track(mergeGeometries([cs(shaft, 0x5a3e24), cs(tip, 0xb8bcc0)]));
-      spearMat = track(new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.6, metalness: 0.3 }));
-    }
-    return new THREE.Mesh(spearGeo, spearMat);
+  // props are built along simple axes in metres; attach() puts them into bone space
+  function geo(kind) {
+    if (geos[kind]) return geos[kind];
+    const vc = (g, c) => { g = g.index ? g.toNonIndexed() : g; const n = g.attributes.position.count, a = new Float32Array(n * 3), cc = new THREE.Color(c); for (let i = 0; i < n; i++) { a[i * 3] = cc.r; a[i * 3 + 1] = cc.g; a[i * 3 + 2] = cc.b; } g.setAttribute("color", new THREE.BufferAttribute(a, 3)); g.deleteAttribute("uv"); return g; };
+    let g;
+    if (kind === "sword") g = mergeGeometries([vc(new THREE.BoxGeometry(0.85, 0.05, 0.012).translate(0.52, 0, 0), 0xc8ccd0), vc(new THREE.ConeGeometry(0.025, 0.08, 4).rotateZ(-Math.PI / 2).translate(0.98, 0, 0), 0xc8ccd0), vc(new THREE.BoxGeometry(0.04, 0.2, 0.04).translate(0.09, 0, 0), 0x6a5028), vc(new THREE.BoxGeometry(0.16, 0.035, 0.035).translate(-0.02, 0, 0), 0x3a2a1a), vc(new THREE.SphereGeometry(0.03, 6, 4).translate(-0.12, 0, 0), 0x6a5028)]);
+    else if (kind === "spear") g = mergeGeometries([vc(new THREE.CylinderGeometry(0.02, 0.022, 2.4, 6).rotateZ(-Math.PI / 2).translate(0.5, 0, 0), 0x5a3e24), vc(new THREE.ConeGeometry(0.045, 0.28, 5).rotateZ(-Math.PI / 2).translate(1.84, 0, 0), 0xb8bcc0)]);
+    else if (kind === "knife") g = mergeGeometries([vc(new THREE.BoxGeometry(0.3, 0.035, 0.01).translate(0.22, 0, 0), 0xb8bcc0), vc(new THREE.BoxGeometry(0.12, 0.035, 0.035).translate(0.02, 0, 0), 0x3a2a1a)]);
+    else if (kind === "axe") g = mergeGeometries([vc(new THREE.CylinderGeometry(0.02, 0.02, 0.75, 6).rotateZ(-Math.PI / 2).translate(0.3, 0, 0), 0x5a3e24), vc(new THREE.BoxGeometry(0.16, 0.2, 0.02).translate(0.62, 0.09, 0), 0xa8acb0)]);
+    else if (kind === "shield") g = mergeGeometries([vc(new THREE.CylinderGeometry(0.32, 0.32, 0.04, 14).rotateX(Math.PI / 2), 0xffffff), vc(new THREE.CylinderGeometry(0.335, 0.335, 0.03, 14).rotateX(Math.PI / 2).translate(0, 0, -0.012), 0x707478), vc(new THREE.SphereGeometry(0.06, 8, 4, 0, Math.PI * 2, 0, Math.PI / 2).rotateX(Math.PI / 2).translate(0, 0, 0.02), 0x9a9ea2)]);
+    else if (kind === "helm") g = mergeGeometries([vc(new THREE.SphereGeometry(0.142, 10, 6, 0, Math.PI * 2, 0, Math.PI / 2).scale(1, 1.15, 1.1), 0xffffff), vc(new THREE.CylinderGeometry(0.146, 0.15, 0.03, 12).scale(1, 1, 1.1).translate(0, 0.01, 0), 0xdddddd), vc(new THREE.BoxGeometry(0.022, 0.1, 0.02).translate(0, -0.03, 0.15), 0xdddddd)]);
+    else if (kind === "spike") g = mergeGeometries([geo("helm").clone(), vc(new THREE.ConeGeometry(0.05, 0.14, 6).translate(0, 0.21, 0), 0xffffff)]);
+    else if (kind === "lantern") g = vc(new THREE.BoxGeometry(0.1, 0.14, 0.1), 0xffffff);
+    geos[kind] = track(g); return g;
   }
-  return { matFor, spear };
+  const vcMats = new Map();
+  function vcMat(hex, metal) { const key = hex + "|" + metal; if (vcMats.has(key)) return vcMats.get(key); const m = track(new THREE.MeshStandardMaterial({ color: hex, vertexColors: true, roughness: metal ? 0.42 : 0.8, metalness: metal ? 0.4 : 0, flatShading: true })); vcMats.set(key, m); return m; }
+  return { matFor, geo, vcMat };
 }
 
-// look: { base, cloth, cloth2, cape, skin, hair, metal, dark, leather, legs, gloves, fur, shield: hex, helm: bool, capeOn: bool,
-//         weapon: "sword"|"axe"|"knife"|"spear"|"mug"|null, shieldKind: "round"|"badge"|"rect"|null, scale }
+// attach a prop to a bone; offsets are metres along the bone's own axes, whatever the rig's unit scale
+function attach(bone, mesh, pos, rot) {
+  bone.updateWorldMatrix(true, false);
+  const s = new THREE.Vector3(); bone.matrixWorld.decompose(new THREE.Vector3(), new THREE.Quaternion(), s);
+  const k = 1 / (s.x || 1);
+  mesh.scale.setScalar(k); mesh.position.set(pos[0] * k, pos[1] * k, pos[2] * k);
+  if (rot) mesh.rotation.set(rot[0], rot[1], rot[2]);
+  mesh.castShadow = true; bone.add(mesh); return mesh;
+}
+
+// look: { base: "man"|"soldier"|"woman", cloth, cloth2, legs, boots, metal, dark, leather, trim, hood, skin, hair,
+//         helm: bool|"spike", weapon: "sword"|"spear"|"knife"|"axe"|null, shieldKind, shield: hex, lantern: hex, scale }
+export const PROP = { sword: [[0, 0.085, 0], [0, 0, 0]], shield: [[0, 0.06, 0.07], [0, 0, 0]], helm: [[0, 0.125, 0.008], [0, 0, 0]] };
 export function makeChar(ck, look) {
-  const base = look.base || "rogue", T = LIB.tpl[base];
-  const o = skClone(T.root);
+  let base = look.base; if (!MESH[base]) base = base === "knight" ? "soldier" : base === "mage" || base === "hood" ? "woman" : "man";
+  const src = LIB.root;
+  const o = skClone(src);
   const mat = ck.matFor(base, look);
-  const wantW = { sword: "1H_Sword", axe: "1H_Axe", knife: "Knife", mug: "Mug" }[look.weapon] || null;
-  const wantS = look.shieldKind ? (base === "barbarian" ? "Barbarian_Round_Shield" : { round: "Round_Shield", badge: "Badge_Shield", rect: "Rectangle_Shield" }[look.shieldKind]) : null;
-  const meshes = [];
-  o.traverse((m) => {
-    if (!m.isMesh) return;
-    m.material = mat; m.castShadow = true; m.receiveShadow = false;
-    if (m.isSkinnedMesh) { meshes.push(m); return; }
-    const n = m.name;
-    if (ACC.helm.includes(n)) m.visible = !!look.helm;
-    else if (ACC.cape.includes(n)) m.visible = !!look.capeOn;
-    else if (ACC.shields.includes(n)) m.visible = n === wantS;
-    else if (ACC.weapons.includes(n)) m.visible = n === wantW;
-    meshes.push(m);
-  });
-  const hand = o.getObjectByName("handslot.r"), handL = o.getObjectByName("handslot.l");
-  // borrow a weapon or shield from another body when this one has none
-  if (wantW && !o.getObjectByName(wantW)) {
-    const src = Object.values(LIB.tpl).map((t) => t.acc[wantW]).find(Boolean);
-    if (src && hand) { const w = new THREE.Mesh(src.geometry, look.weaponMat || ck.matFor(src === LIB.tpl.knight.acc[wantW] ? "knight" : base, {})); w.position.copy(src.position); w.quaternion.copy(src.quaternion); w.castShadow = true; hand.add(w); }
-  }
-  if (wantS && !o.getObjectByName(wantS)) {
-    const src = LIB.tpl.knight.acc[wantS] || LIB.tpl.knight.acc.Round_Shield;
-    if (src && handL) { const s = new THREE.Mesh(src.geometry, ck.matFor("knight", { shield: look.shield, metal: look.metal })); s.position.copy(src.position); s.quaternion.copy(src.quaternion); s.castShadow = true; handL.add(s); }
-  }
-  if (look.weapon === "spear" && hand) { const s = ck.spear(); s.castShadow = true; hand.add(s); }
-  // proportions: smaller head, longer legs, overall about 1.8 m
-  const head = o.getObjectByName("head"); if (head) head.scale.setScalar(0.7);
-  for (const nm of ["upperleg.l", "upperleg.r"]) { const b = o.getObjectByName(nm); if (b) b.scale.setScalar(1.24); }
+  const drop = [];
+  o.traverse((m) => { if (m.isSkinnedMesh) { if (m.name !== MESH[base]) drop.push(m); else { m.material = mat; m.castShadow = true; m.receiveShadow = false; m.frustumCulled = false; } } });
+  drop.forEach((m) => m.parent.remove(m));
   const wrap = new THREE.Group(); wrap.rotation.order = "YXZ";
-  o.position.y = 0.1; wrap.add(o);
-  o.scale.setScalar(0.86 * (look.scale || 1) * (look.squat || 1));
+  o.scale.multiplyScalar((look.scale || 1) * (base === "woman" ? 0.98 : 1.03)); wrap.add(o);
+  o.updateMatrixWorld(true);
+  const hand = o.getObjectByName(BONE.hand), handL = o.getObjectByName(BONE.handL), head = o.getObjectByName(BONE.head);
+  if (look.weapon && look.weapon !== "mug" && hand) attach(hand, new THREE.Mesh(ck.geo(look.weapon), ck.vcMat(0xffffff, look.weapon !== "spear")), PROP.sword[0], PROP.sword[1]);
+  if (look.shieldKind && handL) attach(handL, new THREE.Mesh(ck.geo("shield"), ck.vcMat(look.shield || 0x6a4a2a, false)), PROP.shield[0], PROP.shield[1]);
+  if (look.helm && head) attach(head, new THREE.Mesh(ck.geo(look.helm === "spike" ? "spike" : "helm"), ck.vcMat(look.metal || 0x8a8e94, true)), [PROP.helm[0][0], PROP.helm[0][1] - (base === "woman" ? 0.012 : 0), PROP.helm[0][2]], PROP.helm[1]);
+  if (look.lantern && handL) attach(handL, new THREE.Mesh(ck.geo("lantern"), new THREE.MeshBasicMaterial({ color: look.lantern })), [0, 0.12, 0], null);
   const mixer = new THREE.AnimationMixer(o);
-  const ch = new CharAnim(mixer, LIB.clips, look);
-  wrap.userData.ch = ch; wrap.userData.meshes = meshes;
+  const ch = new CharAnim(mixer, LIB.clips, look, o);
+  wrap.userData.ch = ch;
   ch.set("idle", 0);
-  mixer.update(Math.random() * 1.2);
+  mixer.update(Math.random() * 1.5);
   return wrap;
 }
 
+const Q = new THREE.Quaternion(), E = new THREE.Euler();
 class CharAnim {
-  constructor(mixer, clips, look) {
-    this.m = mixer; this.clips = clips; this.acts = {}; this.cur = null; this.state = ""; this.prevAtk = 0; this.dead = false; this.lock = 0; this.acc = 0; this.flip = Math.random() < 0.5;
-    this.spear = look.weapon === "spear";
+  constructor(mixer, clips, look, root) {
+    this.m = mixer; this.clips = clips; this.acts = {}; this.cur = null; this.state = ""; this.prevAtk = 0; this.dead = false; this.lock = 0; this.acc = 0;
+    this.armed = !!look.weapon && look.weapon !== "mug"; this.blocking = 0;
+    this.armL = root.getObjectByName(BONE.armL); this.foreL = root.getObjectByName(BONE.foreL);
   }
   act(name) {
     if (!this.acts[name]) { const c = this.clips[name]; if (!c) return null; this.acts[name] = this.m.clipAction(c); }
@@ -169,7 +128,7 @@ class CharAnim {
   }
   set(state, fade, opts) {
     if (this.state === state && !(opts && opts.restart)) return;
-    const name = { idle: "Idle", walk: "Walking_A", run: "Running_A", block: "Blocking", hit: "Hit_A", cheer: "Cheer", use: "Interact", die: this.flip ? "Death_A" : "Death_B", atk: this.spear ? "1H_Melee_Attack_Stab" : this.flip ? "1H_Melee_Attack_Chop" : "1H_Melee_Attack_Slice_Horizontal" }[state];
+    const name = { idle: this.armed ? "Idle_Sword" : "Idle", walk: "Walk", run: "Run", block: "Idle_Sword", hit: "HitRecieve", cheer: "Wave", use: "Interact", die: "Death", atk: this.armed ? "Sword_Slash" : "Punch_Right" }[state];
     const a = this.act(name); if (!a) return;
     a.reset(); a.enabled = true; a.setEffectiveWeight(1);
     if (opts && opts.once) { a.setLoop(THREE.LoopOnce, 1); a.clampWhenFinished = true; } else a.setLoop(THREE.LoopRepeat, Infinity);
@@ -181,17 +140,23 @@ class CharAnim {
   // move: 0 still, ~1 walk, >1.2 run; atk: 1 at the start of a swing falling to 0; block: bool
   update(dt, move, atk, block, skip) {
     if (this.dead) { if (this.lock > 0) { this.lock -= dt; this.m.update(dt); } return; }
-    if (atk > 0 && (this.prevAtk <= 0 || atk > this.prevAtk + 0.05)) { const c = this.clips[this.spear ? "1H_Melee_Attack_Stab" : "1H_Melee_Attack_Chop"]; this.flip = !this.flip; this.set("atk", 0.06, { once: true, restart: true, ts: c ? c.duration / 0.62 : 1.6 }); this.lock = 0.6; }
+    if (atk > 0 && (this.prevAtk <= 0 || atk > this.prevAtk + 0.05)) { const c = this.clips[this.armed ? "Sword_Slash" : "Punch_Right"]; this.set("atk", 0.06, { once: true, restart: true, ts: c ? c.duration / 0.6 : 1.6 }); this.lock = 0.55; }
     this.prevAtk = atk;
     if (this.lock > 0) this.lock -= dt;
     else if (block) this.set("block", 0.12);
-    else if (move > 1.2) { this.set("run", 0.2); this.cur.timeScale = Math.min(1.4, 0.75 + move * 0.25); }
-    else if (move > 0.08) { this.set("walk", 0.2); this.cur.timeScale = Math.min(1.6, 0.55 + move * 0.7); }
+    else if (move > 1.2) { this.set("run", 0.2); this.cur.timeScale = Math.min(1.35, 0.8 + move * 0.2); }
+    else if (move > 0.08) { this.set("walk", 0.2); this.cur.timeScale = Math.min(1.7, 0.6 + move * 0.75); }
     else this.set("idle", 0.25);
-    // far-away people update less often
-    if (skip) { this.acc += dt; if (Math.random() < 1 / skip) { this.m.update(this.acc); this.acc = 0; } return; }
-    this.m.update(dt);
+    this.blocking += ((block ? 1 : 0) - this.blocking) * Math.min(1, dt * 12);
+    if (skip) { this.acc += dt; if (Math.random() < 1 / skip) { this.m.update(this.acc); this.acc = 0; } }
+    else this.m.update(dt);
+    // there is no block clip: raise the shield arm across the chest on top of the idle
+    if (this.blocking > 0.02 && this.armL && this.foreL) {
+      this.armL.quaternion.multiply(Q.setFromEuler(E.set(BLOCK[0] * this.blocking, BLOCK[1] * this.blocking, BLOCK[2] * this.blocking)));
+      this.foreL.quaternion.multiply(Q.setFromEuler(E.set(BLOCK[3] * this.blocking, BLOCK[4] * this.blocking, BLOCK[5] * this.blocking)));
+    }
   }
-  die() { if (this.dead) return; this.set("die", 0.1, { once: true, ts: 1 }); this.dead = true; this.lock = 3; }
+  die() { if (this.dead) return; this.set("die", 0.1, { once: true, ts: 1 }); this.dead = true; this.lock = 2.5; }
   cheer() { this.set("cheer", 0.2); }
 }
+export const BLOCK = [-0.6, 0, -1.25, 0, 0, -1.3];

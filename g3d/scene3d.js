@@ -6,7 +6,7 @@
 // The scene never changes game numbers itself: it reports back to the bridge, which runs the existing sheets and finishBattle.
 import * as THREE from "./three.module.min.js";
 import { loadChars, charsReady, makeCharKit, makeChar } from "./chars.js";
-import { makeArt, Merge, paintedSky, grassField, gfxGet, gfxSet } from "./art.js";
+import { makeArt, Merge, paintedSky, grassField, gfxGet, gfxSet, groundMat, grainURL } from "./art.js";
 
 // ---------- Realm looks (from GAME_CANON_SPEC.md and the Realm Codex §15b LOOK) ----------
 const REALMS = {
@@ -58,6 +58,9 @@ function styleOnce() {
 #vh3d{position:absolute;inset:0;z-index:30;background:#0b0907;overflow:hidden;touch-action:none;user-select:none;-webkit-user-select:none;font-family:var(--serif,Georgia,serif)}
 #vh3d canvas{position:absolute;inset:0;width:100%;height:100%;display:block;outline:none}
 #vh3d .v3-vig{position:absolute;inset:0;pointer-events:none;background:radial-gradient(120% 95% at 50% 45%,rgba(0,0,0,0) 52%,rgba(4,3,2,.62) 100%),linear-gradient(rgba(6,5,3,.55),rgba(6,5,3,0) 16%,rgba(6,5,3,0) 78%,rgba(6,5,3,.6))}
+#vh3d .v3-grain{position:absolute;inset:-64px;pointer-events:none;opacity:.075;mix-blend-mode:overlay;background-size:128px 128px;animation:v3grain .5s steps(4) infinite}
+@keyframes v3grain{0%{transform:translate(0,0)}25%{transform:translate(-37px,21px)}50%{transform:translate(19px,-43px)}75%{transform:translate(-11px,-17px)}100%{transform:translate(0,0)}}
+#vh3d.lowfx .v3-grain{animation:none}
 #vh3d .v3-hud{position:absolute;left:0;right:0;top:0;padding:calc(.7rem + env(safe-area-inset-top,0px)) 1rem 0;pointer-events:none;color:#efe6cf;text-shadow:0 1px 3px #000}
 #vh3d .v3-hud h3{margin:0;font:italic 400 1.45rem 'IM Fell English',Georgia,serif;color:#f4e3b8;letter-spacing:.01em}
 #vh3d .v3-hud small{display:block;font:500 .66rem 'IBM Plex Mono',ui-monospace,monospace;letter-spacing:.16em;text-transform:uppercase;color:#c9b48a;margin-top:.1rem}
@@ -103,10 +106,11 @@ function makeStage(loadText) {
   const sh = document.getElementById("sheet");
   const host = (sh && sh.parentNode) || document.body;
   const root = document.createElement("div"); root.id = "vh3d";
-  root.innerHTML = '<canvas tabindex="-1"></canvas><div class="v3-vig"></div><div class="v3-hud"></div><div class="v3-msg"></div><div class="v3-prompt" hidden></div><div class="v3-hp" hidden></div><div class="v3-keys"></div><div class="v3-act"></div><div class="v3-top"></div><div class="v3-stick" hidden><i></i></div><div class="v3-end"></div><div class="v3-load">' + loadText + "</div>";
+  root.innerHTML = '<canvas tabindex="-1"></canvas><div class="v3-grain"></div><div class="v3-vig"></div><div class="v3-hud"></div><div class="v3-msg"></div><div class="v3-prompt" hidden></div><div class="v3-hp" hidden></div><div class="v3-keys"></div><div class="v3-act"></div><div class="v3-top"></div><div class="v3-stick" hidden><i></i></div><div class="v3-end"></div><div class="v3-load">' + loadText + "</div>";
   host.appendChild(root);
   const $ = (q) => root.querySelector(q);
   const canvas = $("canvas");
+  $(".v3-grain").style.backgroundImage = "url(" + grainURL() + ")";
   let renderer;
   try {
     renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: "high-performance" });
@@ -117,7 +121,7 @@ function makeStage(loadText) {
   let gfx = gfxGet(touchDev);
   // pixel ratio: 1.5 at most anywhere (phones included), 1.25 on Low; auto-quality lowers it further if frames run long
   const prCap = () => Math.min(window.devicePixelRatio || 1, gfx === "low" ? 1.25 : 1.5);
-  renderer.setPixelRatio(prCap());
+  renderer.setPixelRatio(prCap()); root.classList.toggle("lowfx", gfx === "low");
   renderer.shadowMap.enabled = gfx !== "low"; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.05;
   const scene = new THREE.Scene();
@@ -198,7 +202,7 @@ function makeStage(loadText) {
       const label = () => { b.textContent = "Graphics: " + (gfx === "low" ? "Low" : "High"); };
       label();
       listen(b, "click", (e) => {
-        e.stopPropagation(); gfx = gfx === "low" ? "high" : "low"; gfxSet(gfx); label();
+        e.stopPropagation(); gfx = gfx === "low" ? "high" : "low"; gfxSet(gfx); label(); root.classList.toggle("lowfx", gfx === "low");
         renderer.shadowMap.enabled = gfx !== "low"; pr = prCap(); renderer.setPixelRatio(pr); resize();
         scene.traverse((o) => { const ms = o.material ? (Array.isArray(o.material) ? o.material : [o.material]) : []; ms.forEach((m) => { m.needsUpdate = true; }); });
         stage.onGfx.forEach((f) => f(gfx));
@@ -290,15 +294,17 @@ const HAIR = [0x2a1e18, 0x3e2a1c, 0x5a3e26, 0x1a1414, 0x7a5a3a, 0x8a8078];
 function charLook(o) {
   if (o.ch) return o.ch;
   const r = (hashStr(JSON.stringify(o)) % 1000) / 1000, hair = o.hair || HAIR[Math.floor(Math.random() * HAIR.length)];
-  const skin = o.skin || [0xd8b090, 0xb88a68, 0x8a5a3a, 0xc89a78][Math.floor(Math.random() * 4)];
-  const shieldKind = o.shield ? (o.armour ? "badge" : "round") : null;
-  if (o.eyes) return { base: "hood", cloth: o.cloak || o.cloth, cloth2: o.cloth, legs: o.cloth2, gloves: o.cloth2, leather: 0x241c28, metal: 0x3a3440, skin: o.skin, hair: 0x101014, weapon: o.weapon === "spear" ? "spear" : "sword", scale: o.scale };
-  if (o.armour || o.tabard) return { base: "knight", cloth: o.tabard || o.cloth, metal: o.metal || 0x8a8e94, dark: shade(o.metal || 0x8a8e94, 0.55).getHex(), leather: 0x4a3424, skin, hair, helm: o.helm === "cap" || o.helm === "spike" || o.helm === "crown", capeOn: !!o.cloak, weapon: o.weapon, shieldKind, shield: o.shield, scale: o.scale };
-  if (o.helm === "hood") return { base: "hood", cloth: o.hoodc || o.cloth2 || o.cloth, cloth2: o.cloth, legs: o.cloth2 || shade(o.cloth, 0.6).getHex(), gloves: 0x3a2a1c, skin, hair, capeOn: !!o.cloak, weapon: o.weapon === "spear" ? "spear" : o.weapon ? "knife" : null, shieldKind, shield: o.shield, scale: o.scale };
-  const base = o.weapon ? (r < 0.5 ? "barbarian" : "rogue") : r < 0.4 ? "rogue" : r < 0.75 ? "mage" : "barbarian";
-  return { base, cloth: o.cloth, cloth2: shade(o.cloth2 || o.cloth, 0.7).getHex(), cape: o.cloak || o.cloth2, legs: o.cloth2 || 0x3a2e24, fur: 0xb8a890, skin, hair, capeOn: !!o.cloak, weapon: o.weapon === "spear" ? "spear" : o.weapon === "sword" ? (base === "barbarian" ? "axe" : "sword") : o.lantern ? null : (base === "barbarian" && r > 0.9 ? "mug" : null), shieldKind, shield: o.shield, scale: o.scale };
+  const skin = o.skin || [0xd8b090, 0xb88a68, 0x8a5a3a, 0xc89a78, 0xa87858][Math.floor(Math.random() * 5)];
+  const shieldKind = o.shield ? "round" : null;
+  // the Void-touched: hooded, dark, grey-violet skin
+  if (o.eyes) return { base: "woman", hood: 0x16121e, cloth: o.cloak || o.cloth, cloth2: 0x141018, legs: o.cloth2, boots: 0x141018, leather: 0x241c28, metal: 0x3a3440, skin: 0x6a5e72, hair: 0x101014, weapon: o.weapon === "spear" ? "spear" : "sword", scale: o.scale };
+  // soldiers and guards: breastplate and greaves, surcoat in their colour
+  if (o.armour || o.tabard) return { base: "soldier", cloth: o.tabard || o.cloth, cloth2: shade(o.tabard || o.cloth, 0.6).getHex(), metal: o.metal || 0x8a8e94, dark: shade(o.metal || 0x8a8e94, 0.6).getHex(), leather: 0x4a3424, legs: o.cloth2 || 0x3a3028, skin, hair, helm: o.helm === "spike" ? "spike" : o.helm === "cap" || o.helm === "crown", weapon: o.weapon, shieldKind, shield: o.shield, scale: o.scale };
+  if (o.helm === "hood") return { base: "woman", hood: o.hoodc || o.cloth2 || o.cloth, cloth: o.cloth, cloth2: shade(o.cloth, 0.5).getHex(), legs: o.cloth2 || 0x2a2420, skin, hair, weapon: o.weapon === "spear" ? "spear" : o.weapon ? "knife" : null, shieldKind, shield: o.shield, scale: o.scale };
+  // townsfolk and bandits: men in shirt and jerkin, women in hood and bodice
+  const base = r < (o.weapon ? 0.75 : 0.55) ? "man" : "woman";
+  return { base, cloth: o.cloth, cloth2: shade(o.cloth2 || o.cloth, 1.25).getHex(), hood: o.cloak || shade(o.cloth, 0.7).getHex(), legs: o.cloth2 || 0x3a2e24, skin, hair, weapon: o.weapon === "spear" ? "spear" : o.weapon === "sword" ? (r > 0.85 ? "axe" : "sword") : null, shieldKind, shield: o.shield, lantern: o.lantern, scale: o.scale };
 }
-
 function prismGeo() {
   // a unit triangular prism: x in [-0.5,0.5], y in [0,1], ridge along z in [-0.5,0.5]
   const v = [-0.5, 0, 0.5, 0.5, 0, 0.5, 0, 1, 0.5, -0.5, 0, -0.5, 0, 1, -0.5, 0.5, 0, -0.5];
@@ -332,16 +338,16 @@ function roundRect(x, a, b, w, h, r) { x.beginPath(); x.moveTo(a + r, b); x.arcT
 
 // a low-poly person. o: { cloth, cloth2, skin, metal, helm: "cap"|"spike"|"hood"|"bare"|"crown", cloak, weapon: "sword"|"spear"|null, shield, eyes, scale }
 // the player: mail and a surcoat and cloak in the banner colour, bare-headed
-function heroLook(banner, armed) { return { base: "knight", cloth: banner, metal: 0x9a9ea4, dark: 0x3a3430, leather: 0x5a3e28, skin: 0xc89a78, hair: 0x2e2018, helm: false, capeOn: true, weapon: "sword", shieldKind: armed ? "badge" : null, shield: banner }; }
+function heroLook(banner, armed) { return { base: "soldier", cloth: banner, cloth2: shade(banner, 0.55).getHex(), metal: 0x9a9ea4, dark: 0x4a4440, leather: 0x5a3e28, legs: 0x3a2e24, skin: 0xc89a78, hair: 0x2e2018, helm: false, weapon: "sword", shieldKind: armed ? "round" : null, shield: banner }; }
 // Kaelren (Cosplay Kit): ash-grey watch coat, faded rust undershirt, copper buttons, dark hair, warm tawny-brown skin
-function kaelLook(armed) { return { base: "rogue", cloth: 0x8a8782, cloth2: 0xa0522d, metal: 0xb87333, skin: 0xa0663e, hair: 0x1e1612, legs: 0x3a322c, gloves: 0x4a3626, leather: 0x4a3626, capeOn: false, weapon: "sword", shieldKind: armed ? "round" : null, shield: 0x8a5a34 }; }
+function kaelLook(armed) { return { base: "man", cloth: 0x8a8782, cloth2: 0xa0522d, trim: 0xb87333, metal: 0x7a7c80, skin: 0xa0663e, hair: 0x1e1612, legs: 0x3a322c, boots: 0x2a201a, leather: 0x4a3626, weapon: "sword", shieldKind: armed ? "round" : null, shield: 0x8a5a34 }; }
 function figure(kit, o) {
   const f = figure0(kit, o);
   const b = new THREE.Mesh(kit.blobGeo, kit.blobMat); b.position.y = 0.03; b.renderOrder = 1; f.add(b);
   return f;
 }
 function figure0(kit, o) {
-  if (kit.ck) { try { const f = makeChar(kit.ck, charLook(o)); if (o.lantern) { const l = new THREE.Mesh(kit.g.box, kit.glow(o.lantern)); l.scale.setScalar(0.12); l.position.set(0.32, 0.75, 0.12); f.add(l); } return f; } catch (e) { if (window.console) console.log("vh3d: body fallback", e && e.message); } }
+  if (kit.ck) { try { return makeChar(kit.ck, charLook(o)); } catch (e) { if (window.console) console.log("vh3d: body fallback", e && e.message); } }
   return boxFigure(kit, o);
 }
 function boxFigure(kit, o) {
@@ -425,7 +431,8 @@ const COLD = { spirit: 1, shadow: 1, frost: 1, storm: 1 };
 function lights(stage, P, center, span, opts) {
   const { scene } = stage;
   const cold = opts && opts.cold;
-  const hemi = new THREE.HemisphereLight(P.hemi, shade(P.ground, 0.5), opts && opts.dim ? 0.8 : 1.15); scene.add(hemi);
+  // cool sky fill, so torch and lamp pools read warm against blue-grey shade
+  const hemi = new THREE.HemisphereLight(cold ? P.hemi : mix(P.hemi, 0x8a9ac0, 0.4), shade(P.ground, 0.45), opts && opts.dim ? 0.75 : 1.0); scene.add(hemi);
   const sun = new THREE.DirectionalLight(cold ? P.sun : mix(P.sun, 0xffc890, 0.3), (P.sunI || 2) * (opts && opts.dim ? 0.7 : 1.15));
   sun.position.set(center.x + 30, 36, center.z + 22); sun.target.position.copy(center);
   const big = stage.gfx !== "low" && !stage.coarse;
@@ -459,14 +466,20 @@ function particles(stage, kind, count, area, height, tint) {
   return pts;
 }
 
+function pool(kit, scene, x, z, col, size, op) {
+  // a warm pool of light on the ground (additive decal), cheaper than a light and it reads on every phone
+  const m = new THREE.Mesh(kit.g.pool || (kit.g.pool = new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2)), new THREE.MeshBasicMaterial({ map: kit.glowTex, color: col, transparent: true, opacity: op || 0.5, depthWrite: false, blending: THREE.AdditiveBlending, fog: true }));
+  m.scale.setScalar(size); m.position.set(x, 0.05, z); m.renderOrder = 2; scene.add(m); return m;
+}
 function torch(kit, scene, x, y, z, col, withLight, cold) {
   const f = new THREE.Mesh(kit.g.flame, kit.glow(col)); f.position.set(x, y, z); scene.add(f);
+  const pl = y < 6 ? pool(kit, scene, x, z, col, cold ? 5 : 7, cold ? 0.35 : 0.55) : null;
   const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: cold ? kit.coldTex : kit.glowTex, color: col, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending }));
   sp.scale.setScalar(1.6); sp.position.set(x, y + 0.05, z); scene.add(sp);
   let light = null;
-  if (withLight) { light = new THREE.PointLight(col, cold ? 22 : 30, 15, 2); light.position.set(x, y + 0.3, z); scene.add(light); }
+  if (withLight) { light = new THREE.PointLight(col, cold ? 28 : 40, 16, 2); light.position.set(x, y + 0.3, z); scene.add(light); }
   const ph = Math.random() * 10;
-  return { tick(t) { const k = 0.85 + 0.15 * Math.sin(t * 11 + ph) * Math.sin(t * 7.3 + ph * 2); f.scale.set(1, k * 1.1, 1); sp.material.opacity = 0.65 + 0.3 * k; if (light) light.intensity = (cold ? 22 : 30) * k; } };
+  return { tick(t) { const k = 0.85 + 0.15 * Math.sin(t * 11 + ph) * Math.sin(t * 7.3 + ph * 2); f.scale.set(1, k * 1.1, 1); sp.material.opacity = 0.65 + 0.3 * k; if (pl) pl.material.opacity = (cold ? 0.3 : 0.48) + 0.08 * k; if (light) light.intensity = (cold ? 28 : 40) * k; } };
 }
 
 function followCam(cam, tx, ty, tz, yaw, pitch, dist, side, dt, snap) {
@@ -520,12 +533,15 @@ function buildWalk(st, api, info, done) {
   const GT = GROUND_TEX[info.realm] || "grass";
 
   // ground: textured (grass, ash-dirt or snow per Realm) with colour noise, rising into hills outside
-  const gg = new THREE.PlaneGeometry(300, 300, 60, 60); gg.rotateX(-Math.PI / 2);
+  const gg = new THREE.PlaneGeometry(300, 300, 150, 150); gg.rotateX(-Math.PI / 2);
   { const pos = gg.attributes.position, uv = gg.attributes.uv, col = []; const c0 = new THREE.Color(P.ground), c = new THREE.Color();
     for (let i = 0; i < pos.count; i++) { const x = pos.getX(i), z = pos.getZ(i), n = vnoise(x * 0.08, z * 0.08) * 0.7 + vnoise(x * 0.3, z * 0.3) * 0.3; c.copy(c0).multiplyScalar(0.82 + n * 0.32); col.push(c.r, c.g, c.b); uv.setXY(i, x / 6, z / 6); if (Math.hypot(x, z) > R + 14) pos.setY(i, (vnoise(x * 0.03, z * 0.03) - 0.3) * Math.min(14, (Math.hypot(x, z) - R - 14) * 0.25)); }
-    gg.setAttribute("color", new THREE.Float32BufferAttribute(col, 3)); gg.computeVertexNormals(); }
-  const groundMat = art.mat(GT, { roughness: 1 }); groundMat.map.repeat.set(1, 1);
-  const ground = new THREE.Mesh(gg, groundMat); ground.receiveShadow = true; scene.add(ground);
+    gg.setAttribute("color", new THREE.Float32BufferAttribute(col, 3)); gg.computeVertexNormals();
+    // worn ground along the streets, round the plaza and by the walls
+    const bl = new Float32Array(pos.count);
+    for (let i = 0; i < pos.count; i++) { const x = pos.getX(i), z = pos.getZ(i), d = Math.min(Math.abs(x) - 2.2, Math.abs(z) < R ? Math.abs(z) - 2.2 : 99, Math.hypot(x, z) - (isV0 ? 5 : 7.5), walled ? Math.abs(Math.max(Math.abs(x), Math.abs(z)) - R) - 1 : 99); bl[i] = clamp(1 - d / 3.5, 0, 0.85) * (Math.hypot(x, z) < R + 6 ? 1 : 0.3); }
+    gg.setAttribute("aBlend", new THREE.BufferAttribute(bl, 1)); }
+  const ground = new THREE.Mesh(gg, groundMat(art, GT, GT === "grass" || GT === "plaster" ? "dirt" : "grass", info.realm !== "frost" && info.realm !== "light")); ground.receiveShadow = true; scene.add(ground);
   const groundY = (x, z) => { const d = Math.hypot(x, z); return d > R + 14 ? (vnoise(x * 0.03, z * 0.03) - 0.3) * Math.min(14, (d - R - 14) * 0.25) : 0; };
 
   // streets: main street north-south (gate at +Z), cross street east-west, plaza in the middle (cobbles in towns, packed dirt in villages)
@@ -618,11 +634,26 @@ function buildWalk(st, api, info, done) {
     // barrels, crates and a bench by the walls
     if (rand() < 0.6) { const p = W(x, z, ry, -w / 2 + 0.6, d / 2 + 0.75); if (rand() < 0.55) barrel(p[0], p[1]); else crate(p[0], p[1], rand()); }
     if (rand() < 0.35) { const p = W(x, z, ry, w / 2 - 0.5, d / 2 + 0.7); crate(p[0], p[1], rand()); if (rand() < 0.5) crate(p[0], p[1], rand(), 0.8); }
+    if (rand() < 0.4) woodpile(x, z, ry, w, d);
+    if (rand() < 0.3) { const p = W(x, z, ry, w / 2 - 1.2, d / 2 + 0.5); sacks(p[0], p[1]); }
     solid(x, z, w, d, ry);
     occupied.push([x, z, Math.max(w, d) * 0.62]);
     return { door: W(x, z, ry, 0, d / 2 + 1.6), h };
   }
   function barrel(x, z, s) { s = s || 1; M.add("cyl", mPlank, x, 0.45 * s, z, 0.7 * s, 0.9 * s, 0.7 * s, rand() * 3, shade(0x8a6038, 0.85 + rand() * 0.3)); for (const yy of [0.2, 0.7]) M.add("cyl", mBeam, x, yy * s, z, 0.74 * s, 0.06, 0.74 * s, 0, 0x2a2420, 0, { noShadow: true }); solids.push([x - 0.35, x + 0.35, z - 0.35, z + 0.35]); }
+  function woodpile(x, z, ry, w, d) {
+    // split logs stacked against the side wall
+    const side = rand() < 0.5 ? -1 : 1;
+    for (let r = 0; r < 3; r++) for (let k = 0; k < 4 - r; k++) { const q = W(x, z, ry, side * (w / 2 + 0.3), -d / 4 + (k - (3 - r) / 2) * 0.32); M.add("cyl6", mBeam, q[0], 0.17 + r * 0.28, q[1], 0.3, 1.3, 0.3, ry, shade(0x8a6a44, 0.8 + rand() * 0.3), Math.PI / 2, { noShadow: r > 0 }); }
+    const q = W(x, z, ry, side * (w / 2 + 0.3), -d / 4); solid(q[0], q[1], 0.7, 1.4, ry);
+  }
+  function sacks(x, z) { for (let k = 0; k < 3; k++) M.add("cyl6", art.mat("cloth"), x + (k - 1) * 0.42, 0.28, z + (rand() - 0.5) * 0.2, 0.42, 0.56, 0.36, rand(), shade(0xc8b088, 0.8 + rand() * 0.25)); solids.push([x - 0.7, x + 0.7, z - 0.3, z + 0.3]); }
+  function well(x, z) {
+    M.add("cyl", mStone, x, 0.45, z, 1.8, 0.9, 1.8, 0, shade(P.stone, 0.95)); M.add("cyl", art.mat("dirt"), x, 0.86, z, 1.4, 0.04, 1.4, 0, 0x1a1a20, 0, { noShadow: true });
+    for (const sd of [-1, 1]) M.box(mBeam, x + sd * 0.85, 1.4, z, 0.14, 1.9, 0.14, 0, beamC);
+    M.box(mBeam, x, 2.3, z, 1.9, 0.12, 0.12, 0, beamC); M.add("prism", mRoof, x, 2.35, z, 1.4, 0.6, 2.2, Math.PI / 2, P.roof); M.add("cyl", mPlank, x, 1.6, z, 0.3, 0.32, 0.3, 0, 0x6a4a2a);
+    solid(x, z, 1.9, 1.9);
+  }
   function crate(x, z, ry, y0) { const sz = 0.7 + rand() * 0.2; M.box(mPlank, x, (y0 || 0) + sz / 2, z, sz, sz, sz, ry, shade(0x9a7448, 0.8 + rand() * 0.3)); if (!y0) solids.push([x - 0.4, x + 0.4, z - 0.4, z + 0.4]); }
   function cart(x, z, ry) {
     M.box(mPlank, x, 0.85, z, 1.4, 0.12, 2.4, ry, 0x8a6a44); for (const sd of [-1, 1]) { const q = W(x, z, ry, sd * 0.7, 0); M.box(mPlank, q[0], 1.05, q[1], 0.08, 0.35, 2.4, ry, 0x7a5a38); }
@@ -631,7 +662,7 @@ function buildWalk(st, api, info, done) {
     if (rand() < 0.7) { const q = W(x, z, ry, 0, -0.4); M.box(art.mat("cloth"), q[0], 1.2, q[1], 1.2, 0.5, 1.2, ry, P.cloth[Math.floor(rand() * P.cloth.length)]); }
     solid(x, z, 1.6, 2.6, ry);
   }
-  function lamp(x, z) { const sx = x > 0 ? -1 : 1; M.box(mBeam, x, 1.3, z, 0.14, 2.6, 0.14, 0, beamC); M.box(mBeam, x + sx * 0.25, 2.55, z, 0.6, 0.08, 0.08, 0, beamC); B.add("box", P.lanterns ? kit.glow(0xc8e0ff) : kit.glow(0xffb45a), x + sx * 0.5, 2.3, z, 0.2, 0.28, 0.2, 0, null, { noShadow: true }); solids.push([x - 0.2, x + 0.2, z - 0.2, z + 0.2]); }
+  function lamp(x, z) { const sx = x > 0 ? -1 : 1; M.box(mBeam, x, 1.3, z, 0.14, 2.6, 0.14, 0, beamC); M.box(mBeam, x + sx * 0.25, 2.55, z, 0.6, 0.08, 0.08, 0, beamC); B.add("box", P.lanterns ? kit.glow(0xc8e0ff) : kit.glow(0xffb45a), x + sx * 0.5, 2.3, z, 0.2, 0.28, 0.2, 0, null, { noShadow: true }); pool(kit, scene, x + sx * 0.5, z, P.lanterns ? 0xc8dcff : 0xffa850, 4.5, 0.38); solids.push([x - 0.2, x + 0.2, z - 0.2, z + 0.2]); }
   const SIGNS = [];
   function keySpot(key, label, sub, x, z, light, cold) {
     spots.push({ key, label, x, z, r: 2.8 });
@@ -675,6 +706,7 @@ function buildWalk(st, api, info, done) {
       M.box(mPlank, x, 0.8, z, 1.9, 0.12, 1.2, ry, 0x8a6a44);
       for (let k = 0; k < 3; k++) { const p = W(x, z, ry, -0.5 + k * 0.5, 0); B.box(p[0], 0.98, p[1], 0.3, 0.25, 0.3, ry, [0xc8a040, 0x8a3a2a, 0x5a7a3a, 0xd8c8a0][(i + k) % 4]); }
       { const p = W(x, z, ry, 1.2, 0.7); if (rand() < 0.6) barrel(p[0], p[1], 0.8); else crate(p[0], p[1], rand()); }
+      if (rand() < 0.5) { const p = W(x, z, ry, -1.3, 0.6); sacks(p[0], p[1]); }
       solid(x, z, 2, 1.4, ry);
     }
     keySpot("market", "Market", "grain, salvage, gear", -3.4, 3.4);
@@ -701,6 +733,9 @@ function buildWalk(st, api, info, done) {
     const e1 = house(0, -11, 8, 6, 3.6, 0); keySpot("barracks", "Village Elder", "men for your column", e1.door[0], e1.door[1]);
     M.add("cyl", mPlank, 8, 1.8, 3, 4.4, 3.6, 4.4, 0, shade(P.wall, 1.1)); M.add("cone", mRoof, 8, 4.6, 3, 5.6, 2.2, 5.6, 0, P.roof); M.add("cyl", mStone, 8, 0.2, 3, 4.7, 0.4, 4.7, 0, P.stone); solid(8, 3, 4.4, 4.4); occupied.push([8, 3, 3]);
     barrel(5.4, 0.8); barrel(6.1, 0.4); crate(10.6, 0.6, 0.3); cart(3.2, 7.5, 0.9);
+    well(3.6, -3.4);
+    for (let k = 0; k < 5; k++) { const hx = -11 - rand() * 6, hz = 1.5 + rand() * 4; M.add("cyl", art.mat("thatch"), hx, 0.55, hz, 1.1, 1.3, 1.1, rand() * 3, 0xd8b860, Math.PI / 2); solids.push([hx - 0.65, hx + 0.65, hz - 0.65, hz + 0.65]); }
+    for (const sd of [-0.8, 0.8]) M.box(art.mat("dirt"), sd, 0.045, 4, 0.35, 0.02, R * 2, 0, shade(P.path, 0.6), { noShadow: true });
     keySpot("market", "Granary", "buy and sell grain", 5, 3.4);
     // fields north and west
     for (let r = 0; r < 9; r++) { M.box(art.mat("dirt"), -14 - r * 1.3, 0.06, -8, 1.3, 0.12, 12, 0, shade(P.ground, 0.7), { noShadow: true }); M.box(art.mat("thatch"), -14 - r * 1.3, 0.3, -8, 0.6, 0.5, 11.6, 0, r % 2 ? 0x9aa84a : 0xd8b850, { noShadow: true }); }
@@ -916,7 +951,8 @@ function buildBattle(st, api, info, done) {
   { const pos = tg.attributes.position, uv = tg.attributes.uv, col = [], c0 = new THREE.Color(isVoid ? mix(P.ground, 0x3a2a4a, 0.4) : P.ground), c = new THREE.Color(), cv = new THREE.Color(0x4a2a6a), cd = shade(P.path, 0.9);
     for (let i = 0; i < pos.count; i++) { const x = pos.getX(i), z = pos.getZ(i), y = H(x, z); pos.setY(i, y); uv.setXY(i, x / 6, z / 6); const n = vnoise(x * 0.1, z * 0.1); c.copy(c0).multiplyScalar(0.8 + n * 0.32 + y * 0.012); if (!isVoid && vnoise(x * 0.06 + 7, z * 0.06) > 0.66) c.lerp(cd, 0.45); if (isVoid && vnoise(x * 0.07 + 3, z * 0.07) > 0.62) c.lerp(cv, 0.5); col.push(c.r, c.g, c.b); }
     tg.setAttribute("color", new THREE.Float32BufferAttribute(col, 3)); tg.computeVertexNormals(); }
-  const terr = new THREE.Mesh(tg, art.mat(isVoid ? "dirt" : GROUND_TEX[info.realm] || "grass", { roughness: 1 })); terr.receiveShadow = true; scene.add(terr);
+  const BGT = isVoid ? "dirt" : GROUND_TEX[info.realm] || "grass";
+  const terr = new THREE.Mesh(tg, groundMat(art, BGT, BGT === "grass" || BGT === "plaster" ? "dirt" : "grass", !isVoid && info.realm !== "frost" && info.realm !== "light")); terr.receiveShadow = true; scene.add(terr);
   // props
   const tc = info.realm === "frost" ? 0x3a5048 : info.realm === "light" ? 0x7a8a3a : isVoid ? 0x2a2434 : 0x2e4a2a;
   for (let i = 0; i < 140; i++) {
