@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "permissions": {
+    "defaultMode": "default",
+    "deny": [
+      "Bash(git push --force*)",
+      "Bash(git push -f *)",
+      "Bash(git push *--force*)",
+      "Bash(git reset --hard*)",
+      "Bash(git clean* -f*)",
+      "Bash(rm -rf *)",
+      "Bash(sudo *)",
+      "Read(**/.env*)",
+      "Edit(**/.env*)",
+      "Edit(**/*.uasset)",
+      "Edit(**/*.umap)"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash|PowerShell",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/validate-push.sh\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}
