@@ -1,5 +1,6 @@
 // Smoke test for the third-person scenes and the map.
 // Serve the repo root (python3 -m http.server 8765), then: node tests/smoke-3d.js
+// The scene handle is filled in once the rigged people load, so waits check ctl.ready.
 // Env: URL (default http://localhost:8765/index.html), SHOTS (folder for screenshots, optional), PW (path to playwright).
 const { chromium } = require(process.env.PW || "playwright");
 const path = require("path");
@@ -42,7 +43,7 @@ const ok = (c, m) => { console.log((c ? "PASS " : "FAIL ") + m); if (!c) fails++
   ok(await js(() => !!document.querySelector("#sbody [data-act=vh3dwalk]")), "settlement sheet shows Walk the streets");
   await shot("02-site-sheet.png");
   await p.click("#sbody [data-act=vh3dwalk]");
-  ok(await until(() => !!(__vh.scene() && __vh.scene().ctl), 15000), "town walk scene opened");
+  ok(await until(() => !!(__vh.scene() && __vh.scene().ctl && __vh.scene().ctl.ready !== false), 15000), "town walk scene opened");
   await wait(2500);
   await shot("03-town-walk.png");
   // walk forward a little with the keyboard
@@ -59,14 +60,14 @@ const ok = (c, m) => { console.log((c ? "PASS " : "FAIL ") + m); if (!c) fails++
   ok(await js(() => document.getElementById("sbody").scrollTop > 0), "sheet scrolled to the market section");
   await p.keyboard.press("Escape"); await wait(800);
   ok(await js(() => !__vh.sheet() && !!__vh.scene()), "Esc closes the menu, still walking");
-  await p.keyboard.press("Escape"); await wait(1200);
-  ok(await js(() => !__vh.scene() && !document.getElementById("vh3d")), "Esc again returns to the map and the scene is removed");
+  await p.keyboard.press("Escape");
+  ok(await until(() => !__vh.scene() && !document.getElementById("vh3d"), 15000), "Esc again returns to the map and the scene is removed");
   // a village and a castle build without errors
   for (const id of ["ashford", "keep"]) {
     const started = await js((i) => __vh.startWalk(i), id);
-    ok(started && await until(() => !!(__vh.scene() && __vh.scene().ctl), 15000), "walk opens at " + id);
+    ok(started && await until(() => !!(__vh.scene() && __vh.scene().ctl && __vh.scene().ctl.ready !== false), 15000), "walk opens at " + id);
     await wait(1500); if (id === "ashford") await shot("05-village-walk.png");
-    await p.keyboard.press("Escape"); await wait(1000);
+    await p.keyboard.press("Escape"); await until(() => !__vh.scene(), 15000);
   }
 
   // battle: fight in person to the end, and check finishBattle ran
@@ -76,7 +77,7 @@ const ok = (c, m) => { console.log((c ? "PASS " : "FAIL ") + m); if (!c) fails++
   ok(await js(() => !!document.querySelector("#sbody [data-act=vh3dfight]")), "battle sheet offers Fight in person");
   await shot("06-battle-sheet.png");
   await p.click("#sbody [data-act=vh3dfight]");
-  ok(await until(() => !!(__vh.scene() && __vh.scene().ctl), 15000), "3D battle opened");
+  ok(await until(() => !!(__vh.scene() && __vh.scene().ctl && __vh.scene().ctl.ready !== false), 15000), "3D battle opened");
   await wait(2500);
   await shot("07-battle-lines.png");
   await p.keyboard.press("c"); await wait(400);
