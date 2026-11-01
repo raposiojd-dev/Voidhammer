@@ -200,6 +200,30 @@ const ok = (c, m) => { console.log((c ? "PASS " : "FAIL ") + m); if (!c) fails++
   ok(await until(() => __vh.B() && __vh.B().stage === "result", 30000), "auto-resolve still reaches a result");
   await js(() => { const d = document.querySelector("#sbody [data-act=done]"); if (d) d.click(); });
 
+  // ---- v2 stage 3: sieges (walls, gate, towers, ladders, ram), both sides playable, ends feed finishBattle ----
+  if (!process.env.NOSIEGE) {
+    for (const defend of [false, true]) {
+      ok(await js(() => __vh.battleWith(26)), (defend ? "defence" : "assault") + " battle started");
+      await wait(500);
+      await js((d) => __vh.startFight({ siege: true, defend: d }), defend);
+      ok(await until(() => !!(__vh.scene() && __vh.scene().ctl && __vh.scene().ctl.ready), 20000), "3D siege opened (" + (defend ? "you hold the walls" : "you assault the walls") + ")");
+      await wait(2000);
+      const s0 = await js(() => __vh.scene().ctl.state().siege);
+      ok(s0 && s0.ladders === 3 && s0.gate === 100 && s0.attacker === (defend ? "e" : "p") && s0.onWall > 0, "walls, gate, towers and ladders stand; defenders on the wall walk (" + JSON.stringify(s0) + ")");
+      await shot(defend ? "21-siege-defence.png" : "20-siege-assault.png");
+      if (!defend) await p.keyboard.press("3");
+      await js(() => __vh.scene().ctl.fast(8));
+      await js((o) => { window.__s0 = o; }, s0);
+      const moved = await until(() => { const s = __vh.scene() && __vh.scene().ctl.state().siege, s0 = window.__s0; return !s || s.ramDist < s0.ramDist - 1 || s.gate < 100 || s.onWall > s0.onWall; }, 120000, 1000);
+      ok(moved, "the ram rolls on the gate or men go up the ladders");
+      await shot(defend ? "21b-siege-defence-fight.png" : "20b-siege-assault-fight.png");
+      await js(() => __vh.scene() && __vh.scene().ctl.fast(12));
+      ok(await until(() => !__vh.scene(), 240000, 1000), "siege finished and the scene closed");
+      ok(await js(() => __vh.B() && __vh.B().stage === "result"), "finishBattle ran after the siege (" + (await js(() => __vh.B() && (__vh.B().out || [])[0])) + ")");
+      await js(() => { const d = document.querySelector("#sbody [data-act=done]"); if (d) d.click(); }); await wait(600);
+    }
+  }
+
   ok(errs.length === 0, "no console errors" + (errs.length ? ":\n  " + errs.join("\n  ") : ""));
   await b.close();
   console.log(fails ? fails + " FAILED" : "ALL PASSED");

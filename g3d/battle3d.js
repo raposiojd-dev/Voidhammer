@@ -578,6 +578,7 @@ function buildBattle(st, api, info, done) {
       for (let i = -1; i <= 1; i++) for (let j = -1; j <= 1; j++) { const a = grid.get((cx + i) + "," + (cz + j)); if (!a) continue; for (const o of a) { if (o === u || o.id < u.id) continue; const r = (u.cls === "cav" || o.cls === "cav") ? 1.25 : 0.82, dx = o.x - u.x, dz = o.z - u.z, d2 = dx * dx + dz * dz; if (d2 >= r * r || d2 < 1e-6 || Math.abs((o.y || 0) - (u.y || 0)) > 1.5) continue; const mu = u.hero ? 0 : 1, mo = o.hero ? 0 : 1; if (!mu && !mo) continue; const d = Math.sqrt(d2), push = (r - d) / (mu + mo), nx = dx / d, nz = dz / d; u.x -= nx * push * mu; u.z -= nz * push * mu; o.x += nx * push * mo; o.z += nz * push * mo; } }
     }
   }
+  if (SG && defendP) { hero.onWall = true; hero.x = 4; hero.z = SG.wallZ; hero.y = SG.yAt(hero.x, hero.z, hero); if (kael) { kael.onWall = true; kael.x = 6; kael.z = SG.wallZ; } }
   units.forEach((u, i) => { u.id = i; u.vx = 0; u.vz = 0; if (u.onWallSlot && SG) { u.onWall = true; u.y = SG.yAt(u.x, u.z, u); u.root.position.y = u.y; } });
   if (SG) {
     SG.units = units;
