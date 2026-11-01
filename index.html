@@ -243,7 +243,7 @@ button, [data-act], [data-sg], [data-w] { touch-action: manipulation; -webkit-to
     <div class="tcol">
       <div class="tk">THE SHATTERED REALMS</div>
       <h1>VOIDHAMMER</h1>
-      <p class="tl">Nine Realms. One fractured world.<br>And the Void that hungers for both.</p>
+      <p class="tl">Nine Realms. One fractured world.<br>And the Void that hungers for all of it.</p>
       <div class="tbtns">
         <button id="tcont" data-act="tcont" class="solid">Continue</button>
         <button id="tnew" data-act="tnew">New game</button>
@@ -1185,7 +1185,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
         log("Cleared the road for Lord Vashen. Paid in full.", "e"); S.contract = null;
       }
       if (B.kind === "void") { S.voidR = Math.min(VOIDMAX, S.voidR + 14); B.out.push("The edge falls back a little."); }
-      if (B.kind === "rift") { S.rifts = S.rifts.filter(function (r) { return r.id !== B.riftId; }); S.voidR = Math.min(VOIDMAX, S.voidR + 80); S.pushes++; (S.riftBack = S.riftBack || []).push(S.day + 60 + Math.floor(Math.random() * 31)); if (S.pushes >= SEAL_AT && !S.sealed) sealVoid(); else if (!S.sealed) B.out.push("Push-back " + S.pushes + " of " + SEAL_AT + ". " + (SEAL_AT - S.pushes) + " more to seal the Void."); S.nextRift = Math.max(S.nextRift, S.day + 25); addXp(150 * Math.min(8, Math.pow(2, Math.max(0, S.pushes - 1)))); B.out.push("The Rift closes. The edge is driven back. It will not stay shut forever."); if (S.pushes >= 3) { var rw = S.pushes === 3 ? [3, 2] : S.pushes === 4 ? [4, 3] : [5, 4], rc = cp(); if (!rc.items) rc.items = []; rw.forEach(function (rr) { var rit = genItem(rr, null, 3 + tier() * 2, true); rc.items.push(rit); B.out.push("Rift treasure: " + rit.name + "."); log("The Rift gave up " + rit.name + ".", "e"); }); } news("A Rift was closed. The Void fell back."); }
+      if (B.kind === "rift") { S.rifts = S.rifts.filter(function (r) { return r.id !== B.riftId; }); S.voidR = Math.min(VOIDMAX, S.voidR + 80); S.pushes++; (S.riftBack = S.riftBack || []).push(S.day + 60 + Math.floor(Math.random() * 31)); if (S.pushes >= SEAL_AT && !S.sealed) sealVoid(); else if (!S.sealed) B.out.push("Push-back " + S.pushes + " of " + SEAL_AT + ". " + (SEAL_AT - S.pushes) + " more to seal the Void."); S.nextRift = Math.max(S.nextRift, S.day + 25); addXp(150 * Math.min(8, Math.pow(2, Math.max(0, S.pushes - 1)))); B.out.push("The grey edge closes. The Void is driven back. It will not stay shut forever."); if (S.pushes >= 3) { var rw = S.pushes === 3 ? [3, 2] : S.pushes === 4 ? [4, 3] : [5, 4], rc = cp(); if (!rc.items) rc.items = []; rw.forEach(function (rr) { var rit = genItem(rr, null, 3 + tier() * 2, true); rc.items.push(rit); B.out.push("Grey edge treasure: " + rit.name + "."); log("The grey edge gave up " + rit.name + ".", "e"); }); } news("A grey edge was closed. The Void fell back."); }
       if (B.kind === "lord") { lordRespawn(B.fac); news("You defeated " + B.title + "."); }
       if (B.siegeId) { var sg = site(B.siegeId); if (sg) { captureSite(sg, "player"); B.out.push("You hold " + sg.name + "."); } }
       log("Won a fight against " + (B.title || (B.kind === "void" ? "Void-touched" : "bandits")) + ". Lost " + lost + " men.", "e");
@@ -1257,7 +1257,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
   function sealVoid0() {
     S.sealed = true; S.voidR = VOIDMAX; S.rifts = [];
     S.enemies = S.enemies.filter(function (e) { return e.kind !== "void"; });
-    toast("The Void draws back. The edge goes quiet."); news("The Void has drawn back from the edge. No Rift will open while you hold the line. Nobody thinks it has gone far.");
+    toast("The Void draws back. The edge goes quiet."); news("The Void has drawn back from the edge. No grey edge will open while you hold the line. Nobody thinks it has gone far.");
     try { TERRDIRTY = true; } catch (e) {}
   }
   function riftPos(r) { return { x: CX + Math.cos(r.a) * (S.voidR - 30), y: CY + Math.sin(r.a) * (S.voidR - 30) }; }
@@ -1395,8 +1395,8 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
     if (S.sieging) { var ss = site(S.sieging); if (ss && dist(S.px, S.py, ss.x, ss.y) < 60) ss.gar *= 0.965; }
     dominionDay(); allyDay(); S.enemies = S.enemies.filter(function (e) { return !e.dead; });
     // rifts
-    if (false) { S.rifts.push(ovNewRift()); S.nextRift = S.day + 25; toast("A new Rift has torn open at the edge."); news("A new Rift opened at the edge of the Void."); }
-    if (!S.sealed && !noVoid() && S.riftBack && S.riftBack.length) { var rdue = S.riftBack.filter(function (d) { return S.day >= d; }); if (rdue.length) { S.riftBack = S.riftBack.filter(function (d) { return S.day < d; }); S.pushes = Math.max(0, S.pushes - rdue.length); rdue.forEach(function () { S.rifts.push(ovNewRift()); }); toast("A Rift you closed has torn open again. Seal progress " + S.pushes + " of " + SEAL_AT + "."); news("A closed Rift reopened. The Void is pushing back."); } }
+    if (false) { S.rifts.push(ovNewRift()); S.nextRift = S.day + 25; toast("A new grey edge has opened."); news("A new grey edge opened where the Void presses in."); }
+    if (!S.sealed && !noVoid() && S.riftBack && S.riftBack.length) { var rdue = S.riftBack.filter(function (d) { return S.day >= d; }); if (rdue.length) { S.riftBack = S.riftBack.filter(function (d) { return S.day < d; }); S.pushes = Math.max(0, S.pushes - rdue.length); rdue.forEach(function () { S.rifts.push(ovNewRift()); }); toast("A grey edge you closed has opened again. Seal progress " + S.pushes + " of " + SEAL_AT + "."); news("A closed grey edge reopened. The Void is pushing back."); } }
   }
 
   function moveEnemies(dd) {
@@ -1446,7 +1446,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
       var r = S.rifts[j], p = riftPos(r);
       if ((r.cool || 0) <= S.day && dist(p.x, p.y, S.px, S.py) < 22) {
         r.cool = S.day + 4;
-        var rm = Math.min(8, Math.pow(2, S.pushes || 0)); startBattle({ id: -2, kind: "rift", title: "The Rift" + (rm > 1 ? " (" + rm + "x strength)" : ""), n: 34 + Math.floor(Math.min(S.day, 540) / 3), q: 1.5 * rm * ovVStr(), riftId: r.id });
+        var rm = Math.min(8, Math.pow(2, S.pushes || 0)); startBattle({ id: -2, kind: "rift", title: "The Grey Edge" + (rm > 1 ? " (" + rm + "x strength)" : ""), n: 34 + Math.floor(Math.min(S.day, 540) / 3), q: 1.5 * rm * ovVStr(), riftId: r.id });
         return;
       }
     }
@@ -1454,13 +1454,13 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
   // ---------- the Dominion (Metalcrown) and the heroes ----------
   var MCHOME = ["irontown", "ironwatch", "steelgate", "slagmoor", "pitmouth", "rivethollow", "furnacerow"];
   var FELLTXT = {
-    stone: "Highmarch has fallen. The Eternal Senate stayed in session until the doors came in, and did not rise to run. Stonehold is a name now, and a debt.",
-    ember: "The Ember Throne is cold. The Passion Court was told to kneel and, for once, did not burn. Flameborne is a name now, and a grievance.",
-    storm: "The Wind Spire is silent. The Free Assembly never agreed on a defence in time, and the Dominion needed no agreement. Stormreach is a name now, and a wind with nowhere to go.",
-    frost: "The Still City is silent. The Seers saw this winter years ago, and no one acted on what they saw. Frostgrave is a name now, and a warning nobody heeded.",
-    spirit: "The Lantern City is dark. The Lanterns went out one by one, and the Lantern Codex went blank in places. Spiritveil is a name now, and a grief with nobody left to hold it.",
-    shadow: "The Unmade City has been unmade. Shadowdeep always expected betrayal, and sold every secret but its own. Shadowdeep is a name now, and a silence that was never quite empty.",
-    light: "The Luminant Citadel is dark. The First Light was meant to burn away every lie, and the Dominion told none. It simply walked in. Lightforge is a name now, and a verdict nobody is left to read."
+    stone: "Highmarch has fallen. The Hold-Senate stayed in session until the doors came in, and did not rise to run. Stonehold holds on in its last keeps, and carves the names.",
+    ember: "The Ember Throne is cold. The Hearth Court was told to kneel and, for once, did not burn. Flameborne holds on in its last hearths, and refuses.",
+    storm: "The Wind Spire is silent. The Free Assembly never agreed on a defence in time, and the Dominion needed no agreement. Stormreach holds on in its last citadels, and is louder for it.",
+    frost: "The Still City is silent. The Seers saw this winter years ago, and no one acted on what they saw. Frostgrave holds on in its last halls, and keeps what it said.",
+    spirit: "The Lantern City is dark. The Lanterns went out one by one, and the Lantern Codex went blank in places. Spiritveil holds on in its last lamps, and keeps the names.",
+    shadow: "The Unmade City has been unmade. Shadowdeep always expected betrayal, and sold every secret but its own. Shadowdeep holds on somewhere nobody can find, which it prefers.",
+    light: "The Luminant Citadel is dark. The First Light was meant to burn away every lie, and the Dominion told none. It simply walked in. Lightforge holds on in its last courts, and writes it all down."
   };
   var HEROES = {
     sera: { name: "Sera Ironvow", fac: "stone", col: "#b9c2d0", title: "Shield-captain of Stonehold", wound: "She has never left a post. Not once, not even when it was already lost.", trait: "Her shield-line holds. Her men take a quarter fewer losses.", price: 180, n: 28, q: 1.25, spd: 0.9, loss: 0.75, regrow: 0.35, need: "began", needTxt: "She will answer once the Dominion marches." },
@@ -1698,7 +1698,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
     var h = '<div class="sec" style="color:' + FAC.metal.col + '">The Dominion (Metalcrown)</div>', p = mcPower(), ms = holdings("metal");
     if (M.broken) return h + "<p><b>The Iron Throne is broken.</b> The Dominion has no capital. Its lords are scattered.</p>";
     if (!M.began && !domOpen()) return h + "<p>Iron Throne City is quiet, and the foundries burn only a little. Metalcrown has not moved in the open, and it will not until something in the Realms breaks.</p><p class=\"dim-t\">Follow the story. The Dominion waits for the Radiant Edict and what comes after it.</p>";
-    if (!M.began) return h + "<p>Iron Throne City has closed its gates. The foundries burn day and night. Something is coming, in about " + Math.max(1, Math.round(M.start - S.day)) + " days.</p><p class=\"dim-t\">Use the time. Take a hold, raise an army, call heroes, close the Void’s Rifts. Once it starts, every realm they take makes them stronger.</p>";
+    if (!M.began) return h + "<p>Iron Throne City has closed its gates. The foundries burn day and night. Something is coming, in about " + Math.max(1, Math.round(M.start - S.day)) + " days.</p><p class=\"dim-t\">Use the time. Take a hold, raise an army, call heroes, close the Void’s grey edges. Once it starts, every realm they take makes them stronger.</p>";
     h += "<p><b>Dominion power ×" + p.toFixed(2) + "</b>. " + mcFellCount() + " of " + realmList().length + " realms fallen, " + ms.length + " towns and castles held" + (M.target ? ", marching on " + FAC[M.target].name : "") + ".</p>";
     var armies = S.enemies.filter(function (e) { return e.kind === "lord" && e.fac === "metal"; }), str = 0; armies.forEach(function (e) { str += e.n * e.q; });
     h += "<p class=\"dim-t\">" + armies.length + " armies, about " + Math.round(str) + " strong together. They grow with every realm they take, and a little every day they are not stopped. Retake towns, break their lords, call heroes. Only you can break the Iron Throne itself.</p>";
@@ -1814,11 +1814,11 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
       choices: [{ k: "warn", t: "Send riders to every court. (80 crowns)", fx: function () { S.crowns = Math.max(0, S.crowns - 80); news("Riders from a column in the field warn every court: the Dominion is collecting sparks, not land."); } },
                 { k: "keep", t: "Keep the case. Tell no one what is in it.", fx: function () { news("A case of Dominion orders has gone missing from the field."); } }] },
     b4: { t: "The Twin-Spark Child", sub: "Chapter IV", cond: function () { return mcFellCount() >= 2 || S.mc.defeats >= 2 || mcPower() >= 1.8; },
-      body: ["In a ledger from a siege wagon, one entry is circled in red. A child, born of all the Realms, carrying two sparks in one body: the prophecy of Twins that was never about twins. The Radiant Edict ordered him controlled. Metalcrown simply took him.", "They woke both sparks with a spark-reactor. One was gentle. One was hungry. The hungry one survived, and not because it was stronger.", "Beside the entry, a name someone tried to scratch out. Elyon. Valek is what the Dominion made of him, and he was loved too late."],
+      body: ["In a ledger from a siege wagon, one entry is circled in red. A child, born of all the Realms, carrying two sparks in one body: the prophecy of Twins that was never about twins. The Radiant Edict ordered him controlled. Metalcrown simply took him.", "They woke both sparks with a spark-reactor. One was gentle. One was hungry. The hungry one survived, and not because it was stronger.", "Beside the entry, a name someone tried to scratch out. Elyon. Whatever the Dominion is making, it started with him, and he was loved too late."],
       choices: [{ k: "tell", t: "Tell your heroes what you have learned. Some will not stay. (Allies lose 15%)", fx: function () { S.allies.forEach(function (a) { a.n = Math.max(2, Math.round(a.n * 0.85)); }); } },
                 { k: "hold", t: "Tell no one. A secret only you carry, and carrying it costs you. (40 crowns)", fx: function () { S.crowns = Math.max(0, S.crowns - 40); } }] },
     b5: { t: "Why the Dominion marches", sub: "Chapter V", cond: function () { return mcPower() >= 2 || mcFellCount() >= 3; },
-      body: ["You finally understand it. The Dominion is not saving anyone. It is a civilisation of engineers that decided suffering is the price of progress, and stopped asking whose.", "At its centre is a boy at war with himself. Elyon is the memory and the mercy. Valek is the hunger and the will. Valek did not kill him. He is absorbing him, slowly, until remembering feels like pain. He does not want to rule. He wants to stop feeling divided.", "Every Realm that falls is one more place where nobody remembers Elyon. And the long wars favour the Void."],
+      body: ["You finally understand it. The Dominion is not saving anyone. It is a civilisation of engineers that decided suffering is the price of progress, and stopped asking whose.", "At its centre is a boy at war with himself. One half is the memory and the mercy. The other is the hunger and the will. It is not killing him. It is absorbing him, slowly, until remembering feels like pain. He does not want to rule. He wants to stop feeling divided.", "Every hold that burns is one more place where nobody remembers Elyon. And the long wars favour the Void."],
       ok: "Go on" },
     b6: { t: "He is waiting", sub: "Chapter VI", cond: function () { return S.sites.some(function (s) { return s.owner === "player" && (s.id === "ironwatch" || s.id === "steelgate"); }) || dist(S.px, S.py, (site("irontown") || { x: -999 }).x, (site("irontown") || { y: -999 }).y) < 260; },
       body: ["A single rider reaches your column under a flag of truce. He carries no letter. He recites it.", "“You have come a long way to ask a question you could have asked at home. Come and see what the world is when nothing is divided.”", "He does not speak like a soldier. He sounds like a boy who has been told what to say."],
@@ -1830,7 +1830,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
       body: ["Spiritveil kept the world’s memory, and the Dominion took the archive.", "One page survives, carried out by a scout. In the Lantern Codex the entry for the Twin-Spark child has not been erased. It has been written over, again and again, by a hand that is also his. Each version is a little less certain of its own name."],
       ok: "Go on" },
     sv: { t: "The Crown in the Fire", sub: "Interlude", cond: function () { return S.voidR < 1150 || (S.rifts && S.rifts.length >= 3); },
-      body: ["Word comes up the Ember road with the refugees, and none of them tell it the same way twice. Something looks out of the Rifts now. Not an army. A picture.", "People who stand too near a Rift see a hall of dead embers and a tall shape in a crown of black fire. It has no face anyone can describe. Everyone who sees it kneels, and nobody can say afterwards why they did.", "Lyriel Frostwraith has sent word from Frostgrave, in the clipped hand of a seer who is tired of being ignored: it is a future, not a guest. The Void has noticed the TwinSpark child, and it is trying on the shapes of what comes after him.", "The Flameborne King heard the story at supper, put down his bread, and went to write a letter. He did not send it."],
+      body: ["Word comes up the Ember road with the refugees, and none of them tell it the same way twice. Something looks out of the grey edges now. Not an army. A picture.", "People who stand too near a grey edge see a hall of dead embers and a tall shape in a crown of black fire. It has no face anyone can describe. Everyone who sees it sits down where they stand, and nobody can say afterwards why.", "Lyriel Frostwraith has sent word from Frostgrave, in the clipped hand of a seer who is tired of being ignored: it is a future, not a guest. The Void has noticed the TwinSpark child, and it is trying on the shapes of what comes after him.", "Ardyn Solbrand heard the story at Council and had it entered under weather."],
       ok: "Go on" },
     sh: { t: "The quiet knife", sub: "Interlude", cond: function () { return !!(S.mc.fell.shadow) || ((cp().f.coup || !cp().on) && mcAbroad() >= 8); },
       body: ["Shadowdeep always expected betrayal. It spent a thousand years making itself too quiet to be worth the trouble, and the Dominion came anyway.", "A Nightblade’s last message reaches you in a dead drop, unsigned: the Dominion does not find its spark-bearers by force. It finds them by what they have forgotten they are."],
@@ -1893,7 +1893,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
     { t: "Cast to win a fight", b: function () { return ["In any battle, tap <b>Cast</b> (it glows purple). The Ledger opens and you choose one memory to burn.", "Auto-resolved fights: the enemy breaks at once, and you lose only a tenth of your men. On the field: a wave of light sweeps out from you and hurts every foe it touches.", "This is how you beat a fight you cannot win. It is not free."]; } },
     { t: "The cost", b: function () { return ["A burned memory is gone for good. You lose what it gave you, and you lose the memory itself.", "Elyndra writes every burn in the Record, her page of the Lantern Codex. You can ask her to read it back to you, but reading is all she can do. It does not come back.", "Your Ledger shows how hollow you are as a row of pips at the top. Each burn fills one."]; } },
     { t: "What emptiness gives", b: function () { return ["Hollow is not only a loss. The emptier you are, the less the Void can take from you.", "<b>1 burned:</b> Marked. Nothing you can name.<br><b>2 to 3:</b> Unburdened. Taking from villages costs no goodwill.<br><b>4 to 5:</b> Clean Sight. You can walk the Void unharmed.<br><b>6:</b> Nothing To Lose. With eight men or fewer you fight at half again your strength.", "Six is the bottom of the Ledger. Nobody in the Record has gone past it and stayed someone their friends would recognise."]; } },
-    { t: "When to cast", b: function () { return ["Spend a memory when the fight is hopeless, a Rift needs closing, or a siege will not break. Keep them when you can win by other means.", "Think about which one you spend. Some memories matter to your companions. Burning one you share with Kaelren changes what you can say to him.", "You hold " + S.held.length + " memories and have burned " + S.burned.length + ". Open the Ledger any time to read them, then cast in your next battle."]; } }
+    { t: "When to cast", b: function () { return ["Spend a memory when the fight is hopeless, a grey edge needs closing, or a siege will not break. Keep them when you can win by other means.", "Think about which one you spend. Some memories matter to your companions. Burning one you share with Kaelren changes what you can say to him.", "You hold " + S.held.length + " memories and have burned " + S.burned.length + ". Open the Ledger any time to read them, then cast in your next battle."]; } }
   ];
   function magicSheet() {
     var p = MAGIC_PAGES[magicPage] || MAGIC_PAGES[0];
@@ -1958,16 +1958,16 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
   function tutSeen() { try { return !!localStorage.getItem(TUT_KEY); } catch (e) { return true; } }
   function tutMark() { try { localStorage.setItem(TUT_KEY, "1"); } catch (e) {} if (S && S.tut) S.tut.magic = 1; }
   var TUT_CORE = [
-    { t: "Welcome to Voidhammer", b: function () { return ["You begin with a coat and fifteen crowns. Build a column of men, a farm, and a name.", "The whole game asks one question: <b>can someone choose who they become?</b> Everything has a cost, and every choice leaves a mark on you.", "This guide takes about two minutes. You can skip it any time, and open it again from the menu."]; } },
+    { t: "Welcome to Voidhammer", b: function () { return ["You begin with a coat and fifteen crowns. Build a column of men, a farm, and a name.", "The whole game asks one question: <b>can someone choose who they become?</b>", "This guide takes about two minutes. You can skip it any time, and open it again from the menu."]; } },
     { t: "The campaign", b: function () { return ["In Campaign mode you follow a story. Tap <b>Explore</b> on a town or village to step inside. Drag the left side of the screen to walk, and tap <b>A</b> to talk or strike.", "Talk to everyone. Your choices matter: spare a man or finish him, pay for a smith, or burn a memory for strength. Some roads stay shut until you have earned them.", "The <b>◆ Quest</b> chip at the top of the map tells you where to go next. Leave a place any time with <b>Map</b>.","Buy or equip swords, armour and bows at the smiths (<b>Gear</b> button). Bows use arrows. <b>✦ Cast</b> fires a void-glass bolt, or burns a memory for a wave that hits everything near you."]; } },
     { t: "Moving around", b: function () { return ["<b>Tap</b> a town, village or any open ground and your column walks there. <b>Drag</b> to look around. <b>Pinch</b> to zoom.", "The buttons at the top set time: <b>Pause</b>, <b>1×</b> and <b>3×</b>. Time stops whenever a page is open, so you can always think.", "The small map in the corner shows where you are."]; } },
     { t: "Villages and towns", b: function () { return ["Tap a place to go in. <b>Villages</b> grow grain and give you men. <b>Towns</b> buy and sell grain and gear, hire sellswords and forge better kit.", "Sell what you do not need, and buy grain where it is cheap. Prices move as you trade.", "Take a town or village by force and it is yours to hold, and it pays you income."]; } },
     { t: "Your column", b: function () { return ["The top bar shows <b>Crowns</b>, <b>Grain</b> and <b>Men</b> (how many, out of how many you can lead).", "Men eat grain and need wages every day. Unfed or unpaid men walk home. A bigger column costs more to keep, so grow it only as far as you can feed it.", "Your column limit rises with levels, skills, and the towns you hold."]; } },
     { t: "Battles", b: function () { return ["Lords' armies and Void creatures roam the map. Walk into one to fight. The page tells you the odds before you commit.", "You can <b>fight</b>, <b>flee</b>, or <b>Cast</b> (see magic, below). Some fights play out on the field, where you give orders and swing a sword yourself.", "Winning earns loot, battle experience and renown. Losing costs men and grain."]; } },
     { t: "Troops and gear", b: function () { return ["Open <b>Party</b>, then the <b>Troops</b> tab. Your levy can train in three paths:", "<b>Swordsmen</b> → Men-at-arms → Champions.<br><b>Archers</b> → Crossbowmen.<br><b>Half Sparks</b> → Full Sparks.", "Each step needs battle experience, crowns and gear from your backpack. Sparks are strong, but they burn out after fights, and waking a Full Spark costs one of your memories."]; } },
-    { t: "Skills", b: function () { return ["Every level gives you a skill point. Spend it in the <b>Skills</b> page.", "There are seven branches: command, warrior, archery, trade and land, politics, road and siege, and memory and spark. Pick a style and go deep, or spread out.", "You can unlearn everything for 100 crowns. Changing who you are is never free."]; } },
+    { t: "Skills", b: function () { return ["Every level gives you a skill point. Spend it in the <b>Skills</b> page.", "There are seven branches: command, warrior, archery, trade and land, politics, road and siege, and memory and spark. Pick a style and go deep, or spread out.", "You can unlearn everything for 100 crowns."]; } },
     { t: "Realms, lords and heroes", b: function () { return ["The realms fight each other, and the Dominion and the Void feed on that. Check the <b>Realms</b> page for who holds what and who is at war.", "Lords can be asked to pledge to you, and some will, if you earn it. Heroes can be hired to fight at your side. Each has a past, and they remember how you treat them.", "You can make peace with a realm, or ask two realms to make peace with each other."]; } },
-    { t: "The Dominion and the Void", b: function () { return ["Metalcrown's Dominion marches out of Iron Throne City and takes towns and castles. A realm can be pushed back to its last walls, but it never falls completely: the war is only beginning, and it will last a thousand years.", "The Void creeps in from the edge of the world. It opens <b>Rifts</b> you can close, and each one you close pushes it back.", "You can switch either off, or set how fast they move, when you start a new game."]; } }
+    { t: "The Dominion and the Void", b: function () { return ["Metalcrown's Dominion marches out of Iron Throne City and takes towns and castles. A realm can be pushed back to its last walls, but it never falls completely: the war is only beginning, and it will last a thousand years.", "The Void creeps in from the edge of the world. It opens <b>grey edges</b> you can close, and each one you close pushes it back.", "You can switch either off, or set how fast they move, when you start a new game."]; } }
   ];
   var TUT_END = [
     { t: "Saving and the menu", b: function () { return ["The game saves on this phone every day and when you leave. Come back and tap <b>Continue</b>.", "The <b>☰</b> button holds the Ledger, the Record, the Key, graphics (Pixel or Smooth), and this guide.", "On iPhone, tap Share, then Add to Home Screen, to play full-screen."]; } }
@@ -2563,7 +2563,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
       for (var i = 0; i < 3; i++) { ctx.rotate(2.094); ctx.beginPath(); ctx.arc(0, 0, 14 + i * 4, 0, 2.6); ctx.stroke(); }
       ctx.restore();
       ctx.fillStyle = "#0a0612"; ctx.beginPath(); ctx.ellipse(p.x, p.y, 7, 10, 0, 0, 6.283); ctx.fill();
-      label("Rift", p.x, p.y - 34, "#c9b8f0");
+      label("Grey edge", p.x, p.y - 34, "#c9b8f0");
     });
   }
   function drawLord(e, now) {
@@ -2827,7 +2827,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
       "<p>" + (ORIGINS[OPT.origin] || ORIGINS.wanderer).intro + "</p>" + (OPT.dom !== "off" ? "<p class=\"dim-t\">Far to the north, Iron Throne City has closed its gates. Merchants say the foundries have not gone quiet in a month. The realms argue about who it is for.</p>" : "") +
       "<p>Your coat still smells of " + R("[[forge|the forge where my father worked]]") + ". Ashford is short of grain. Redbank, an hour east, is not.</p>" +
       (noVoid() ? '<p>' + nwd(realmList().length) + ' realms are at each other’s throats, and nothing stands behind them but sky.</p>' : '<p>' + nwd(realmList().length) + ' realms are at each other’s throats. Out past the edges the Void is stirring, and lately it has started to pay attention.</p>')+
-      '<p class="dim-t">Tap a place to go there. Menus pause the world. Take work, buy cheap, sell dear, and find men who will follow you. Later, take a town of your own, and close the Rifts at the edge.</p><div class="btns"><button class="solid" data-act="begin">Begin</button></div>';
+      '<p class="dim-t">Tap a place to go there. Menus pause the world. Take work, buy cheap, sell dear, and find men who will follow you. Later, take a town of your own, and close the grey edges.</p><div class="btns"><button class="solid" data-act="begin">Begin</button></div>';
   }
   function tkwEnd() { var b = storyEndingBlock(); return b.indexOf("Thousand-Year War begins") > -1 ? "" : "<p><b style=\"font-weight:500;color:var(--amber)\">The Thousand-Year War begins.</b></p>"; }
   function endingSheet() {
@@ -3042,7 +3042,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
         h += row(it.name + " " + pips, it.per + " per rank. " + it.desc + (why && r < it.max ? "<br>" + why : ""), r >= skMax(it) ? "Max" : "Learn", "learn", it.id, "", !!why);
       });
     });
-    h += '<div class="sec">Forget</div>' + row("Unlearn everything", "Costs 100 crowns. Everything has a price, even changing who you are.", "Respec", "respec", "", "", spent() < 1 || S.crowns < 100, "amber");
+    h += '<div class="sec">Forget</div>' + row("Unlearn everything", "Costs 100 crowns. You keep what your upbringing gave you.", "Respec", "respec", "", "", spent() < 1 || S.crowns < 100, "amber");
     return h;
   }
 
@@ -3057,7 +3057,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
   }
   function siegeBodyOld(s) {
     var f = FAC[s.owner], reb = s.owner === "rebel", eff = Math.round(s.gar * s.wall * ovDefAdv(s)), my = Math.round(pStrength());
-    var h = '<div class="warn"><b>' + (reb ? (s.vh ? "The Void holds " : "The rebels hold ") : f.name + " hold ") + s.name + '.</b> ' + (reb ? (s.vh ? "It came out of a Rift and it stayed. Any lord may take it back, and it grows harder with every hold the Void keeps." : "The people rose when the grain ran out. Any lord may take it back.") : "You are at war. The gates are shut to you.") + "</div>";
+    var h = '<div class="warn"><b>' + (reb ? (s.vh ? "The Void holds " : "The rebels hold ") : f.name + " hold ") + s.name + '.</b> ' + (reb ? (s.vh ? "It came out of a grey edge and it stayed. Any lord may take it back, and it grows harder with every hold the Void keeps." : "The people rose when the grain ran out. Any lord may take it back.") : "You are at war. The gates are shut to you.") + "</div>";
     h += "<p>The garrison is about " + Math.round(s.gar / 2) * 2 + " men behind " + (s.type === "castle" ? "high walls" : "walls") + ", worth about " + eff + " in a fight. Your column is worth about " + my + ".</p>";
     h += '<p class="dim-t">' + (my > eff * 1.15 ? "You are strong enough to try the walls." : my > eff * 0.7 ? "It would be close. Starve them first." : "Do not assault. You would be cut down.") + "</p>";
     h += row("Assault the walls", "You will lose more men than in the open. Win, and the place is yours.", "Assault", "assault", s.id, "", T() < 3, "amber");
@@ -3112,10 +3112,10 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
     h += '<div class="sec">The Void</div>';
     var dc = Math.round(dist(S.px, S.py, ccx(S.px), ccy(S.py)));
     if (noVoid()) h += "<p><b>There is no Void in this world.</b> Only the realms remain.</p>";
-    else if (S.sealed) h += "<p><b>The Void is sealed.</b> The edge is gone and no Rift can open. Keep the realms at peace and it stays that way.</p>";
-    else h += '<p>Seal progress: ' + S.pushes + ' of ' + SEAL_AT + ' Rifts closed. Close ' + SEAL_AT + ' and the Void is driven off the map for a season. Closed Rifts can tear open again after two or three months, so do not take too long. Each Rift you close makes the next one twice as strong (up to 8x). When closed ones return, the Rifts get weaker again. The next Rift is ' + Math.min(8, Math.pow(2, S.pushes || 0)) + 'x strength. The last three Rifts hold amazing treasure, and the final one always holds a Mythic (purple) item.' + (S.riftBack && S.riftBack.length ? ' The soonest may return in about ' + Math.max(1, Math.min.apply(null, S.riftBack) - S.day) + ' days.' : '') + '</p>';
-    if (!S.sealed && !noVoid()) h += ovVSummary() + S.rifts.length + " Rift" + (S.rifts.length === 1 ? "" : "s") + " open.</p>";
-    if (!S.sealed) h += '<p class="dim-t">Push it back: close a Rift at the edge (large fight, +80), kill Void-touched bands (+14 each), build Ward-lanterns in villages, and keep the realms at peace. Wars make it hungrier.</p>';
+    else if (S.sealed) h += "<p><b>The Void is sealed.</b> The edge is gone and no grey edge can open. Keep the realms at peace and it stays that way.</p>";
+    else h += '<p>Seal progress: ' + S.pushes + ' of ' + SEAL_AT + ' grey edges closed. Close ' + SEAL_AT + ' and the Void is driven off the map for a season. Closed grey edges can open again after two or three months, so do not take too long. Each grey edge you close makes the next one twice as strong (up to 8x). When closed ones return, the grey edges get weaker again. The next grey edge is ' + Math.min(8, Math.pow(2, S.pushes || 0)) + 'x strength. The last three grey edges hold amazing treasure, and the final one always holds a Mythic (purple) item.' + (S.riftBack && S.riftBack.length ? ' The soonest may return in about ' + Math.max(1, Math.min.apply(null, S.riftBack) - S.day) + ' days.' : '') + '</p>';
+    if (!S.sealed && !noVoid()) h += ovVSummary() + S.rifts.length + " Grey edge" + (S.rifts.length === 1 ? "" : "s") + " open.</p>";
+    if (!S.sealed) h += '<p class="dim-t">Push it back: close a grey edge (large fight, +80), kill Void-touched bands (+14 each), build Ward-lanterns in villages, and keep the realms at peace. Wars make it hungrier.</p>';
     if (S.news.length) {
       h += '<div class="sec">News</div>';
       S.news.slice(-8).reverse().forEach(function (n) { h += '<p class="dim-t" style="margin:0.3rem 0">Day ' + n.d + ": " + n.t + "</p>"; });
@@ -3385,7 +3385,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
   }
   function menuSheetVO0() {
     var h = '<h2>Voidhammer</h2><p class="sub">The Shattered Realms</p>' + sceneImg("village") +
-      '<p>Nine realms, one fractured world, and the Void that hungers for both. Start with a coat and fifteen crowns. Build a column, a farm, a name.</p><div class="btns">';
+      '<p>Nine Realms. One fractured world. And the Void that hungers for all of it. Start with a coat and fifteen crowns. Build a column, a farm, a name.</p><div class="btns">';
     h += '</div><div class="btns">';
     if (hasSave()) h += '<button class="solid" data-act="cont">Continue · Day ' + dayN() + "</button>";
     h += '<button' + (hasSave() ? "" : ' class="solid"') + ' data-act="newgame">New game</button></div>';
@@ -3401,7 +3401,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
   }
   function newGameSheet() {
     if (!NG) NG = Object.assign({}, OPT);
-    var vd = { off: "No Void at all. A pure realms sandbox.", slow: "The edge creeps. Plenty of time.", normal: "The edge closes steadily. Close Rifts to push it back and seal it.", fast: "The edge races in. Act early." };
+    var vd = { off: "No Void at all. A pure realms sandbox.", slow: "The edge creeps. Plenty of time.", normal: "The edge closes steadily. Close grey edges to push it back and seal it.", fast: "The edge races in. Act early." };
     var sd = { small: "Towns are close. Short marches, quick wars.", medium: "A compact continent.", large: "The full continent.", huge: "Longer roads and wide empty country." };
     var ln = { 180: "Short. Void and wars move twice as fast.", 360: "Standard.", 720: "Long. Everything moves at half pace.", 0: "No end date. Play as long as you like." };
     var df = { easy: "Weaker enemies, richer loot, cheaper upkeep, a few crowns to start.", normal: "The intended game.", hard: "Stronger enemies, thinner loot, dearer upkeep." };
@@ -3430,7 +3430,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
     h += '<div class="sec">The line under a name</div>';
     h += '<p><b>Towns and castles:</b> owner · mood · grain stores as a share of capacity. <b>Villages:</b> mood · days of grain left. Red means trouble: hunger, or unrest that can end in rebellion. “farm” means you own a farm there; “building” means work is under way.</p>';
     h += '<div class="sec">On the ground</div>';
-    h += '<p class="dim-t">Tinted land shows each realm’s territory. Named riders with a number are lords and their armies (the number is about how many men). “Bandits” and “Void-touched” are roaming bands. Glowing tears at the edge are Rifts. The dark, dashed edge is the Void: everything outside it is erased.</p>';
+    h += '<p class="dim-t">Tinted land shows each realm’s territory. Named riders with a number are lords and their armies (the number is about how many men). “Bandits” and “Void-touched” are roaming bands. Pale seams at the rim are grey edges. The dark, dashed edge is the Void: everything outside it is erased.</p>';
     h += '<div class="sec">Top bar</div>';
     h += '<p class="dim-t">Crowns and grain show what you have, the daily cost, and days until it runs out. Hollow is how many memories you have burned. The ? button opens this page.</p>';
     return h;
@@ -3500,7 +3500,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
     F = { rocks: terr.rocks, trees: terr.trees, hills: terr.hills, arrows: [], units: units, hero: hero, kael: kael, t: 0, cmd: "charge", hm: null, ht: null, cry: 0, crycd: 0, speed: 1, corpses: [], wave: null, msg: "", msgT: 0, over: null, overT: 0, pw: 0, ew: 0, p0: 0, e0: 0, tufts: tufts, last: 0, ecol: ecol, kdead: false, kcharged: false, rv: 0 };
     units.forEach(function (u) { if (!u.hero && !u.kael) { if (u.s === "p") F.p0 += u.w; else F.e0 += u.w; } });
     if (B.siegeId && site(B.siegeId)) ovSgInit();
-    F.title = B.title || (B.kind === "void" ? "Void-touched" : B.kind === "rift" ? "A Rift" : "Bandits");
+    F.title = B.title || (B.kind === "void" ? "Void-touched" : B.kind === "rift" ? "A grey edge" : "Bandits");
     $("sheet").hidden = true; $("dim").hidden = true;
     var el = $("bf"); el.hidden = false; fieldResize(); void el.offsetWidth; el.classList.add("on");
     fieldMsg(B.allies && B.allies.length ? B.allies.map(function (h) { return h.name.split(",")[0]; }).join(" and ") + " fight beside you." : nb ? "Archers fire from behind you. Use hills and trees." : "Tap to move. Tap a foe to attack it. Hills and trees help.");
@@ -3981,7 +3981,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
       out.push({ t: "Browse the wares", go: wares }); out.push({ t: "Leave." }); return out; } };
   }
   function nhash(str) { var h = 7; for (var i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) >>> 0; return h; }
-  var RUMORS = ["The roads are worse since the Void started creeping in from the edge.", "A grey-sealed order went through here last month. Nobody would say what it bought.", "Prices are up. Whoever is feeding the Dominion is feeding it grain from villages like this one.", "My brother marched with the levy. We have not heard.", "If you see a Rift, do not stand and stare. It looks back.", "They say the Dominion's wardens never sleep. I say nobody sleeps well near a foundry."];
+  var RUMORS = ["The roads are worse since the Void started creeping in from the edge.", "A grey-sealed order went through here last month. Nobody would say what it bought.", "Prices are up. Whoever is feeding the Dominion is feeding it grain from villages like this one.", "My brother marched with the levy. We have not heard.", "If you see a grey edge, do not stand and stare. It looks back.", "They say the Dominion's wardens never sleep. I say nobody sleeps well near a foundry."];
   var TNAMES = ["Hobb", "Marta", "Dunn", "Ilse", "Corwin", "Bryn", "Aldis", "Perrin", "Sella", "Tamsin"];
   function itemNode(uid) {
     var it = findItem(uid); if (!it) return { n: "Pack", t: "That item is gone.", c: [{ t: "Back.", go: "gear" }] };
@@ -4465,7 +4465,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
   Q({ id: "watch", act: 1, hub: "ashford", gateAt: "millroad", gpos: [22, 8], npc: "wen", name: "The Dead Watchtower", zone: "watch", zname: "The Dead Watchtower", th: "pass", lv: 1, seed: 303, pal: ["scout", "slinger"], boss: "scoutcap", obj: "Defeat the Dominion scout-captain at the Dead Watchtower.",
     gate: "A path to the north ridge. A thin line of grey smoke rises from the tower.", intro: "I have been counting smoke for forty years. Three plumes from the old watchtower on the north ridge, every dawn. Dominion scouts, signalling. Whoever commands them is the one who ought to be answering questions.", turn: "Rolf. A name at last. And a map in his coat with every village of ours marked in grey. Someone has been planning this since before the harvest.", reward: { xp: 70, crowns: 60, perm: "pts" } });
   Q({ id: "cold", act: 1, hub: "ashford", gpos: [4, 15], npc: "garrick", name: "The Cold Foundry", zone: "cold", zname: "The Cold Foundry", th: "mine", lv: 1, seed: 304, pal: ["slagimp", "slagimp"], boss: "anvil", kind: "relic", obj: "Take the anvil-heart from the Cold Foundry.",
-    gate: "A cellar door under the smithy, sealed since the Void year. It is warm to the touch.", intro: "My grandfather's forge lies under the village, sealed since the Void year. It held an anvil-heart, iron that never cools. Slag-imps got in somehow. I cannot smith what I cannot reach.",
+    gate: "A cellar door under the smithy, sealed since the hard winter. It is warm to the touch.", intro: "My grandfather's forge lies under the village, sealed since the hard winter. It held an anvil-heart, iron that never cools. Slag-imps got in somehow. I cannot smith what I cannot reach.",
     prop: { name: "The anvil-heart", t: "A fist of iron that has never cooled. It hums a tune you almost know.", act: "Take it.", obj: "Take the anvil-heart.", toast: "You take the anvil-heart." },
     turn: "I can feel it from here. Give it. There. Now your blade is not only steel. Come see me when you need her sharpened.", reward: { xp: 80, item: 1, perm: "dmg" } });
   Q({ id: "slag", act: 1, hub: "emberfall", npc: "orla", name: "Brask's Slag Camp", zone: "slag", zname: "Brask's Slag Camp", th: "ember", lv: 1, seed: 305, pal: ["bandit", "slinger"], boss: "brask", kind: "captive", obj: "Free Davin from Cutter Brask's slag camp.",
@@ -8397,7 +8397,7 @@ var BIMG_SRC={"farm": "data:image/webp;base64,UklGRqyAAABXRUJQVlA4WAoAAAAQAAAAZw
   function ovDefAdv(st) { return (1.35 + 0.1 * (ovSgN(st) - 1)) * ovCapMul(st); }
   function siegeBody(s) {
     var f = FAC[s.owner], reb = s.owner === "rebel", n = ovSgN(s), eff = Math.round(s.gar * s.wall * ovDefAdv(s)), my = Math.round(pStrength()), e = ovEngOf(s.id), k;
-    var h = '<div class="warn"><b>' + (reb ? (s.vh ? "The Void holds " : "The rebels hold ") : f.name + " hold ") + s.name + '.</b> ' + (reb ? (s.vh ? "It came out of a Rift and it stayed. Any lord may take it back, and it grows harder with every hold the Void keeps." : "The people rose when the grain ran out. Any lord may take it back.") : "You are at war. The gates are shut to you.") + "</div>";
+    var h = '<div class="warn"><b>' + (reb ? (s.vh ? "The Void holds " : "The rebels hold ") : f.name + " hold ") + s.name + '.</b> ' + (reb ? (s.vh ? "It came out of a grey edge and it stayed. Any lord may take it back, and it grows harder with every hold the Void keeps." : "The people rose when the grain ran out. Any lord may take it back.") : "You are at war. The gates are shut to you.") + "</div>";
     h += "<p>The garrison is about " + Math.round(s.gar / 2) * 2 + " men behind " + n + " layers of wall (" + (n === 3 ? "outer wall, inner wall and keep" : "outer wall and inner ward") + "), worth about " + eff + " in a fight with the defenders' advantage. Your column is worth about " + my + ".</p>" + (s.id === "irontown" && s.owner === "metal" ? '<p class="dim-t"><b>The Dominion feeds its heart.</b> ' + ovCapK(s) + " other holdings send men, iron and grain to the Iron Throne, adding " + Math.round(ovCapK(s) * 50) + "% to its defence. Its walls are the strongest in the Realms even with none. Take their other towns and castles first, then come with everything you have.</p>" : "");
     h += '<p class="dim-t">' + (my > eff * 1.15 ? "You are strong enough to try the walls." : my > eff * 0.7 ? "It would be close. Build engines and starve them first." : "Do not assault. You would be cut down.") + " Ready: " + e.lad + " ladders, " + e.ram + " rams, " + e.twr + " towers, " + e.cat + " catapults. Without any, your men carry two rough ladders per wall.</p>";
     h += row("Make camp and build siege engines", "Choose what to build and watch it go up. Your army eats and the garrison starves while you work. A relief army may come.", "Make camp", "sgcamp", s.id, "", T() < 1, "amber");
@@ -10372,7 +10372,7 @@ function skillsSheet() {
     } else h += '<p class="skde"><b>' + it.per + "</b> per rank." + (rk > 0 ? " Now: rank " + rk + "." : "") + "</p>";
     h += '<div class="skdb">' + (why && rk < mx ? '<span class="dim-t">' + why + "</span>" : "<span></span>") + '<button class="' + (!why ? "solid" : "") + '" data-act="learn" data-a="' + it.id + '"' + (why ? " disabled" : "") + ">" + (rk >= mx ? "Max" : "Learn") + "</button></div></div>";
   }
-  h += '<div class="sec">Forget</div>' + row("Unlearn everything", "Costs 100 crowns. Everything has a price, even changing who you are.", "Respec", "respec", "", "", spent() < 1 || S.crowns < 100, "amber");
+  h += '<div class="sec">Forget</div>' + row("Unlearn everything", "Costs 100 crowns. You keep what your upbringing gave you.", "Respec", "respec", "", "", spent() < 1 || S.crowns < 100, "amber");
   return h + "</div>";
 }
 (function () {
@@ -11042,7 +11042,7 @@ function qFinish(q, opt, idx) { qFinish0(q, opt, idx); if (opt && typeof opt.eff
   ACTS.push({ n: "VI", t: "The Quiet Between", d: "A side road before the end. The Void has noticed the boy, and it is leaning on the edges of the map.", open: function (f) { return !!f.qd_gate; }, done: function (f) { return !!f.qd_hollowthrone; } });
   ACTOPEN[6] = function (f) { return !!f.qd_gate; };
   var m = function (id) { return function (f) { return !!f["qd_" + id]; }; };
-  ch({ id: "silence1", opt: 0, act: 6, hub: "granitekeep", npc: "voyager", npcDef: { name: "The Voyager", col: "#c8c8d8", hair: "#f0f0f8", idle: "I have walked this road before. I walked it before the Keep had stones. Do not ask me how." },
+  ch({ id: "silence1", opt: 0, act: 6, hub: "granitekeep", npc: "voyager", npcDef: { name: "The Voyager", col: "#c8c8d8", hair: "#f0f0f8", idle: "I have walked this road before. Do not ask me when." },
     name: "The First Silence", zone: "silence1", zname: "The Silent Village", th: "pass", lv: 4, seed: 451, pal: ["hollowsent", "wraith"], boss: "hush1", obj: "Enter the Silent Village.",
     gate: "A village of lit windows and no sound. Not a dog, not a child, not wind.",
     intro: "The Iron Reaper was never the real threat. It was a lid on a pot. A village in the Greywater has gone quiet, and no one in it remembers having been anything else. I have seen this before. I will go with you. I will not fight with magic. I will not tell you why. I will not leave you.",
@@ -11052,7 +11052,7 @@ function qFinish(q, opt, idx) { qFinish0(q, opt, idx); if (opt && typeof opt.eff
   ch({ id: "voyagerpast", opt: 0, act: 6, hub: "granitekeep", npc: "voyager", need: m("silence1"), name: "What the Voyager Will Not Say", zone: "voyagerroad", zname: "The Road He Walked", th: "cave", lv: 4, seed: 452, pal: ["hollowsent", "frostshade"], boss: "voidmirror", obj: "Follow the Voyager down the road he never describes.",
     gate: "A road of grey stone under a grey sky. Everything is exactly where it was left, forever.",
     intro: function () { return "You have asked me twice why I do not use magic, and I told you to stop asking. " + (F().v6_pity ? "You said the Void is afraid, and that is true. " : "You said the Void must be stopped, and you might be right. ") + "There is a road I walked once, to the place where the Codex stops writing. I think it is time you saw it. I will not narrate. I will only walk."; },
-    turn: "You saw it. The road ends where the Codex ends. Everyone who has ever lived has a line in it, and I do not. Not a blank, Elyndra tells me, which is kind of her. Nothing. Magic is paid for out of who you are, and there is no record of who I am to pay from, so I do not use it. The Council made me Hammer-Bearer because nobody could think what else to do with me.” He touches the sliver of dull starmetal he wears on a cord. It is warm when nothing else is. “This remembers me when the Codex will not. It is the one thing about me I am sure of.",
+    turn: "You saw it. The road ends where the Codex ends. Everyone who has ever lived has a line in it, and I do not. Not a blank, Elyndra tells me, which is kind of her. Nothing. I do not use magic. I will not tell you why, and I would be grateful if you stopped guessing. The Council made me Hammer-Bearer because nobody could think what else to do with me.” He touches the plain iron band of the Hammer-Bearer on his arm. “They gave me this so that people would know where to put me. It is the one thing about me I am sure of.",
     opts: [{ t: "“You can still choose who you are. Starting now.”", reward: { xp: 600, perm: "pts" }, set: { v6_choose: 1 }, text: "The Voyager breathes out slowly. A single tear tracks down his cheek, as though he has forgotten how. “I would like that,” he says. “I would like that very much.”" },
       { t: "“Then we finish what you started. Together.”", reward: { xp: 600, crowns: 500, item: 3 }, set: { v6_together: 1 }, text: "“Together,” he says, and the word has weight. “Yes. That may be what I was waiting for.”" }] });
   ch({ id: "unmaderoad", opt: 0, act: 6, hub: "windspire", npc: "aeris", need: m("voyagerpast"), name: "The Unmade Road", zone: "unmaderoad", zname: "The Unmade Road", th: "pass", lv: 4, seed: 453, pal: ["wraith", "hollowsent"], boss: "unmade", obj: "Hold the Unmade Road until the Realms arrive.",
@@ -11414,7 +11414,7 @@ function qFinish(q, opt, idx) { qFinish0(q, opt, idx); if (opt && typeof opt.eff
       h += '<div class="sksec" id="sksec' + s.i + '"><button class="skst' + (open ? " open" : "") + '" data-skt="' + s.i + '"><b>' + s.name + '</b><span>' + s.blurb + (act ? " Battle skill: " + act.name + "." : "") + '</span><em>' + got + "/" + tot + "</em></button>" + (open ? skSecHtml(s) : "") + "</div>";
     });
     h += "</div>";
-    h += '<div class="sec">Forget</div>' + row("Unlearn everything", "Costs 100 crowns. You keep what your upbringing gave you. Everything has a price, even changing who you are.", "Respec", "respec", "", "", spent() < 1 || S.crowns < 100, "amber");
+    h += '<div class="sec">Forget</div>' + row("Unlearn everything", "Costs 100 crowns. You keep what your upbringing gave you.", "Respec", "respec", "", "", spent() < 1 || S.crowns < 100, "amber");
     var it = skFind(skSel);
     if (it) {
       var rk = sk(it.id), mx = skMax(it), why = skWhy(it), pips = ""; for (var i = 0; i < mx; i++) pips += i < rk ? "●" : "○";
@@ -11797,7 +11797,7 @@ function deepClear(n) {
   setTimeout(function () { if (AR && AR.id === "deep" + n) dlgOpen("deep_next"); }, 1400);
 }
 DLG["deep_next"] = {
-  n: "The Rift Below", t: function () { var n = deepNum(); return "Floor " + n + " is quiet. Below you the dark goes on, and the Void is stronger down there. Your wounds stay with you. Your best is floor " + deepS().best + "."; },
+  n: "The Crack Below", t: function () { var n = deepNum(); return "Floor " + n + " is quiet. Below you the dark goes on, and the Void is stronger down there. Your wounds stay with you. Your best is floor " + deepS().best + "."; },
   c: function () {
     var n = deepNum() + 1;
     return [{ t: "Descend to floor " + n + " (" + deepToll(n) + " crowns)", cost: deepToll(n), fn: function () { deepEnter(n); } }, { t: "Climb out with your spoils.", fn: function () { leaveArea(); } }];
@@ -13528,7 +13528,7 @@ function skillsSheet() {
       });
       h += "</div>";
     });
-    h += '<div class="sec">Forget</div>' + row("Unlearn everything", "Costs 100 crowns. You keep what your upbringing gave you. Everything has a price, even changing who you are.", "Respec", "respec", "", "", spent() < 1 || S.crowns < 100, "amber");
+    h += '<div class="sec">Forget</div>' + row("Unlearn everything", "Costs 100 crowns. You keep what your upbringing gave you.", "Respec", "respec", "", "", spent() < 1 || S.crowns < 100, "amber");
     return h + "</div>";
   }
   var got = 0, tot = 0; sc.items.forEach(function (it) { got += sk(it.id); tot += skMax(it); });
@@ -13830,7 +13830,7 @@ function newGameSheet() {
   if (!NG) NG = Object.assign({}, OPT);
   NG.void = "slow"; NG.dom = "slow"; NG.map = "shattered"; NG.mode = "campaign"; NG.story = "on"; NG.size = "large"; if (NG.len === undefined || NG.len === 180) NG.len = 0;
   var df = { easy: "Weaker enemies, richer loot, cheaper upkeep, a few crowns to start.", normal: "The intended game.", hard: "Stronger enemies, thinner loot, dearer upkeep." };
-  var h = '<h2>New game</h2><p class="sub">Nine realms. Nine continents. One fractured world.</p>';
+  var h = '<h2>New game</h2><p class="sub">Nine Realms. One fractured world.</p>';
   h += '<div class="sec">Your name</div><div class="bprev"><input id="pname" type="text" maxlength="16" autocomplete="off" autocapitalize="words" spellcheck="false" placeholder="Your name" value="' + String(NG.pname || "").replace(/"/g, "&quot;") + '"></div>'; h += bannerSection();
   h += '<div class="sec">Difficulty</div>' + chips("diff", [["easy", "Easy"], ["normal", "Normal"], ["hard", "Hard"]]) + '<p class="dim-t">' + df[NG.diff || "normal"] + "</p>";
   h += '<p class="dim-t">You begin in Ashford, on the Flameborne continent. The other realms lie across the sea: only a Realm Gate, or the tunnels of Shadowdeep, will take you there. The Void creeps in from every coast. The Dominion is already marching.</p>';
@@ -13965,7 +13965,7 @@ function objective() {
   return o;
 }
 
-// ---- ovVOID: no circle. Once the gates open the Void tears Rifts on every continent and can quiet a few holds (capped by ovVCap; never capitals, never a realm's last two holds). ----
+// ---- ovVOID: no circle. Once the gates open the Void tears grey edges on every continent and can quiet a few holds (capped by ovVCap; never capitals, never a realm's last two holds). ----
 function ovVD() { return S.vd || (S.vd = { on: 0, nr: 0, g: {}, fell: {}, hn: 12 }); }
 function ovVCells() { var o = {}; S.sites.forEach(function (s) { o[cellAt(s.x, s.y)] = 1; }); return Object.keys(o).map(Number); }
 function ovVHeld() { var n = 0; S.sites.forEach(function (s) { if (s.vh) n += s.type === "village" ? 0.35 : 1; }); return n; }
@@ -14068,19 +14068,19 @@ function ovVoidDay() {
   if (!v.mig) { v.mig = 1; if (!ovGateOpen()) S.rifts.forEach(function (r) { r.c = 4; delete r.x; delete r.y; }); }
   if (!ovGateOpen() && !v.on) {
     var want = S.day >= 240 ? 3 : S.day >= 140 ? 2 : S.day >= 45 ? 1 : 0, pend = (S.riftBack || []).length;
-    if (S.rifts.length + pend < want && S.day >= (S.nextRift || 0)) { S.rifts.push(ovNewRift(4)); S.nextRift = S.day + 45; toast("A Rift has torn open on the Flameborne shore."); news("A Rift has torn open on the Flameborne shore."); }
+    if (S.rifts.length + pend < want && S.day >= (S.nextRift || 0)) { S.rifts.push(ovNewRift(4)); S.nextRift = S.day + 45; toast("A grey edge has opened on the Flameborne shore."); news("A grey edge has opened on the Flameborne shore."); }
     return;
   }
   if (!v.on) {
     v.on = 1; v.t0 = S.day; v.nr = S.day + 80;
-    var t = "The Gates are open and the Void has felt them. It does not need a road. Rifts will open on every shore. It is only feeling at the seams for now, but each hold it quiets makes it bolder. Close the Rifts and it pulls back.";
+    var t = "The Gates are open and the Void has felt them. It does not need a road. Grey edges will open on every shore. It is only feeling at the seams for now, but each hold it quiets makes it bolder. Close the grey edges and it pulls back.";
     news(t); log(t, "e");
   }
   var cells = ovVCells();
   if (S.day >= v.nr) {
     if (S.rifts.length + (S.riftBack || []).length < cells.length * 2) {
-      var r = ovNewRift(); S.rifts.push(r); news("A Rift has opened on the " + ovConts()[r.c].n + " coast.");
-      if (r.c === curCell()) toast("A new Rift has torn open on this continent.");
+      var r = ovNewRift(); S.rifts.push(r); news("A grey edge has opened on the " + ovConts()[r.c].n + " coast.");
+      if (r.c === curCell()) toast("A new grey edge has opened on this shard.");
     }
     v.nr = S.day + Math.max(90, 150 - Math.floor(S.rifts.length * 1.5));
   }
@@ -14429,7 +14429,7 @@ document.addEventListener("click", function (e) { var t = e.target && e.target.c
     gate: "A corridor people walk around without knowing why. The air leans, as if listening.",
     intro: "There is a corridor in the Keep that people walk around without knowing why. The Codex has no page for it. It has no page for me either, so I thought we might get on. Walk it with me, and if anything in there tries to tell you my name, do not believe it.",
     turn: "Thank you. Most people who walk beside me spend the whole time trying to decide what I am. You did not, or you were polite about it. What do you see when you look at me?",
-    opts: [{ t: "“A man who has not finished yet.”", reward: { xp: 520, perm: "pts" }, set: { eb_unfinished: 1 }, text: "The Voyager is silent for some time. “Kaelren said almost the same,” he says. “I think that is why it worked.”" },
+    opts: [{ t: "“A man who has not finished yet.”", reward: { xp: 520, perm: "pts" }, set: { eb_unfinished: 1 }, text: "The Voyager is silent for some time. “Someone said almost the same to me once,” he says. “I think that is why it worked.”" },
       { t: "“I see someone I would follow whoever he was.”", reward: { xp: 520, crowns: 350 }, set: { eb_follow: 1 }, text: "“That,” the Voyager says quietly, “is the more dangerous thing to say to me. But thank you.”" }] });
   ch({ id: "eb_hunters", hub: "highmarch", npc: "hald", need: m("eb_boy"), name: "Hunters Awake", zone: "ebhunt", zname: "The Codex Vaults", th: "cave", lv: 5, seed: 464, pal: ["hollowsent", "knife"], boss: "hunterprime", obj: "Go down into the Codex Vaults.",
     gate: "A stair beneath the Marshal’s hall, older than the hall. The door has a keyhole shaped like nothing.",
@@ -14447,31 +14447,31 @@ document.addEventListener("click", function (e) { var t = e.target && e.target.c
   QMAP.unmaderoad.need = m("eb_signal");
   ch({ id: "eb_gate", hub: "windspire", npc: "aeris", need: m("unmaderoad"), name: "The Gate Appears", zone: "ebgate", zname: "The Shattered Gate", th: "pass", lv: 5, seed: 466, pal: ["wraith", "echo"], boss: "gatewatcher", obj: "Stand before the Shattered Gate.",
     gate: "An arch of broken sky above the old square. Reality is physical here, and heavy.",
-    intro: "A Gate has opened above the old square. Not one of ours. Nothing came out. The Voidborn drift between the houses and watch the children, with no more hostility than the weather. A soldier laid down his spear this morning because lifting it felt pointless. A woman in the lower market lost every memory of her family and is alive. Nobody has taught me how to fight something that does not fight.",
+    intro: "A grey edge has opened above the old square, the size of a door. Not a Realm Bridge. Nothing came out. Grey shapes drift between the houses and watch the children, with no more hostility than the weather. A soldier laid down his spear this morning because lifting it felt pointless. A woman in the lower market lost every memory of her family and is alive. Nobody has taught me how to fight something that does not fight.",
     turn: "It looked at you and did not strike. Nor did you. For a moment the square was perfectly still, and no one was afraid, and that was the worst part. We have bought a little time. Ask me later what we paid with.",
-    opts: [{ t: "“Hold the line around the Gate. Nothing in, nothing out.”", reward: { xp: 680, crowns: 500 }, set: { eb_hold: 1 }, text: "Aeris posts watch around the arch. The Voidborn watch back. Nobody blinks for three days." },
+    opts: [{ t: "“Hold the line around the grey edge. Nothing in, nothing out.”", reward: { xp: 680, crowns: 500 }, set: { eb_hold: 1 }, text: "Aeris posts watch around the arch. The grey shapes watch back. Nobody blinks for three days." },
       { t: "“Keep it open a crack. We need to understand it.”", reward: { xp: 680, item: 3 }, set: { eb_open: 1 }, text: "Aeris stares at you. “If you are wrong,” she says, “you will not be here to be wrong.” But she posts no guard." }] });
-  ch({ id: "eb_king", hub: "highmarch", npc: "hald", need: m("eb_gate"), name: "He Kneels", zone: "ebking", zname: "The Ember Hall", th: "ember", lv: 5, seed: 467, pal: ["hollowsent", "wraith"], boss: "harrowedking", obj: "Walk into the Rift behind the Ember Throne.",
-    gate: "The Ember Hall in Emberfall. Behind the throne a Rift hangs open, and through it, a hall of dead embers.",
-    intro: "A Rift opened in the market at Emberfall at supper. The bread-sellers finished packing their stalls first. Through it there is a hall of dead embers, and something standing in it that makes grown soldiers look at the ground. Lyriel says it is a future, not a guest. I would like that confirmed by someone who has walked into it and come back. You, ideally.",
-    turn: "You came back out. That was not guaranteed. The crowned shape hesitated, at the last, as if it had seen someone it did not expect this early. Then the Rift closed. Kaelren went straight to the King afterwards and made him eat something. What did you do in there?",
+  ch({ id: "eb_king", hub: "highmarch", npc: "hald", need: m("eb_gate"), name: "He Kneels", zone: "ebking", zname: "The Ember Hall", th: "ember", lv: 5, seed: 467, pal: ["hollowsent", "wraith"], boss: "harrowedking", obj: "Walk into the grey edge over the ash-market.",
+    gate: "The ash-market in Emberfall. Over the stalls a grey edge hangs open, and through it, a hall of dead embers.",
+    intro: "A grey edge opened in the market at Emberfall at supper. The bread-sellers finished packing their stalls first. Through it there is a hall of dead embers, and something standing in it that makes grown soldiers look at the ground. Lyriel says it is a future, not a guest. I would like that confirmed by someone who has walked into it and come back. You, ideally.",
+    turn: "You came back out. That was not guaranteed. The crowned shape hesitated, at the last, as if it had seen someone it did not expect this early. Then the grey edge closed. Kaelren went and bought the whole stall supper, which is what he does instead of talking. What did you do in there?",
     opts: [{ t: "Stand. Whatever it costs. (Costs a tenth of your column)", reward: { xp: 900, crowns: 700, perm: "hp" }, eff: function () { if (typeof loseFrac === "function") loseFrac(0.1); }, set: { eb_stand: 1 }, text: "You stood when every part of you wanted to rest. The hall remembers it. The crowned shape does not strike you down. It turns away, and the fire on its crown dims, once." },
-      { t: "Kneel, and ask it why it came.", reward: { xp: 900, item: 3, perm: "pts" }, set: { eb_kneel: 1 }, text: "It listens. Neither of you says anything for a long time. Then it says, very quietly, one word that is almost a name. You carry it out of the hall like a stone in your pocket, and you do not show it to Kaelren." }] });
+      { t: "Kneel, and ask it why it came.", reward: { xp: 900, item: 3, perm: "pts" }, set: { eb_kneel: 1 }, text: "It listens. Neither of you says anything for a long time. Then it says, very quietly, one word you do not know. You carry it out of the hall like a stone in your pocket." }] });
   QMAP.hollowthrone.need = m("eb_king");
 })();
 // ---- ovBOOK: The Emberhold Chronicle (Book I, The Shattered Gate) as lantern pages through the campaign ----
 var ERAS = [
   { id: "e1", t: "The Boy With Two Sparks", sub: "The Lantern Chronicle · The Child", min: 2, body: [
     "The Lantern keeps what the Codex would rather forget. A page comes loose from the Lantern Archives in Spiritveil, and the ink on it is still wet. Some of these pages are history. Some of them are not history yet.",
-    "Frostgrave's Seers had foreseen a child born of every Realm, with two sparks in one body. The Twin-Spark prophecy. Lyria, Mother of Memory, saw his face and was forbidden to name him. The Conclave said a spark must be broken before it can be shaped, and sent for him.",
+    "Frostgrave's Seers had foreseen a child born of every Realm, with two sparks in one body. The Twin-Spark prophecy. Edda Frostwraith wrote it down five hundred years ago and would not write down his face. The Conclave said a spark must be broken before it can be shaped, and sent for him.",
     "His name was Elyon. He was small for his age, he collected feathers, and he was afraid of the dark because the dark answered him.",
     "Lightforge took him first, to keep him safe. The Radiant Edict called it protection. Elyon called it a locked door."
   ] },
-  { id: "e2", t: "The Making of Valek", sub: "The Lantern Chronicle · A Page Not Yet Written", min: 9, body: ["The ink on this page is still wet. It is written in the past tense about something that has not happened yet.", 
+  { id: "e2", t: "The Making of the Heir", sub: "The Lantern Chronicle · A Page Not Yet Written", min: 9, body: ["The ink on this page is still wet. It is written in the past tense about something that has not happened yet.", 
     "Metalcrown did not steal him. Metalcrown was handed him, through a gate someone left unguarded, and every Realm still says it was somebody else’s hand.",
-    "In the Spark Reactor they forced both of a boy's sparks awake at once, and the reactor did what reactors do to a child. They kept the pieces that worked. When he woke, Elyon was a name the Synthesis Council had no use for. The Council gave him a better one: Valek.",
+    "In the Spark Reactor they forced both of a boy's sparks awake at once, and the reactor did what reactors do to a child. They kept the pieces that worked. When he woke, his name was one the Synthesis Council had no use for. The Council gave him a better one.",
     "He was perfect. Everyone said so. He was made to be, and nobody asked him once what he wanted. A boy who is never asked learns to answer for himself in the only voice left.",
-    "Somewhere beneath the iron, Elyon was still there, listening."
+    "Somewhere beneath the iron, the boy was still there, listening."
   ] },
   { id: "e3", t: "Power Is Forged", sub: "The Lantern Chronicle · The Iron Dominion", min: 18, body: [
     "Metalcrown had been laughed at once. Mocked in Council, refused a seat, told that magic was a gift and gifts are not for the poor. So they stopped asking, and forged their own.",
@@ -14480,7 +14480,7 @@ var ERAS = [
     "The Dominion will need a heart, the page says. It does not say whose. Someone has underlined that twice."
   ] },
   { id: "e4", t: "A War Everyone Was Born Into", sub: "The Lantern Chronicle · A Page Not Yet Written · I", min: 28, body: ["This page is written in the past tense about a war that has not started. The keepers file it under prophecy and do not read it twice.", 
-    "It was not one war. It was a stack of wars, layered until the bottom ones were forgotten. Flameborne rose and was the first Realm to burn. Stormreach rode out and could not agree on where.",
+    "It was not one war. It was a stack of wars, layered until the bottom ones were forgotten. Flameborne rose first and burned brightest. Stormreach rode out and could not agree on where.",
     "Children were born in the war and thought it was weather. Grandmothers told them the world had been quiet once, and the children looked at them kindly, the way you look at someone describing a colour.",
     "In that time hope stopped being a belief and became a habit, which is a much harder thing to kill."
   ] },
@@ -14490,15 +14490,15 @@ var ERAS = [
     "The Conclaves became fortresses. The students became weapons. Somewhere in the long dark the Void learned that the Realms were beginning to forget themselves."
   ] },
   { id: "e6", t: "The King Who Brings Bread", sub: "The Lantern Chronicle · The Flameborne King", min: 54, body: [
-    "The Flameborne King carries the bread into Court himself. He has done it for thirty years, because the first time he did it a hungry clerk cried, and he has never got over it.",
+    "The Flameborne King carries the bread into Court himself. He has done it every Court day since the first time, when a hungry clerk cried, and he has never got over it.",
     "He pays for scholars he will never meet. He trained a ward with a wooden sword in the palace yard, every morning, the same three words each time the boy fell over: <i>again, little ember</i>. At night he writes letters to people he failed, and he does not send them. There is a drawer for them. It does not close any more.",
-    "In the Lantern Archive there is a page about him that the keepers will not read aloud. It shows a crowned shape, and where the face should be the page is scorched through. The keepers say it is a future, and that futures are not sentences. They say it a little too quickly.",
-    "The King has heard of the page. He asked whether anyone was hungry, and sent for bread."
+    "In the Lantern Archive there is a page about him that the keepers read aloud more than any other. It is a list of the people he has fed. It is not finished.",
+    "The King has heard of the page. He asked whether anyone on it was still hungry, and sent for bread."
   ] },
   { id: "e7", t: "The First Fractures", sub: "The Lantern Chronicle · The Void Stirs", min: 70, body: [
     "The Void does not want anything, the old books say. The old books were written before the TwinSpark child.",
     "It noticed him the moment he was conceived. Not his body. The two sparks, lit in one place, bright enough to see from the outside of everything. Something that had been asleep since the First Sundering turned over, the way a sleeper turns towards a lamp.",
-    "The Rifts are where it presses its face to the glass. They open near the edges of the map, then a little nearer, always facing north, towards wherever the boy is sleeping. The Void is not hungry yet. It is curious, which the Lantern-keepers say is worse, because hunger at least can be fed."
+    "The grey edges are where it presses its face to the glass. They open near the edges of the map, then a little nearer, always facing north, towards wherever the boy is sleeping. The Void is not hungry yet. It is curious, which the Lantern-keepers say is worse, because hunger at least can be fed."
   ] },
   { id: "e8", t: "The Ninth Realm", sub: "The Lantern Chronicle · The Unstable Shard", min: 86, body: [
     "There were meant to be nine. The ninth Realm was raw possibility, every way the world might have gone at once, and it broke at its own birth because nothing can be everything for long.",
@@ -14549,14 +14549,14 @@ var BOOK1 = [
     "Nobody on the Council answered her. Ardyn Solbrand read the letter twice and added a line to the Edict's enforcement orders that night."
   ] },
   { id: "k9", t: "The Gate Appears", sub: "The Concord Chronicle · IX", cond: function () { return cp().f.q6done || mcFellCount() >= 2; }, body: [
-    "A Gate opened above the old square in Windspire. Not one of the Realm Gates. Nothing came out of it. Voidborn drifted between the houses and watched the children, with no more malice than fog.",
+    "A grey edge opened above the old square in Windspire. Not a Realm Bridge. Nothing came out of it. Grey shapes drifted between the houses and watched the children, with no more malice than fog.",
     "A soldier laid down his spear because lifting it felt pointless. A woman in the lower market lost every memory of her family while she was still standing there, and thanked her husband politely, as one thanks a stranger, when he took her hand.",
-    "The Gate did not grow. It did not close either. It hung there facing north, towards the Iron Throne, where a boy with two sparks no longer slept."
+    "The grey edge did not grow. It did not close either. It hung there facing north, towards the Iron Throne, where a boy with two sparks no longer slept."
   ] },
   { id: "k10", t: "He Kneels", sub: "The Concord Chronicle · X", cond: function () { return cp().f.q7done || mcFellCount() >= 3; }, body: [
-    "A Rift opened in the Ember Hall in Emberfall, right behind the throne, during supper. The Flameborne King finished passing the bread first. People still talk about that.",
-    "In the Rift there was a hall of dead embers and something standing in it, very still. Kaelren would not say what he saw. He came out with his hands shaking, and that night he baked bread for nobody in particular.",
-    "Then it was gone, and the King was holding him up by the collar, saying <i>again, little ember</i>, the way he used to in the yard. Kaelren got up. Nobody has asked him what he saw. The King sat up the rest of the night writing a letter, and did not send it."
+    "A grey edge opened over the ash-market in Emberfall at supper. The bread-sellers finished packing their stalls first. People still talk about that.",
+    "In the grey edge there was a hall of dead embers and something standing in it, very still. Kaelren would not say what he saw. He came out with his hands shaking, and that night he baked bread for nobody in particular.",
+    "Then it was gone. Kaelren got up off the cobbles on his own. Nobody has asked him what he saw."
   ] },
   { id: "k11", t: "The Table Still Laid", sub: "The Concord Chronicle · XI", cond: function () { return S.day >= 190 || (cp().f.q7done && S.day >= 150); }, body: [
     "The Concord was already broken. That was the cruelty of it. The Realms still sent envoys to one table and passed the salt, and every one of them had a war in a drawer, folded small.",
@@ -14699,7 +14699,7 @@ function crApply(r, stage) {
     sites.forEach(function (q) { if (q.type !== "village") q.gar = Math.max(6, q.gar * 0.6); });
     var cands = sites.filter(function (q) { return q.type === "town" && q.id !== capId; });
     if (cands.length && typeof rebelTown === "function") { var q = cands[rndInt(0, cands.length - 1)]; rebelTown(q); news(q.name + " broke from " + FAC[r].name + " in the crisis."); }
-    if (!S.sealed && S.rifts.filter(function (q) { return q.c === CRISES[r].cell; }).length < 2) { S.rifts.push({ id: S.eid++, a: rnd(0, 6.283), cool: 0, c: CRISES[r].cell }); news("A Rift opened over " + FAC[r].name + " while its leaders were looking away."); }
+    if (!S.sealed && S.rifts.filter(function (q) { return q.c === CRISES[r].cell; }).length < 2) { S.rifts.push({ id: S.eid++, a: rnd(0, 6.283), cool: 0, c: CRISES[r].cell }); news("A grey edge opened over " + FAC[r].name + " while its leaders were looking away."); }
   }
 }
 function crReward(r, c, stage) {
@@ -15355,9 +15355,9 @@ function areaUnlocked(id) { if (id === "unmadecity" || id === "lanterncity" || i
   // ---- THE VOID FINALE ----
   var VF = [
     ["vf_1", "", "The Silent Gate", "The Shard Reach", "pass", "The Gatewatch", "A gate on the Unstable Shard. The banner on it is blue, then not a banner, then blue again.", "The Void is not an army. It is a stillness that has learned to lean. It is leaning on the Shard, the one Realm that never finished being made. Go to the Silent Gate and see what holds it.", "The gate is held by something that was once a gatewatch. It does not move. It does not blink. It has not for a thousand years.", "Seal it behind you.", "Hald seals the gate. The silence at your back is very large.", "Leave it open. We may need to leave.", "Hald says nothing. You leave it open. The silence is not hostile; it is only waiting."],
-    ["vf_2", "vf_1", "The Unmoving Host", "The Frozen Field", "pass", "The Unmoving Captain", "A field of soldiers, mid-stride, who have not fallen in a thousand years.", "Every soldier the Void touched is standing in the field. They are not dead. They are not alive. They are held. Walk through them, and do not stop to listen.", "You walked through. You heard one of them whisper your name.", "Carry one out. Even one.", "You carry a soldier out. He weeps, and ages forty years in an hour, and dies in your arms, grateful.", "Leave them. They are beyond help.", "You walk on. Behind you, the field is very still."],
-    ["vf_3", "vf_2", "The Heart of Stillness", "The Still Heart", "cave", "Stillness Incarnate", "A cavern at the end of the world where nothing has ever moved.", "The Void has a heart. Not a king, not an army. A place where it began. Go there, and find out whether it can be asked to change.", "You stood in the heart. You felt it listen. You do not know whether it understood.", "Tell it about change.", "You speak of seasons, of children, of rivers. The stillness hums, like a held note.", "Tell it about death.", "You speak of endings. The stillness shudders, and for a moment, it is almost like pain."],
-    ["vf_4", "vf_3", "The Void Itself", "The Last Stillness", "cave", "The Void", "A place with no walls, no floor, no ceiling, and one presence.", "This is as close as anyone can stand. The Void will ask you for something. Whatever it is, it is not about you. It has been watching the north since the boy was born.", "The Void asked where the boy was going. You answered. It drew back to think about it, the way a tide draws back.", "Close the fracture. Pay the price. Buy the Realms time.", "You close the fracture. It costs a fifth of your column, who stay behind to hold it shut. The edge goes quiet. Nobody believes it is for good.", "Teach it. Let the Void learn what change is, and let the world pay for the lesson.", "You teach it. The rifts close, the holds crumble, and the Void grows slow and strange. It is not defeated. It is curious, which may be worse, and it is a long way off."]
+    ["vf_2", "vf_1", "The Unmoving Host", "The Frozen Field", "pass", "The Unmoving Captain", "A field of soldiers, mid-stride, who have not fallen since the boy was born.", "Every soldier the Void touched is standing in the field. They are not dead. They are not alive. They are held. Walk through them, and do not stop to listen.", "You walked through. You heard one of them whisper your name.", "Carry one out. Even one.", "You carry a soldier out. He weeps, and ages forty years in an hour, and dies in your arms, grateful.", "Leave them. They are beyond help.", "You walk on. Behind you, the field is very still."],
+    ["vf_3", "vf_2", "The Heart of Stillness", "The Still Heart", "cave", "Stillness Incarnate", "A cavern at the end of the world where nothing has ever moved.", "The Void has no heart and no king. It has a place where it presses hardest. Go there, and find out whether it can be asked to change.", "You stood in the heart. You felt it listen. You do not know whether it understood.", "Tell it about change.", "You speak of seasons, of children, of rivers. The stillness hums, like a held note.", "Tell it about death.", "You speak of endings. The stillness shudders, and for a moment, it is almost like pain."],
+    ["vf_4", "vf_3", "The Void Itself", "The Last Stillness", "cave", "The Void", "A place with no walls, no floor, no ceiling, and one presence.", "This is as close as anyone can stand. The Void will ask you for something. Whatever it is, it is not about you. It has been watching the north since the boy was born.", "The Void asked where the boy was going. You answered. It drew back to think about it, the way a tide draws back.", "Close the fracture. Pay the price. Buy the Realms time.", "You close the fracture. It costs a fifth of your column, who stay behind to hold it shut. The edge goes quiet. Nobody believes it is for good.", "Teach it. Let the Void learn what change is, and let the world pay for the lesson.", "You teach it. The grey edges close, the holds crumble, and the Void grows slow and strange. It is not defeated. It is curious, which may be worse, and it is a long way off."]
   ];
   VF.forEach(function (q, i) {
     var id = q[0], bossId = "sb_" + id;
@@ -16473,7 +16473,7 @@ setInterval(function () {
       prepUi();
       clearTimeout(B.timer);
       var e = enemyById(B.eid), hs = heroStats(), fac = B.kind === "lord" && B.fac ? B.fac : null;
-      var info = { p0: B.p0, e0: B.e0, allyS: B.allyS || 0, t0: B.t0, en0: B.en0, kind: B.kind, fac: fac, title: B.title || (B.kind === "void" ? "Void-touched" : B.kind === "rift" ? "A Rift" : "Bandits"),
+      var info = { p0: B.p0, e0: B.e0, allyS: B.allyS || 0, t0: B.t0, en0: B.en0, kind: B.kind, fac: fac, title: B.title || (B.kind === "void" ? "Void-touched" : B.kind === "rift" ? "A grey edge" : "Bandits"),
         siege: !!B.siegeId, realm: realmAt(S.px, S.py), voidNear: voidNear(S.px, S.py), banner: api.banner(), ecol: fcol(), kael: S.kael === "alive" && !B.kaelDone, kaelAlive: S.kael === "alive",
         allies: (B.allies || []).map(function (h) { var d = hdef(h); return { name: h.name.split(",")[0], col: d.col || "#f0d060", s: allyStr(h) * 0.9 }; }),
         heroW: hs.w, heroHp: hs.hp, hb: hs.hb, held: S.held.length, hasKael: has("kael"), pname: (S.pname || OPT.pname || "") };
