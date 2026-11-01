@@ -71,8 +71,8 @@ function buildBattle(st, api, info, done) {
   // the Realm's painted horizon behind the field (not in the Void), and its colour grade on High
   const band = isVoid ? null : horizonBand(info.realm, fogC, (x) => st.track(x), { amt: 0.42 }); if (band) scene.add(band);
   st.setGrade(isVoid ? "shadow" : info.realm);
-  // High: image-based light from the painted sky
-  { const env = useSkyEnv(st, scene, sky, L.hemi), h0 = L.hemi.intensity; st.track(env); const fit = () => { L.hemi.intensity = h0 * env.k.k; }; fit(); st.onGfx.push(fit); }
+  // High: image-based light from the painted sky on the people and horses
+  st.track(useSkyEnv(st, scene, sky));
   if (isVoid) { L.sun.color = mix(P.sun, 0xb8a8ff, 0.5); const vl = new THREE.PointLight(VOIDC, 80, 70, 1.4); vl.position.set(0, 10, -34); scene.add(vl); }
 
   // ---------- terrain (flat where the lines meet, hills beyond; a siege flattens the approach to the walls) ----------
@@ -152,7 +152,7 @@ function buildBattle(st, api, info, done) {
   // Medium/High: the Quaternius rigged horse (Idle, Walk, Gallop, Death), four coats from one vertex-coloured mesh
   const HP = kit.mm ? mpack("horse") : null, horseProto = HP ? HP.gltf.scene : null;
   let horseK = 1, horseLift = 0;
-  const horseCoats = horseProto ? [1, 0.62, 1.35, 0.38].map((k) => st.track(new THREE.MeshStandardMaterial({ vertexColors: true, flatShading: true, roughness: 0.8, metalness: 0, color: new THREE.Color(k, k * 0.97, k * 0.94) }))) : null;
+  const horseCoats = horseProto ? [1, 0.62, 1.35, 0.38].map((k) => { const m = st.track(new THREE.MeshStandardMaterial({ vertexColors: true, flatShading: true, roughness: 0.8, metalness: 0, color: new THREE.Color(k, k * 0.97, k * 0.94) })); m.userData.vhEnv = 1; return m; }) : null;
   if (horseProto) { horseProto.updateMatrixWorld(true); const bb = new THREE.Box3().setFromObject(horseProto); const hgt = bb.max.y - bb.min.y; if (hgt > 0.01) { horseK = 2.15 / hgt; horseLift = -bb.min.y * horseK; } }
   function modelHorse(col) {
     const g = new THREE.Group(), o = skClone(horseProto), mat = horseCoats[col % horseCoats.length];

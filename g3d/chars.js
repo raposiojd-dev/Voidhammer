@@ -56,6 +56,7 @@ export function makeCharKit(track) {
     if (mats.has(p.key)) return mats.get(p.key);
     if (!mr) mr = tex4(mrCanvas(), false, track);
     const m = track(new THREE.MeshStandardMaterial({ map: tex4(p.cv, true, track), roughnessMap: mr, metalnessMap: mr, roughness: 1, metalness: 1, flatShading: true }));
+    m.userData.vhEnv = 1; // High: lit by the painted sky too (art.js useSkyEnv)
     m.defines = { VH_RIM: "" }; // a warm rim so figures read against the ground and sky (art.js)
     mats.set(p.key, m); return m;
   }
@@ -76,7 +77,7 @@ export function makeCharKit(track) {
     geos[kind] = track(g); return g;
   }
   const vcMats = new Map();
-  function vcMat(hex, metal) { const key = hex + "|" + metal; if (vcMats.has(key)) return vcMats.get(key); const m = track(new THREE.MeshStandardMaterial({ color: hex, vertexColors: true, roughness: metal ? 0.42 : 0.8, metalness: metal ? 0.4 : 0, flatShading: true })); vcMats.set(key, m); return m; }
+  function vcMat(hex, metal) { const key = hex + "|" + metal; if (vcMats.has(key)) return vcMats.get(key); const m = track(new THREE.MeshStandardMaterial({ color: hex, vertexColors: true, roughness: metal ? 0.42 : 0.8, metalness: metal ? 0.4 : 0, flatShading: true })); if (metal) m.userData.vhEnv = 1; vcMats.set(key, m); return m; }
   return { matFor, geo, vcMat };
 }
 

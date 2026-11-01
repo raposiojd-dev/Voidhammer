@@ -144,11 +144,11 @@ function buildArea(st, api, A) {
     const up = THREE.MathUtils.smoothstep(h, 4.5, 6.5) * (1 - THREE.MathUtils.smoothstep(h, 18.5, 20.5)), warm = Math.max(Math.exp(-Math.pow((h - 6.6) / 1.2, 2)), Math.exp(-Math.pow((h - 18.4) / 1.2, 2)));
     tod.night = 1 - up;
     L.sun.intensity = tod.sunI * (0.35 + 0.65 * up); L.sun.color.copy(tod.sunC).lerp(WARM, warm * 0.3).lerp(NIGHT, tod.night * 0.6);
-    L.hemi.intensity = tod.hemiI * (0.72 + 0.28 * up) * (L.env ? L.env.k.k : 1); L.hemi.color.copy(tod.hemiC).lerp(NIGHT, tod.night * 0.45);
+    L.hemi.intensity = tod.hemiI * (0.72 + 0.28 * up); L.hemi.color.copy(tod.hemiC).lerp(NIGHT, tod.night * 0.45);
     if (L.sky) { const u = L.sky.material.uniforms; u.top.value.copy(tod.top).lerp(NSKY, tod.night * 0.7).lerp(WARM, warm * 0.08); u.hor.value.copy(tod.hor).lerp(WARM, warm * 0.12).lerp(NSKY, tod.night * 0.5); }
   }
-  // High: the painted sky lights the scene too (image-based light); rebuilt as the day moves on
-  if (L.sky) { L.env = useSkyEnv(st, scene, L.sky, L.hemi); st.track(L.env); st.onGfx.push(() => timeOfDay()); }
+  // High: the painted sky lights the people too (image-based light); rebuilt as the day moves on
+  if (L.sky) { L.env = useSkyEnv(st, scene, L.sky); st.track(L.env); }
   timeOfDay();
   // the hero carries a lantern underground
   const lantern = cave ? new THREE.PointLight(0xffb070, 30, 14, 1.6) : null; if (lantern) scene.add(lantern);
