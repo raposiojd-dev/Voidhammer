@@ -533,7 +533,11 @@ function buildArea(st, api, A) {
     if (A.wave) { waveRing.visible = true; const s = (1 - A.wave.t / 0.5) * 66 * PX + 0.5; waveRing.scale.setScalar(s); waveRing.position.set(A.wave.x * PX, 0.2, (A.wave.y + 6) * PX); waveRing.material.opacity = A.wave.t * 1.4; } else waveRing.visible = false;
   }
 
+  // the Realm Arts' effects (g3d/skills2.js): the sim casts, these pooled meshes draw it
+  let K2v = null;
+  try { if (api.sk2Fx) { K2v = api.sk2Fx({ THREE, scene, camera, root: st.root, glowTex: kit.glowTex, gfx: () => st.gfx, PX }); st.track({ dispose: () => K2v && K2v.dispose() }); } } catch (e) { K2v = null; }
   st.start((dt, t) => {
+    if (K2v) K2v.pre();
     frameN++;
     const p = A.p, inDlg = api.inDlg(), paused = api.sheetOpen() || inDlg;
     if (st.onFrame) st.onFrame(t);
@@ -633,6 +637,7 @@ function buildArea(st, api, A) {
       dist = Math.min(dist, free); }
     followCam(camera, cx, cy, cz, yaw, pt, dist, side, dt);
     if (!cave) { L.sun.position.set(hx + 30, 42, hz + 22); L.sun.target.position.set(hx, 0, hz); }
+    if (K2v) K2v.tick(dt, hx, hz, heroYaw);
   });
 
   return {
