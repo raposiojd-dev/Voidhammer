@@ -774,7 +774,7 @@ function buildWalk(st, api, info, done) {
     for (const [x, z] of [[-R, -R], [R, -R], [-R, R], [R, R], [-4.2, R], [4.2, R]]) { M.add("cyl", mStone, x, wh * 0.7, z, 2.6, wh * 1.4, 2.6, 0, shade(P.stone, 0.88)); M.add("cone", mRoof, x, wh * 1.4 + 1.1, z, 3, 2.2, 3, 0, P.roof); solid(x, z, 2.4, 2.4); }
     M.box(mStone, 0, wh + 0.6, R, 7, 1.2, th + 0.3, 0, col); M.box(mBeam, 0, wh - 0.1, R, 5.4, 0.3, th + 0.4, 0, beamC);
     torches.push(torch(kit, scene, -2.9, 3.2, R - 0.85, P.torch, torches.length < 6)); torches.push(torch(kit, scene, 2.9, 3.2, R - 0.85, P.torch, false));
-    spots.push({ key: "gate", label: "The Gate", x: 0, z: R - 1.2, r: 2.8 });
+    spots.push({ key: "gate", label: "Town Gate", x: 0, z: R - 1.2, r: 2.8 });
     npcStatic([-2.4, R - 2.2], Math.PI, guardLook()); npcStatic([2.4, R - 2.2], Math.PI, guardLook());
   }
   function guardLook() { return { cloth: P.cloth[1], cloth2: 0x2a2420, armour: true, metal: info.realm === "light" ? 0xd8b858 : info.realm === "metal" ? 0x2c2c30 : 0x8a8e94, tabard: info.own ? info.banner : P.accent, helm: info.realm === "metal" ? "spike" : info.realm === "shadow" ? "hood" : "cap", weapon: "spear", shield: P.accent }; }
