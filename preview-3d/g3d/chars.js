@@ -91,7 +91,10 @@ function attach(bone, mesh, pos, rot) {
 
 // look: { base: "man"|"soldier"|"woman", cloth, cloth2, legs, boots, metal, dark, leather, trim, hood, skin, hair,
 //         helm: bool|"spike", weapon: "sword"|"spear"|"knife"|"axe"|null, shieldKind, shield: hex, lantern: hex, scale }
-export const PROP = { sword: [[0, 0.085, 0], [0, 0, 0]], shield: [[0, 0.06, 0.07], [0, 0, 0]], helm: [[0, 0.125, 0.008], [0, 0, 0]] };
+// Weapons are built along +X. In WristR's space the fingers run along +Y and curl towards -Z, and the thumb sits on the -X side,
+// so a normal grip (blade out past the thumb, forward and up from the fist) turns the prop half a turn about the finger axis.
+// With no turn the blade came out past the little finger: a reverse grip. Bows keep their own frame.
+export const PROP = { sword: [[0, 0.085, 0], [0, Math.PI, 0]], shield: [[0, 0.06, 0.07], [0, 0, 0]], helm: [[0, 0.125, 0.008], [0, 0, 0]] };
 export function makeChar(ck, look) {
   let base = look.base; if (!MESH[base]) base = base === "knight" ? "soldier" : base === "mage" || base === "hood" ? "woman" : "man";
   const src = LIB.root;
@@ -104,7 +107,7 @@ export function makeChar(ck, look) {
   o.scale.multiplyScalar((look.scale || 1) * (base === "woman" ? 0.98 : 1.03)); wrap.add(o);
   o.updateMatrixWorld(true);
   const hand = o.getObjectByName(BONE.hand), handL = o.getObjectByName(BONE.handL), head = o.getObjectByName(BONE.head);
-  if (look.weapon && look.weapon !== "mug" && hand) attach(hand, new THREE.Mesh(ck.geo(look.weapon), ck.vcMat(0xffffff, look.weapon !== "spear")), PROP.sword[0], PROP.sword[1]);
+  if (look.weapon && look.weapon !== "mug" && hand) attach(hand, new THREE.Mesh(ck.geo(look.weapon), ck.vcMat(0xffffff, look.weapon !== "spear")), PROP.sword[0], look.weapon === "bow" ? [0, 0, 0] : PROP.sword[1]);
   if (look.shieldKind && handL) attach(handL, new THREE.Mesh(ck.geo("shield"), ck.vcMat(look.shield || 0x6a4a2a, false)), PROP.shield[0], PROP.shield[1]);
   if (look.helm && head) attach(head, new THREE.Mesh(ck.geo(look.helm === "spike" ? "spike" : "helm"), ck.vcMat(look.metal || 0x8a8e94, true)), [PROP.helm[0][0], PROP.helm[0][1] - (base === "woman" ? 0.012 : 0), PROP.helm[0][2]], PROP.helm[1]);
   if (look.lantern && handL) attach(handL, new THREE.Mesh(ck.geo("lantern"), new THREE.MeshBasicMaterial({ color: look.lantern })), [0, 0.12, 0], null);

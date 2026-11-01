@@ -2,6 +2,10 @@
 <base href="../">
 <meta name="robots" content="noindex">
 <title>Voidhammer Campaign</title>
+<!-- PREMIUM FRONT DOOR (game/premium-v1): canon data, title, creator, opening, premium styles. Remove these three lines to fall back. -->
+<link rel="stylesheet" href="/Voidhammer/preview-3d/premium/premium.css" data-fd-css>
+<script src="/Voidhammer/preview-3d/premium/canon.js"></script>
+<script src="/Voidhammer/preview-3d/premium/frontdoor.js"></script>
 <style>@font-face{font-family:"Cinzel";font-style:normal;font-weight:500;font-display:swap;src:url(fonts/cinzel-latin-500-normal.woff2) format("woff2")}@font-face{font-family:"Cinzel";font-style:normal;font-weight:700;font-display:swap;src:url(fonts/cinzel-latin-700-normal.woff2) format("woff2")}@font-face{font-family:"IBM Plex Mono";font-style:normal;font-weight:400;font-display:swap;src:url(fonts/ibm-plex-mono-latin-400-normal.woff2) format("woff2")}@font-face{font-family:"IBM Plex Mono";font-style:normal;font-weight:500;font-display:swap;src:url(fonts/ibm-plex-mono-latin-500-normal.woff2) format("woff2")}@font-face{font-family:"IM Fell English";font-style:normal;font-weight:400;font-display:swap;src:url(fonts/im-fell-english-latin-400-normal.woff2) format("woff2")}@font-face{font-family:"IM Fell English";font-style:italic;font-weight:400;font-display:swap;src:url(fonts/im-fell-english-latin-400-italic.woff2) format("woff2")}</style>
 <style>
 /* Layout: full-screen campaign map, HUD pinned top, three menu buttons pinned bottom, slide-up sheets for places and menus. */
@@ -272,6 +276,8 @@ button, [data-act], [data-sg], [data-w] { touch-action: manipulation; -webkit-to
   </section>
   <div class="toast" id="toast" hidden></div>
 </div>
+<script src="/Voidhammer/preview-3d/g3d/skills2.js"></script>
+<script src="/Voidhammer/preview-3d/g3d/landscape.js"></script>
 <script>
 (function () {
   var KEYP = /^voidhammer/, CH = 60000, mem = {}, lsOk = true, started = false, db = null, col = null, dirty = {}, timer = null, busy = false, restoring = false, origGet, origSet, origRem;
@@ -1969,7 +1975,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
     { t: "Your column", b: function () { return ["The top bar shows <b>Crowns</b>, <b>Grain</b> and <b>Men</b> (how many, out of how many you can lead).", "Men eat grain and need wages every day. Unfed or unpaid men walk home. A bigger column costs more to keep, so grow it only as far as you can feed it.", "Your column limit rises with levels, skills, and the towns you hold."]; } },
     { t: "Battles", b: function () { return ["Lords' armies and Void creatures roam the map. Walk into one to fight. The page tells you the odds before you commit.", "You can <b>fight</b>, <b>flee</b>, or <b>Cast</b> (see magic, below). Some fights play out on the field, where you give orders and swing a sword yourself.", "Winning earns loot, battle experience and renown. Losing costs men and grain."]; } },
     { t: "Troops and gear", b: function () { return ["Open <b>Party</b>, then the <b>Troops</b> tab. Your levy can train in three paths:", "<b>Swordsmen</b> → Men-at-arms → Champions.<br><b>Archers</b> → Crossbowmen.<br><b>Half Sparks</b> → Full Sparks.", "Each step needs battle experience, crowns and gear from your backpack. Sparks are strong, but they burn out after fights, and waking a Full Spark costs one of your memories."]; } },
-    { t: "Skills", b: function () { return ["Every level gives you a skill point. Spend it in the <b>Skills</b> page.", "There are seven branches: command, warrior, archery, trade and land, politics, road and siege, and memory and spark. Pick a style and go deep, or spread out.", "You can unlearn everything for 100 crowns."]; } },
+    { t: "Skills", b: function () { return ["Every level gives you a point. Spend it on the <b>Skills</b> page: the Realm Arts.", "Everyone learns the <b>Commander</b> tree: orders, shield walls, charges and morale. Then choose a Realm art as your <b>Spark</b> (the whole art) and, later, one more as a <b>Half-Spark</b> (its first two tiers).", "Every Realm art has a <b>price</b> drawn from its Realm: Temper, Numbness, Clarity, Years, Stone, Bleed, Erosion, Humanity. Push it too far and it changes you, and the marks never walk back.", "Active arts sit behind the <b>Cast</b> button in fights. Unlearning costs crowns and five days of contradiction."]; } },
     { t: "Realms, lords and heroes", b: function () { return ["The realms fight each other, and the Dominion and the Void feed on that. Check the <b>Realms</b> page for who holds what and who is at war.", "Lords can be asked to pledge to you, and some will, if you earn it. Heroes can be hired to fight at your side. Each has a past, and they remember how you treat them.", "You can make peace with a realm, or ask two realms to make peace with each other."]; } },
     { t: "The Dominion and the Void", b: function () { return ["Metalcrown's Dominion marches out of Iron Throne City and takes towns and castles. A realm can be pushed back to its last walls, but it never falls completely: the war is only beginning, and it will last a thousand years.", "The Void creeps in from the edge of the world. It opens <b>grey edges</b> you can close, and each one you close pushes it back.", "You can switch either off, or set how fast they move, when you start a new game."]; } }
   ];
@@ -4816,7 +4822,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
       var tg = COOP.target(e, p), dx = tg.x - e.x, dy = tg.y - e.y, d = Math.hypot(dx, dy);
       if (a.sp.over && e.aggro && d > 140) e.aggro = false;
       if (!e.aggro && d < (e.d.boss ? 120 : 76) * silMul(e)) { e.aggro = true; if (e.d.boss && typeof VO !== "undefined") VO.pool("hero", "boss", 8000); } if (!e.aggro) return;
-      var spd = e.d.sp * (e.d.ranged ? 0.8 : 1) * (e.mul || 1);
+      var spd = e.d.sp * (e.d.ranged ? 0.8 : 1) * (e.mul || 1) * (e.k2slowT > a.t ? e.k2slowK : 1);
       if (e.d.ranged) {
         var want = d < 54 ? -1 : d > 86 ? 1 : 0, mx = dx / (d || 1) * want * spd * dt, my = dy / (d || 1) * want * spd * dt;
         if (boxFree(a, e.x + mx, e.y)) e.x += mx; if (boxFree(a, e.x, e.y + my)) e.y += my;
@@ -16710,19 +16716,168 @@ setInterval(function () {
       }
       return gdOld.apply(this, arguments);
     };
+    // ---- THE REALM ARTS (skills v2): g3d/skills2.js owns the trees, prices, abilities, VFX and the sheet. Here it is wired to the
+    // game: old skill points are refunded once (S.sk2 is the new save key; S.skLegacy keeps the old map), passives feed the same
+    // sk()/skfx() numbers the economy already reads, and the Cast button opens three ability buttons in town fights and battles. ----
+    var K2 = null, k2a = null, k2striking = false, k2blades = null;
+    try {
+      if (window.VHSK2) {
+        var k2leg = null;
+        K2 = window.VHSK2.install({
+          S: function () { return S; }, save: function () { save(); },
+          toast: function (t) { try { if (AR && $("area") && !$("area").hidden) aToast(t); else toast(t); } catch (e) {} },
+          log: function (t, k) { try { log(t, k); } catch (e) {} }, sfx: function (n) { try { sfx(n); } catch (e) {} },
+          lvl: function () { return lvl(); },
+          bonusPts: function () { return ((S.camp && S.camp.qpts) || 0) + 3 * Math.min(3, (S.camp && S.camp.beat) || 0); },
+          legacyIds: function () { if (!k2leg) { k2leg = new Set(); SKILLS.forEach(function (b) { b.items.forEach(function (i) { k2leg.add(i.id); }); }); } return k2leg; },
+          kaelAlive: function () { return !!S && S.kael === "alive"; },
+          flag: function (f) { try { return !!cp().f[f]; } catch (e) { return false; } },
+          crowns: function () { return S.crowns; }, spend: function (c) { S.crowns -= c; },
+          day: function () { return S.day || 0; }, pname: function () { return S.pname || OPT.pname || "You"; },
+          render: function () { renderSheet(); },
+          ledger: function () { if (AR && !AR.dlg && !sheet) dlgOpen("cast"); }
+        });
+      }
+    } catch (e) { K2 = null; api.fail(e); }
+    if (K2) {
+      // the economy keeps reading the same numbers
+      sk = function (id) { var L = K2.legacyMap(); return ((S && S.skills && S.skills[id]) || 0) + (L[id] || 0); };
+      var k2skfx = skfx; skfx = function (k) { return k2skfx(k) + K2.fxStatic(k); };
+      spent = function () { return K2.spent(); };
+      points = function () { return K2.points(); };
+      skillsSheet = function () { var h = K2.sheet(); setTimeout(K2.lines, 0); setTimeout(K2.lines, 250); return h; };
+      skUseField = function () { try { fieldMsg("The Realm Arts are cast on the 3D field."); } catch (e) {} };
+      skUseArea = function () {};
+      document.addEventListener("click", function (e) { if (!sheet || sheet.kind !== "skills") return; if (K2.click(e)) { e.stopPropagation(); e.preventDefault(); } }, true);
+      window.addEventListener("resize", function () { if (sheet && sheet.kind === "skills") K2.lines(); });
+      // a voice for each art (Web Audio, same bus as the rest)
+      try {
+        SFXS.k2fire = function (t) { sN(t, 0.35, 0.4, 600, "lowpass", 2400); sT(t, 110, 60, 0.3, 0.22, "sawtooth"); };
+        SFXS.k2frost = function (t) { sT(t, 1760, 1320, 0.35, 0.1, "sine"); sT(t + 0.04, 2637, 1976, 0.3, 0.07, "sine"); sN(t, 0.3, 0.12, 6000, "highpass"); };
+        SFXS.k2light = function (t) { arp(t, [784, 1175, 1568], 0.04, 0.16, "sine"); sN(t, 0.25, 0.1, 5000, "bandpass"); };
+        SFXS.k2storm = function (t) { sN(t, 0.18, 0.5, 2400, "highpass"); sT(t, 90, 40, 0.4, 0.3, "square"); };
+        SFXS.k2stone = function (t) { sT(t, 70, 32, 0.45, 0.45, "triangle"); sN(t, 0.3, 0.4, 180, "lowpass"); };
+        SFXS.k2veil = function (t) { sT(t, 523, 784, 0.6, 0.1, "sine"); sT(t + 0.08, 659, 988, 0.55, 0.08, "sine"); };
+        SFXS.k2shadow = function (t) { sN(t, 0.4, 0.25, 300, "lowpass", 90); sT(t, 220, 110, 0.3, 0.12, "sine"); };
+        SFXS.k2metal = function (t) { sT(t, 880, 220, 0.12, 0.2, "square"); sN(t, 0.12, 0.35, 3200, "bandpass"); sT(t + 0.06, 660, 180, 0.1, 0.15, "square"); };
+      } catch (e) {}
+      // ---- town and road fights: the area sim is the adapter ----
+      var PXA = 1.35 / 16, YA = 1 / PXA;
+      var k2alive = function (e) { return !e.dead && !e.gone && !e.yield; };
+      var k2face = function () { var f = AR.p.face || { x: 0, y: 1 }, d = Math.hypot(f.x, f.y) || 1; return { x: f.x / d, y: f.y / d }; };
+      var k2near = function (x, y, r) { return AR.en.filter(function (e) { return k2alive(e) && Math.hypot(e.x - x, e.y - y) < r; }); };
+      k2a = K2.area({
+        Y: YA, w: function (x, z) { return { x: x * PXA, z: z * PXA }; },
+        st: function (e) { return e.k2 || (e.k2 = {}); },
+        hero: function () { var p = AR.p, f = k2face(); return { x: p.x, z: p.y, fx: f.x, fz: f.y }; },
+        x: function (e) { return e.x; }, z: function (e) { return e.y; }, alive: k2alive,
+        boss: function (e) { return !!(e.d && e.d.boss); }, hpOf: function (e) { return e.hp; },
+        isVoid: function (e) { return /void|wraith|grey|shade|hollow|unfiled|herald/i.test(e.type || ""); },
+        isFitted: function (e) { return /iron|metal|forge|reaper|dravik|construct|golem|engine/i.test(e.type || ""); },
+        allFoes: function () { return AR ? AR.en.filter(k2alive) : []; },
+        foes: function (r, cosT, at) { if (!AR) return []; var h = at || this.hero(), R0 = r * YA, out = []; AR.en.forEach(function (e) { if (!k2alive(e)) return; var dx = e.x - h.x, dy = e.y - h.z, d = Math.hypot(dx, dy); if (d > R0) return; if (cosT !== null && cosT !== undefined && d > 6 && (dx * h.fx + dy * h.fz) / d < cosT) return; out.push(e); }); out.sort(function (a, b) { return Math.hypot(a.x - h.x, a.y - h.z) - Math.hypot(b.x - h.x, b.y - h.z); }); return out; },
+        nearest: function (r, cosT, at) { if (!AR) return null; if (!at && A3 && A3.ready && a3on) { var f = A3.aim(r * YA); if (f) AR.p.face = f; } return this.foes(r, cosT, at)[0] || null; },
+        alone: function (e) { return k2near(e.x, e.y, 3 * YA).length <= 1; },
+        hit: function (e, mult, o) { if (!k2alive(e) || mult <= 0) return false; dmgEn(e, atkDmg() * mult * k2a.dmgMul(), o.dx || 0.01, o.dz || 0.01, o.kind === "burn" ? 1 : Math.max(30, (o.knock || 0) * 10)); return !!e.dead; },
+        stun: function (e, t) { e.stun = Math.max(e.stun || 0, t); e.cd = Math.max(e.cd || 0, 0.4); },
+        stagger: function (e, t) { e.stun = Math.max(e.stun || 0, t); },
+        slow: function (e, t, k) { e.k2slowT = AR.t + t; e.k2slowK = k; },
+        knock: function (e, k) { var dx = e.x - AR.p.x, dy = e.y - AR.p.y, d = Math.hypot(dx, dy) || 1; e.kx = (e.kx || 0) + dx / d * k * 6; e.ky = (e.ky || 0) + dy / d * k * 6; },
+        drag: function (e, dx, dy) { if (boxFree(AR, e.x + dx, e.y)) e.x += dx; if (boxFree(AR, e.x, e.y + dy)) e.y += dy; },
+        fear: function (e, t) { var dx = e.x - AR.p.x, dy = e.y - AR.p.y, d = Math.hypot(dx, dy) || 1; e.aggro = false; e.stun = Math.max(e.stun || 0, t * 0.5); e.kx = dx / d * 160; e.ky = dy / d * 160; },
+        loseAggro: function (e) { e.aggro = false; },
+        heal: function (f) { AR.p.hp = Math.min(AR.p.max, AR.p.hp + AR.p.max * f); },
+        hpFrac: function () { return AR.p.hp / AR.p.max; }, heroDown: function () { return false; },
+        inv: function (t) { AR.p.inv = Math.max(AR.p.inv || 0, t); },
+        unseen: function (t) { AR.p.inv = Math.max(AR.p.inv || 0, t); AR.en.forEach(function (e) { e.aggro = false; }); },
+        move: function (dx, dy) { var p = AR.p, n = 10, m = 0; for (var i = 0; i < n; i++) { var nx = p.x + dx / n, ny = p.y + dy / n; if (!boxFree(AR, nx, ny)) break; p.x = nx; p.y = ny; m++; } return m / n; },
+        place: function (x, y) { if (boxFree(AR, x, y)) { AR.p.x = x; AR.p.y = y; } },
+        face: function (fx, fy) { AR.p.face = { x: fx, y: fy }; },
+        resetStrike: function () { AR.p.cd = 0; },
+        decoy: function () {}, summon: function (n, t) { this.blades(1, t, 0.4); },
+        blades: function (n, t, mult) { k2blades = { n: n, end: AR.t + t, mult: mult, acc: 0, a: 0 }; },
+        selfBurn: function () { AR.p.hp = Math.max(0.5, AR.p.hp - 0.25); aToast("The Flare: your own fire bites.", "#ff8a5a"); },
+        unrout: function () { return 0; }, morale: function () {}, allyBuff: function () {}, order: function () { return false; },
+        freezeArrows: function (r) { AR.proj = AR.proj.filter(function (q) { return q.own || Math.hypot(q.x - AR.p.x, q.y - AR.p.y) > r * YA; }); },
+        canAct: function () { return !!(AR && AR.p && !sheet && !AR.dlg); },
+        msg: function (t) { aToast(t); }, sfx: function (n) { try { sfx(n); } catch (e) {} },
+        fx2d: { ring: function (x, y) { AR.wave = { x: x, y: y - 6, t: 0.5 }; }, burst: function (x, y) { AR.fx.push({ x: x, y: y - 6, t: 0.4 }); }, slam: function (x, y) { AR.wave = { x: x, y: y - 6, t: 0.5 }; } }
+      });
+      a3api.sk2Fx = function (o) { return K2.areaFx(o); };
+      api.sk2 = { battle: function (ctx) { return K2.battle(ctx); } };
+      // strikes in the area go through the same hooks as abilities
+      var k2aa = aAttack; aAttack = function () { k2striking = true; try { return k2aa.apply(this, arguments); } finally { k2striking = false; } };
+      var k2de = dmgEn; dmgEn = function (e, dmg, dx, dy, kn) { if (k2striking && k2a) dmg *= k2a.strikeMul(e); var r = k2de.call(this, e, dmg, dx, dy, kn); if (k2striking && r && k2a) k2a.onStrikeHit(e); return r; };
+      var k2hp = hurtP; hurtP = function (n) { if (AR && AR.p && (AR.p.inv || 0) <= 0 && k2a) { var p = AR.p, from = k2near(p.x, p.y, 3.2 * YA).sort(function (a, b) { return Math.hypot(a.x - p.x, a.y - p.y) - Math.hypot(b.x - p.x, b.y - p.y); })[0] || null; var m = k2a.heroHurt(n, from, true); if (m <= 0) { p.inv = 0.25; return; } arguments[0] = m; } return k2hp.apply(this, arguments); };
+      var k2in = aInput; aInput = function () { var v = k2in.apply(this, arguments); if (k2a && AR) { var m = k2a.speedMul(); return [v[0] * m, v[1] * m]; } return v; };
+      var k2au = aUpdate; aUpdate = function (dt) {
+        k2au.apply(this, arguments);
+        if (!AR || !k2a) return;
+        if (!sheet && !AR.dlg) {
+          k2a.tick(dt);
+          if (k2blades && AR.t < k2blades.end) { var b = k2blades; b.acc += dt; b.a += dt * 5; if (b.acc >= 0.6) { b.acc = 0; var tg = k2near(AR.p.x, AR.p.y, 2.6 * YA)[0]; if (tg) { dmgEn(tg, atkDmg() * b.mult, tg.x - AR.p.x, tg.y - AR.p.y, 40); k2a.C.fx.bolt(AR.p.x, AR.p.y, tg.x, tg.y, "#d6dcff", 0.15); } } if (Math.floor(b.a * 3) % 2 === 0) for (var i = 0; i < b.n; i++) { var an = b.a + i * Math.PI; k2a.C.fx.echo(AR.p.x + Math.cos(an) * 22, AR.p.y + Math.sin(an) * 22, 0.25, true); } }
+        }
+        K2.hudTick(k2a.cdLeft);
+      };
+      // the Cast button opens the three ability buttons (L on a keyboard); 1 2 3 cast; the old memory magic is the Ledger button
+      var k2cast = function (i) { if (k2a) k2a.cast(i); };
+      document.addEventListener("pointerdown", function (e) { var t = e.target && e.target.closest ? e.target.closest("#acast") : null; if (!t || !AR) return; e.stopPropagation(); e.preventDefault(); K2.toggleTray(); }, true);
+      window.addEventListener("keydown", function (e) {
+        if (!AR || sheet || AR.dlg || cur) return; if (e.target && /input|textarea|select/i.test(e.target.tagName)) return;
+        var k = (e.key || "").toLowerCase();
+        if (k === "l") { e.stopImmediatePropagation(); e.preventDefault(); K2.toggleTray(); }
+        else if (k === "1" || k === "2" || k === "3") { e.stopImmediatePropagation(); e.preventDefault(); k2cast(+k - 1); }
+      }, true);
+      setInterval(function () {
+        try {
+          var ar = $("area"), vis = !!(AR && ar && !ar.hidden && !cur);
+          if (vis && K2.hudMode() !== "area") K2.mountHud(ar, $("acast"), "area", k2cast);
+          else if (!vis && K2.hudMode() === "area") K2.unmountHud();
+          if (vis) K2.layoutHud();
+          if (!AR && !cur && S) K2.tickMap(0.3);
+        } catch (e) {}
+      }, 300);
+    }
     // test and debug hooks (read-only views plus the two entry points)
     window.__vh = { S: function () { return S; }, B: function () { return B; }, sheet: function () { return sheet; }, site: site, T: T, startWalk: startWalk, startFight: startFight, scene: function () { return cur || (A3 ? { kind: "area", ctl: A3 } : null); },
       AR: function () { return AR; }, spec: function (id) { return getSpec(id); }, caveTo: caveTo, caves: function () { try { return ovPoi().caves.map(function (c, k) { return { id: "cave" + k, name: c.name }; }); } catch (e) { return []; } }, writs: function (sid) { return vqOpen(sid); }, area3d: function () { return A3; }, a3on: function () { return a3on; }, startArea: function (id) { startArea(id); return !!AR; }, dlg: function () { return AR && AR.dlg; }, cp: function () { return cp(); },
       battleWith: function (n, kind) { var e = kind ? null : (S.enemies.filter(function (x) { return x.kind === "bandit"; })[0] || S.enemies[0]); if (kind) { e = { id: 990000 + Math.floor(Math.random() * 9999), kind: kind, n: n || 10, q: 1, x: S.px + 40, y: S.py, cool: 0 }; S.enemies.push(e); } if (!e) return false; if (n) e.n = n; startBattle(e); return true; },
-      give: function (n) { S.from.merc = (S.from.merc || 0) + n; return T(); }, pref: pref };
+      give: function (n) { S.from.merc = (S.from.merc || 0) + n; return T(); }, pref: pref,
+      k2: function () { return K2; }, k2a: function () { return k2a; } };
   })();
   setInterval(function () { if (!sheet || sheet.kind !== "battle") save(); }, 4000);
+  // ===== PREMIUM FRONT DOOR bridge (game/premium-v1) ===========================================================
+  // premium/frontdoor.js owns the title, the canon character creator and the opening cinematic. This block hands it
+  // the few internals it needs and wraps four functions. If premium/ is missing, window.VHFD is undefined and nothing
+  // here runs: the old title, creator and intro work as before. Ids, save keys, quest ids and numbers are untouched.
+  (function () {
+    var FD = window.VHFD; if (!FD || !FD.attach) return;
+    try {
+      var act0 = act, showTitle0 = showTitle, openSheet0 = openSheet, originApply0 = originApply;
+      FD.attach({
+        act: function (a, x, y) { return act0(a, x, y); },
+        S: function () { return S; }, OPT: function () { return OPT; },
+        NG: function (v) { if (v !== undefined) NG = v; return NG; },
+        hasSave: hasSave, slotLabel: function () { return S ? slotLabelOf(S) : ""; }, hideTitle: hideTitle,
+        kitOf: function (u) { return upbKit([upbPick(0, u.c), upbPick(1, u.a), upbPick(2, u.y)]); },
+        skName: skName, lootName: function (k) { return LOOT[k] ? LOOT[k].name : k; }, BCOLS: BCOLS.slice(),
+        music: function (v) { if (v !== undefined && !!v !== mOn) { mOn = !!v; try { localStorage.setItem(MUSK, mOn ? "on" : "off"); } catch (e) {} if (mOn) mInit(); mApply(); } return mOn; },
+        audioUnlock: function () { try { mFirst(); } catch (e) {} },
+        setWho: function (t) { if (t && ORIGINS.wanderer) ORIGINS.wanderer.name = t; }
+      });
+      act = function (a, x, y) { if (FD.onAct(a, x, y) === true) return; return act0(a, x, y); };
+      showTitle = function () { showTitle0(); try { FD.onTitle(); } catch (e) { console.error(e); } };
+      openSheet = function (kind, id) { if (kind === "intro") { try { if (FD.onIntro() === true) return; } catch (e) { console.error(e); } } return openSheet0(kind, id); };
+      // the new game reads the upbringing from OPT (the old S.opt.upb of the save being replaced used to win), then adds the Realm gift
+      originApply = function (NS, byId) { var so = S && S.opt, su = so && so.upb; if (so) so.upb = OPT.upb; try { originApply0(NS, byId); } finally { if (so) so.upb = su; } FD.onOrigin(NS, OPT); };
+      FD.migrate(S);
+    } catch (e) { console.error("premium front door", e); }
+  })();
+  // ===== /PREMIUM FRONT DOOR ===================================================================================
   resize();
   showTitle();
   requestAnimationFrame(frame);
 })(); };
 </script>
 <script>window.__vhBoot();</script>
-
-
-<script>(function(){var c=document.createElement("style");c.textContent="#vhpv{position:fixed;left:50%;top:6px;transform:translateX(-50%);z-index:99999;background:#c8873a;color:#16141b;font:700 12px/1.2 sans-serif;letter-spacing:.08em;padding:5px 12px;border-radius:12px;pointer-events:none;opacity:.92}";document.head.appendChild(c);var b=document.createElement("div");b.id="vhpv";b.textContent="PREVIEW v2";document.body.appendChild(b);})();</script>
+<script>(function(){var c=document.createElement("style");c.textContent="#vhpv{position:fixed;left:50%;top:6px;transform:translateX(-50%);z-index:99999;background:#c8873a;color:#16141b;font:700 12px/1.2 sans-serif;letter-spacing:.08em;padding:5px 12px;border-radius:12px;pointer-events:none;opacity:.92}";document.head.appendChild(c);var b=document.createElement("div");b.id="vhpv";b.textContent="PREVIEW v3";document.body.appendChild(b);})();</script>

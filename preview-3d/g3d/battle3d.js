@@ -45,7 +45,7 @@ function styleOnce() {
 export function battle(api, info, done) {
   styleOnce();
   let st;
-  try { st = makeStage(info.siege ? "The walls are manned…" : "The lines are forming…", { keys: ["w", "a", "s", "d", "q", "e", "f", "c", "h", "r", "v", "b", "x", "g", "1", "2", "3", "4", "5", "6", " ", "shift", "control", "arrowup", "arrowdown", "arrowleft", "arrowright", "escape"] }); }
+  try { st = makeStage(info.siege ? "The walls are manned…" : "The lines are forming…", { keys: ["w", "a", "s", "d", "q", "e", "f", "c", "h", "r", "v", "b", "x", "g", "1", "2", "3", "4", "5", "6", "7", "8", "9", "l", " ", "shift", "control", "arrowup", "arrowdown", "arrowleft", "arrowright", "escape"] }); }
   catch (e) { api.fail(e); setTimeout(() => done({ how: "fail" }), 0); return null; }
   const ctl = { ready: false, stop() { if (ctl.ready) return; ctl.off = true; st.dispose(); done({ how: "fail" }); }, fast() {}, state: () => ({}) };
   whenChars(() => {
@@ -181,7 +181,7 @@ function buildBattle(st, api, info, done) {
   }
   deploy();
   function layout(s, g) {
-    const list = units.filter((u) => u.side === s && u.cls === g && !u.dead && !u.gone && !u.rout && !u.climb);
+    const list = units.filter((u) => u.side === s && u.cls === g && !u.dead && !u.gone && !u.rout && !u.climb && !u.k2echo);
     const A = anchor[s][g]; if (!A || !list.length) return;
     const ord = order[s][g], wall = ord === "wall", n = list.length;
     let cols, sp, sr;
@@ -230,8 +230,8 @@ function buildBattle(st, api, info, done) {
   st.$(".v3-act").innerHTML = "";
   st.gfxButton();
   const root = st.root;
-  const btns = document.createElement("div"); btns.className = "b3-btns"; btns.innerHTML = '<button data-b="shoot"' + (info.hasBow ? "" : " hidden") + '>Shoot</button><button data-b="blk">Block</button><button data-b="atk">Strike</button>'; root.appendChild(btns);
-  const ordBtn = document.createElement("button"); ordBtn.className = "b3-ordbtn"; ordBtn.innerHTML = 'Orders<small id="b3og">all · hold</small>'; root.appendChild(ordBtn);
+  const btns = document.createElement("div"); btns.className = "b3-btns"; btns.innerHTML = '<button data-b="shoot"' + (info.hasBow ? "" : " hidden") + '>Shoot</button><button data-b="blk">Block</button><button data-b="atk">Strike</button>' + (api.sk2 ? '<button data-b="cast">✦ Cast</button>' : ""); root.appendChild(btns);
+  const ordBtn = document.createElement("button"); ordBtn.className = "b3-ordbtn" + (api.sk2 ? " k2left" : ""); ordBtn.innerHTML = 'Orders<small id="b3og">all · hold</small>'; root.appendChild(ordBtn);
   const fan = document.createElement("div"); fan.className = "b3-fan";
   fan.innerHTML = '<div class="row grp"><button data-g="all" class="on">All</button><button data-g="inf">Infantry</button><button data-g="arch">Archers</button><button data-g="cav">Cavalry</button></div>' +
     '<div class="row"><button data-o="follow">Follow me<small>1</small></button><button data-o="hold">Hold<small>2</small></button><button data-o="charge">Charge<small>3</small></button></div>' +
@@ -239,10 +239,12 @@ function buildBattle(st, api, info, done) {
   root.appendChild(fan);
   const grpEl = document.createElement("div"); grpEl.className = "b3-groups"; root.appendChild(grpEl);
   const elP = st.$("#v3p"), elE = st.$("#v3e"), elO = st.$("#v3o"), elH = st.$("#v3h"), elK = st.$("#v3k"), elOG = st.$("#b3og");
+  let K2 = null;
   let sel = "all", t0 = 0, over = null, overT = 0, paused = false, fleeAsk = 0, blockHeld = false, kdead = false, vowDone = !info.kael, heroDown = false, speedK = 1, yaw = defendP ? Math.PI : 0, pitch = 0.45, ended = false, enemyPlan = 0;
   const grpName = { all: "all", inf: "infantry", arch: "archers", cav: "cavalry" };
-  function giveOrder(o, g) {
-    g = g || sel; const gs = g === "all" ? ["inf", "arch", "cav"] : [g];
+  function giveOrder(o, g, late) {
+    g = g || sel;
+    if (K2 && !late && K2.orderDelay()) { const d = K2.orderDelay(); later(d, () => giveOrder(o, g, true)); st.msg("Your name does not land. The order reaches them late.", 1.4); fan.classList.remove("on"); return; } const gs = g === "all" ? ["inf", "arch", "cav"] : [g];
     if (o === "fire") { fire.p = !fire.p; st.msg(fire.p ? "Archers: fire at will!" : "Archers: hold your fire!", 1.4); fan.querySelector("[data-o=fire]").firstChild.textContent = fire.p ? "Hold fire" : "Fire at will"; return; }
     for (const k of gs) {
       if (o === "wall" && k !== "inf") continue;
@@ -266,7 +268,7 @@ function buildBattle(st, api, info, done) {
     else if (b.getAttribute("data-v") === "flee") askFlee();
   });
   st.listen(ordBtn, "click", (e) => { e.stopPropagation(); fan.classList.toggle("on"); });
-  st.listen(btns, "pointerdown", (e) => { const b = e.target.closest("[data-b]"); if (!b) return; e.stopPropagation(); e.preventDefault(); const k = b.getAttribute("data-b"); if (k === "atk") strike(); else if (k === "shoot") heroShoot(); else if (k === "blk") { blockHeld = true; b.classList.add("on"); } });
+  st.listen(btns, "pointerdown", (e) => { const b = e.target.closest("[data-b]"); if (!b) return; e.stopPropagation(); e.preventDefault(); const k = b.getAttribute("data-b"); if (k === "atk") strike(); else if (k === "shoot") heroShoot(); else if (k === "cast") return; else if (k === "blk") { blockHeld = true; b.classList.add("on"); } });
   const blkUp = () => { blockHeld = false; const b = btns.querySelector("[data-b=blk]"); if (b) b.classList.remove("on"); };
   st.listen(btns, "pointerup", blkUp); st.listen(btns, "pointercancel", blkUp); st.listen(btns, "pointerleave", blkUp);
   inp.onKey = (k) => {
@@ -274,8 +276,9 @@ function buildBattle(st, api, info, done) {
     if (k === "1") giveOrder("follow"); else if (k === "2" || k === "h") giveOrder("hold"); else if (k === "3" || k === "c") giveOrder("charge"); else if (k === "4" || k === "v") giveOrder("advance"); else if (k === "5" || k === "b") giveOrder("wall"); else if (k === "6" || k === "x") giveOrder("fire");
     else if (k === "g") setSel(sel === "all" ? "inf" : sel === "inf" ? "arch" : sel === "arch" ? "cav" : "all");
     else if (k === " ") strike(); else if (k === "r") heroShoot(); else if (k === "f" || k === "escape") askFlee();
+    else if (K2 && (k === "7" || k === "8" || k === "9")) K2.cast(+k - 7); else if (K2 && k === "l") K2.toggle();
   };
-  function askFlee() { if (over) return; if (fleeAsk > 0) { finish("flee"); return; } fleeAsk = 2.2; st.msg("Fall back? Press again to pull your men off the field.", 2.2); }
+  function askFlee() { if (over) return; if (K2) { const nf = K2.noFlee(); if (nf) { st.msg(nf, 2.4); return; } } if (fleeAsk > 0) { finish("flee"); return; } fleeAsk = 2.2; st.msg("Fall back? Press again to pull your men off the field.", 2.2); }
   let hinted = false; try { hinted = localStorage.getItem("vh3d-hint-battle2") === "1"; localStorage.setItem("vh3d-hint-battle2", "1"); } catch (e) {}
   st.msg(info.allies.length ? info.allies.map((a) => a.name).join(" and ") + " fight beside you." : siegeOn ? (defendP ? "They are coming for the walls. Hold them." : "Take the wall or break the gate.") : "Your line holds. Give the order.", 3.2);
   if (!hinted) setTimeout(() => st.msg(st.coarse ? "Left thumb moves you. Orders sends your men. Strike, Block and Shoot are yours." : "You fight in person. Number keys give orders: 2 Hold, 3 Charge, 5 Shield wall.", 5), 3400);
@@ -284,7 +287,7 @@ function buildBattle(st, api, info, done) {
   // ---------- helpers ----------
   const alive = (u) => !u.dead && !u.gone;
   const fighting = (u) => alive(u) && !u.rout;
-  function sideW(s, fightOnly) { let w = 0; for (const u of units) if (u.side === s && !u.hero && !u.kael && (fightOnly ? fighting(u) : alive(u))) w += u.w; return w; }
+  function sideW(s, fightOnly) { let w = 0; for (const u of units) if (u.side === s && !u.hero && !u.kael && !u.k2echo && (fightOnly ? fighting(u) : alive(u))) w += u.w; return w; }
   function groupCentre(s, g) { let x = 0, z = 0, n = 0; for (const u of units) if (u.side === s && u.cls === g && fighting(u)) { x += u.x; z += u.z; n++; } return n ? { x: x / n, z: z / n, n } : null; }
   function enemyCentre(s) { let x = 0, z = 0, n = 0; for (const u of units) if (u.side !== s && fighting(u) && !u.hero) { x += u.x; z += u.z; n++; } return n ? { x: x / n, z: z / n } : { x: 0, z: -front(s) * 20 }; }
   function facingToEnemy(A) { const c = enemyCentre(A === anchor.p.inf || A === anchor.p.arch || A === anchor.p.cav ? "p" : "e"); return Math.atan2(c.x - A.x, c.z - A.z); }
@@ -298,10 +301,12 @@ function buildBattle(st, api, info, done) {
     if (!alive(v)) return;
     if (v.hero) {
       dmg = info.hb * (0.8 + Math.random() * 0.4) * Math.min(1.6, (from ? from.w : info.hb) / info.hb) * (kind === "arrow" ? 0.6 : kind === "cav" ? 2 : 1);
-      const blocking = inp.rmb || inp.keys.control || blockHeld;
+      const blocking = (inp.rmb || inp.keys.control || blockHeld) && !(K2 && K2.noBlock());
       if (blocking && from && frontal(v, from, 1.3)) { dmg *= kind === "cav" ? 0.5 : 0.2; spark(v.x, v.y + 1.3, v.z, 0xfff0c0); }
+      if (K2) { dmg = K2.heroHurt(dmg, from, !from || frontal(v, from, 1.4)); if (dmg <= 0) return; }
       api.sfx && Math.random() < 0.5 && api.sfx("hurt");
     } else if (from && v.cls === "inf" && order[v.side].inf === "wall" && frontal(v, from, 1.2)) dmg *= kind === "arrow" ? 0.25 : 0.45;
+    if (K2 && !v.hero) { if (from && from.side === "p" && !from.hero) dmg *= K2.allyMul(); if (v.side === "p") dmg *= 1 - K2.allyRed(); }
     else if (kind === "arrow" && v.onWall) dmg *= 0.55; // the battlements cover the men on the walk
     v.hp -= dmg;
     if (v.hp <= 0) {
@@ -321,7 +326,7 @@ function buildBattle(st, api, info, done) {
       for (const o of units) {
         if (o.side !== "e" || !fighting(o)) continue; const d = Math.hypot(o.x - hero.x, o.z - hero.z); if (d > hero.reach + 0.6 || Math.abs(o.y - hero.y) > 2) continue;
         if (!frontal(hero, o, 1.0)) continue;
-        hurt(o, info.heroW * (0.9 + Math.random() * 0.3), hero); spark(o.x, o.y + 1.2, o.z); o.kx += Math.sin(hero.yaw) * 2.2; o.kz += Math.cos(hero.yaw) * 2.2; o.stag = Math.max(o.stag, 0.25);
+        hurt(o, info.heroW * (0.9 + Math.random() * 0.3) * (K2 ? K2.strikeMul(o) : 1), hero); spark(o.x, o.y + 1.2, o.z); if (K2) K2.onStrikeHit(o); o.kx += Math.sin(hero.yaw) * 2.2; o.kz += Math.cos(hero.yaw) * 2.2; o.stag = Math.max(o.stag, 0.25);
         if (++n >= 3) break;
       }
       if (n && api.sfx) api.sfx("hit");
@@ -348,6 +353,7 @@ function buildBattle(st, api, info, done) {
     if (ended) return; ended = true;
     const pf = clamp(sideW("p", false) / Math.max(1e-6, p0w), 0, 1), ef = clamp(sideW("e", false) / Math.max(1e-6, e0w), 0, 1);
     st.root.style.transition = "opacity .4s"; st.root.style.opacity = "0";
+    if (K2) K2.dispose();
     setTimeout(() => { st.dispose(); done({ how: over, pf, ef, kdead, breach: SG ? (SG.breached ? "gate" : SG.wallTaken ? "wall" : "") : "" }); }, 420);
   }
   // Kaelren's vow, as on the battle sheet: the line is breaking and he is about to ride
@@ -359,7 +365,7 @@ function buildBattle(st, api, info, done) {
     m.addEventListener("click", (e) => {
       const b = e.target.closest("[data-vow]"); if (!b) return; const id = b.getAttribute("data-vow"); m.remove();
       const r = api.vow(id, sideW("p", true) / Math.max(1e-6, p0w));
-      if (r.end) { over = "done"; ended = true; st.root.style.transition = "opacity .4s"; st.root.style.opacity = "0"; setTimeout(() => { st.dispose(); done({ how: "done" }); }, 420); return; }
+      if (r.end) { over = "done"; ended = true; if (K2) K2.dispose(); st.root.style.transition = "opacity .4s"; st.root.style.opacity = "0"; setTimeout(() => { st.dispose(); done({ how: "done" }); }, 420); return; }
       paused = false;
       if (kael && id === "hold") kael.pinned = true;
       if (r.lost) { const k = Math.min(Math.round(r.lost * units.filter((u) => u.side === "p" && !u.hero && !u.kael).length / Math.max(1, info.t0)), 12); units.filter((u) => u.side === "p" && fighting(u) && !u.hero && !u.kael && !u.ally).sort((a, b) => b.x - a.x).slice(0, k).forEach((u) => { u.dead = true; u.deadT = 0; }); st.msg("The right flank never heard the order.", 3); }
@@ -394,7 +400,14 @@ function buildBattle(st, api, info, done) {
     if (enemyPlan < 4 && t > 40) { enemyPlan = 4; order.e.inf = "charge"; order.e.arch = "charge"; }
   }
 
+  // ---------- the Realm Arts (g3d/skills2.js): three ability buttons behind Cast, the price meter, pooled VFX ----------
+  try {
+    if (api.sk2) K2 = api.sk2.battle({ THREE, scene, camera, root: st.root, kit, hero, units, H: (x, z) => H(x, z), hurt, spark, giveOrder, addUnit, look: () => ownLook(rand() < 0.5 ? "inf" : "spear"), info, arrows,
+      msg: (t, s) => st.msg(t, s), sfx: (n) => api.sfx && api.sfx(n), gfx: () => st.gfx, castBtn: btns.querySelector("[data-b=cast]"), isVoid, fac: info.fac, heroDown: () => heroDown, over: () => !!over,
+      canStand: (x, z, u) => !SG || SG.canStand(x, z, u) });
+  } catch (e) { K2 = null; api.fail && api.fail(e); }
   st.start((dt, time) => {
+    if (K2) K2.pre();
     for (const k of sparks) if (k.s.visible) { k.t -= dt; k.s.scale.setScalar((k.big ? 1.2 : 0.5) + ((k.big ? 0.45 : 0.25) - k.t) * 3); k.s.material.opacity = k.t * 4; if (k.t <= 0) k.s.visible = false; }
     fx.userData.tick(dt, hero.x, hero.z); sky.userData.tick(dt, camera.position.x, camera.position.z); flags.forEach((f, i) => { f.rotation.y = Math.sin(time * 2 + i) * 0.25; });
     if (paused) return;
@@ -409,8 +422,8 @@ function buildBattle(st, api, info, done) {
       const k = inp.keys;
       yaw -= inp.turn * 0.006; inp.turn = 0; pitch = clamp(pitch + inp.pitch * 0.003, 0.12, 0.95); inp.pitch = 0;
       if (k.q || k.arrowleft) yaw += dt * 2.4; if (k.e || k.arrowright) yaw -= dt * 2.4;
-      const blocking = inp.rmb || k.control || blockHeld;
-      const mv = moveIntent(inp, yaw), run = (k.shift || (st.coarse && mv.amt > 0.92)) && !blocking, sp = (blocking ? 1.8 : run ? 6.2 : 4.0) * mv.amt;
+      const blocking = (inp.rmb || k.control || blockHeld) && !(K2 && K2.noBlock());
+      const mv = moveIntent(inp, yaw), run = (k.shift || (st.coarse && mv.amt > 0.92)) && !blocking, sp = (blocking ? 1.8 : run ? 6.2 : 4.0) * mv.amt * (K2 ? K2.speedMul() : 1);
       if (mv.amt > 0.05) { const nx = hero.x + mv.x * sp * dt, nz = hero.z + mv.z * sp * dt; if (SG) { SG.heroClimb(hero); if (hero.onWall && mv.z < -0.5) SG.heroDown(hero); } if (!SG || SG.canStand(nx, nz, hero)) { hero.x = nx; hero.z = nz; } hero.mv = mv.amt * (run ? 1.6 : 1.2); if (hero.atk <= 0) hero.yaw = angLerp(hero.yaw, Math.atan2(mv.x, mv.z), 1 - Math.exp(-dt * 12)); }
       else { hero.mv = 0; if (blocking) hero.yaw = angLerp(hero.yaw, yaw + Math.PI, 1 - Math.exp(-dt * 10)); }
       if (inp.click) { inp.click = 0; if (!st.coarse) { hero.yaw = yaw + Math.PI; strike(); } }
@@ -426,9 +439,9 @@ function buildBattle(st, api, info, done) {
     const pW = sideW("p", true), eW = sideW("e", true);
     if (moraleT <= 0) {
       moraleT = 0.5;
-      sideM.p = clamp(0.25 + 0.75 * pW / p0w + 0.25 * (pW / p0w - eW / e0w), 0, 1); sideM.e = clamp(0.25 + 0.75 * eW / e0w + 0.25 * (eW / e0w - pW / p0w), 0, 1);
+      sideM.p = clamp(0.25 + 0.75 * pW / p0w + 0.25 * (pW / p0w - eW / e0w) + (K2 ? K2.moraleAdd("p") : 0), K2 ? K2.moraleFloor() : 0, 1); sideM.e = clamp(0.25 + 0.75 * eW / e0w + 0.25 * (eW / e0w - pW / p0w) + (K2 ? K2.moraleAdd("e") : 0), 0, 1);
       for (const u of units) {
-        if (!fighting(u) || u.hero || u.kael || u.climb) continue;
+        if (!fighting(u) || u.hero || u.kael || u.climb || u.k2echo || (K2 && K2.noRout(u))) continue;
         const M = sideM[u.side], near = u.side === "p" && Math.hypot(u.x - hero.x, u.z - hero.z) < 9 && !heroDown;
         let pr = (u.hp / u.hpm < 0.35 ? 0.12 : 0) + (M < 0.4 ? (0.4 - M) * 0.9 : 0) - (near ? 0.12 : 0) - (order[u.side].inf === "wall" && u.cls === "inf" ? 0.05 : 0);
         if (pr > 0 && Math.random() < pr * 0.35) { u.rout = true; if (u.side === "e" && Math.random() < 0.3) spark(u.x, u.y + 2, u.z, 0xffffff); }
@@ -448,22 +461,24 @@ function buildBattle(st, api, info, done) {
       }
       if (u.gone) continue;
       if (u.ride) { u.rideT -= sdt; u.z -= sdt * 9 * pDir; u.x += Math.sin(u.t * 2) * sdt * 2; u.mv = 1.6; if (u.rideT <= 0) { u.gone = true; u.root.visible = false; } u.root.position.set(u.x, H(u.x, u.z), u.z); u.root.rotation.y = pDir > 0 ? Math.PI : 0; animFigure(u.f, u.t, 1.6, 0, false, sdt); continue; }
-      if (u.cd > 0) u.cd -= sdt; if (u.atk > 0) u.atk = Math.max(0, u.atk - sdt * 2.4);
+      const k2s = K2 ? K2.slowK(u) : 1;
+      if (u.cd > 0) u.cd -= sdt * k2s; if (u.atk > 0) u.atk = Math.max(0, u.atk - sdt * 2.4);
       // knocked back and staggered
       if (u.stag > 0) { u.stag -= sdt; u.x += u.kx * sdt; u.z += u.kz * sdt; u.kx *= 0.9; u.kz *= 0.9; u.mv = 0; continue; }
       const sideRatio = u.side === "p" ? pW / p0w : eW / e0w;
-      if (!u.rout && !u.kael && sideRatio < 0.3 && Math.random() < sdt * 0.6) u.rout = true;
+      if (!u.rout && !u.kael && !u.k2echo && sideRatio < 0.3 && Math.random() < sdt * 0.6 && !(K2 && K2.noRout(u))) u.rout = true;
+      if (u.decoy) { u.mv = 0; continue; }
       // siege climbing (ladders) is handled by the siege layout
       if (u.climb) { SG.climb(u, sdt); u.root.position.set(u.x, u.y, u.z); u.root.rotation.y = u.yaw; animFigure(u.f, u.t, 1, 0, false, sdt); continue; }
       let tx = u.x, tz = u.z, want = false, sp = 3.2;
-      const g = u.cls === "kael" ? "inf" : u.cls, ord = u.kael ? "kael" : order[u.side][g];
+      const g = u.cls === "kael" ? "inf" : u.cls, ord = u.kael ? "kael" : u.k2echo ? "charge" : order[u.side][g];
       if (u.rout) {
         const c = enemyCentre(u.side), dx = u.x - c.x, dz = u.z - c.z, d = Math.hypot(dx, dz) || 1;
         tx = u.x + dx / d * 10; tz = u.z + dz / d * 10; want = true; sp = u.cls === "cav" ? 7 : 4.3;
         if (Math.abs(u.z) > 66 || Math.abs(u.x) > 66) { u.gone = true; u.root.visible = false; continue; }
       } else {
         u.retarget -= sdt;
-        if (u.retarget <= 0 || !u.tgt || !fighting(u.tgt)) { u.tgt = nearestFoe(u); u.retarget = 0.35 + Math.random() * 0.3; }
+        if (u.retarget <= 0 || !u.tgt || !fighting(u.tgt)) { u.tgt = nearestFoe(u); u.retarget = 0.35 + Math.random() * 0.3; if (K2 && u.side === "e") { const dc = K2.decoyFor(u); if (dc) u.tgt = dc; } }
         const foe = u.tgt, fd = foe ? Math.hypot(foe.x - u.x, foe.z - u.z) : 1e9, dy = foe ? Math.abs((foe.y || 0) - (u.y || 0)) : 0;
         if (u.cls === "cav") { if (cavalry(u, foe, fd, ord, sdt)) continue; }
         // siege attackers head for a ladder or the breach before they can reach the wall's defenders
@@ -471,7 +486,7 @@ function buildBattle(st, api, info, done) {
         else {
           const engageR = ord === "charge" ? 1e9 : ord === "kael" ? 7 : ord === "advance" ? 5 : u.cls === "arch" ? 3.2 : ord === "wall" ? 2.2 : 3.2;
           const melee = foe && dy < 2.2 && (fd < engageR || (u.kael && Math.hypot(foe.x - hero.x, foe.z - hero.z) < 7)) && !(u.pinned && fd > 1.6);
-          if (u.cls === "arch" && !melee && foe && fire[u.side] && ord !== "charge") {
+          if (u.cls === "arch" && !melee && foe && fire[u.side] && ord !== "charge" && !(K2 && u.side === "e" && K2.silenced(u))) {
             // archers loose from their place when the enemy is in range, staggered into volleys
             u.shot -= sdt; if (fd < 52 && u.shot <= 0) { u.shot = 2.6 + Math.random() * 1.6; u.atk = 1; const lead = Math.min(1.5, fd / 24); shoot(u, foe.x + (foe.vx || 0) * lead, foe.y || 0, foe.z + (foe.vz || 0) * lead, u.w * 0.75); u.yaw = Math.atan2(foe.x - u.x, foe.z - u.z); }
           }
@@ -487,6 +502,7 @@ function buildBattle(st, api, info, done) {
         }
       }
       if (want) {
+        sp *= k2s;
         const dx = tx - u.x, dz = tz - u.z, d = Math.hypot(dx, dz) || 1, step = Math.min(d, sp * sdt);
         const nx = u.x + dx / d * step, nz = u.z + dz / d * step;
         if (!SG || SG.canStand(nx, nz, u)) { u.vx = (nx - u.x) / Math.max(sdt, 1e-3); u.vz = (nz - u.z) / Math.max(sdt, 1e-3); u.x = nx; u.z = nz; } else { u.vx = u.vz = 0; }
@@ -566,6 +582,7 @@ function buildBattle(st, api, info, done) {
     if (!heroDown) followCam(camera, hero.x, hero.y, hero.z, yaw, pitch, 8 * st.distK, 0.7, dt);
     else { let cx = 0, cz = 0, n = 0; for (const u of units) if (fighting(u)) { cx += u.x; cz += u.z; n++; } if (n) { cx /= n; cz /= n; } yaw += dt * 0.15; followCam(camera, cx, H(cx, cz), cz, yaw, 0.6, 24, 0, dt); }
     L.sun.position.set(hero.x + 30, 42, hero.z + 22); L.sun.target.position.set(hero.x, 0, hero.z);
+    if (K2 && !paused) K2.tick(dt);
   });
   function frameOK() { return true; }
   // spatial hash separation
@@ -590,7 +607,7 @@ function buildBattle(st, api, info, done) {
     state: () => ({ over, t: t0, order: order.p.inf, orders: Object.assign({}, order.p), fire: fire.p, pW: sideW("p", true) / p0w, eW: sideW("e", true) / e0w, heroDown, NP: units.filter((u) => u.side === "p" && !u.hero && !u.kael).length, NE,
       groups: { inf: units.filter((u) => u.side === "p" && u.cls === "inf").length, arch: units.filter((u) => u.side === "p" && u.cls === "arch").length, cav: units.filter((u) => u.side === "p" && u.cls === "cav").length, earch: units.filter((u) => u.side === "e" && u.cls === "arch").length, ecav: units.filter((u) => u.side === "e" && u.cls === "cav").length },
       arrows: flying, routed: units.filter((u) => u.rout && !u.gone).length + units.filter((u) => u.gone && !u.ride).length, morale: Object.assign({}, sideM), kael: !!kael, kdead,
-      siege: SG ? SG.state() : null }),
-    _finish: finish
+      siege: SG ? SG.state() : null, k2: K2 ? K2.state() : null }),
+    _finish: finish, k2: () => K2
   };
 }
