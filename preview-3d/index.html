@@ -16619,3 +16619,29 @@ setInterval(function () {
 </script>
 <script>window.__vhBoot();</script>
 
+<script>
+/* 3D PREVIEW helper (preview page only): Explore opens the 3D walk; a banner says so; a 3D failure is shown, not silent. */
+(function () {
+  var css = document.createElement("style");
+  css.textContent = "#vhpv{position:fixed;left:50%;top:6px;transform:translateX(-50%);z-index:99999;background:#c8873a;color:#16141b;font:700 12px/1.2 sans-serif;letter-spacing:.08em;padding:5px 12px;border-radius:12px;pointer-events:none;opacity:.92}body.vh3d-on #vhpv{display:none}#vhpvmsg{position:fixed;left:50%;bottom:16px;transform:translateX(-50%);z-index:99999;background:#201d27;color:#ece8f1;border:1px solid #c8873a;font:14px/1.4 sans-serif;padding:10px 14px;border-radius:8px;max-width:90vw;display:none}";
+  document.head.appendChild(css);
+  var b = document.createElement("div"); b.id = "vhpv"; b.textContent = "3D PREVIEW"; document.body.appendChild(b);
+  var m = document.createElement("div"); m.id = "vhpvmsg"; document.body.appendChild(m);
+  function say(t) { m.textContent = t; m.style.display = "block"; clearTimeout(say.t); say.t = setTimeout(function () { m.style.display = "none"; }, 9000); }
+  var log = console.log;
+  console.log = function () { try { if (String(arguments[0]).indexOf("vh3d fallback") === 0) say("3D couldn't start on this device: " + (arguments[1] || "unknown") + ". Tell John's studio this message."); } catch (e) {} return log.apply(console, arguments); };
+  var classic = false;
+  document.addEventListener("click", function (ev) {
+    var t = ev.target && ev.target.closest && ev.target.closest('[data-act="aenter"]');
+    if (!t || classic) { classic = false; return; }
+    var w = document.querySelector('[data-act="vh3dwalk"]');
+    if (!w) { say("3D isn't available here (no WebGL), so this opens the classic view."); return; }
+    ev.preventDefault(); ev.stopPropagation(); ev.stopImmediatePropagation();
+    w.click();
+  }, true);
+  /* Long-press or Shift-click Explore = classic 2D view (quests still live there). */
+  document.addEventListener("click", function (ev) { if (ev.shiftKey) classic = true; }, true);
+  var lp; document.addEventListener("touchstart", function (ev) { if (ev.target.closest && ev.target.closest('[data-act="aenter"]')) lp = setTimeout(function () { classic = true; say("Classic view: tap Explore now."); }, 700); }, { passive: true, capture: true });
+  document.addEventListener("touchend", function () { clearTimeout(lp); }, { passive: true, capture: true });
+})();
+</script>
