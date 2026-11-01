@@ -71,6 +71,7 @@ export function makeCharKit(track) {
     else if (kind === "helm") g = mergeGeometries([vc(new THREE.SphereGeometry(0.142, 10, 6, 0, Math.PI * 2, 0, Math.PI / 2).scale(1, 1.15, 1.1), 0xffffff), vc(new THREE.CylinderGeometry(0.146, 0.15, 0.03, 12).scale(1, 1, 1.1).translate(0, 0.01, 0), 0xdddddd), vc(new THREE.BoxGeometry(0.022, 0.1, 0.02).translate(0, -0.03, 0.15), 0xdddddd)]);
     else if (kind === "spike") g = mergeGeometries([geo("helm").clone(), vc(new THREE.ConeGeometry(0.05, 0.14, 6).translate(0, 0.21, 0), 0xffffff)]);
     else if (kind === "lantern") g = vc(new THREE.BoxGeometry(0.1, 0.14, 0.1), 0xffffff);
+    else if (kind === "bow") g = mergeGeometries([vc(new THREE.TorusGeometry(0.62, 0.018, 4, 14, Math.PI * 0.62).rotateZ(-Math.PI * 0.31 - Math.PI / 2).translate(0.62, 0.42, 0).scale(1, 0.5, 1), 0x6a4a28), vc(new THREE.BoxGeometry(0.008, 0.008, 0.008).translate(0.4, 0, 0), 0xe8e0c8)]);
     geos[kind] = track(g); return g;
   }
   const vcMats = new Map();

@@ -100,14 +100,14 @@ function styleOnce() {
   document.head.appendChild(st);
 }
 
-function makeStage(loadText) {
-  styleOnce();
+function makeStage(loadText, opts) {
+  styleOnce(); opts = opts || {};
   const old = document.getElementById("vh3d"); if (old) old.remove();
   const sh = document.getElementById("sheet");
-  const host = (sh && sh.parentNode) || document.body;
-  const root = document.createElement("div"); root.id = "vh3d";
+  const host = opts.host || (sh && sh.parentNode) || document.body;
+  const root = document.createElement("div"); root.id = "vh3d"; if (opts.cls) root.className = opts.cls;
   root.innerHTML = '<canvas tabindex="-1"></canvas><div class="v3-grain"></div><div class="v3-vig"></div><div class="v3-hud"></div><div class="v3-msg"></div><div class="v3-prompt" hidden></div><div class="v3-hp" hidden></div><div class="v3-keys"></div><div class="v3-act"></div><div class="v3-top"></div><div class="v3-stick" hidden><i></i></div><div class="v3-end"></div><div class="v3-load">' + loadText + "</div>";
-  host.appendChild(root);
+  if (opts.host && host.firstChild) host.insertBefore(root, host.firstChild); else host.appendChild(root);
   const $ = (q) => root.querySelector(q);
   const canvas = $("canvas");
   $(".v3-grain").style.backgroundImage = "url(" + grainURL() + ")";
@@ -136,7 +136,7 @@ function makeStage(loadText) {
 
   // input: keyboard, mouse (drag to turn, click to act, right button to block), touch (left stick, right drag)
   const inp = { keys: {}, turn: 0, pitch: 0, click: 0, rmb: false, stick: { x: 0, y: 0, on: false }, blocked: () => false, onKey: null };
-  const KEYS = new Set(["w", "a", "s", "d", "q", "e", "f", "c", "h", "r", "1", "2", "3", " ", "shift", "control", "arrowup", "arrowdown", "arrowleft", "arrowright", "enter", "tab", "escape"]);
+  const KEYS = new Set(opts.keys || ["w", "a", "s", "d", "q", "e", "f", "c", "h", "r", "1", "2", "3", " ", "shift", "control", "arrowup", "arrowdown", "arrowleft", "arrowright", "enter", "tab", "escape"]);
   listen(window, "keydown", (e) => {
     if (inp.blocked()) return;
     const k = e.key.toLowerCase();
@@ -151,6 +151,7 @@ function makeStage(loadText) {
   let drag = null, stickId = -1;
   const stickEl = $(".v3-stick"), knob = stickEl.firstChild;
   listen(canvas, "pointerdown", (e) => {
+    if (opts.host) e.stopPropagation();
     canvas.focus({ preventScroll: true });
     if (e.pointerType === "touch") {
       if (e.clientX < root.clientWidth * 0.45 && stickId < 0) {
@@ -180,6 +181,7 @@ function makeStage(loadText) {
   };
   listen(canvas, "pointerup", up); listen(canvas, "pointercancel", up);
   listen(canvas, "contextmenu", (e) => e.preventDefault());
+  if (opts.host) { listen(canvas, "pointermove", (e) => e.stopPropagation()); listen(canvas, "pointerup", (e) => e.stopPropagation()); listen(canvas, "touchstart", (e) => { e.stopPropagation(); e.preventDefault(); }, { passive: false }); }
 
   let raf = 0, last = 0, dead = false, frameFn = null, firstFrame = true, slowAcc = 0, slowN = 0, pr = renderer.getPixelRatio();
   function loop(t) {
@@ -339,8 +341,8 @@ function roundRect(x, a, b, w, h, r) { x.beginPath(); x.moveTo(a + r, b); x.arcT
 // a low-poly person. o: { cloth, cloth2, skin, metal, helm: "cap"|"spike"|"hood"|"bare"|"crown", cloak, weapon: "sword"|"spear"|null, shield, eyes, scale }
 // the player: mail and a surcoat and cloak in the banner colour, bare-headed
 function heroLook(banner, armed) { return { base: "soldier", cloth: banner, cloth2: shade(banner, 0.55).getHex(), metal: 0x9a9ea4, dark: 0x4a4440, leather: 0x5a3e28, legs: 0x3a2e24, skin: 0xc89a78, hair: 0x2e2018, helm: false, weapon: "sword", shieldKind: armed ? "round" : null, shield: banner }; }
-// Kaelren (Cosplay Kit): ash-grey watch coat, faded rust undershirt, copper buttons, dark hair, warm tawny-brown skin
-function kaelLook(armed) { return { base: "man", cloth: 0x8a8782, cloth2: 0xa0522d, trim: 0xb87333, metal: 0x7a7c80, skin: 0xa0663e, hair: 0x1e1612, legs: 0x3a322c, boots: 0x2a201a, leather: 0x4a3626, weapon: "sword", shieldKind: armed ? "round" : null, shield: 0x8a5a34 }; }
+// Kaelren in the prequel era (John, J-9): Flameborne charcoal coat, madder-red undershirt, copper buttons, dark hair, warm tawny-brown skin
+function kaelLook(armed) { return { base: "man", cloth: 0x2e2a28, cloth2: 0x9e2a2b, trim: 0xb87333, metal: 0x7a7c80, skin: 0xa0663e, hair: 0x1e1612, legs: 0x3a322c, boots: 0x2a201a, leather: 0x4a3626, weapon: "sword", shieldKind: armed ? "round" : null, shield: 0x8a5a34 }; }
 function figure(kit, o) {
   const f = figure0(kit, o);
   const b = new THREE.Mesh(kit.blobGeo, kit.blobMat); b.position.y = 0.03; b.renderOrder = 1; f.add(b);
@@ -772,7 +774,7 @@ function buildWalk(st, api, info, done) {
     for (const [x, z] of [[-R, -R], [R, -R], [-R, R], [R, R], [-4.2, R], [4.2, R]]) { M.add("cyl", mStone, x, wh * 0.7, z, 2.6, wh * 1.4, 2.6, 0, shade(P.stone, 0.88)); M.add("cone", mRoof, x, wh * 1.4 + 1.1, z, 3, 2.2, 3, 0, P.roof); solid(x, z, 2.4, 2.4); }
     M.box(mStone, 0, wh + 0.6, R, 7, 1.2, th + 0.3, 0, col); M.box(mBeam, 0, wh - 0.1, R, 5.4, 0.3, th + 0.4, 0, beamC);
     torches.push(torch(kit, scene, -2.9, 3.2, R - 0.85, P.torch, torches.length < 6)); torches.push(torch(kit, scene, 2.9, 3.2, R - 0.85, P.torch, false));
-    spots.push({ key: "gate", label: "The Gate", x: 0, z: R - 1.2, r: 2.8 });
+    spots.push({ key: "gate", label: "Town Gate", x: 0, z: R - 1.2, r: 2.8 });
     npcStatic([-2.4, R - 2.2], Math.PI, guardLook()); npcStatic([2.4, R - 2.2], Math.PI, guardLook());
   }
   function guardLook() { return { cloth: P.cloth[1], cloth2: 0x2a2420, armour: true, metal: info.realm === "light" ? 0xd8b858 : info.realm === "metal" ? 0x2c2c30 : 0x8a8e94, tabard: info.own ? info.banner : P.accent, helm: info.realm === "metal" ? "spike" : info.realm === "shadow" ? "hood" : "cap", weapon: "spear", shield: P.accent }; }
@@ -1212,3 +1214,7 @@ function buildBattle(st, api, info, done) {
   });
   return { stop: () => finish("flee"), fast(n) { st.substeps = Math.max(1, n | 0); }, hero, scene: st, info, units, state: () => ({ over, t: t0, order, pW: sideW("p", true) / p0w, eW: sideW("e", true) / e0w, heroDown, NP, NE }) , _finish: finish };
 }
+
+// shared pieces for the other scene modules (area3d.js, siege3d.js)
+export const K3 = { THREE, REALMS, VOIDC, WALL_STYLE, ROOF_TEX, GROUND_TEX, GRASS_TINT, GRASS_N, CLOUD, COLD, tree, hashStr, rng, vnoise, clamp, lerp, angLerp, shade, mix,
+  makeStage, makeKit, whenChars, charLook, heroLook, kaelLook, figure, animFigure, Batch, lights, particles, pool, torch, followCam, moveIntent, labelSprite, radialTex, esc };
