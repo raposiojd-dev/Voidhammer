@@ -4,7 +4,7 @@ set -e
 cd "$(dirname "$0")"
 SRC=..
 rm -rf game && mkdir -p game
-for f in index.html manifest.webmanifest peerjs.min.js privacy.html icons img fonts vo vid wk g3d; do cp -r "$SRC/$f" game/; done
+for f in index.html manifest.webmanifest peerjs.min.js privacy.html icons img fonts vo vid wk g3d premium; do cp -r "$SRC/$f" game/; done
 mkdir -p game/mus && cp "$SRC"/mus/{world,town,dungeon,combat,boss,title}.mp3 game/mus/
 find game -name '*.webm' -delete
 mkdir -p build && cp "$SRC/icons/icon-1024.png" build/icon.png

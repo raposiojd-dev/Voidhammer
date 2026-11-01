@@ -26,10 +26,11 @@ const ok = (c, m) => { console.log((c ? "PASS " : "FAIL ") + m); if (!c) fails++
   const until = async (f, ms, step) => { const t = Date.now(); while (Date.now() - t < ms) { if (await js(f)) return true; await wait(step || 500); } return false; };
 
   await p.goto(URL); await wait(4000);
-  // new game: three childhood steps, the summary, then the banner sheet
-  await p.click("#tnew"); await wait(600);
-  for (let i = 0; i < 3; i++) { await p.click(".mkcard >> nth=0"); await p.click("#mknext"); }
-  await wait(300); await p.click("#csgo"); await wait(600); await p.click("[data-act=startnew]"); await wait(2500);
+  // new game through the premium front door (premium/frontdoor.js): tap to begin, the three creator steps, skip the opening
+  await p.click("#fd-tap"); await wait(800);
+  await p.click("#tnew"); await wait(900);
+  for (let i = 0; i < 3; i++) { await p.click("#fd-next"); await wait(400); }
+  await until(() => !!document.getElementById("fd-intro"), 8000); await js(() => VHFD._skip()); await wait(1500);
   ok(await js(() => !!(window.__vh && window.__vh.S())), "new game started");
   // close the intro and skip the tutorial
   await js(() => { for (let i = 0; i < 12 && __vh.sheet(); i++) { const b = document.querySelector("[data-act=tutdone]") || document.querySelector("#sbody button.solid") || document.querySelector("#sx:not([hidden])"); if (!b) break; b.click(); } });
