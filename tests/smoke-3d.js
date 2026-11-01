@@ -46,6 +46,9 @@ const ok = (c, m) => { console.log((c ? "PASS " : "FAIL ") + m); if (!c) fails++
   ok(s0.beacon === true, "objective beacon shows the way");
   await js(() => __vh.area3d().goTo("mara")); await wait(1500);
   ok(/Talk\|Elder Mara/.test((await js(a3)).use), "the big Use button offers Talk · Elder Mara");
+  const pl = await js(() => { const r = [...document.querySelectorAll("#vh3d .v3-nm")].filter((e) => !e.hidden).map((e) => { const b = e.getBoundingClientRect(); return { t: e.textContent, l: b.left, r: b.right, tp: b.top, b: b.bottom, o: +e.style.opacity }; });
+    const ov = r.some((a, i) => r.some((b, j) => j > i && a.l < b.r && a.r > b.l && a.tp < b.b && a.b > b.tp)); return { r, ov }; });
+  ok(pl.r.length >= 1 && pl.r.length <= 3 && !pl.ov && pl.r.some((q) => q.t === "Elder Mara" && q.o === 1), "name plates: Elder Mara (the Talk target) at full strength, no plates overlapping (" + pl.r.map((q) => q.t).join(", ") + ")");
   await shot("11-ashford-mara.png");
   await p.keyboard.press("e"); await wait(1200);
   ok(await js(() => __vh.dlg() === "mara_1" && !document.getElementById("adlg").hidden), "E opens Mara's dialogue (dlgOpen)");
@@ -112,6 +115,7 @@ const ok = (c, m) => { console.log((c ? "PASS " : "FAIL ") + m); if (!c) fails++
   await until(() => !__vh.AR() && !__vh.area3d(), 15000);
   await js(() => __vh.startArea("ashford")); await until(() => !!(__vh.area3d() && __vh.area3d().ready), 30000);
   // leave the opening area for the world map
+  await js(() => { const m = document.querySelector("#vh3d .v3-menu"); if (m) m.click(); }); await wait(600); // the corner menu holds Map
   await js(() => { const bs = [...document.querySelectorAll("button")].filter((x) => x.offsetParent && x.textContent.trim() === "Map"); if (bs[0]) bs[0].click(); });
   await wait(2500);
   await shot("01-map.png");
@@ -246,7 +250,10 @@ const ok = (c, m) => { console.log((c ? "PASS " : "FAIL ") + m); if (!c) fails++
     const fired = [];
     for (const id of FIRST) {
       const r = await js((id) => {
+        if (!__vh.scene()) return { gone: 1 };
         const c = __vh.scene().ctl, k2 = c.k2(), s = __vh.S().sk2, hero = c.hero;
+        // the hero is put beside a foe nine times over; keep him on his feet so a slow machine can't end the test early
+        if (hero.hp > 0) hero.hp = hero.hpm;
         s.r[id] = Math.max(1, s.r[id] || 0); s.eq[0] = id; __vh.k2().bump(); k2.core.cds = {}; k2.core.chg = {};
         // stand a few yards from the nearest living foe, facing it
         const foes = c.units.filter((u) => u.side === "e" && !u.dead && !u.gone); if (!foes.length) return { none: 1 };
@@ -256,6 +263,7 @@ const ok = (c, m) => { console.log((c ? "PASS " : "FAIL ") + m); if (!c) fails++
         const okc = k2.cast(0); window.__k2t = t0;
         return { okc, hp0, x0, z0, st0, m0 };
       }, id);
+      if (r.gone) { ok(false, id + ": the battle had already ended"); continue; }
       if (r.none) { ok(false, id + ": no foes left to test on"); continue; }
       // headless frames are slow: wait on the battle's own clock, not the wall clock
       await until(() => __vh.scene().ctl.k2().core.t > window.__k2t + 0.7, 30000, 100);
@@ -349,12 +357,16 @@ const ok = (c, m) => { console.log((c ? "PASS " : "FAIL ") + m); if (!c) fails++
     await p2.waitForTimeout(1500);
     await j2(() => document.querySelector("#acast").dispatchEvent(new PointerEvent("pointerdown", { bubbles: true }))); await p2.waitForTimeout(500);
     const La = await j2(() => { const r = (q) => { const e = document.querySelector(q); if (!e) return null; const b = e.getBoundingClientRect(); return { l: b.left, t: b.top, r: b.right, b: b.bottom, w: b.width, h: b.height }; }; const W = innerWidth, H = innerHeight;
-      const ab = [...document.querySelectorAll("#area .k2ab.on")].map((e) => { const b = e.getBoundingClientRect(), w = e.offsetWidth, h = e.offsetHeight, cx = b.left + b.width / 2, cy = b.top + b.height / 2; return { left: cx - w / 2, top: cy - h / 2, width: w, height: h }; }), tops = [...document.querySelectorAll("#vh3d .v3-top button")].map((e) => e.getBoundingClientRect());
-      return { W, H, atk: r("#aatk"), cast: r("#acast"), ab: ab.map((b) => ({ l: b.left, t: b.top, w: b.width, h: b.height })), top: tops.map((b) => ({ t: b.top, h: b.height, r: b.right })), rot: window.__vhRot.on() }; });
+      const ab = [...document.querySelectorAll("#area .k2ab.on")].map((e) => { const b = e.getBoundingClientRect(), w = e.offsetWidth, h = e.offsetHeight, cx = b.left + b.width / 2, cy = b.top + b.height / 2; return { left: cx - w / 2, top: cy - h / 2, width: w, height: h }; }), mb = document.querySelector("#vh3d .v3-menu"), mr = mb && mb.getBoundingClientRect(), topVis = [...document.querySelectorAll("#vh3d .v3-top button")].some((e) => e.getClientRects().length > 0), abVis = [...document.querySelectorAll("#ahud .abtns button")].some((e) => e.getClientRects().length > 0);
+      mb && mb.click(); const tiles = [...document.querySelectorAll("#v3menu.on .v3p-t, #v3menu.on .v3p-r, #v3menu.on .v3p-seg button")].map((e) => { const b = e.getBoundingClientRect(); return { w: b.width, h: b.height, t: e.textContent.trim() }; }); mb && mb.click();
+      return { W, H, atk: r("#aatk"), cast: r("#acast"), ab: ab.map((b) => ({ l: b.left, t: b.top, w: b.width, h: b.height })), menu: mr && { t: mr.top, r: mr.right, w: mr.width, h: mr.height }, topVis, abVis, tiles, rot: window.__vhRot.on() }; });
     const right = (b) => b && b.l > La.W * 0.55 && b.b > La.H * 0.4;
     ok(La.W > La.H && !La.rot && right(La.atk) && right(La.cast), "landscape: no turn-sideways card; Strike and Cast sit bottom-right (" + Math.round(La.atk.l) + "," + Math.round(La.atk.t) + ")");
     ok(La.ab.length === 3 && La.ab.every((b) => b.w >= 44 && b.h >= 44 && b.l > La.W * 0.5 && b.t >= 0 && b.t + b.h <= La.H), "landscape: the three ability buttons are in the right-thumb arc, on screen, 44px or more (" + La.ab.map((b) => Math.round(b.w)).join(",") + ")");
-    ok(La.top.length >= 2 && La.top.every((b) => b.h >= 44 && b.t < La.H * 0.35), "landscape: the scene buttons run along the top edge, 44px or more");
+    ok(La.menu && La.menu.w >= 44 && La.menu.h >= 44 && La.menu.t < 30 && La.menu.r > La.W - 40 && !La.topVis && !La.abVis, "landscape: the top bars are hidden; one round menu button, 44px or more, top-right" + (La.menu ? "" : " (no button)"));
+    const tl = La.tiles.map((x) => x.t).join("|");
+    ok(La.tiles.length >= 9 && La.tiles.every((x) => x.h >= 44 && x.w >= 44) && ["Gear", "Quest", "Skills", "Build", "Wait", "Map", "Auto-run", "Graphics", "Music"].every((w) => tl.indexOf(w) >= 0) && !/^Run$/m.test(tl.replace(/\|/g, "\n")),
+      "landscape: the menu panel holds Gear, Quest, Skills, Build, Wait, Map, Auto-run, Music and Graphics quality, every target 44px or more (" + La.tiles.length + ")");
     await shot2("k2-L-area.png");
     // a 3D battle in landscape
     await j2(() => { const b = document.querySelector("[data-act=aleave]"); if (b) b.click(); }); await until2(() => !__vh.AR(), 15000);

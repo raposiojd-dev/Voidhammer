@@ -103,6 +103,8 @@ const ok = (c, m) => { console.log((c ? "PASS " : "FAIL ") + m); if (!c) fails++
   await js(() => { for (let i = 0; i < 12 && __vh.sheet(); i++) { const b = document.querySelector("[data-act=tutdone]") || document.querySelector("#sbody button.solid") || document.querySelector("#sx:not([hidden])"); if (!b) break; b.click(); } });
   ok(await until(() => !!(__vh.AR() && __vh.AR().id === "ashford"), 30000), "play begins in Ashford");
   await wait(2500);
+  // the 3D view keeps its buttons behind the round corner menu: open it, then tap Map
+  await js(() => { const m = document.querySelector("#vh3d .v3-menu"); if (m) m.click(); }); await wait(600);
   await js(() => { const bs = [...document.querySelectorAll("button")].filter((x) => x.offsetParent && x.textContent.trim() === "Map"); if (bs[0]) bs[0].click(); });
   ok(await until(() => !__vh.AR(), 15000), "Map leaves Ashford for the world map");
   await wait(2500);

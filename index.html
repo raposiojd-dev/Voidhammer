@@ -4904,7 +4904,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
     var key = h + "|" + lab + "|" + ob + "|" + a.sp.name + "|" + S.crowns + "|" + hasB + "|" + (cp().arrows || 0);
     if (key === aHud) return; aHud = key;
     $("ahearts").innerHTML = h; $("aatk").textContent = "Strike"; var ub = $("ause"); if (ub) { var ul = useLabel(tk); ub.hidden = !ul; if (ul && ub.textContent !== ul) ub.textContent = ul; } $("abow").hidden = !hasB; $("abow").innerHTML = "Shoot<small>" + (cp().arrows || 0) + "</small>";
-    $("aobj").innerHTML = "<b>" + a.sp.name + "</b> · " + ob + " · " + S.crowns + " crowns · " + clockTxt();
+    $("aobj").innerHTML = "<b>" + a.sp.name + '</b><i class="aos"> · </i>' + ob + " · " + S.crowns + " crowns · " + clockTxt();
   }
   function areaFrame(t) {
     if (!AR) { aRun = false; return; } var dt = Math.min(0.05, (t - aLast) / 1000 || 0); aLast = t;

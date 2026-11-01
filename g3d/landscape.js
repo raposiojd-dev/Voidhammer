@@ -18,9 +18,8 @@
     LAND + "{",
     // the HUD hugs the top edges, inside the notch
     " #vh3d .v3-hud{padding-left:env(safe-area-inset-left,0px);padding-right:env(safe-area-inset-right,0px)}",
-    " #vh3d .v3-top{top:calc(.5rem + env(safe-area-inset-top,0px));right:calc(.6rem + env(safe-area-inset-right,0px));left:auto;flex-direction:row}",
-    " #vh3d.v3-area .v3-top{top:calc(3.6rem + env(safe-area-inset-top,0px))!important;bottom:auto!important;right:calc(9.6rem + env(safe-area-inset-right,0px))!important;flex-direction:row!important;align-items:center}",
-    " #vh3d .v3-top button,#vh3d.v3-area .v3-top button{min-height:44px;min-width:0;padding:.45rem .7rem;font-size:.58rem}",
+    // the top bars are gone: one round menu button sits in the top-right corner (scene3d.js), clear of the notch
+    " #vh3d .v3-menu{top:calc(.5rem + env(safe-area-inset-top,0px));right:calc(.6rem + env(safe-area-inset-right,0px))}",
     " #ahud .abtns button{min-height:44px}",
     // battle: health top-left, morale under it; the stick has the whole bottom-left; Orders sits between the thumbs
     " #vh3d .v3-hp{top:calc(.6rem + env(safe-area-inset-top,0px));bottom:auto!important;left:calc(.9rem + env(safe-area-inset-left,0px));width:min(13rem,26vw)}",
