@@ -6,7 +6,8 @@
 // The scene never changes game numbers itself: it reports back to the bridge, which runs the existing sheets and finishBattle.
 import * as THREE from "./three.module.min.js";
 import { loadChars, charsReady, makeCharKit, makeChar } from "./chars.js";
-import { makeArt, Merge, paintedSky, grassField, gfxGet, gfxSet, groundMat, grainURL } from "./art.js";
+import { makeArt, Merge, paintedSky, grassField, gfxGet, gfxSet, groundMat, grainURL, VH_TIME } from "./art.js";
+import { makePost } from "./post.js";
 
 // ---------- Realm looks (from GAME_CANON_SPEC.md and the Realm Codex §15b LOOK) ----------
 const REALMS = {
@@ -96,7 +97,40 @@ function styleOnce() {
 @media (max-width:600px){#vh3d .v3-top{gap:.3rem;right:.5rem;left:.5rem;justify-content:flex-end}#vh3d .v3-top button{padding:.5rem .55rem;font-size:.58rem;letter-spacing:.04em}#vh3d .v3-hud{padding-top:calc(3.3rem + env(safe-area-inset-top,0px))}#vh3d .v3-hud h3{font-size:1.15rem}#vh3d .v3-bars{margin-top:.3rem}}
 #vh3d.touch .v3-prompt{bottom:calc(9.2rem + env(safe-area-inset-bottom,0px));max-width:86vw;text-align:center}
 #vh3d.touch .v3-hp{bottom:calc(1rem + env(safe-area-inset-bottom,0px));width:min(12rem,42vw)}
-#vh3d .v3-end small{display:block;font:500 .8rem 'IBM Plex Mono',ui-monospace,monospace;letter-spacing:.2em;text-transform:uppercase;color:#d8c8a0;margin-top:.4rem}`;
+#vh3d .v3-end small{display:block;font:500 .8rem 'IBM Plex Mono',ui-monospace,monospace;letter-spacing:.2em;text-transform:uppercase;color:#d8c8a0;margin-top:.4rem}
+/* one round menu button replaces the top bars in every 3D view; the scene's own buttons live on in the panel */
+#vh3d .v3-top{display:none!important}
+body.vh3d-stage #musbtn,body.vh3d-stage #savebtn{display:none!important}
+#vh3d .v3-menu{position:absolute;z-index:6;top:calc(.6rem + env(safe-area-inset-top,0px));right:calc(.7rem + env(safe-area-inset-right,0px));width:46px;height:46px;padding:0;border-radius:50%;display:grid;place-items:center;align-content:center;gap:4px;cursor:pointer;border:1px solid #6a4f22;background:linear-gradient(180deg,rgba(34,26,18,.82),rgba(12,9,6,.86));box-shadow:inset 0 0 0 1px rgba(227,194,122,.14),0 3px 10px rgba(0,0,0,.6);touch-action:manipulation}
+#vh3d .v3-menu i{display:block;width:18px;height:2px;border-radius:1px;background:#e3c27a;transition:transform .2s,opacity .2s}
+#vh3d .v3-menu.on i:nth-child(1){transform:translateY(6px) rotate(45deg)}#vh3d .v3-menu.on i:nth-child(2){opacity:0}#vh3d .v3-menu.on i:nth-child(3){transform:translateY(-6px) rotate(-45deg)}
+#vh3d .v3-menu:active{transform:scale(.94)}
+.v3-panel{position:fixed;z-index:80;inset:0;pointer-events:none;font-family:'Cinzel',Georgia,serif;visibility:hidden;transition:visibility 0s linear .28s}
+.v3-panel .v3p-scrim{position:absolute;inset:0;background:radial-gradient(120% 120% at 100% 0,rgba(6,4,2,.25),rgba(6,4,2,.6));opacity:0;transition:opacity .22s}
+.v3-panel .v3p-sheet{position:absolute;top:0;right:0;bottom:0;width:min(23rem,88vw);overflow-y:auto;overscroll-behavior:contain;padding:calc(.7rem + env(safe-area-inset-top,0px)) calc(.8rem + env(safe-area-inset-right,0px)) calc(.9rem + env(safe-area-inset-bottom,0px)) .9rem;box-sizing:border-box;background:linear-gradient(180deg,rgba(26,20,13,.94),rgba(10,8,6,.96));border-left:1px solid #6a4f22;box-shadow:-18px 0 40px rgba(0,0,0,.55),inset 1px 0 0 rgba(227,194,122,.12);transform:translateX(104%);transition:transform .26s cubic-bezier(.2,.8,.2,1)}
+.v3-panel.on{pointer-events:auto;visibility:visible;transition-delay:0s}.v3-panel.on .v3p-scrim{opacity:1}.v3-panel.on .v3p-sheet{transform:none}
+.v3-panel .v3p-hd{display:flex;align-items:center;justify-content:space-between;gap:.6rem;margin-bottom:.35rem}
+.v3-panel .v3p-hd b{font:700 1rem 'Cinzel',Georgia,serif;letter-spacing:.14em;color:#f2d38a;text-transform:uppercase}
+.v3-panel .v3p-hd small{display:block;font:italic .8rem 'IM Fell English',Georgia,serif;letter-spacing:0;color:#c9b48a;text-transform:none;margin-top:.1rem}
+.v3-panel .v3p-x{flex:none;width:44px;height:44px;border-radius:50%;border:1px solid #6a4f22;background:#120d08;color:#e3c27a;font:400 1.3rem/1 Georgia,serif;cursor:pointer;padding:0}
+.v3-panel h4{margin:.65rem 0 .35rem;font:600 .62rem 'IBM Plex Mono',ui-monospace,monospace;letter-spacing:.2em;text-transform:uppercase;color:#a8936a;display:flex;align-items:center;gap:.5rem}
+.v3-panel h4::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,#6a4f22,transparent)}
+.v3-panel .v3p-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:.4rem}
+.v3-panel .v3p-t{min-height:58px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.25rem;padding:.4rem .2rem;border-radius:6px;border:1px solid #4a3a1e;background:linear-gradient(180deg,rgba(40,30,18,.9),rgba(16,12,8,.92));color:#efe2bf;font:700 .66rem 'Cinzel',Georgia,serif;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;box-shadow:inset 0 0 0 1px rgba(227,194,122,.08)}
+.v3-panel .v3p-t svg{width:22px;height:22px;stroke:#e3c27a;fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.v3-panel .v3p-t:active,.v3-panel .v3p-r:active{transform:scale(.97)}
+.v3-panel .v3p-t.on{border-color:#c8873a;box-shadow:inset 0 0 0 1px #c8873a,0 0 12px rgba(200,135,58,.35)}
+.v3-panel .v3p-t.warn svg{stroke:#ff9a7a}
+.v3-panel .v3p-r{width:100%;min-height:48px;margin-bottom:.35rem;display:flex;align-items:center;gap:.7rem;padding:.35rem .7rem;box-sizing:border-box;border-radius:6px;border:1px solid #3e3019;background:rgba(18,13,8,.85);color:#efe2bf;font:600 .78rem 'Cinzel',Georgia,serif;letter-spacing:.06em;text-align:left;cursor:pointer}
+.v3-panel .v3p-r svg{flex:none;width:20px;height:20px;stroke:#c8a868;fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.v3-panel .v3p-r span{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.v3-panel .v3p-r small{display:block;font:italic .74rem 'IM Fell English',Georgia,serif;letter-spacing:0;color:#a8936a;text-transform:none}
+.v3-panel .v3p-sw{flex:none;position:relative;width:44px;height:26px;border-radius:13px;background:#2a2016;border:1px solid #5a4424;transition:background .2s}
+.v3-panel .v3p-sw::after{content:'';position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#8a7a5a;transition:transform .2s,background .2s}
+.v3-panel .v3p-r.on .v3p-sw{background:#7a4f1c;border-color:#c8873a}.v3-panel .v3p-r.on .v3p-sw::after{transform:translateX(18px);background:#f2d38a}
+.v3-panel .v3p-seg{flex:none;display:flex;border:1px solid #5a4424;border-radius:6px;overflow:hidden}
+.v3-panel .v3p-seg button{min-width:3rem;min-height:44px;padding:0 .5rem;border:0;background:#140f09;color:#a8936a;font:600 .64rem 'IBM Plex Mono',ui-monospace,monospace;letter-spacing:.12em;text-transform:uppercase;cursor:pointer}
+.v3-panel .v3p-seg button.on{background:linear-gradient(#c8873a,#8a5a20);color:#1a1208}
+@media (orientation:landscape) and (max-height:520px){.v3-panel .v3p-sheet{width:min(25rem,62vw)}.v3-panel .v3p-grid{grid-template-columns:repeat(4,1fr)}.v3-panel .v3p-t{min-height:52px}.v3-panel h4{margin:.45rem 0 .3rem}.v3-panel .v3p-set{display:grid;grid-template-columns:1fr 1fr;gap:0 .4rem}.v3-panel .v3p-set .v3p-r.wide{grid-column:1/-1}.v3-panel .v3p-r small{display:none}.v3-panel .v3p-hd{margin-bottom:.1rem}}`;
   document.head.appendChild(st);
 }
 
@@ -106,7 +140,7 @@ function makeStage(loadText, opts) {
   const sh = document.getElementById("sheet");
   const host = opts.host || (sh && sh.parentNode) || document.body;
   const root = document.createElement("div"); root.id = "vh3d"; if (opts.cls) root.className = opts.cls;
-  root.innerHTML = '<canvas tabindex="-1"></canvas><div class="v3-grain"></div><div class="v3-vig"></div><div class="v3-hud"></div><div class="v3-msg"></div><div class="v3-prompt" hidden></div><div class="v3-hp" hidden></div><div class="v3-keys"></div><div class="v3-act"></div><div class="v3-top"></div><div class="v3-stick" hidden><i></i></div><div class="v3-end"></div><div class="v3-load">' + loadText + "</div>";
+  root.innerHTML = '<canvas tabindex="-1"></canvas><div class="v3-grain"></div><div class="v3-vig"></div><div class="v3-hud"></div><div class="v3-msg"></div><div class="v3-prompt" hidden></div><div class="v3-hp" hidden></div><div class="v3-keys"></div><div class="v3-act"></div><div class="v3-top"></div><button class="v3-menu" type="button" aria-label="Menu" aria-expanded="false"><i></i><i></i><i></i></button><div class="v3-stick" hidden><i></i></div><div class="v3-end"></div><div class="v3-load">' + loadText + "</div>";
   if (opts.host && host.firstChild) host.insertBefore(root, host.firstChild); else host.appendChild(root);
   const $ = (q) => root.querySelector(q);
   const canvas = $("canvas");
@@ -140,6 +174,7 @@ function makeStage(loadText, opts) {
   listen(window, "keydown", (e) => {
     if (inp.blocked()) return;
     const k = e.key.toLowerCase();
+    if (menu.isOpen()) { if (k === "escape") { e.preventDefault(); e.stopImmediatePropagation(); menu.close(); } return; }
     if (!KEYS.has(k)) return;
     if (e.target && /input|textarea|select/i.test(e.target.tagName)) return;
     e.preventDefault(); e.stopImmediatePropagation();
@@ -183,6 +218,9 @@ function makeStage(loadText, opts) {
   listen(canvas, "contextmenu", (e) => e.preventDefault());
   if (opts.host) { listen(canvas, "pointermove", (e) => e.stopPropagation()); listen(canvas, "pointerup", (e) => e.stopPropagation()); listen(canvas, "touchstart", (e) => { e.stopPropagation(); e.preventDefault(); }, { passive: false }); }
 
+  const menu = makeMenu(root, listen, () => stage);
+  document.body.classList.add("vh3d-stage");
+  let post = null, postFail = false, postAuto = false, grade = "none";
   let raf = 0, last = 0, dead = false, frameFn = null, firstFrame = true, slowAcc = 0, slowN = 0, pr = renderer.getPixelRatio();
   function loop(t) {
     if (dead) return;
@@ -191,30 +229,37 @@ function makeStage(loadText, opts) {
     stage.frames++;
     if (frameFn) for (let i = 0; i < stage.substeps; i++) frameFn(dt, t / 1000 + i * dt);
     // keep it smooth on slow machines: drop the render resolution step by step if frames run long
-    if (!firstFrame && raw < 1) { slowAcc += raw; slowN++; if (slowN >= 45) { if (slowAcc / slowN > 1 / 34 && pr > 0.6) { pr = Math.max(0.6, pr * 0.8); renderer.setPixelRatio(pr); resize(); } slowAcc = 0; slowN = 0; } }
-    renderer.render(scene, camera);
+    // and if the resolution is already at its floor, High's post-processing switches itself off for this scene
+    if (!firstFrame && raw < 1) { slowAcc += raw; slowN++; if (slowN >= 45) { if (slowAcc / slowN > 1 / 34) { if (pr > 0.6) { pr = Math.max(0.6, pr * 0.8); renderer.setPixelRatio(pr); resize(); } else if (post && !postAuto) postAuto = true; } slowAcc = 0; slowN = 0; } }
+    VH_TIME.value = t / 1000;
+    if (gfx === "high" && !postFail && !postAuto) {
+      if (!post) { try { post = makePost(renderer); post.setGrade(grade); } catch (e) { postFail = true; post = null; } }
+      if (post) { try { post.render(scene, camera); } catch (e) { postFail = true; renderer.setRenderTarget(null); renderer.render(scene, camera); } }
+      else renderer.render(scene, camera);
+    } else renderer.render(scene, camera);
     if (firstFrame) { firstFrame = false; setTimeout(() => { const l = $(".v3-load"); if (l) l.classList.add("off"); }, 60); }
   }
   let msgT = 0;
   const stage = {
     distK: camera.aspect < 0.8 ? 1.3 : 1, root, $, canvas, renderer, scene, camera, inp, listen, frames: 0, substeps: 1, coarse: touchDev, get gfx() { return gfx; }, onGfx: [],
-    // the Low / High button in the top bar: Low drops shadows, grass and resolution
-    gfxButton() {
-      const top = $(".v3-top"), b = document.createElement("button"); b.setAttribute("data-g", "1"); top.insertBefore(b, top.firstChild);
-      const label = () => { b.textContent = "Graphics: " + (gfx === "low" ? "Low" : "High"); };
-      label();
-      listen(b, "click", (e) => {
-        e.stopPropagation(); gfx = gfx === "low" ? "high" : "low"; gfxSet(gfx); label(); root.classList.toggle("lowfx", gfx === "low");
-        renderer.shadowMap.enabled = gfx !== "low"; pr = prCap(); renderer.setPixelRatio(pr); resize();
-        scene.traverse((o) => { const ms = o.material ? (Array.isArray(o.material) ? o.material : [o.material]) : []; ms.forEach((m) => { m.needsUpdate = true; }); });
-        stage.onGfx.forEach((f) => f(gfx));
-      });
+    // graphics quality (Low / High) is a setting in the menu panel: Low drops shadows, grass and resolution
+    gfxButton() { stage.hasGfx = true; },
+    setGfx(q) {
+      q = q === "low" || q === "medium" ? q : "high"; if (q === gfx) return;
+      gfx = q; gfxSet(gfx); root.classList.toggle("lowfx", gfx === "low");
+      renderer.shadowMap.enabled = gfx !== "low"; pr = prCap(); renderer.setPixelRatio(pr); resize();
+      scene.traverse((o) => { const ms = o.material ? (Array.isArray(o.material) ? o.material : [o.material]) : []; ms.forEach((m) => { m.needsUpdate = true; }); });
+      stage.onGfx.forEach((f) => f(gfx));
     },
+    menu: null, menuSrc: null, menuToggles: [],
+    // the Realm's colour grade (used by High's post-processing)
+    setGrade(k) { grade = k || "none"; if (post) post.setGrade(grade); },
+    get post() { return !!post && gfx === "high" && !postFail && !postAuto; },
     start(fn) { frameFn = fn; raf = requestAnimationFrame(loop); },
     msg(t, secs) { const m = $(".v3-msg"); m.textContent = t; m.classList.add("on"); clearTimeout(msgT); msgT = setTimeout(() => m.classList.remove("on"), (secs || 3) * 1000); },
     dispose() {
       if (dead) return; dead = true; cancelAnimationFrame(raf); clearTimeout(msgT);
-      disposers.forEach((d) => d());
+      disposers.forEach((d) => d()); menu.dispose(); if (!document.querySelectorAll("#vh3d").length || document.getElementById("vh3d") === root) document.body.classList.remove("vh3d-stage"); if (post) { try { post.dispose(); } catch (e) {} post = null; }
       const seen = new Set();
       scene.traverse((o) => {
         if (o.geometry && !seen.has(o.geometry)) { seen.add(o.geometry); o.geometry.dispose(); }
@@ -232,7 +277,83 @@ function makeStage(loadText, opts) {
   };
   const extraDispose = [];
   stageRef = stage;
+  stage.menu = menu;
   return stage;
+}
+
+// ---------- the menu: one round button, one slide-in panel ----------
+// Every 3D view (walk, battle, siege) shows the same corner button. The panel lists the scene's own buttons (kept in the
+// hidden .v3-top so their handlers are untouched), whatever the host page offers (stage.menuSrc: Gear, Quest, Skills...),
+// the scene's toggles (stage.menuToggles: Auto-run) and the settings: graphics quality, music and saving.
+const ICON = {
+  agear: "M12 3l7 3v5c0 5-3.5 8-7 10-3.5-2-7-5-7-10V6z", quest: "M7 4h11v13a3 3 0 0 1-3 3H6a2 2 0 0 1-2-2v-2h11 M7 4a2 2 0 0 0-2 2v2h2 M10 9h5M10 12h5",
+  askills: "M12 3l2.1 6.4L21 12l-6.9 2.6L12 21l-2.1-6.4L3 12l6.9-2.6z", abuild: "M13 3l8 8-3 3-8-8z M10 9l-6.5 10.5 1.5 1.5L15 14",
+  await: "M7 3h10M7 21h10M8 3c0 5 8 6 8 9s-8 4-8 9M16 3c0 5-8 6-8 9s8 4 8 9", aleave: "M3 6l6-2 6 2 6-2v14l-6 2-6-2-6 2z M9 4v14 M15 6v14",
+  menu: "M3 11l9-7 9 7 M5 10v10h14V10 M10 20v-6h4v6", sneak: "M2 12s4-6 10-6 10 6 10 6-4 6-10 6S2 12 2 12z M12 9.5a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5z",
+  flee: "M10 6l-6 6 6 6 M4 12h16", map: "M3 6l6-2 6 2 6-2v14l-6 2-6-2-6 2z M9 4v14 M15 6v14", auto: "M5 7l5 5-5 5 M12 7l5 5-5 5",
+  gfx: "M3 5h18v12H3z M8 21h8 M12 17v4", music: "M9 18V6l10-2v12 M9 18a2 2 0 1 1-4 0 2 2 0 0 1 4 0z M19 16a2 2 0 1 1-4 0 2 2 0 0 1 4 0z",
+  save: "M5 3h11l3 3v15H5z M8 3v5h7V3 M8 21v-7h8v7", dot: "M12 8a4 4 0 1 1 0 8 4 4 0 0 1 0-8z"
+};
+const svgI = (k) => '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="' + (ICON[k] || ICON.dot) + '"/></svg>';
+function makeMenu(root, listen, getStage) {
+  const btn = root.querySelector(".v3-menu");
+  const pn = document.createElement("div"); pn.className = "v3-panel"; pn.id = "v3menu"; pn.setAttribute("role", "dialog"); pn.setAttribute("aria-label", "Menu"); pn.setAttribute("aria-hidden", "true");
+  pn.innerHTML = '<div class="v3p-scrim"></div><div class="v3p-sheet"></div>';
+  document.body.appendChild(pn);
+  const sheet = pn.querySelector(".v3p-sheet");
+  let open = false, acts = [];
+  const vis = (b) => b && !b.hidden && b.style.display !== "none";
+  function items() {
+    const stg = getStage(), out = { main: [], scene: [], toggles: [] };
+    // what the host page offers (Gear, Quest, Skills, Build, Wait, Map, Sneak)
+    try { (stg.menuSrc ? stg.menuSrc() : []).forEach((it) => out.main.push(it)); } catch (e) {}
+    // the scene's own buttons, kept hidden in .v3-top
+    root.querySelectorAll(".v3-top button").forEach((b) => {
+      if (!vis(b) || b.hasAttribute("data-g")) return; const v = b.getAttribute("data-v") || "";
+      if (v === "run" || v === "auto") return;
+      out.scene.push({ id: v, label: b.textContent.trim(), icon: ICON[v] ? v : "dot", warn: v === "flee", run: () => { b.click(); if (v === "flee") setTimeout(() => b.click(), 30); } });
+    });
+    (stg.menuToggles || []).forEach((t) => out.toggles.push(t));
+    return out;
+  }
+  function render() {
+    const stg = getStage(), it = items(); acts = [];
+    const act = (o) => { acts.push(o); return acts.length - 1; };
+    const tile = (o) => '<button type="button" class="v3p-t' + (o.on && o.on() ? " on" : "") + (o.warn ? " warn" : "") + '" data-mi="' + act(o) + '">' + svgI(o.icon) + "<span>" + esc(o.label) + "</span></button>";
+    const where = (root.classList.contains("v3-area") ? (document.querySelector("#aobj b") || {}).textContent : (root.querySelector(".v3-hud h3") || {}).textContent) || "";
+    let h = '<div class="v3p-hd"><div><b>Menu</b>' + (where ? "<small>" + esc(where) + "</small>" : "") + '</div><button type="button" class="v3p-x" data-mx="1" aria-label="Close menu">×</button></div>';
+    const sb = document.getElementById("savebtn"), tiles = it.main.concat(it.scene);
+    if (sb && root.classList.contains("v3-area")) tiles.push({ id: "save", label: "Save", icon: "save", run: () => sb.click() });
+    if (tiles.length) h += "<h4>" + (root.classList.contains("v3-area") ? "Journey" : "Battle") + '</h4><div class="v3p-grid">' + tiles.map(tile).join("") + "</div>";
+    h += '<h4>Settings</h4><div class="v3p-set">';
+    it.toggles.forEach((t) => { h += '<button type="button" class="v3p-r' + (t.on() ? " on" : "") + '" data-mi="' + act(t) + '" role="switch" aria-checked="' + (t.on() ? "true" : "false") + '">' + svgI(t.icon) + "<span>" + esc(t.label) + (t.sub ? "<small>" + esc(t.sub) + "</small>" : "") + '</span><i class="v3p-sw"></i></button>'; });
+    const mb = document.getElementById("musbtn");
+    if (mb) { const on = !/off/i.test(mb.getAttribute("aria-label") || ""); h += '<button type="button" class="v3p-r' + (on ? " on" : "") + '" data-mi="' + act({ keep: true, run: () => mb.click() }) + '" role="switch" aria-checked="' + on + '">' + svgI("music") + '<span>Music</span><i class="v3p-sw"></i></button>'; }
+    if (stg.hasGfx) { const g = stg.gfx; h += '<div class="v3p-r wide" role="group" aria-label="Graphics quality">' + svgI("gfx") + '<span>Graphics quality<small>Low saves battery; High adds glow and colour grading</small></span><div class="v3p-seg">' + ["low", "medium", "high"].map((q) => '<button type="button" data-gq="' + q + '" class="' + (g === q ? "on" : "") + '">' + (q[0].toUpperCase() + q.slice(1)) + "</button>").join("") + "</div></div>"; }
+    h += "</div>";
+    sheet.innerHTML = h;
+  }
+  function setOpen(v) {
+    open = !!v; if (open) render();
+    pn.classList.toggle("on", open); pn.setAttribute("aria-hidden", open ? "false" : "true");
+    btn.classList.toggle("on", open); btn.setAttribute("aria-expanded", open ? "true" : "false"); btn.setAttribute("aria-label", open ? "Close menu" : "Menu");
+  }
+  const stop = (e) => e.stopPropagation();
+  ["pointerdown", "pointerup", "touchstart", "touchend"].forEach((ev) => { listen(btn, ev, stop); listen(pn, ev, stop); });
+  listen(btn, "click", (e) => { e.stopPropagation(); e.preventDefault(); setOpen(!open); });
+  listen(pn, "click", (e) => {
+    e.stopPropagation();
+    if (e.target === pn.querySelector(".v3p-scrim") || e.target.closest("[data-mx]")) { setOpen(false); return; }
+    const g = e.target.closest("[data-gq]"); if (g) { getStage().setGfx(g.getAttribute("data-gq")); render(); return; }
+    const b = e.target.closest("[data-mi]"); if (!b) return; const o = acts[+b.getAttribute("data-mi")]; if (!o) return;
+    if (o.on) { o.run(); render(); return; } // toggles stay open and show their new state
+    if (o.keep) { o.run(); setTimeout(render, 30); return; }
+    setOpen(false); setTimeout(() => { try { o.run(); } catch (x) {} }, 0);
+  });
+  listen(window, "resize", () => { if (open) render(); });
+  const m = { open: () => setOpen(true), close: () => setOpen(false), toggle: () => setOpen(!open), isOpen: () => open, el: pn, btn, render };
+  m.dispose = () => pn.remove();
+  return m;
 }
 
 // ---------- shared kit: materials, geometries, figures ----------
@@ -340,7 +461,11 @@ function roundRect(x, a, b, w, h, r) { x.beginPath(); x.moveTo(a + r, b); x.arcT
 
 // a low-poly person. o: { cloth, cloth2, skin, metal, helm: "cap"|"spike"|"hood"|"bare"|"crown", cloak, weapon: "sword"|"spear"|null, shield, eyes, scale }
 // the player: mail and a surcoat and cloak in the banner colour, bare-headed
-function heroLook(banner, armed) { return { base: "soldier", cloth: banner, cloth2: shade(banner, 0.55).getHex(), metal: 0x9a9ea4, dark: 0x4a4440, leather: 0x5a3e28, legs: 0x3a2e24, skin: 0xc89a78, hair: 0x2e2018, helm: false, weapon: "sword", shieldKind: armed ? "round" : null, shield: banner }; }
+// the player's people (chosen in the character select, premium/canon.js) dress the hero in their Realm palette;
+// the banner colour stays on the shield, and the hero keeps a sword for the strike animations
+function canonLook() { try { const o = window.__vh && window.__vh.S() && window.__vh.S().opt, C = window.VH_CANON; if (!o || !o.people || !C) return null; const r = C.realm(o.people); return r && r.id === o.people ? r.look : null; } catch (e) { return null; } }
+function heroLook(banner, armed) { const c = canonLook(), h = heroLook0(banner, armed); if (!c) return h; return Object.assign(h, { cloth: c.cloth, cloth2: c.cloth2, legs: c.legs, boots: c.boots, metal: c.metal, dark: c.dark, leather: c.leather, trim: c.trim, skin: c.skin, hair: c.hair, lantern: c.lantern, helm: false }); }
+function heroLook0(banner, armed) { return { base: "soldier", cloth: banner, cloth2: shade(banner, 0.55).getHex(), metal: 0x9a9ea4, dark: 0x4a4440, leather: 0x5a3e28, legs: 0x3a2e24, skin: 0xc89a78, hair: 0x2e2018, helm: false, weapon: "sword", shieldKind: armed ? "round" : null, shield: banner }; }
 // Kaelren in the prequel era (John, J-9): Flameborne charcoal coat, madder-red undershirt, copper buttons, dark hair, warm tawny-brown skin
 function kaelLook(armed) { return { base: "man", cloth: 0x2e2a28, cloth2: 0x9e2a2b, trim: 0xb87333, metal: 0x7a7c80, skin: 0xa0663e, hair: 0x1e1612, legs: 0x3a322c, boots: 0x2a201a, leather: 0x4a3626, weapon: "sword", shieldKind: armed ? "round" : null, shield: 0x8a5a34 }; }
 function figure(kit, o) {

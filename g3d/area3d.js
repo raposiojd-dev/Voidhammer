@@ -5,7 +5,7 @@
 // input calls (move, strike, talk, shoot). So every quest, flag, number and save key is untouched.
 // One sim pixel is PX metres; one 16 px tile is T metres. Sim x runs east (+x), sim y runs south (+z).
 import { K3 } from "./scene3d.js";
-import { Merge, paintedSky, grassField, groundMat } from "./art.js";
+import { Merge, paintedSky, grassField, groundMat, horizonBand, loadArt } from "./art.js";
 import { BARKS } from "./barks.js";
 const { THREE, REALMS, VOIDC, GROUND_TEX, GRASS_TINT, CLOUD, COLD, tree, rng, vnoise, clamp, lerp, angLerp, shade, mix,
   makeStage, makeKit, whenChars, heroLook, kaelLook, figure, animFigure, Batch, lights, particles, pool, torch, followCam, moveIntent, labelSprite, radialTex, esc } = K3;
@@ -46,11 +46,20 @@ function styleOnce() {
 #vh3d .v3-hurt{position:absolute;inset:0;pointer-events:none;box-shadow:inset 0 0 90px 30px #b0201088;opacity:0;transition:opacity .08s}
 #vh3d.touch .v3-keys{display:none}
 #vh3d.v3-area .v3-keys{right:auto;left:1rem;bottom:1rem;text-align:left}
+#area.v3on #ahud .abtns{display:none!important}
+#area.v3on #ahearts{margin-top:0!important;padding:.15rem .9rem .35rem 0;font-size:1.15rem;pointer-events:auto;cursor:pointer;margin-left:env(safe-area-inset-left,0px)}
+#area.v3on #aobj{display:block;width:max-content;max-width:min(17rem,46vw);margin-top:.1rem;margin-left:env(safe-area-inset-left,0px);padding:.3rem .55rem .32rem;border-left:2px solid #c8873a;border-radius:0 4px 4px 0;background:linear-gradient(90deg,rgba(12,9,6,.62),rgba(12,9,6,.22));font-size:.68rem!important;line-height:1.3;color:#e8d8b4;pointer-events:auto;cursor:pointer;opacity:0;transform:translateX(-6px);transition:opacity .6s,transform .6s}
+#area.v3on #aobj b{display:block;font-size:.6rem;letter-spacing:.12em;text-transform:uppercase;color:#d8b868}
+#aobj .aos{font-style:normal}#area.v3on #aobj .aos{display:none}
+#area.v3on #atoast{transition:opacity .5s}#area.v3on #atoast.v3-tfade{opacity:0!important}
+@media (orientation:landscape) and (max-height:520px){#area.v3on #atoast{top:calc(.55rem + env(safe-area-inset-top,0px));max-width:min(21rem,40vw);padding:.3rem .6rem!important;font-size:.72rem!important;line-height:1.3!important}}
+#area.v3on #aobj.v3-objon{opacity:1;transform:none;transition:opacity .25s,transform .25s}
 #vh3d .v3-nm{color:#f4e3b8;font:600 .74rem 'Cinzel',Georgia,serif;letter-spacing:.04em;border-color:#8a6a30aa;background:#0c0906b8}
 `;
   document.head.appendChild(st);
 }
 
+const realmLook = (id) => { try { const C = window.VH_CANON, r = C && C.realm(id); return r && r.id === id ? r.look : null; } catch (e) { return null; } };
 const hex = (c, d) => { if (typeof c === "number") return c; try { return new THREE.Color(c || d || "#888888").getHex(); } catch (e) { return d || 0x888888; } };
 
 // ======================================================================
@@ -67,6 +76,7 @@ export function area(api, done) {
     try { st = makeStage(A.sp && A.sp.th === "cave" ? "Into the dark…" : "Walking in…", { host: api.host(), cls: "v3-area", keys: ["w", "a", "s", "d", "e", "f", "q", "shift", "arrowup", "arrowdown", "arrowleft", "arrowright", "escape", "r", "control"] }); }
     catch (e) { api.fail(e); finish("fail"); return; }
     ctl.st = st; api.on(true);
+    try { const i0 = api.info(A); loadArt(st, i0.cave ? "shadow" : i0.realm); } catch (e) {}
     whenChars(() => {
       if (ctl.off || ctl.st !== st || api.AR() !== A) return;
       try { ctl.w = buildArea(st, api, A); ctl.ready = true; }
@@ -119,7 +129,22 @@ function buildArea(st, api, A) {
     L = lights(st, P, centre, 26, { dim: info.realm === "shadow" || info.realm === "spirit", cold: COLD[info.realm] });
     const sky = paintedSky(P.sky, mix(P.fog, 0xffffff, 0.12), L.sun.position.clone().sub(centre), L.sun.color, info.voidNear, VOIDC, CLOUD[info.realm]); scene.add(sky);
     L.sky = sky;
+    // the Realm's painted horizon (its 2D poster art), faint and far, behind the hills
+    L.band = horizonBand(info.realm, P.fog, (x) => st.track(x), { amt: over ? 0.5 : 0.4 }); scene.add(L.band);
   }
+  st.setGrade(cave ? "cave" : info.realm);
+  // time of day from the game clock: warm low sun at dawn and dusk, cold blue night, windows brighter after dark
+  const tod = { sunI: L.sun.intensity, sunC: L.sun.color.clone(), hemiI: L.hemi.intensity, hemiC: L.hemi.color.clone(), top: L.sky && L.sky.material.uniforms.top.value.clone(), hor: L.sky && L.sky.material.uniforms.hor.value.clone(), night: 0 };
+  const WARM = new THREE.Color(0xff9a52), NIGHT = new THREE.Color(0x52628e), NSKY = new THREE.Color(0x0b1022);
+  function timeOfDay() {
+    if (cave || !api.tod) return; const h = api.tod(); if (!(h >= 0)) return;
+    const up = THREE.MathUtils.smoothstep(h, 4.5, 6.5) * (1 - THREE.MathUtils.smoothstep(h, 18.5, 20.5)), warm = Math.max(Math.exp(-Math.pow((h - 6.6) / 1.2, 2)), Math.exp(-Math.pow((h - 18.4) / 1.2, 2)));
+    tod.night = 1 - up;
+    L.sun.intensity = tod.sunI * (0.35 + 0.65 * up); L.sun.color.copy(tod.sunC).lerp(WARM, warm * 0.3).lerp(NIGHT, tod.night * 0.6);
+    L.hemi.intensity = tod.hemiI * (0.72 + 0.28 * up); L.hemi.color.copy(tod.hemiC).lerp(NIGHT, tod.night * 0.45);
+    if (L.sky) { const u = L.sky.material.uniforms; u.top.value.copy(tod.top).lerp(NSKY, tod.night * 0.7).lerp(WARM, warm * 0.08); u.hor.value.copy(tod.hor).lerp(WARM, warm * 0.12).lerp(NSKY, tod.night * 0.5); }
+  }
+  timeOfDay();
   // the hero carries a lantern underground
   const lantern = cave ? new THREE.PointLight(0xffb070, 30, 14, 1.6) : null; if (lantern) scene.add(lantern);
 
@@ -335,7 +360,8 @@ function buildArea(st, api, A) {
     else if (n.cell) o.obj = cage(x, z);
     else if (n.draw) o.obj = signpost(x, z);
     else {
-      const nm = n.name || "", female = FEMALE.test(nm), cloth = hex(n.col, 0x6a5a4a), hair = hex(n.hair, 0x3a2a18);
+      // townsfolk wear their Realm's palette (premium/canon.js), blended with their own colours so each still reads apart
+      const nm = n.name || "", female = FEMALE.test(nm), RL = realmLook(info.realm), cloth = RL ? mix(hex(n.col, 0x6a5a4a), (nm.length % 2 ? RL.cloth : RL.cloth2), 0.38).getHex() : hex(n.col, 0x6a5a4a), hair = hex(n.hair, 0x3a2a18);
       let ch;
       if (/kaelren/i.test(nm)) ch = kaelLook(false);
       else if (/elyndra/i.test(nm)) ch = { base: "woman", hood: 0xd8d8e0, cloth: 0xc8c8d0, cloth2: 0x8a90a8, legs: 0x4a4a58, skin: 0xe0c8b0, hair: 0xd8d0c0, lantern: 0xc8e0ff };
@@ -402,8 +428,10 @@ function buildArea(st, api, A) {
   const orbMat = st.track(new THREE.MeshBasicMaterial({ color: 0xffb070 })), boltMat = st.track(new THREE.MeshBasicMaterial({ color: 0xc8a8ff }));
   const waveRing = new THREE.Mesh(st.track(new THREE.RingGeometry(0.85, 1, 40)), new THREE.MeshBasicMaterial({ color: 0xc8b0ff, transparent: true, opacity: 0.7, depthWrite: false, side: THREE.DoubleSide, blending: THREE.AdditiveBlending })); waveRing.rotation.x = -Math.PI / 2; waveRing.visible = false; scene.add(waveRing);
   // the objective: a soft pillar of light where the quest wants you
-  const beacon = new THREE.Mesh(st.track(new THREE.CylinderGeometry(0.3, 0.55, 22, 10, 1, true)), new THREE.MeshBasicMaterial({ color: 0xffe0a0, transparent: true, opacity: 0.08, depthWrite: false, side: THREE.DoubleSide, blending: THREE.AdditiveBlending, fog: false }));
-  beacon.position.y = 11; beacon.visible = false; scene.add(beacon);
+  // a short glow that fades upward (an alpha ramp), seen only from a distance: close by, the Talk pill and the marker say enough
+  const bAlpha = (() => { const c = document.createElement("canvas"); c.width = 2; c.height = 64; const x = c.getContext("2d"), gr = x.createLinearGradient(0, 64, 0, 0); gr.addColorStop(0, "#fff"); gr.addColorStop(1, "#000"); x.fillStyle = gr; x.fillRect(0, 0, 2, 64); return st.track(new THREE.CanvasTexture(c)); })();
+  const beacon = new THREE.Mesh(st.track(new THREE.CylinderGeometry(0.3, 0.5, 7, 10, 1, true)), new THREE.MeshBasicMaterial({ color: 0xffe0a0, alphaMap: bAlpha, transparent: true, opacity: 0.08, depthWrite: false, side: THREE.DoubleSide, blending: THREE.AdditiveBlending, fog: false }));
+  beacon.position.y = 3.5; beacon.visible = false; scene.add(beacon); let beaconOn = false;
   let beaconLab = labelSprite(st, " ", ""), beaconTxt = " "; beaconLab.visible = false; scene.add(beaconLab);
 
   // particles (ash, snow, motes) and the Void glow on the horizon
@@ -428,18 +456,36 @@ function buildArea(st, api, A) {
   const barkPool = (BARKS[info.realm] || []).concat(BARKS.any || []); let barkO = null, barkT = 0;
   const hurtEl = document.createElement("div"); hurtEl.className = "v3-hurt"; root.appendChild(hurtEl);
   const useBtn = document.createElement("button"); useBtn.className = "v3-use"; useBtn.hidden = true; root.appendChild(useBtn);
+  // the scene's buttons sit hidden in .v3-top and show up in the corner menu; the stick pushed to its rim runs (no Run button)
   const top = st.$(".v3-top");
-  top.innerHTML = '<button data-v="run">Run</button><button data-v="auto">Auto-run</button>' + (info.siteId ? '<button data-v="menu">' + esc(info.menuLabel || "Town menu") + "</button>" : "");
+  top.innerHTML = info.siteId ? '<button data-v="menu">' + esc(info.menuLabel || "Town menu") + "</button>" : "";
   st.gfxButton();
+  const host = api.host();
+  st.menuSrc = () => {
+    const out = [], hb = host && host.querySelectorAll("#ahud .abtns button"), ic = { agear: "agear", quest: "quest", askills: "askills", abuild: "abuild", await: "await", aleave: "aleave" };
+    (hb ? [...hb] : []).forEach((b) => {
+      if (b.hidden || b.style.display === "none") return; const a = b.getAttribute("data-act") || (b.id === "sneakbtn" ? "sneak" : "");
+      const sneak = b.id === "sneakbtn";
+      out.push({ id: a, label: b.textContent.trim(), icon: sneak ? "sneak" : ic[a] || "dot", run: () => b.click(), on: sneak ? () => /ing$/i.test(b.textContent.trim()) : null });
+    });
+    return out;
+  };
+  st.menuToggles = [{ label: "Auto-run", sub: "Walks on by itself; steer with the camera", icon: "auto", on: () => autoRun, run: () => { autoRun = !autoRun; if (autoRun) st.msg("Auto-run: steer with the camera. Touch the stick to take over.", 2.6); } }];
+  // the objective tracker (the 2D HUD's #aobj, restyled top-left under the hearts) fades when nothing has changed for a while
+  const objEl = document.getElementById("aobj"), heartsEl = document.getElementById("ahearts");
+  let objKey = "", objT = 0, toastK = "", toastT = 0;
+  const toastEl = document.getElementById("atoast");
+  if (toastEl) st.track({ dispose: () => toastEl.classList.remove("v3-tfade") });
+  const objShow = (secs) => { objT = performance.now() + (secs || 6) * 1000; if (objEl) objEl.classList.add("v3-objon"); };
+  const objPoke = (e) => { e.stopPropagation(); objShow(6); };
+  if (objEl) { st.listen(objEl, "pointerdown", objPoke); st.listen(heartsEl, "pointerdown", objPoke); st.track({ dispose: () => objEl.classList.remove("v3-objon") }); }
   setTimeout(() => { const kk = st.$(".v3-keys"); if (kk) kk.style.cssText += ";transition:opacity 1s;opacity:0"; }, 14000);
   st.$(".v3-keys").innerHTML = "WASD move · Shift run · drag or arrows: look<br>E talk / open · Space strike · K shoot · L cast · Esc: map";
-  let running = false, autoRun = false, useAct = null, hintShown = false;
+  let autoRun = false, useAct = null, hintShown = false;
   try { hintShown = localStorage.getItem("vh3d-hint-area") === "1"; } catch (e) {}
   st.listen(root, "click", (e) => {
     const b = e.target.closest("[data-v]"); if (!b) return; const v = b.getAttribute("data-v"); e.stopPropagation();
-    if (v === "run") { running = !running; b.classList.toggle("on", running); }
-    else if (v === "auto") { autoRun = !autoRun; b.classList.toggle("on", autoRun); if (autoRun) st.msg("Auto-run: steer with the camera. Touch the stick to take over.", 2.6); }
-    else if (v === "menu") api.openPlace(null);
+    if (v === "menu") api.openPlace(null);
   });
   st.listen(useBtn, "pointerdown", (e) => { e.stopPropagation(); e.preventDefault(); doUse(); });
   function doUse() { if (!useAct) return; if (useAct.door) { api.sfx("door"); inp.keys = {}; api.openPlace(useAct.door.key); } else api.use(); }
@@ -542,6 +588,10 @@ function buildArea(st, api, A) {
     const p = A.p, inDlg = api.inDlg(), paused = api.sheetOpen() || inDlg;
     if (st.onFrame) st.onFrame(t);
     torches.forEach((x) => x.tick(t)); kit.tickStatics(dt);
+    if (frameN % 240 === 0) timeOfDay();
+    // window glow breathes like a hearth behind the glass, stronger after dark
+    winMat.emissiveIntensity = 1.6 * (1 + tod.night * 0.5) * (0.9 + 0.06 * Math.sin(t * 2.3) + 0.04 * Math.sin(t * 7.1 + 1.3));
+    if (L.band) L.band.userData.tick(camera.position.x, camera.position.z);
     fx.userData.tick(dt, me.position.x, me.position.z); if (L.sky) L.sky.userData.tick(dt, camera.position.x, camera.position.z);
     for (const k of sparks) if (k.s.visible) { k.t -= dt; k.s.scale.setScalar(0.5 + (0.28 - k.t) * 3); k.s.material.opacity = k.t * 3.5; if (k.t <= 0) k.s.visible = false; }
 
@@ -550,8 +600,10 @@ function buildArea(st, api, A) {
     const k = inp.keys; if (k.arrowleft || k.q) yaw += dt * 2.2; if (k.arrowright || k.r) yaw -= dt * 2.2;
     let mv = moveIntent(inp, yaw);
     if (autoRun && mv.amt < 0.05) mv = { x: -Math.sin(yaw), z: -Math.cos(yaw), amt: 1 };
-    if (inp.stick.on && autoRun) { autoRun = false; const b = st.root.querySelector("[data-v=auto]"); if (b) b.classList.remove("on"); }
-    const sprint = (k.shift || running) ? 1.35 : 1;
+    if (inp.stick.on && autoRun && Math.hypot(inp.stick.x, inp.stick.y) > 0.2) autoRun = false;
+    // the stick pushed to its rim sprints (as in battle); Shift on a keyboard; auto-run jogs at full pace
+    const rim = inp.stick.on && Math.hypot(inp.stick.x, inp.stick.y) > 0.92;
+    const sprint = (k.shift || rim) ? 1.35 : 1;
     if (paused) api.move(0, 0, 1); else api.move(mv.amt > 0.05 ? mv.x * mv.amt : 0, mv.amt > 0.05 ? mv.z * mv.amt : 0, sprint);
     if (inp.click) { inp.click = 0; if (!st.coarse && !paused) api.strike(); }
 
@@ -577,7 +629,15 @@ function buildArea(st, api, A) {
         if (mk !== o.mk) { o.mk = mk; if (o.mark) { scene.remove(o.mark); o.mark = null; } if (mk === 1 || mk === 2) { o.mark = new THREE.Sprite(new THREE.SpriteMaterial({ map: markTex[mk], transparent: true, depthWrite: false, fog: false })); o.mark.scale.setScalar(1.1); o.mark.renderOrder = 12; scene.add(o.mark); } }
         if (n.chest && o.obj && o.obj.userData.lid) { let open = false; try { open = n.d() === "chest_empty"; } catch (e) {} o.obj.userData.lid.rotation.x = open ? -1.1 : 0; o.obj.userData.lid.position.z = open ? -0.2 : 0; o.obj.userData.glow.visible = !open; }
       }
-      if (o.mark) { o.mark.position.set(o.x, (n.small ? 2.3 : 2.95) + Math.sin(t * 3 + o.x) * 0.12, o.z); o.mark.visible = vis; }
+      if (o.mark) {
+        o.mark.position.set(o.x, (n.small ? 2.3 : 2.95) + Math.sin(t * 3 + o.x) * 0.12, o.z);
+        // on screen the marker stays between ~18px and ~12% of the screen height, whatever the camera distance; it fades out
+        // once you are close (the Talk pill names who you are talking to) or the camera is right on top of it
+        const dc = Math.max(0.5, camera.position.distanceTo(o.mark.position)), Hs = root.clientHeight || 390, k = 2 * dc * Math.tan(camera.fov * Math.PI / 360) / Hs;
+        const px = clamp(1.1 / k, 18, Math.min(52, Hs * 0.12)); o.mark.scale.setScalar(px * k);
+        const fade = Math.min(clamp((d - 2.4) / 2.2, 0, 1), clamp((dc - 2.2) / 2, 0, 1));
+        o.mark.material.opacity = fade; o.mark.visible = vis && fade > 0.02;
+      }
       o.d = vis && n.name ? d : 99;
       if (o.fig && vis) { if (d < 5) o.fig.rotation.y = angLerp(o.fig.rotation.y, Math.atan2(hx - o.x, hz - o.z), 1 - Math.exp(-dt * 4)); if (d < 40 || frameN % 4 === 0) animFigure(o.fig, t, 0, 0, false, d < 40 ? dt : dt * 4, d > 25 ? 2 : 0); }
       if (o.obj && o.obj.userData.veil) o.obj.userData.veil.material.opacity = 0.35 + 0.15 * Math.sin(t * 3);
@@ -588,13 +648,37 @@ function buildArea(st, api, A) {
     else if (!paused && barkPool.length && frameN % 12 === 0) {
       for (const o of npcs) { if (!o.fig || o.mk > 0 || o.d > 3.6 || (o.barkCd || 0) > t) continue; o.barkCd = t + 40; barkO = o; barkT = 4.5; barkEl.textContent = "“" + barkPool[Math.floor(Math.random() * barkPool.length)] + "”"; break; }
     }
-    // names over the nearest three people
+    // name plates: the person the Talk pill points at (or the nearest), plus up to two others close by, dimmer;
+    // a plate that would overlap one already placed is hidden, so they never stack
     byD.length = 0; for (const o of npcs) if (o.d < 8) byD.push(o); byD.sort((a, b) => a.d - b.d);
+    { const tn = useAct && !useAct.door ? useAct.n : ""; const ti = tn ? byD.findIndex((o) => o.n.name === tn) : -1; if (ti > 0) byD.unshift(byD.splice(ti, 1)[0]); }
+    const placed = [];
     for (let i = 0; i < nameEls.length; i++) {
       const el = nameEls[i], o = byD[i];
-      if (!o || paused) { el.hidden = true; continue; }
-      if (el._o !== o) { el._o = o; el.textContent = o.n.name; }
-      if (proj(o.x, o.n.small ? 1.75 : 2.25, o.z, el)) { el.style.transform += " translate(-50%,-100%)"; el.style.opacity = clamp(1.6 - o.d / 6, 0.35, 1).toFixed(2); }
+      if (!o || paused || (i > 0 && o.d > 4.5)) { el.hidden = true; continue; }
+      if (el._o !== o) { el._o = o; el.textContent = o.n.name; el._w = 0; }
+      v3.set(o.x, o.n.small ? 1.75 : 2.25, o.z).project(camera);
+      if (v3.z > 1 || Math.abs(v3.x) > 1.1 || Math.abs(v3.y) > 1.1) { el.hidden = true; continue; }
+      const sx = (v3.x * 0.5 + 0.5) * root.clientWidth, sy = (-v3.y * 0.5 + 0.5) * root.clientHeight;
+      if (el.hidden) el.hidden = false;
+      if (!el._w) { el._w = el.offsetWidth || 90; el._h = el.offsetHeight || 22; }
+      const bx = { l: sx - el._w / 2 - 4, r: sx + el._w / 2 + 4, t: sy - el._h - 3, b: sy + 3 };
+      if (placed.some((q) => bx.l < q.r && bx.r > q.l && bx.t < q.b && bx.b > q.t)) { el.hidden = true; continue; }
+      placed.push(bx);
+      el.style.transform = "translate(" + sx.toFixed(1) + "px," + sy.toFixed(1) + "px) translate(-50%,-100%)" + (i ? " scale(.86)" : "");
+      el.style.opacity = i ? clamp(1.1 - o.d / 6, 0.3, 0.6).toFixed(2) : "1";
+    }
+    // the objective tracker: shown when it changes (the clock does not count), faded after a few quiet seconds
+    if (objEl && frameN % 10 === 0) {
+      const key = (objEl.textContent || "").replace(/Day \d+ \d\d:\d\d( night)?/, "").replace(/\d+ crowns/, "");
+      if (key !== objKey) { objKey = key; objShow(6); }
+    }
+    if (objT && performance.now() > objT) { objT = 0; if (objEl) objEl.classList.remove("v3-objon"); }
+    // tips (the area toast) fade after about three seconds of wall time, however slowly the sim's own timer runs
+    if (toastEl && frameN % 3 === 0) {
+      if (toastEl.hidden) { toastK = ""; toastEl.classList.remove("v3-tfade"); }
+      else if (toastEl.textContent !== toastK) { toastK = toastEl.textContent; toastT = performance.now(); toastEl.classList.remove("v3-tfade"); }
+      else if (performance.now() - toastT > 3000) toastEl.classList.add("v3-tfade");
     }
     // foes (create lazily near the player), items, missiles, effects
     syncFoes(dt, t, hx, hz);
@@ -617,12 +701,12 @@ function buildArea(st, api, A) {
     if (frameN % 20 === 1) {
       const tp = api.target();
       if (tp && !inDlg) {
-        beacon.visible = true; beacon.position.set(tp.x * PX, 11, (tp.y + 8) * PX); const lab = tp.lab || "";
+        beaconOn = true; beacon.visible = true; beacon.position.set(tp.x * PX, 3.5, (tp.y + 8) * PX); const lab = tp.lab || "";
         if (lab !== beaconTxt) { beaconTxt = lab; scene.remove(beaconLab); const nl = labelSprite(st, lab || "Here", "your objective"); beaconLab = nl; scene.add(nl); }
         beaconLab.position.set(tp.x * PX, 3.9, (tp.y + 8) * PX); beaconLab.visible = !!lab;
-      } else { beacon.visible = false; beaconLab.visible = false; }
+      } else { beaconOn = false; beacon.visible = false; beaconLab.visible = false; }
     }
-    if (beacon.visible) { const d = Math.hypot(beacon.position.x - hx, beacon.position.z - hz); beacon.material.opacity = 0.02 + 0.07 * clamp((d - 4) / 14, 0, 1); beaconLab.material.opacity = clamp((d - 3) / 4, 0, 1); }
+    if (beacon.visible) { const d = Math.hypot(beacon.position.x - hx, beacon.position.z - hz); beacon.material.opacity = 0.08 * clamp((d - 7) / 12, 0, 1); beacon.visible = beacon.material.opacity > 0.003; beaconLab.material.opacity = clamp((d - 3) / 4, 0, 1); }
 
     // culling: far chunks off
     if (!small && frameN % 8 === 0) for (const c of chunks) c.grp.visible = Math.hypot(c.x - hx, c.z - hz) < 72;
@@ -654,6 +738,6 @@ function buildArea(st, api, A) {
       if (best) heroYaw = Math.atan2(best.x, best.y);
       return best || { x: fx, y: fz };
     },
-    state: () => ({ x: A.p.x, y: A.p.y, hp: A.p.hp, foes: foes.size, npcs: npcs.length, marks: npcs.filter((o) => o.mark).length, beacon: beacon.visible, chunks: chunks.length, doors: doors.length, use: useAct ? useAct.l + "|" + (useAct.n || "") : "", frames: st.frames, dlg: api.inDlg() })
+    state: () => ({ x: A.p.x, y: A.p.y, hp: A.p.hp, foes: foes.size, npcs: npcs.length, marks: npcs.filter((o) => o.mark).length, beacon: beaconOn, chunks: chunks.length, doors: doors.length, use: useAct ? useAct.l + "|" + (useAct.n || "") : "", frames: st.frames, dlg: api.inDlg() })
   };
 }

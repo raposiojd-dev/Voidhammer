@@ -7,7 +7,7 @@
 // The scene never touches game numbers: it reports how much of each side is left, and the bridge feeds that to
 // finishBattle exactly as the 2D field does.
 import { K3 } from "./scene3d.js";
-import { Merge, paintedSky, grassField, groundMat } from "./art.js";
+import { Merge, paintedSky, grassField, groundMat, horizonBand, loadArt } from "./art.js";
 import { buildSiege } from "./siege3d.js";
 const { THREE, REALMS, VOIDC, GROUND_TEX, GRASS_TINT, GRASS_N, CLOUD, COLD, tree, rng, vnoise, clamp, lerp, angLerp, shade, mix,
   makeStage, makeKit, whenChars, heroLook, kaelLook, figure, animFigure, Batch, lights, particles, followCam, moveIntent, esc } = K3;
@@ -47,6 +47,7 @@ export function battle(api, info, done) {
   let st;
   try { st = makeStage(info.siege ? "The walls are manned…" : "The lines are forming…", { keys: ["w", "a", "s", "d", "q", "e", "f", "c", "h", "r", "v", "b", "x", "g", "1", "2", "3", "4", "5", "6", "7", "8", "9", "l", " ", "shift", "control", "arrowup", "arrowdown", "arrowleft", "arrowright", "escape"] }); }
   catch (e) { api.fail(e); setTimeout(() => done({ how: "fail" }), 0); return null; }
+  loadArt(st, info.realm);
   const ctl = { ready: false, stop() { if (ctl.ready) return; ctl.off = true; st.dispose(); done({ how: "fail" }); }, fast() {}, state: () => ({}) };
   whenChars(() => {
     if (ctl.off) return;
@@ -64,6 +65,9 @@ function buildBattle(st, api, info, done) {
   scene.fog = new THREE.FogExp2(fogC, isVoid ? 0.018 : 0.011);
   const L = lights(st, P, new THREE.Vector3(0, 0, 0), 32, { dim: isVoid, cold: isVoid || COLD[info.realm] });
   const sky = paintedSky(isVoid ? mix(P.sky, 0x1a1030, 0.6) : P.sky, mix(fogC, 0xffffff, 0.1), L.sun.position.clone(), L.sun.color, Math.max(info.voidNear, isVoid ? 1 : 0), VOIDC, isVoid ? 0.8 : CLOUD[info.realm]); scene.add(sky);
+  // the Realm's painted horizon behind the field (not in the Void), and its colour grade on High
+  const band = isVoid ? null : horizonBand(info.realm, fogC, (x) => st.track(x), { amt: 0.42 }); if (band) scene.add(band);
+  st.setGrade(isVoid ? "shadow" : info.realm);
   if (isVoid) { L.sun.color = mix(P.sun, 0xb8a8ff, 0.5); const vl = new THREE.PointLight(VOIDC, 80, 70, 1.4); vl.position.set(0, 10, -34); scene.add(vl); }
 
   // ---------- terrain (flat where the lines meet, hills beyond; a siege flattens the approach to the walls) ----------
@@ -409,7 +413,7 @@ function buildBattle(st, api, info, done) {
   st.start((dt, time) => {
     if (K2) K2.pre();
     for (const k of sparks) if (k.s.visible) { k.t -= dt; k.s.scale.setScalar((k.big ? 1.2 : 0.5) + ((k.big ? 0.45 : 0.25) - k.t) * 3); k.s.material.opacity = k.t * 4; if (k.t <= 0) k.s.visible = false; }
-    fx.userData.tick(dt, hero.x, hero.z); sky.userData.tick(dt, camera.position.x, camera.position.z); flags.forEach((f, i) => { f.rotation.y = Math.sin(time * 2 + i) * 0.25; });
+    fx.userData.tick(dt, hero.x, hero.z); sky.userData.tick(dt, camera.position.x, camera.position.z); if (band) band.userData.tick(camera.position.x, camera.position.z); flags.forEach((f, i) => { f.rotation.y = Math.sin(time * 2 + i) * 0.25; });
     if (paused) return;
     if (SG) SG.tick(dt * speedK, time);
     if (fleeAsk > 0) fleeAsk -= dt;

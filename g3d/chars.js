@@ -56,6 +56,7 @@ export function makeCharKit(track) {
     if (mats.has(p.key)) return mats.get(p.key);
     if (!mr) mr = tex4(mrCanvas(), false, track);
     const m = track(new THREE.MeshStandardMaterial({ map: tex4(p.cv, true, track), roughnessMap: mr, metalnessMap: mr, roughness: 1, metalness: 1, flatShading: true }));
+    m.defines = { VH_RIM: "" }; // a warm rim so figures read against the ground and sky (art.js)
     mats.set(p.key, m); return m;
   }
   // props are built along simple axes in metres; attach() puts them into bone space
