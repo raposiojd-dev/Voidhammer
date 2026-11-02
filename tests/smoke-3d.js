@@ -275,7 +275,9 @@ const ok = (c, m) => { console.log((c ? "PASS " : "FAIL ") + m); if (!c) fails++
       const did = moved || hit || zone || summon || buff;
       fired.push(id);
       ok(r.okc && did && paid && a.again === false, id + " fires in battle: " + [moved && "moved", hit && "hurt them", zone && "zone", summon && "summoned", buff && "buff/ward"].filter(Boolean).join(", ") + (art ? "; " + art + " price " + Math.round(r.m0[art] || 0) + " -> " + Math.round(a.m[art] || 0) : "; no price (Commander)") + "; on cooldown after");
-      if (id === "em_brand" || id === "st_step" || id === "sg_press" || id === "li_shield") await shot("k2-b-" + id + ".png");
+      // the battle's clock is held while the picture is taken (it keeps drawing): how long a screenshot takes on this
+      // machine must not decide whether the bandits outlast nine casts
+      if (id === "em_brand" || id === "st_step" || id === "sg_press" || id === "li_shield") { await js(() => { __vh.scene().ctl.scene.substeps = 0; }); await shot("k2-b-" + id + ".png"); await js(() => { if (__vh.scene()) __vh.scene().ctl.scene.substeps = 1; }); }
       await js(() => { __vh.scene().ctl.k2().core.cds = {}; });
     }
     // the price: push Embercraft into the Arrears; it marks you and takes your Block
