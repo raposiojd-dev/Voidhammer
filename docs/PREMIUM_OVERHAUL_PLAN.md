@@ -180,3 +180,25 @@ The canon question was "who is the player?" The spec never names the player; it 
 - The 3D preview uses the same armoured body for every Realm (the game's hero is always that body); variety comes from Realm colours and kit. In play, the hero still wears the banner colour until Phase 2 changes `heroLook()`.
 - UI sounds are synthesised; they are tasteful placeholders, not a sampled set.
 - Measured only on software WebGL. John: please open the creator on the iPhone and tell us how the preview turns.
+
+---
+
+## 5. Phase 2: what shipped (branch `game/premium-p2`, 2 Nov)
+
+New files `premium/p2.js` and `premium/p2.css`, wired in through one marked block in `index.html` ("PREMIUM PHASE 2"). Deleting them makes the block do nothing.
+
+| Area | What changed |
+|---|---|
+| **Your Realm in play** | Your column in 3D battles wears your people's palette (surcoat, hose, metal; shields keep your banner colour). Your standard flies the Realm accent with a band of your banner colour and a finial in the Realm's third colour. On the map, the painted knight and the column are tinted in your people's colours under a Realm pennant. Against your own Realm's lords the surcoats stay in banner colour so the sides never look alike. The rolls that pick each soldier's kit are unchanged. |
+| **Map HUD** | One forged bar: day and month, crowns, grain and men in Inter tabular figures with days-left, low stores pulse ember; a chip row (level, quest, Hollow, Dominion, heroes, wars) and a round speed control. ☰ opens a kit menu that holds Walk, Save, music, the map key, Backup, Co-op, Settings and Main menu, so those floating buttons are gone from the bare map. The deed ribbon is a small tracker card under the bar. |
+| **Bottom nav** | Icon tabs in Cinzel; the open sheet's tab lights in ember. Landscape puts icon and label side by side. |
+| **Camera** | Tapping a settlement glides the camera to it (ease-in-out, holds, glides back to your column); two-finger pinch zooms on phones. Reduce motion skips the glide. |
+| **Labels and map look** | Settlements are parchment cartouches in Cinzel capitals with their Realm's crest; other labels are small iron plates in Inter. Realm names are engraved Cinzel cartography. A parchment-grain and ink-edge layer sits over the map. |
+| **Settlement sheets** | A header strip over the Realm's horizon backdrop (`g3d/assets/backdrops`) with the crest; a full-width primary Walk the streets; a "people here" block with your quest's giver (portrait from `img/face` when one exists, a forged monogram when not) and the local writ giver with a "!" when writs are posted. Sheets now sink away when closed. |
+| **Combat juice** | Heavy strikes (two or more men, or a kill) freeze for 45–60 ms with a short camera jolt; impact flashes on hits, kills and heavy blows; a blue-white block spark with a struck-metal clang; a red edge pulse when you are hurt. "They break!": a slow heartbeat, a camera kick and a roll of gold light. A forged Victory, Defeat or Withdrawn stinger with its own sound, then a summary card (foes, men lost, crowns, grain) at the top of the result sheet. None of it runs while a battle is fast-forwarded, and the shake uses its own tiny random generator, so battle numbers are untouched. |
+| **UI sound** | Ticks, confirm and back cues from the front door's synth family on the HUD, nav, sheets and 3D buttons, plus open, close, focus, clang, victory and defeat. They follow the Interface sounds switch; the game's old button click is retired. |
+| **Names and text** | The village quest giver "Reeve Brannoc" is now **Reeve Thursby** (Brannoc clashed with the founder Brannoc the Paired); the list keeps its order so every settlement keeps its slot, and quest ids are unchanged. Loot lines read "1 spear", "1 great axe" instead of "1 spears". |
+
+Screenshots: `docs/screens/premium-p2/` (before and after, 390x844 and 844x390: map, settlement focus, town sheet, 3D walk, battle, stinger, result).
+
+Still to do from Phase 2 and 3: a collision pass for lord and town labels, sampled sounds, camera collision in town walks, and siege set dressing.
