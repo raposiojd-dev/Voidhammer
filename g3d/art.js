@@ -264,6 +264,26 @@ export function paintedSky(top, horizon, sunDir, sunCol, voidAmt, voidCol, cloud
   return s;
 }
 
+// ---------- image-based light from the painted sky (High only): the dome, prefiltered into an environment map ----------
+// No HDRI download: the sky that is already drawn (with its time of day and sun) is prefiltered (PMREM) and given to the
+// people and horses (materials flagged userData.vhEnv), so armour, blades and cloth pick up the sky's colour. Not set as
+// scene.environment: sampling it on every surface (ground, walls, trees) cost High about half its frame rate in testing.
+export function skyEnv(renderer, sky) {
+  const pm = new THREE.PMREMGenerator(renderer), sc = new THREE.Scene(), m = new THREE.Mesh(sky.geometry, sky.material);
+  m.frustumCulled = false; sc.add(m);
+  const rt = pm.fromScene(sc, 0.035, 1, 1000); pm.dispose(); return rt;
+}
+// attach (and keep up to date) the sky environment on a stage; people spawned later are picked up every couple of seconds
+export function useSkyEnv(st, scene, sky) {
+  let rt = null, on = false, iv = 0; const h0 = { k: 1 };
+  const apply = () => { const tex = on && rt ? rt.texture : null; scene.traverse((o) => { const ms = o.material ? (Array.isArray(o.material) ? o.material : [o.material]) : []; for (const m of ms) if (m.userData && m.userData.vhEnv && m.envMap !== tex) { m.envMap = tex; m.envMapIntensity = 0.7; m.needsUpdate = true; } }); };
+  const build = () => { try { const n = skyEnv(st.renderer, sky); if (rt) rt.dispose(); rt = n; apply(); } catch (e) { rt = null; } };
+  const set = (q) => { const want = q === "high"; if (want === on) return; on = want; if (on && !rt) build(); apply(); };
+  if (window.__vhNoEnv) return { k: h0, refresh() {}, dispose() {} };
+  set(st.gfx); st.onGfx.push(set); iv = setInterval(() => { if (on) apply(); }, 2000);
+  return { k: h0, refresh() { if (on) build(); }, dispose() { clearInterval(iv); if (rt) rt.dispose(); rt = null; } };
+}
+
 // ---------- painted horizon: the Realm's 2D poster art as a faint, distant band behind the 3D world ----------
 // The upper part of each poster (sky and far silhouettes) is wrapped around a ring inside the sky dome, mirrored so the
 // seams never show, blended into the fog colour and faded out at the top and bottom. Loaded lazily, one small webp per scene.

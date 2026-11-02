@@ -8,6 +8,7 @@ import * as THREE from "./three.module.min.js";
 import { loadChars, charsReady, makeCharKit, makeChar } from "./chars.js";
 import { makeArt, Merge, paintedSky, grassField, gfxGet, gfxSet, groundMat, grainURL, VH_TIME } from "./art.js";
 import { makePost } from "./post.js";
+import { loadPacks, packReady, kitModels, modelTree, setBiome } from "./models.js";
 
 // ---------- Realm looks (from GAME_CANON_SPEC.md and the Realm Codex §15b LOOK) ----------
 const REALMS = {
@@ -30,6 +31,8 @@ const GRASS_N = { ember: 0.55, metal: 0.4, shadow: 0.6, frost: 0.35, stone: 0.7 
 const CLOUD = { ember: 0.55, stone: 0.5, storm: 0.95, light: 0.3, frost: 0.75, spirit: 0.6, shadow: 0.7, metal: 0.65 };
 // a pine (stacked cones) or a broadleaf (clumped rocks of foliage) into an instanced batch
 function tree(B, white, x, y, z, h, tc, rand) {
+  // Medium and High: a Quaternius model tree from the scene's Realm biome (models.js); Low keeps the cone tree
+  if (B.kit.mm) { modelTree(B, x, y, z, h * 0.95, tc, rand); return; }
   B.add("cyl", white, x, y + h * 0.2, z, 0.35, h * 0.45, 0.35, 0, 0x4a3420);
   if (rand() < 0.65) { for (let k = 0; k < 3; k++) { const s = (1 - k * 0.24) * h * 0.55; B.add("cone", white, x, y + h * (0.35 + k * 0.22) + s * 0.4, z, s, s * 0.9, s, rand() * 3, shade(tc, 0.75 + rand() * 0.4 + k * 0.06)); } }
   else { for (let k = 0; k < 4; k++) { const s = h * (0.32 + rand() * 0.12); B.add("rock", white, x + (rand() - 0.5) * h * 0.3, y + h * (0.62 + rand() * 0.25), z + (rand() - 0.5) * h * 0.3, s, s * 0.85, s, rand() * 6, shade(tc, 0.85 + rand() * 0.4)); } }
@@ -149,6 +152,7 @@ function makeStage(loadText, opts) {
   try {
     renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: "high-performance" });
   } catch (e) { root.remove(); throw e; }
+  window.__vh3dRenderer = renderer; // test hooks: draw calls and triangles per frame (tests/models-shots.js)
   const coarse = matchMedia("(pointer:coarse)").matches && !matchMedia("(pointer:fine)").matches;
   if (coarse || "ontouchstart" in window && navigator.maxTouchPoints > 0 && !matchMedia("(pointer:fine)").matches) root.classList.add("touch");
   const touchDev = coarse || ("ontouchstart" in window && navigator.maxTouchPoints > 0 && !matchMedia("(pointer:fine)").matches);
@@ -240,6 +244,7 @@ function makeStage(loadText, opts) {
     if (firstFrame) { firstFrame = false; setTimeout(() => { const l = $(".v3-load"); if (l) l.classList.add("off"); }, 60); }
   }
   let msgT = 0;
+  window.__vh3dScene = scene;
   const stage = {
     distK: camera.aspect < 0.8 ? 1.3 : 1, root, $, canvas, renderer, scene, camera, inp, listen, frames: 0, substeps: 1, coarse: touchDev, get gfx() { return gfx; }, onGfx: [],
     // graphics quality (Low / High) is a setting in the menu panel: Low drops shadows, grass and resolution
@@ -401,14 +406,19 @@ function makeKit(stage) {
   const blobTex = track(radialTex("rgba(0,0,0,0.55)", "rgba(0,0,0,0)")), blobGeo = track(new THREE.PlaneGeometry(1.1, 1.1).rotateX(-Math.PI / 2));
   const blobMat = track(new THREE.MeshBasicMaterial({ map: blobTex, transparent: true, depthWrite: false, opacity: 0.8 }));
   blobMat.visible = stage.gfx === "low"; stage.onGfx.push((q) => { blobMat.visible = q === "low"; });
-  return { mat, glow, g, glowTex, coldTex, mats, ck, art, statics, blobGeo, blobMat, tickStatics(dt) { for (const f of statics) f.userData.ch.update(dt, 0, 0, false); } };
+  const kit = { mat, glow, g, glowTex, coldTex, mats, ck, art, statics, blobGeo, blobMat, mm: null, tickStatics(dt) { for (const f of statics) f.userData.ch.update(dt, 0, 0, false); } };
+  kitModels(kit, stage.gfx, track);
+  return kit;
 }
 
 // wait for the rigged bodies (or give up after a while and use the box people), then build
-function whenChars(fn) {
-  if (charsReady()) { fn(); return; }
+function whenChars(fn, packs) {
+  // the rigged people, plus (on Medium and High) the model packs this scene draws; each gives up on its own
+  const need = gfxGet() === "low" ? [] : (packs || ["nature"]);
+  if (charsReady() && need.every(packReady)) { fn(); return; }
   let doneOnce = false; const go = () => { if (!doneOnce) { doneOnce = true; fn(); } };
-  loadChars().then(go, (e) => { if (window.console) console.log("vh3d: rigged people unavailable, using box people", e && e.message); go(); });
+  const pc = loadChars().catch((e) => { if (window.console) console.log("vh3d: rigged people unavailable, using box people", e && e.message); });
+  Promise.all([pc, loadPacks(need, 12000)]).then(go, go);
   setTimeout(go, 15000);
 }
 
@@ -641,11 +651,12 @@ export function walk(api, info, done) {
     if (ctl.off) return;
     try { Object.assign(ctl, buildWalk(st, api, info, done)); ctl.ready = true; }
     catch (e) { api.fail(e); st.dispose(); setTimeout(() => done("fail"), 0); }
-  });
+  }, ["nature", "village"]);
   return ctl;
 }
 
 function buildWalk(st, api, info, done) {
+  setBiome(info.realm);
   const P = REALMS[info.realm] || REALMS.ember, rand = rng(info.id + "|walk"), kit = makeKit(st), { scene, camera, inp } = st;
   const B = new Batch(kit), white = kit.mat(0xffffff), winMat = kit.glow(0xffb45a), coldWin = kit.glow(0xc8dcff);
   const R = info.type === "village" ? 24 : info.type === "castle" ? 22 : info.size >= 4 ? 36 : 31;
@@ -1062,6 +1073,7 @@ export function battle(api, info, done) {
 }
 
 function buildBattle(st, api, info, done) {
+  setBiome(info.realm);
   const isVoid = info.kind === "void" || info.kind === "rift";
   const P = REALMS[info.realm] || REALMS.ember, kit = makeKit(st), { scene, camera, inp } = st, rand = rng((info.title || "") + "|" + Math.floor(info.p0 * 100));
   const B = new Batch(kit), white = kit.mat(0xffffff);

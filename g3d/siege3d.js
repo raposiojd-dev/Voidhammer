@@ -6,6 +6,8 @@
 // Either side can be the player's: the bridge sets info.defend when the hold under siege is the player's own.
 import * as THREE from "./three.module.min.js";
 import { Merge } from "./art.js";
+import { recoloured, pack } from "./models.js";
+import { K3 } from "./scene3d.js";
 
 export function buildSiege(st, kit, art, P, info, H0, defendP) {
   const scene = st.scene, mStone = art.mat("stone"), mPlank = art.mat("planks", { roughness: 0.85 }), mBeam = art.mat("beam", { roughness: 0.85 }), mRoof = art.mat("slate", { roughness: 0.7 });
@@ -18,18 +20,33 @@ export function buildSiege(st, kit, art, P, info, H0, defendP) {
     M.box(mStone, cx, WH / 2, wallZ, w, WH, TH, 0, sc);
     for (let x = a + 0.6; x < b - 0.3; x += 1.5) { M.box(mStone, x, WH + 0.45, wallZ + TH / 2 - 0.2, 0.8, 0.9, 0.4, 0, sc); M.box(mStone, x, WH + 0.3, wallZ - TH / 2 + 0.2, 0.8, 0.6, 0.35, 0, dark); }
   }
+  // Medium/High: square brick towers (Quaternius CC0, models.js) in the Realm's stone, with banners in its colours, and
+  // timber cottages in the yard; Low keeps the round towers and plain houses. All of it is scenery: the wall walk, gate,
+  // ladders and arrow blocking are worked out from the numbers above, never from these meshes.
+  const CP = kit.mm ? pack("castle") : null, VP = kit.mm ? pack("village") : null, MB = CP ? new K3.Batch(kit) : null;
+  const flagC = (() => { try { const C = window.VH_CANON, r = C && C.realm(info.realm); return r && r.id === info.realm ? r.look.cloth : null; } catch (e) { return null; } })() || P.accent || 0x9e2b25;
+  const tG = CP && recoloured("castle", "tower", { 4: sc, 0: sc }, "siege" + info.realm), bG = CP && recoloured("castle", "towerbig", { 4: sc, 0: sc }, "siege" + info.realm), fG = CP && recoloured("castle", "banner", { 7: flagC, 0: flagC, 4: 0x5a4632 }, "siegeban" + info.realm);
+  if (tG) { kit.g["s:tower"] = tG; kit.g["s:towerbig"] = bG; kit.g["s:banner"] = fG; }
+  const mTower = (key, x, z, s) => { MB.add("s:" + key, kit.mm.solid, x, 0, z, s, s, s, 0, 0xffffff); const inf = (key === "tower" ? tG : bG).userData.info, h = ((inf && inf.h) || 2.3) * s; MB.add("s:banner", kit.mm.sway, x, h - 0.2, z, 2.2, 2.2, 2.2, Math.PI / 2, 0xffffff); };
   // gatehouse: two towers and the arch over the gate
-  for (const s of [-1, 1]) { M.add("cyl", mStone, s * (GATE + 2.2), WH * 0.7, wallZ + 0.4, 4.4, WH * 1.4, 4.4, 0, dark); M.add("cone", mRoof, s * (GATE + 2.2), WH * 1.4 + 1.4, wallZ + 0.4, 5, 2.8, 5, 0, P.roof || 0x3a3a44); }
+  for (const s of [-1, 1]) { if (tG) mTower("tower", s * (GATE + 2.2), wallZ + 0.4, 4.6); else { M.add("cyl", mStone, s * (GATE + 2.2), WH * 0.7, wallZ + 0.4, 4.4, WH * 1.4, 4.4, 0, dark); M.add("cone", mRoof, s * (GATE + 2.2), WH * 1.4 + 1.4, wallZ + 0.4, 5, 2.8, 5, 0, P.roof || 0x3a3a44); } }
   M.box(mStone, 0, WH + 0.2, wallZ, GATE * 2 + 1.4, 1.6, TH + 0.4, 0, dark);
   // towers along the wall
-  for (const x of [-20, 20, X0, X1]) { M.add("cyl", mStone, x, WH * 0.75, wallZ, 4, WH * 1.5, 4, 0, sc); M.add("cone", mRoof, x, WH * 1.5 + 1.3, wallZ, 4.6, 2.6, 4.6, 0, P.roof || 0x3a3a44); }
+  for (const x of [-20, 20, X0, X1]) { if (tG) mTower(Math.abs(x) > 30 ? "towerbig" : "tower", x, wallZ, Math.abs(x) > 30 ? 4.4 : 4.2); else { M.add("cyl", mStone, x, WH * 0.75, wallZ, 4, WH * 1.5, 4, 0, sc); M.add("cone", mRoof, x, WH * 1.5 + 1.3, wallZ, 4.6, 2.6, 4.6, 0, P.roof || 0x3a3a44); } }
   // stairs up to the walk on the inside
   const stairs = [-9, 9];
   for (const x of stairs) for (let i = 0; i < 8; i++) M.box(mStone, x, (i + 0.5) * WH / 8, wallZ - TH / 2 - 0.6 - (7 - i) * 0.7, 1.8, WH / 8 * (i + 1), 0.7, 0, dark);
   // the hold beyond: a keep and roofs so the walls guard something
   M.box(mStone, 0, 7, wallZ - 34, 16, 14, 14, 0, sc); M.add("cone", mRoof, 0, 16, wallZ - 34, 13, 5, 13, 0.78, P.roof || 0x3a3a44);
-  for (let i = 0; i < 9; i++) { const x = -30 + i * 7.5, z = wallZ - 14 - (i % 3) * 5; if (Math.abs(x) < 9) continue; M.box(art.mat("plaster"), x, 1.8, z, 5, 3.6, 4.2, 0, P.wall || 0xb8a890); M.add("prism", mRoof, x, 3.6, z, 4.2, 1.8, 5.4, Math.PI / 2, P.roof || 0x3a3a44); }
-  M.build(scene, (g) => st.track(g));
+  if (tG) for (const s of [-1, 1]) mTower("tower", s * 8.5, wallZ - 27.5, 5);
+  const hk = ["house1", "house2", "house3", "inn", "house1", "smithy", "house2"];
+  for (let i = 0; i < 9; i++) {
+    const x = -30 + i * 7.5, z = wallZ - 14 - (i % 3) * 5; if (Math.abs(x) < 9) continue;
+    const key = hk[i % hk.length], g = VP && recoloured("village", key, { 2: P.wall || 0xb8a890, 3: P.roof || 0x3a3a44, 4: sc }, "siege" + info.realm);
+    if (g) { kit.g["s:" + key] = g; const inf = g.userData.info || {}, k = Math.min(5.4 / (inf.w || 1), 4.6 / (inf.d || 1)); MB.add("s:" + key, kit.mm.solid, x, 0, z, k, k, k, 0, 0xffffff); }
+    else { M.box(art.mat("plaster"), x, 1.8, z, 5, 3.6, 4.2, 0, P.wall || 0xb8a890); M.add("prism", mRoof, x, 3.6, z, 4.2, 1.8, 5.4, Math.PI / 2, P.roof || 0x3a3a44); }
+  }
+  M.build(scene, (g) => st.track(g)); if (MB) MB.build(scene);
 
   // the gate (its own mesh, so it can shudder and fall)
   const gate = new THREE.Group(), gm = new THREE.Mesh(kit.g.box, kit.mat(0x5a3c24)); gm.scale.set(GATE * 2, 4.4, 0.5); gm.position.y = 2.2; gm.castShadow = true; gate.add(gm);

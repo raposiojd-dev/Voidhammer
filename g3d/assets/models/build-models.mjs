@@ -1,0 +1,172 @@
+// Build the g3d/assets/models/*.glb bundles from Quaternius CC0 packs (see ../CREDITS.md).
+// Static models: every part is baked into world space, welded, simplified (meshoptimizer) and turned into ONE primitive
+// with vertex colours (each source material's colour), so the game can instance a whole tree or cottage in one draw call.
+// A per-vertex _ROLE byte (0 other, 1 wood, 2 plaster, 3 roof, 4 stone, 5 window, 6 foliage, 7 cloth, 8 fire) lets the
+// game recolour roofs, walls and leaves to each Realm's canon palette. Each model is normalised: base at y = 0, centred
+// on x/z. Trees and plants are scaled to 1 m tall (the game scales by the height it wants); buildings and props keep
+// their proportions, scaled so the larger footprint side is 1 m. Positions are quantised and the files meshopt-compressed.
+// The horse keeps its rig and four clips (Idle, Walk, Gallop, Death); its parts are joined into one skinned primitive.
+// Usage (needs @gltf-transform/core, extensions, functions 4.x and meshoptimizer 0.21):
+//   node build-models.mjs <quaternius-showcase/public/glb> <out dir>
+// Debug: NOSIMP=1 skips simplification, RAW=1 writes uncompressed files (to compare against the sources).
+import { NodeIO, Document } from '@gltf-transform/core';
+import { ALL_EXTENSIONS, EXTMeshoptCompression } from '@gltf-transform/extensions';
+import { quantize, reorder, prune, dedup } from '@gltf-transform/functions';
+import { MeshoptSimplifier, MeshoptEncoder } from 'meshoptimizer';
+import { readFileSync } from 'fs';
+await MeshoptSimplifier.ready; await MeshoptEncoder.ready;
+const [SRC, OUT] = process.argv.slice(2);
+const io = new NodeIO().registerExtensions(ALL_EXTENSIONS).registerDependencies({ 'meshopt.encoder': MeshoptEncoder });
+
+// [key, pack/file, target triangles, kind]   kind: 'plant' (1 m tall) or 'prop' (footprint 1 m)
+const BUNDLES = {
+  nature: [
+    ['broad1', 'nature_pack/CommonTree_1', 336, 'plant'], ['broad2', 'nature_pack/CommonTree_2', 336, 'plant'], ['broad3', 'nature_pack/CommonTree_3', 299, 'plant'],
+    ['autumn1', 'nature_pack/CommonTree_Autumn_1', 336, 'plant'], ['autumn2', 'nature_pack/CommonTree_Autumn_3', 299, 'plant'],
+    ['pine1', 'nature_pack/PineTree_1', 261, 'plant'], ['pine2', 'nature_pack/PineTree_3', 299, 'plant'], ['pine3', 'nature_pack/PineTree_5', 261, 'plant'],
+    ['birch1', 'nature_pack/BirchTree_1', 299, 'plant'], ['birch2', 'nature_pack/BirchTree_3', 299, 'plant'],
+    ['willow1', 'nature_pack/Willow_1', 299, 'plant'], ['willow2', 'nature_pack/Willow_4', 299, 'plant'],
+    ['snowpine1', 'nature_pack/PineTree_Snow_1', 261, 'plant'], ['snowpine2', 'nature_pack/PineTree_Snow_3', 299, 'plant'], ['snowbirch', 'nature_pack/BirchTree_Snow_1', 299, 'plant'],
+    ['dead1', 'nature_pack/CommonTree_Dead_1', 330, 'plant'], ['dead2', 'nature_pack/BirchTree_Dead_2', 275, 'plant'], ['deadsnow', 'nature_pack/CommonTree_Dead_Snow_1', 330, 'plant'],
+    ['bush1', 'nature_pack/Bush_1', 170, 'plant'], ['bush2', 'nature_pack/BushBerries_1', 170, 'plant'], ['bushsnow', 'nature_pack/Bush_Snow_1', 170, 'plant'],
+    ['rock1', 'nature_pack/Rock_1', 80, 'prop'], ['rock2', 'nature_pack/Rock_4', 80, 'prop'], ['rockmoss', 'nature_pack/Rock_Moss_2', 80, 'prop'], ['rocksnow', 'nature_pack/Rock_Snow_3', 80, 'prop'],
+    ['grass', 'nature_pack/Grass', 120, 'plant'], ['flowers', 'nature_pack/Flowers', 240, 'plant'], ['fern', 'nature_pack/Plant_1', 200, 'plant'],
+    ['stump', 'nature_pack/TreeStump_Moss', 160, 'prop'], ['log', 'nature_pack/WoodLog_Moss', 260, 'prop']
+  ],
+  village: [
+    ['house1', 'medieval_village_pack/House_1', 2600, 'prop'], ['house2', 'medieval_village_pack/House_2', 2800, 'prop'], ['house3', 'medieval_village_pack/House_3', 2000, 'prop'],
+    ['inn', 'medieval_village_pack/Inn', 3200, 'prop'], ['smithy', 'medieval_village_pack/Blacksmith', 3200, 'prop'], ['stable', 'medieval_village_pack/Stable', 2600, 'prop'],
+    ['mill', 'medieval_village_pack/Mill', 3000, 'prop'], ['sawmill', 'medieval_village_pack/Sawmill', 2200, 'prop'],
+    ['well', 'medieval_village_pack/Well', 700, 'prop'], ['stall1', 'medieval_village_pack/MarketStand_1', 700, 'prop'], ['stall2', 'medieval_village_pack/MarketStand_2', 520, 'prop'],
+    ['cart', 'medieval_village_pack/Cart', 900, 'prop'], ['barrel', 'medieval_village_pack/Barrel', 300, 'prop'], ['crate', 'medieval_village_pack/Crate', 200, 'prop'],
+    ['fence', 'medieval_village_pack/Fence', 200, 'prop'], ['bonfire', 'medieval_village_pack/Bonfire_Lit', 500, 'prop'], ['hay', 'medieval_village_pack/Hay', 200, 'prop'],
+    ['bench', 'medieval_village_pack/Bench_1', 200, 'prop'], ['bags', 'medieval_village_pack/Bags', 300, 'prop'], ['cauldron', 'medieval_village_pack/Cauldron', 400, 'prop']
+  ],
+  castle: [
+    ['wall', 'modular_medieval_buildings_pack/WallBricks', 900, 'prop'], ['wallgate', 'modular_medieval_buildings_pack/WallEntranceBricks', 1400, 'prop'],
+    ['tower', 'modular_medieval_buildings_pack/SmallSquareTowerBricks', 1400, 'prop'], ['towerbig', 'modular_medieval_buildings_pack/LargeSquareTowerBricks', 1800, 'prop'],
+    ['banner', 'modular_medieval_buildings_pack/Banner', 300, 'prop']
+  ]
+};
+const ROLE = (name) => {
+  const n = name.toLowerCase();
+  if (/fire|flame|orange/.test(n)) return 8;
+  if (/window|glass/.test(n)) return 5;
+  if (/roof/.test(n)) return 3;
+  if (/plaster|beige|white/.test(n) && !/birch/.test(n)) return 2;
+  if (/stone|rock|brick/.test(n)) return 4;
+  if (/green|leaf|leaves|grass|hay|wheat/.test(n)) return 6;
+  if (/wood|log|plank/.test(n)) return 1;
+  if (/banner|cloth|red|bag|blue/.test(n)) return 7;
+  return 0;
+};
+
+function bake(doc) {
+  const P = [], C = [], R = [];
+  for (const node of doc.getRoot().listNodes()) {
+    const mesh = node.getMesh(); if (!mesh) continue; const M = node.getWorldMatrix();
+    for (const prim of mesh.listPrimitives()) {
+      const pos = prim.getAttribute('POSITION'), idx = prim.getIndices(), mat = prim.getMaterial();
+      const bc = mat ? mat.getBaseColorFactor() : [1, 1, 1, 1], role = ROLE(mat ? mat.getName() : '');
+      const vc = prim.getAttribute('COLOR_0');
+      const n = idx ? idx.getCount() : pos.getCount(), e = [0, 0, 0], c = [1, 1, 1, 1];
+      for (let i = 0; i < n; i++) {
+        const k = idx ? idx.getScalar(i) : i; pos.getElement(k, e);
+        const x = M[0] * e[0] + M[4] * e[1] + M[8] * e[2] + M[12], y = M[1] * e[0] + M[5] * e[1] + M[9] * e[2] + M[13], z = M[2] * e[0] + M[6] * e[1] + M[10] * e[2] + M[14];
+        P.push(x, y, z); if (vc) vc.getElement(k, c); else c[0] = c[1] = c[2] = 1;
+        C.push(bc[0] * c[0], bc[1] * c[1], bc[2] * c[2]); R.push(role);
+      }
+    }
+  }
+  return { P, C, R };
+}
+// weld identical (position, colour) corners, so the simplifier sees connected surfaces
+function weldTris({ P, C, R }) {
+  const map = new Map(), pos = [], col = [], role = [], ind = [];
+  for (let i = 0; i < P.length / 3; i++) {
+    const key = [P[i * 3], P[i * 3 + 1], P[i * 3 + 2]].map((v) => Math.round(v * 1e4)).join(',') + '|' + Math.round(C[i * 3] * 255) + ',' + Math.round(C[i * 3 + 1] * 255) + ',' + Math.round(C[i * 3 + 2] * 255);
+    let j = map.get(key);
+    if (j === undefined) { j = pos.length / 3; map.set(key, j); pos.push(P[i * 3], P[i * 3 + 1], P[i * 3 + 2]); col.push(C[i * 3], C[i * 3 + 1], C[i * 3 + 2]); role.push(R[i]); }
+    ind.push(j);
+  }
+  // drop degenerate triangles
+  const out = []; for (let t = 0; t < ind.length; t += 3) { const a = ind[t], b = ind[t + 1], c = ind[t + 2]; if (a !== b && b !== c && a !== c) out.push(a, b, c); }
+  return { pos: new Float32Array(pos), col: new Float32Array(col), role: new Uint8Array(role), ind: new Uint32Array(out) };
+}
+function simplify(g, target) {
+  if (process.env.NOSIMP) return g;
+  const tris = g.ind.length / 3; if (tris <= target) return g;
+  // colour seams are borders between welded islands; keep them so leaves never bleed into bark
+  let [ind] = MeshoptSimplifier.simplify(g.ind, g.pos, 3, target * 3, 0.02, ['LockBorder']);
+  return Object.assign({}, g, { ind: new Uint32Array(ind) });
+}
+function compact(g) {
+  const used = new Int32Array(g.pos.length / 3).fill(-1), pos = [], col = [], role = []; const ind = new Uint32Array(g.ind.length);
+  for (let i = 0; i < g.ind.length; i++) { const v = g.ind[i]; if (used[v] < 0) { used[v] = pos.length / 3; pos.push(g.pos[v * 3], g.pos[v * 3 + 1], g.pos[v * 3 + 2]); col.push(g.col[v * 3], g.col[v * 3 + 1], g.col[v * 3 + 2]); role.push(g.role[v]); } ind[i] = used[v]; }
+  return { pos: new Float32Array(pos), col: new Float32Array(col), role: new Uint8Array(role), ind };
+}
+function normalise(g, kind) {
+  let x0 = 1e9, y0 = 1e9, z0 = 1e9, x1 = -1e9, y1 = -1e9, z1 = -1e9;
+  for (let i = 0; i < g.pos.length; i += 3) { x0 = Math.min(x0, g.pos[i]); x1 = Math.max(x1, g.pos[i]); y0 = Math.min(y0, g.pos[i + 1]); y1 = Math.max(y1, g.pos[i + 1]); z0 = Math.min(z0, g.pos[i + 2]); z1 = Math.max(z1, g.pos[i + 2]); }
+  const cx = (x0 + x1) / 2, cz = (z0 + z1) / 2, s = kind === 'plant' ? 1 / (y1 - y0) : 1 / Math.max(x1 - x0, z1 - z0);
+  for (let i = 0; i < g.pos.length; i += 3) { g.pos[i] = (g.pos[i] - cx) * s; g.pos[i + 1] = (g.pos[i + 1] - y0) * s; g.pos[i + 2] = (g.pos[i + 2] - cz) * s; }
+  return { w: +((x1 - x0) * s).toFixed(3), h: +((y1 - y0) * s).toFixed(3), d: +((z1 - z0) * s).toFixed(3) };
+}
+
+async function buildStatic(name, list) {
+  const doc = new Document(), buf = doc.createBuffer(), scene = doc.createScene(name), mat = doc.createMaterial('vc').setBaseColorFactor([1, 1, 1, 1]).setRoughnessFactor(0.9).setMetallicFactor(0);
+  let report = [];
+  for (const [key, file, target, kind] of list) {
+    const src = await io.read(SRC + '/' + file + '.glb');
+    let g = compact(simplify(weldTris(bake(src)), target));
+    const dims = normalise(g, kind);
+    const prim = doc.createPrimitive().setMaterial(mat)
+      .setAttribute('POSITION', doc.createAccessor().setType('VEC3').setArray(g.pos).setBuffer(buf))
+      .setAttribute('COLOR_0', doc.createAccessor().setType('VEC3').setArray(g.col).setBuffer(buf))
+      .setAttribute('_ROLE', doc.createAccessor().setType('SCALAR').setArray(g.role).setBuffer(buf))
+      .setIndices(doc.createAccessor().setType('SCALAR').setArray(g.pos.length / 3 > 65535 ? g.ind : new Uint16Array(g.ind)).setBuffer(buf));
+    const mesh = doc.createMesh(key).addPrimitive(prim);
+    scene.addChild(doc.createNode(key).setMesh(mesh).setExtras(Object.assign({ src: file, kind }, dims)));
+    report.push(key + ' ' + g.ind.length / 3);
+  }
+  await finish(doc, name);
+  console.log(name + ': ' + report.join(', '));
+}
+
+async function buildHorse() {
+  const doc = await io.read(SRC + '/animals_pack/Horse.glb'), root = doc.getRoot();
+  const keep = /\|(Idle|Walk|Gallop|Death)$/;
+  for (const a of root.listAnimations()) { if (!keep.test(a.getName())) a.dispose(); else a.setName(a.getName().split('|')[1]); }
+  // join the parts by hand into one skinned primitive with vertex colours (the source has 8 parts, one per material)
+  const one = doc.createMaterial('vc').setBaseColorFactor([1, 1, 1, 1]).setRoughnessFactor(0.85).setMetallicFactor(0);
+  const buf = root.listBuffers()[0], mesh = root.listMeshes()[0], prims = mesh.listPrimitives();
+  const SEM = ['POSITION', 'NORMAL', 'JOINTS_0', 'WEIGHTS_0'], acc = { POSITION: [], NORMAL: [], JOINTS_0: [], WEIGHTS_0: [], COLOR_0: [] }, ind = [];
+  let base = 0; const e = [0, 0, 0, 0];
+  for (const prim of prims) {
+    const m = prim.getMaterial(), bc = m ? m.getBaseColorFactor() : [1, 1, 1, 1], n = prim.getAttribute('POSITION').getCount();
+    for (const sm of SEM) { const a = prim.getAttribute(sm), w = a.getElementSize(); for (let i = 0; i < n; i++) { a.getElement(i, e); for (let k = 0; k < w; k++) acc[sm].push(e[k]); } }
+    for (let i = 0; i < n; i++) acc.COLOR_0.push(bc[0], bc[1], bc[2]);
+    const ix = prim.getIndices(); for (let i = 0; i < ix.getCount(); i++) ind.push(ix.getScalar(i) + base);
+    base += n;
+  }
+  const np = doc.createPrimitive().setMaterial(one)
+    .setAttribute('POSITION', doc.createAccessor().setType('VEC3').setArray(new Float32Array(acc.POSITION)).setBuffer(buf))
+    .setAttribute('NORMAL', doc.createAccessor().setType('VEC3').setArray(new Float32Array(acc.NORMAL)).setBuffer(buf))
+    .setAttribute('JOINTS_0', doc.createAccessor().setType('VEC4').setArray(new Uint16Array(acc.JOINTS_0)).setBuffer(buf))
+    .setAttribute('WEIGHTS_0', doc.createAccessor().setType('VEC4').setArray(new Float32Array(acc.WEIGHTS_0)).setBuffer(buf))
+    .setAttribute('COLOR_0', doc.createAccessor().setType('VEC3').setArray(new Float32Array(acc.COLOR_0)).setBuffer(buf))
+    .setIndices(doc.createAccessor().setType('SCALAR').setArray(new Uint16Array(ind)).setBuffer(buf));
+  prims.forEach((p) => { mesh.removePrimitive(p); p.dispose(); }); mesh.addPrimitive(np);
+  await finish(doc, 'horse');
+  console.log('horse: ' + root.listMeshes().map((m) => m.listPrimitives().length + ' prim').join(',') + ', clips ' + root.listAnimations().map((a) => a.getName()).join(','));
+}
+
+async function finish(doc, name) {
+  if (process.env.RAW) { await doc.transform(prune(), dedup()); await io.write(OUT + '/' + name + '.glb', doc); return; }
+  await doc.transform(prune(), dedup(), reorder({ encoder: MeshoptEncoder }), quantize({ quantizePosition: 14, quantizeColor: 8, quantizeNormal: 8 }));
+  doc.createExtension(EXTMeshoptCompression).setRequired(true).setEncoderOptions({ method: EXTMeshoptCompression.EncoderMethod.FILTER });
+  await io.write(OUT + '/' + name + '.glb', doc);
+}
+
+for (const [name, list] of Object.entries(BUNDLES)) await buildStatic(name, list);
+await buildHorse();

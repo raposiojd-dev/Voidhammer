@@ -7,7 +7,9 @@
 // The scene never touches game numbers: it reports how much of each side is left, and the bridge feeds that to
 // finishBattle exactly as the 2D field does.
 import { K3 } from "./scene3d.js";
-import { Merge, paintedSky, grassField, groundMat, horizonBand, loadArt } from "./art.js";
+import { setBiome, pack as mpack, modelProp, biomeOf, pickW } from "./models.js";
+import { clone as skClone } from "./lib/SkeletonUtils.js";
+import { Merge, paintedSky, grassField, groundMat, horizonBand, loadArt, useSkyEnv } from "./art.js";
 import { buildSiege } from "./siege3d.js";
 const { THREE, REALMS, VOIDC, GROUND_TEX, GRASS_TINT, GRASS_N, CLOUD, COLD, tree, rng, vnoise, clamp, lerp, angLerp, shade, mix,
   makeStage, makeKit, whenChars, heroLook, kaelLook, figure, animFigure, Batch, lights, particles, followCam, moveIntent, esc } = K3;
@@ -19,7 +21,7 @@ function styleOnce() {
   if (styled) return; styled = true;
   const st = document.createElement("style");
   st.textContent = `
-#vh3d .b3-btns{position:absolute;right:.7rem;bottom:calc(1rem + env(safe-area-inset-bottom,0px));display:grid;grid-template-columns:auto auto;grid-template-rows:auto auto;gap:.55rem;align-items:end;justify-items:center}
+#vh3d .b3-btns{position:absolute;right:calc(.7rem + var(--vh-sr,0px));bottom:calc(1rem + var(--vh-sb,env(safe-area-inset-bottom,0px)));display:grid;grid-template-columns:auto auto;grid-template-rows:auto auto;gap:.55rem;align-items:end;justify-items:center}
 #vh3d .b3-btns button{border-radius:50%;border:2px solid #c8a060;color:#fff2cf;font:700 .74rem 'Cinzel',Georgia,serif;letter-spacing:.06em;text-shadow:0 1px 2px #000;box-shadow:0 4px 14px #000a;touch-action:none;cursor:pointer;padding:0}
 #vh3d .b3-btns [data-b=atk]{grid-column:2;grid-row:2;width:5.6rem;height:5.6rem;background:radial-gradient(circle at 40% 30%,#c23a2a,#5a120c 70%)}
 #vh3d .b3-btns [data-b=blk]{grid-column:1;grid-row:2;width:4.4rem;height:4.4rem;background:radial-gradient(circle at 40% 30%,#6a7a8a,#1e2630 70%)}
@@ -53,11 +55,12 @@ export function battle(api, info, done) {
     if (ctl.off) return;
     try { Object.assign(ctl, buildBattle(st, api, info, done)); ctl.ready = true; }
     catch (e) { api.fail(e); st.dispose(); setTimeout(() => done({ how: "fail" }), 0); }
-  });
+  }, info.siege ? ["nature", "castle", "horse"] : ["nature", "horse"]);
   return ctl;
 }
 
 function buildBattle(st, api, info, done) {
+  setBiome(info.realm);
   const isVoid = info.kind === "void" || info.kind === "rift";
   const P = REALMS[info.realm] || REALMS.ember, kit = makeKit(st), { scene, camera, inp } = st, rand = rng((info.title || "") + "|" + Math.floor(info.p0 * 100));
   const white = kit.mat(0xffffff), art = kit.art;
@@ -68,6 +71,8 @@ function buildBattle(st, api, info, done) {
   // the Realm's painted horizon behind the field (not in the Void), and its colour grade on High
   const band = isVoid ? null : horizonBand(info.realm, fogC, (x) => st.track(x), { amt: 0.42 }); if (band) scene.add(band);
   st.setGrade(isVoid ? "shadow" : info.realm);
+  // High: image-based light from the painted sky on the people and horses
+  st.track(useSkyEnv(st, scene, sky));
   if (isVoid) { L.sun.color = mix(P.sun, 0xb8a8ff, 0.5); const vl = new THREE.PointLight(VOIDC, 80, 70, 1.4); vl.position.set(0, 10, -34); scene.add(vl); }
 
   // ---------- terrain (flat where the lines meet, hills beyond; a siege flattens the approach to the walls) ----------
@@ -82,9 +87,26 @@ function buildBattle(st, api, info, done) {
   const BGT = isVoid ? "dirt" : GROUND_TEX[info.realm] || "grass";
   const terr = new THREE.Mesh(tg, groundMat(art, BGT, BGT === "grass" || BGT === "plaster" ? "dirt" : "grass", !isVoid && info.realm !== "frost" && info.realm !== "light")); terr.receiveShadow = true; scene.add(terr); st.track(tg);
   const B = new Batch(kit), M = new Merge();
+  // The soldiers' weapons, timings and spacing come from the same seeded stream as the scenery. The model scenery draws
+  // its own choices from a second stream, while the battle stream takes exactly the draws the simple scenery always took,
+  // so a battle plays out the same as before, on every preset.
+  const srand = rng((info.title || "") + "|" + Math.floor(info.p0 * 100) + "|scenery"), Bdry = kit.mm ? new Batch(Object.assign({}, kit, { mm: null })) : null;
   const tc = info.realm === "frost" ? 0x3a5048 : info.realm === "light" ? 0x7a8a3a : isVoid ? 0x2a2434 : 0x2e4a2a;
-  for (let i = 0; i < 150; i++) { const x = (rand() - 0.5) * 220, z = (rand() - 0.5) * 220; if (Math.abs(x) < 34 && Math.abs(z) < (siegeOn ? 62 : 42) && rand() < 0.94) continue; tree(B, white, x, H0(x, z) * (siegeOn ? 0.35 : 1), z, 3 + rand() * 5, tc, rand); }
-  for (let i = 0; i < 36; i++) { const x = (rand() - 0.5) * 120, z = (rand() - 0.5) * 140; if (siegeOn && z < -20) continue; const s = 0.6 + rand() * 1.6; B.add("rock", white, x, H0(x, z) * (siegeOn ? 0.35 : 1) + s * 0.25, z, s, s * 0.8, s, rand() * 6, shade(P.stone, 0.75 + rand() * 0.3)); }
+  for (let i = 0; i < 150; i++) { const x = (rand() - 0.5) * 220, z = (rand() - 0.5) * 220; if (Math.abs(x) < 34 && Math.abs(z) < (siegeOn ? 62 : 42) && rand() < 0.94) continue; const y0 = H0(x, z) * (siegeOn ? 0.35 : 1), th = 3 + rand() * 5; if (Bdry) { tree(Bdry, white, x, y0, z, th, tc, rand); tree(B, white, x, y0, z, th, tc, srand); } else tree(B, white, x, y0, z, th, tc, rand); }
+  for (let i = 0; i < 36; i++) {
+    const x = (rand() - 0.5) * 120, z = (rand() - 0.5) * 140; if (siegeOn && z < -20) continue; const s = 0.6 + rand() * 1.6, y = H0(x, z) * (siegeOn ? 0.35 : 1);
+    if (kit.mm) { const ry = rand() * 6, sh = 0.75 + rand() * 0.3; modelProp(B, pickW(biomeOf().rock, null, srand()), kit.mm.solid, x, y - 0.1, z, s * 1.5, ry, shade(P.stone, sh * 1.9)); }
+    else B.add("rock", white, x, y + s * 0.25, z, s, s * 0.8, s, rand() * 6, shade(P.stone, 0.75 + rand() * 0.3));
+  }
+  // Medium/High: bushes, ferns, stumps and wild flowers out on the flanks and beyond the lines (never where the lines meet)
+  if (kit.mm && !isVoid) for (let i = 0; i < 90; i++) {
+    const x = (srand() - 0.5) * 150, z = (srand() - 0.5) * 160; if (Math.abs(x) < 26 && Math.abs(z) < (siegeOn ? 60 : 34)) continue; if (siegeOn && z < -20) continue;
+    const y = H0(x, z) * (siegeOn ? 0.35 : 1), k = srand(), bo = biomeOf();
+    if (k < 0.45) modelProp(B, pickW(bo.bush, null, srand()), kit.mm.sway, x, y, z, 1 + srand() * 0.9, srand() * 6, shade(bo.tint, 0.85 + srand() * 0.25));
+    else if (k < 0.65 && info.realm !== "frost") modelProp(B, "fern", kit.mm.sway, x, y, z, 0.6 + srand() * 0.4, srand() * 6, shade(bo.tint, 0.85));
+    else if (k < 0.75) modelProp(B, srand() < 0.5 ? "stump" : "log", kit.mm.solid, x, y, z, 1 + srand() * 0.6, srand() * 6, 0xffffff);
+    else modelProp(B, srand() < 0.5 ? "flowers" : "grass", kit.mm.sway, x, y, z, 0.35 + srand() * 0.25, srand() * 6, srand() < 0.5 ? shade(bo.tint, 0.9) : [0xffe070, 0xffffff, 0xc8a0ff][Math.floor(srand() * 3)]);
+  }
   if (isVoid) for (let i = 0; i < 14; i++) { const a = rand() * Math.PI * 2, r = 16 + rand() * 40, x = Math.cos(a) * r, z = Math.sin(a) * r - 10; const m = new THREE.Mesh(kit.g.cone, kit.mat(0x6a4aa0, { emissive: VOIDC, emissiveIntensity: 0.8, roughness: 0.3 })); const s = 0.6 + rand() * 1.4; m.scale.set(s, s * 3, s); m.position.set(x, H0(x, z) + s * 1.2, z); m.rotation.set(rand() - 0.5, 0, rand() - 0.5); m.castShadow = true; scene.add(m); }
   for (let i = 0; i < 16; i++) { const a = i / 16 * Math.PI * 2, r = 175 + rand() * 30; B.add("cone", white, Math.cos(a) * r, 16, Math.sin(a) * r, 70 + rand() * 50, 40 + rand() * 40, 70 + rand() * 50, rand(), shade(P.ground, 0.5), { noShadow: true }); }
   B.build(scene); M.build(scene, (g) => st.track(g));
@@ -131,7 +153,31 @@ function buildBattle(st, api, info, done) {
   const ringP = ringMat(0xffd884, 0.5), ringHero = ringMat(0xffffff, 0.9), ringE = ringMat(isVoid ? 0xb89cff : 0xff3a2a, 0.55), ringSel = ringMat(0x9fe8ff, 0.75);
   // a horse: a few boxes and four swinging legs (no extra download); the rider sits on it
   const horseMat = [kit.mat(0x5a3c24), kit.mat(0x3a2818), kit.mat(0x2a1e14), kit.mat(0x7a5a3a)];
+  // Medium/High: the Quaternius rigged horse (Idle, Walk, Gallop, Death), four coats from one vertex-coloured mesh
+  const HP = kit.mm ? mpack("horse") : null, horseProto = HP ? HP.gltf.scene : null;
+  let horseK = 1, horseLift = 0;
+  const horseCoats = horseProto ? [1, 0.62, 1.35, 0.38].map((k) => { const m = st.track(new THREE.MeshStandardMaterial({ vertexColors: true, flatShading: true, roughness: 0.8, metalness: 0, color: new THREE.Color(k, k * 0.97, k * 0.94) })); m.userData.vhEnv = 1; return m; }) : null;
+  if (horseProto) { horseProto.updateMatrixWorld(true); const bb = new THREE.Box3().setFromObject(horseProto); const hgt = bb.max.y - bb.min.y; if (hgt > 0.01) { horseK = 2.15 / hgt; horseLift = -bb.min.y * horseK; } }
+  function modelHorse(col) {
+    const g = new THREE.Group(), o = skClone(horseProto), mat = horseCoats[col % horseCoats.length];
+    o.traverse((m) => { if (m.isMesh) { m.material = mat; m.castShadow = true; m.frustumCulled = false; } });
+    o.scale.multiplyScalar(horseK); o.position.y = horseLift; g.add(o);
+    const mixer = new THREE.AnimationMixer(o), acts = {};
+    HP.gltf.animations.forEach((c) => { acts[c.name] = mixer.clipAction(c); });
+    if (acts.Death) { acts.Death.setLoop(THREE.LoopOnce); acts.Death.clampWhenFinished = true; }
+    if (acts.Idle) { acts.Idle.play(); acts.Idle.time = Math.random() * 2; }
+    g.userData.mixer = mixer; g.userData.acts = acts; g.userData.cur = "Idle"; g.userData.acc = 0;
+    return g;
+  }
+  function horseAnim(hs, mv, dt, skip) {
+    const ud = hs.userData, want = mv > 1.2 ? "Gallop" : mv > 0.12 ? "Walk" : "Idle";
+    if (want !== ud.cur && ud.acts[want]) { const a = ud.acts[want]; a.reset().setEffectiveWeight(1).fadeIn(0.25).play(); if (ud.acts[ud.cur]) ud.acts[ud.cur].fadeOut(0.25); ud.cur = want; }
+    ud.acc += dt * (want === "Walk" ? 0.7 + mv * 0.4 : 1); if (skip && (ud.n = (ud.n || 0) + 1) % skip) return;
+    ud.mixer.update(ud.acc); ud.acc = 0;
+  }
+  function horseDie(hs) { const ud = hs.userData; if (!ud.mixer) { hs.rotation.z = 1.4; return; } if (ud.acts.Death) { ud.acts.Death.reset().fadeIn(0.15).play(); if (ud.acts[ud.cur]) ud.acts[ud.cur].fadeOut(0.15); ud.cur = "Death"; } else hs.rotation.z = 1.4; }
   function horse(col) {
+    if (horseProto) return modelHorse(col);
     const g = new THREE.Group(), m = horseMat[col % horseMat.length], dark = horseMat[2];
     const body = new THREE.Mesh(kit.g.box, m); body.scale.set(0.62, 0.62, 1.55); body.position.y = 1.18; g.add(body);
     const neck = new THREE.Mesh(kit.g.box, m); neck.scale.set(0.32, 0.75, 0.38); neck.position.set(0, 1.62, 0.72); neck.rotation.x = 0.55; g.add(neck);
@@ -145,7 +191,7 @@ function buildBattle(st, api, info, done) {
   function addUnit(side, cls, w, look, extra) {
     const root = new THREE.Group(); scene.add(root);
     let f, hs = null;
-    if (cls === "cav") { hs = horse(units.length); root.add(hs); f = figure(kit, look); f.position.y = 0.98; f.scale.multiplyScalar(0.92); root.add(f); }
+    if (cls === "cav") { hs = horse(units.length); root.add(hs); f = figure(kit, look); f.position.y = hs.userData.mixer ? 0.74 : 0.98; f.scale.multiplyScalar(0.92); root.add(f); }
     else { f = figure(kit, look); root.add(f); }
     const ring = new THREE.Mesh(ringGeo, side === "p" ? (extra && extra.hero ? ringHero : ringP) : ringE); ring.rotation.x = -Math.PI / 2; ring.position.y = 0.05; if (cls === "cav") ring.scale.setScalar(1.8); root.add(ring);
     const hpm = w * 3.2 * (cls === "cav" ? 1.3 : cls === "arch" ? 0.85 : 1);
@@ -460,11 +506,11 @@ function buildBattle(st, api, info, done) {
       u.t += sdt;
       if (u.dead) {
         u.ring.visible = false;
-        if (u.f.userData.ch) { if (u.deadT === 0) { u.f.userData.ch.die(); u.deadT = 0.001; if (u.hs) u.hs.rotation.z = 1.4; } u.f.userData.ch.update(sdt, 0, 0, false); continue; }
+        if (u.f.userData.ch) { if (u.deadT === 0) { u.f.userData.ch.die(); u.deadT = 0.001; if (u.hs) horseDie(u.hs); } u.f.userData.ch.update(sdt, 0, 0, false); if (u.hs && u.hs.userData.mixer && u.deadT < 3) { u.deadT += sdt; u.hs.userData.mixer.update(sdt); } continue; }
         if (u.deadT < 1) { u.deadT += sdt * 2.2; u.root.rotation.x = -Math.PI / 2 * Math.min(1, u.deadT); } continue;
       }
       if (u.gone) continue;
-      if (u.ride) { u.rideT -= sdt; u.z -= sdt * 9 * pDir; u.x += Math.sin(u.t * 2) * sdt * 2; u.mv = 1.6; if (u.rideT <= 0) { u.gone = true; u.root.visible = false; } u.root.position.set(u.x, H(u.x, u.z), u.z); u.root.rotation.y = pDir > 0 ? Math.PI : 0; animFigure(u.f, u.t, 1.6, 0, false, sdt); continue; }
+      if (u.ride) { u.rideT -= sdt; u.z -= sdt * 9 * pDir; u.x += Math.sin(u.t * 2) * sdt * 2; u.mv = 1.6; if (u.rideT <= 0) { u.gone = true; u.root.visible = false; } u.root.position.set(u.x, H(u.x, u.z), u.z); u.root.rotation.y = pDir > 0 ? Math.PI : 0; if (u.hs && u.hs.userData.mixer) horseAnim(u.hs, 1.6, sdt, 0); animFigure(u.f, u.t, 1.6, 0, false, sdt); continue; }
       const k2s = K2 ? K2.slowK(u) : 1;
       if (u.cd > 0) u.cd -= sdt * k2s; if (u.atk > 0) u.atk = Math.max(0, u.atk - sdt * 2.4);
       // knocked back and staggered
@@ -562,7 +608,7 @@ function buildBattle(st, api, info, done) {
       if (!u.climb) u.y = SG ? SG.yAt(u.x, u.z, u) : H(u.x, u.z);
       u.root.position.set(u.x, u.y, u.z); u.root.rotation.y = u.yaw;
       const cd = Math.hypot(u.x - cpx, u.z - cpz), skip = cd > 50 ? 4 : cd > 28 ? 2 : 0;
-      if (u.hs) { const sw = Math.sin(u.t * (u.mv > 1.2 ? 13 : 7)) * Math.min(1, u.mv) * 0.7, L4 = u.hs.userData.legs; L4[0].rotation.x = sw; L4[3].rotation.x = sw; L4[1].rotation.x = -sw; L4[2].rotation.x = -sw; animFigure(u.f, u.t, 0, u.atk, false, sdt, skip); }
+      if (u.hs) { if (u.hs.userData.mixer) horseAnim(u.hs, u.mv, sdt, skip); else { const sw = Math.sin(u.t * (u.mv > 1.2 ? 13 : 7)) * Math.min(1, u.mv) * 0.7, L4 = u.hs.userData.legs; L4[0].rotation.x = sw; L4[3].rotation.x = sw; L4[1].rotation.x = -sw; L4[2].rotation.x = -sw; } animFigure(u.f, u.t, 0, u.atk, false, sdt, skip); }
       else animFigure(u.f, u.t, u.mv, u.atk, order[u.side].inf === "wall" && u.cls === "inf" && u.mv < 0.5, sdt, skip);
     }
     if (!heroDown && SG && !hero.climb) hero.y = SG.yAt(hero.x, hero.z, hero); else if (!heroDown && !SG) hero.y = H(hero.x, hero.z);

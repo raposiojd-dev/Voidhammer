@@ -5,13 +5,15 @@
 // input calls (move, strike, talk, shoot). So every quest, flag, number and save key is untouched.
 // One sim pixel is PX metres; one 16 px tile is T metres. Sim x runs east (+x), sim y runs south (+z).
 import { K3 } from "./scene3d.js";
-import { Merge, paintedSky, grassField, groundMat, horizonBand, loadArt } from "./art.js";
+import { Merge, paintedSky, grassField, groundMat, horizonBand, loadArt, useSkyEnv } from "./art.js";
 import { BARKS } from "./barks.js";
+import { setBiome, modelProp, pickW, biomeOf, recoloured, pack, FIRE } from "./models.js";
 const { THREE, REALMS, VOIDC, GROUND_TEX, GRASS_TINT, CLOUD, COLD, tree, rng, vnoise, clamp, lerp, angLerp, shade, mix,
   makeStage, makeKit, whenChars, heroLook, kaelLook, figure, animFigure, Batch, lights, particles, pool, torch, followCam, moveIntent, labelSprite, radialTex, esc } = K3;
 
 export const T = 1.35, PX = T / 16;
 const CH = 24; // tiles per culling chunk
+const LODR = 28; // metres: chunks further than this draw their cheap twin instead of the model trees
 const WALL_STYLE = { ember: "frame", stone: "stone", storm: "frame", light: "ashlar", frost: "planks", spirit: "ashlar", shadow: "stone", metal: "brick" };
 const ROOF_TEX = { ember: "tile", stone: "stone", storm: "slate", light: "tile", frost: "slate", spirit: "slate", shadow: "slate", metal: "slate" };
 // house kinds (from the 2D town painter) that open a section of the settlement sheet
@@ -81,7 +83,7 @@ export function area(api, done) {
       if (ctl.off || ctl.st !== st || api.AR() !== A) return;
       try { ctl.w = buildArea(st, api, A); ctl.ready = true; }
       catch (e) { api.fail(e); finish("fail"); }
-    });
+    }, ["nature", "village"]);
   }
   function finish(how) { if (ctl.off) return; ctl.off = true; clearInterval(watch); teardown(); api.on(false); done(how || "left"); }
   // follow the sim: a new AR object means a new place; no AR means we are back on the map
@@ -102,6 +104,7 @@ export function area(api, done) {
 // ======================================================================
 function buildArea(st, api, A) {
   const sp = A.sp, W = A.W, H = A.H, g = A.g, info = api.info(A);
+  setBiome(info.cave ? "shadow" : info.realm);
   const cave = !!info.cave, over = !!sp.over;
   const P = REALMS[info.realm] || REALMS.ember, kit = makeKit(st), { scene, camera, inp } = st, rand = rng((A.id || "a") + "|3d");
   const art = kit.art, white = kit.mat(0xffffff);
@@ -144,6 +147,8 @@ function buildArea(st, api, A) {
     L.hemi.intensity = tod.hemiI * (0.72 + 0.28 * up); L.hemi.color.copy(tod.hemiC).lerp(NIGHT, tod.night * 0.45);
     if (L.sky) { const u = L.sky.material.uniforms; u.top.value.copy(tod.top).lerp(NSKY, tod.night * 0.7).lerp(WARM, warm * 0.08); u.hor.value.copy(tod.hor).lerp(WARM, warm * 0.12).lerp(NSKY, tod.night * 0.5); }
   }
+  // High: the painted sky lights the people too (image-based light); rebuilt as the day moves on
+  if (L.sky) { L.env = useSkyEnv(st, scene, L.sky); st.track(L.env); }
   timeOfDay();
   // the hero carries a lantern underground
   const lantern = cave ? new THREE.PointLight(0xffb070, 30, 14, 1.6) : null; if (lantern) scene.add(lantern);
@@ -200,8 +205,11 @@ function buildArea(st, api, A) {
   const chunks = [], solidH = new Float32Array(W * H); // tile heights for the camera
   const nCX = Math.ceil(W / CH), nCZ = Math.ceil(H / CH), small = W * H <= 48 * 48;
   const mStone = art.mat("stone"), mPlank = art.mat("planks", { roughness: 0.85 }), mBeam = art.mat("beam", { roughness: 0.85 });
+  const mm = kit.mm; // model materials on Medium and High (null on Low or if the packs did not load)
+  const kitS = Object.assign({}, kit, { mm: null }); // the same kit, drawing the simple shapes (far chunks)
   for (let cz = 0; cz < nCZ; cz++) for (let cx = 0; cx < nCX; cx++) {
-    const grp = new THREE.Group(), B = new Batch(kit), M = new Merge(); let any = false;
+    // with models, each chunk also gets a cheap twin (the old cone trees and plain rocks), shown when the chunk is far away
+    const grp = new THREE.Group(), B = new Batch(kit), M = new Merge(), Bs = mm ? new Batch(kitS) : null; let any = false;
     for (let y = cz * CH; y < Math.min(H, (cz + 1) * CH); y++) for (let x = cx * CH; x < Math.min(W, (cx + 1) * CH); x++) {
       const t = g[y][x], wx = (x + 0.5) * T, wz = (y + 0.5) * T, r1 = rand(), r2 = rand();
       if (t === 2) {
@@ -213,18 +221,42 @@ function buildArea(st, api, A) {
         } else {
           solidH[y * W + x] = 7; // the camera won't sit inside a tree
           const h = 3.6 + r1 * 3.4;
-          tree(B, white, wx + (r2 - 0.5) * T * 0.4, 0, wz + (r1 - 0.5) * T * 0.4, h, (r2 < 0.5 ? cTree : cTree2).getHex(), rand);
+          const tx = wx + (r2 - 0.5) * T * 0.4, tz = wz + (r1 - 0.5) * T * 0.4, tcol = (r2 < 0.5 ? cTree : cTree2).getHex();
+          tree(B, white, tx, 0, tz, h, tcol, rand);
+          if (Bs) tree(Bs, white, tx, 0, tz, h, tcol, rand);
         }
-      } else if (t === 7) { any = true; const s = 0.7 + r1 * 0.6; B.add("rock", white, wx, s * 0.3, wz, s * 1.2, s * 0.9, s * 1.1, r2 * 6, shade(cRock.getHex(), 0.75 + r2 * 0.3)); }
-      else if (t === 8 && st.gfx !== "low") { any = true; for (let k = 0; k < 3; k++) B.add("cone", white, wx + (rand() - 0.5) * T * 0.8, 0.12, wz + (rand() - 0.5) * T * 0.8, 0.12, 0.24, 0.12, 0, [0xd8b040, 0xe8e0d0, 0xb04040, 0x9a70d0][Math.floor(rand() * 4)]); }
+        // forest edge (Medium/High): undergrowth where the trees meet open ground, so woods have a skirt, not a wall
+        if (mm && !cave && r1 < 0.4 && (at(x - 1, y) !== 2 || at(x + 1, y) !== 2 || at(x, y - 1) !== 2 || at(x, y + 1) !== 2)) {
+          const bo = biomeOf(), k = rand(), ex = wx + (rand() - 0.5) * T, ez = wz + (rand() - 0.5) * T;
+          if (k < 0.5) modelProp(B, pickW(bo.bush, null, rand()), mm.sway, ex, 0, ez, 0.9 + rand() * 0.7, rand() * 6, shade(bo.tint, 0.85 + rand() * 0.25));
+          else if (k < 0.75 && info.realm !== "frost") modelProp(B, "fern", mm.sway, ex, 0, ez, 0.5 + rand() * 0.4, rand() * 6, shade(bo.tint, 0.8 + rand() * 0.3));
+          else if (k < 0.87) modelProp(B, rand() < 0.5 ? "stump" : "log", mm.solid, ex, 0, ez, 0.9 + rand() * 0.5, rand() * 6, 0xffffff);
+          else modelProp(B, pickW(bo.rock, null, rand()), mm.solid, ex, 0, ez, 0.6 + rand() * 0.5, rand() * 6, shade(cRock.getHex(), 1.6));
+        }
+      } else if (t === 7) {
+        any = true; const s = 0.7 + r1 * 0.6;
+        if (Bs) Bs.add("rock", white, wx, s * 0.3, wz, s * 1.2, s * 0.9, s * 1.1, r2 * 6, shade(cRock.getHex(), 0.75 + r2 * 0.3));
+        if (mm) { const bo = biomeOf(); modelProp(B, pickW(bo.rock, null, r2), mm.solid, wx, -0.05, wz, s * 1.25, r2 * 6, shade(cRock.getHex(), 1.5 + r2 * 0.4)); if (r1 < 0.4) modelProp(B, "grass", mm.sway, wx + 0.5, 0, wz + 0.4, 0.45, r1 * 6, shade(bo.tint, 0.9)); }
+        else B.add("rock", white, wx, s * 0.3, wz, s * 1.2, s * 0.9, s * 1.1, r2 * 6, shade(cRock.getHex(), 0.75 + r2 * 0.3));
+      }
+      else if (t === 8 && st.gfx !== "low") {
+        any = true;
+        if (mm) { for (let k = 0; k < 2; k++) modelProp(B, rand() < 0.65 ? "flowers" : "grass", mm.sway, wx + (rand() - 0.5) * T * 0.8, 0, wz + (rand() - 0.5) * T * 0.8, 0.32 + rand() * 0.2, rand() * 6, [0xffe070, 0xffffff, 0xff8080, 0xc8a0ff, 0x9ad8ff][Math.floor(rand() * 5)]); }
+        else for (let k = 0; k < 3; k++) B.add("cone", white, wx + (rand() - 0.5) * T * 0.8, 0.12, wz + (rand() - 0.5) * T * 0.8, 0.12, 0.24, 0.12, 0, [0xd8b040, 0xe8e0d0, 0xb04040, 0x9a70d0][Math.floor(rand() * 4)]);
+      }
+      // open ground (Medium/High): the odd grass clump or wild flowers, never on paths, plazas or water
+      else if (mm && !cave && t === 0 && r1 < 0.05) { any = true; const bo = biomeOf(); modelProp(B, r2 < 0.6 ? "grass" : "flowers", mm.sway, wx + (r2 - 0.5) * T, 0, wz + (r1 * 10 - 0.25) * T, 0.3 + r2 * 0.25, r2 * 6, r2 < 0.6 ? shade(bo.tint, 0.85) : [0xffe070, 0xffffff, 0xc8a0ff][Math.floor(r2 * 3)]); }
     }
     if (!any) continue;
-    B.build(grp); M.build(grp, (x) => st.track(x)); scene.add(grp);
-    chunks.push({ grp, x: (cx + 0.5) * CH * T, z: (cz + 0.5) * CH * T });
+    let near = null, far = null;
+    if (Bs) { near = new THREE.Group(); far = new THREE.Group(); B.build(near); Bs.build(far); far.visible = false; grp.add(near, far); } else B.build(grp);
+    M.build(grp, (x) => st.track(x)); scene.add(grp);
+    chunks.push({ grp, near, far, x: (cx + 0.5) * CH * T, z: (cz + 0.5) * CH * T });
   }
 
   // ---------- buildings: the 2D town's houses, raised in the Realm's style ----------
-  const MH = new Merge(), BH = new Batch(kit);
+  const MH = new Merge(), BH = new Batch(kit), VB = new Batch(kit);
+  const useModels = !!(mm && pack("village") && !cave && P.roofType !== "dome" && P.roofType !== "spire");
   const WS = WALL_STYLE[info.realm] || "frame", isV = info.type === "village";
   const mWall = art.mat(WS === "frame" ? "plaster" : WS);
   const roofTex = cave ? "stone" : isV && (P.roofType === "gable" || P.roofType === "steep") && info.realm !== "frost" ? "thatch" : (ROOF_TEX[info.realm] || "slate");
@@ -236,8 +268,9 @@ function buildArea(st, api, A) {
   houses.forEach((h, i) => {
     const [hx, hy, hw, hd] = h; for (let y = hy; y < hy + hd; y++) for (let x = hx; x < hx + hw; x++) if (x >= 0 && y >= 0 && x < W && y < H) covered[y * W + x] = 1;
     const x = (hx + hw / 2) * T, z = (hy + hd / 2) * T, w = hw * T - 0.1, d = hd * T - 0.1, ht = (2.8 + Math.min(2.4, hw * hd * 0.06)) * (P.tall || 1) * (P.squat || 1);
-    house(x, z, w, d, ht, kinds[i]);
-    for (let y = hy; y < hy + hd; y++) for (let xx = hx; xx < hx + hw; xx++) if (xx >= 0 && y >= 0 && xx < W && y < H) solidH[y * W + xx] = ht + 1.5;
+    const mh = useModels ? modelHouse(x, z, w, d, kinds[i], i) : 0;
+    if (!mh) house(x, z, w, d, ht, kinds[i]);
+    for (let y = hy; y < hy + hd; y++) for (let xx = hx; xx < hx + hw; xx++) if (xx >= 0 && y >= 0 && xx < W && y < H) solidH[y * W + xx] = (mh || ht) + 1.5;
     const kd = KIND[kinds[i]];
     if (kd && info.siteId) {
       const dx = x, dz = (hy + hd) * T + 1.0;
@@ -249,6 +282,40 @@ function buildArea(st, api, A) {
   // any other solid structure tiles (walls, ruins, pens) become stone blocks
   for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
     const t = g[y][x]; if ((t === 4 || t === 5 || t === 6) && !covered[y * W + x]) { const h = cave ? 3.2 : 2.4 + vnoise(x * 0.5, y * 0.5) * 0.8; solidH[y * W + x] = h; MH.box(mStone, (x + 0.5) * T, h / 2, (y + 0.5) * T, T, h, T, 0, shade(cWall.getHex(), 0.75 + vnoise(x, y) * 0.25)); }
+  }
+  // ---------- model buildings (Medium/High, Realms with pitched roofs or plain villages): Quaternius cottages, inn, smithy ----------
+  // The model sits on the same footprint as the 2D house (colliders, doors and NPC spots are unchanged). It is scaled to the
+  // footprint's depth, stretched a little at most, and any spare width becomes a fenced yard with barrels, crates and hay.
+  // Roofs, plaster, stone and timber take the Realm's canon palette (models.js recolouring by material role).
+  function modelHouse(x, z, w, d, kind, idx) {
+    const pick = kind === "tavern" ? "inn" : kind === "smithy" ? "smithy" : kind === "barracks" || kind === "farm" ? "stable" : kind === "mill" || kind === "granary" ? "mill" : kind === "yard" ? "sawmill"
+      : (info.realm === "stone" || info.realm === "shadow") && rand() < 0.45 ? "house3" : ["house1", "house2", "house1", "house3"][Math.floor(rand() * 4)];
+    const VP = pack("village"); if (!VP || !VP.geo[pick]) return 0;
+    const g = vGeo(pick); if (!g) return 0;
+    const inf = VP.info[pick] || {}, mw = inf.w || 1, md = inf.d || 1, mhh = inf.h || 1;
+    let s = Math.min(w / mw, d / md); const sx = s * Math.min(1.15, (w / mw) / s), sz = s * Math.min(1.08, (d / md) / s);
+    const tint = shade(0xffffff, 0.92 + rand() * 0.16);
+    VB.add(g, mm.solid, x, 0, z, sx, s, sz, 0, tint);
+    // spare width: a fenced yard on each side, with a few props
+    const spare = (w - mw * sx) / 2;
+    if (spare > 0.9) for (const sd of [-1, 1]) {
+      const yx = x + sd * (w / 2 - spare / 2), fz = z + d / 2 - 0.15, L = spare;
+      const nF = Math.max(1, Math.round(L / 1.25)); for (let k = 0; k < nF; k++) modelProp(VB, "fence", mm.solid, yx - L / 2 + (k + 0.5) * L / nF, 0, fz, L / nF * 1.02, 0, 0xffffff);
+      const nS = Math.max(1, Math.round(d * 0.7 / 1.25)); for (let k = 0; k < nS; k++) modelProp(VB, "fence", mm.solid, x + sd * (w / 2 - 0.12), 0, z + d / 2 - (k + 0.5) * d * 0.7 / nS, d * 0.7 / nS * 1.02, Math.PI / 2, 0xffffff);
+      const r = rand(), px = yx, pz = z + d * 0.05;
+      if (r < 0.3) { modelProp(VB, "barrel", mm.solid, px - 0.3, 0, pz, 0.62, rand() * 6); modelProp(VB, "barrel", mm.solid, px + 0.35, 0, pz + 0.3, 0.6, rand() * 6); modelProp(VB, "crate", mm.solid, px, 0, pz - 0.6, 0.62, rand()); }
+      else if (r < 0.55) { modelProp(VB, "hay", mm.solid, px, 0, pz, 0.7, rand() * 6); modelProp(VB, "hay", mm.solid, px + 0.6, 0, pz - 0.5, 0.62, rand() * 6); }
+      else if (r < 0.75 && spare > 1.5) modelProp(VB, "cart", mm.solid, px, 0, pz, 1.9, sd * Math.PI / 2 + (rand() - 0.5) * 0.4);
+      else { modelProp(VB, "crate", mm.solid, px, 0, pz, 0.66, rand()); modelProp(VB, "crate", mm.solid, px + 0.2, 0.66, pz + 0.05, 0.6, rand()); modelProp(VB, "bags", mm.solid, px - 0.55, 0, pz + 0.4, 0.75, rand() * 6); }
+    }
+    return Math.max(2.6, mhh * s);
+  }
+  // the Realm-coloured copy of a village model, registered on the kit for instancing
+  function vGeo(key) {
+    const gk = "v:" + key; if (kit.g[gk]) return gk;
+    const wallT = WS === "frame" || WS === "planks" ? mix(P.wall, 0xe6dcc8, 0.5).getHex() : P.wall;
+    const geo = recoloured("village", key, { 1: mix(0x7a5636, beamC, 0.35).getHex(), 2: wallT, 3: shade(mix(P.roof, cRoof.getHex(), 0.3).getHex(), 1.05).getHex(), 4: shade(P.stone, 1.05).getHex(), 7: P.accent, 8: FIRE }, info.realm + (cave ? "c" : ""));
+    if (!geo) return null; kit.g[gk] = geo; return gk;
   }
   function W2(x, z, lx, lz) { return [x + lx, z + lz]; }
   function windowAt(x, z, lx, lz, y, side, wm) {
@@ -300,7 +367,7 @@ function buildArea(st, api, A) {
     if (kind === "tavern" || kind === "market") { const q = rand() < 0.5 ? -1 : 1; MH.add("cyl", mPlank, x + q * (w / 2 - 0.6), 0.45, z + d / 2 + 0.75, 0.7, 0.9, 0.7, 0, shade(0x8a6038, 0.9)); }
     if (rand() < 0.5) MH.box(mPlank, x - w / 2 + 0.6, 0.36, z + d / 2 + 0.7, 0.7, 0.7, 0.7, rand(), shade(0x9a7448, 0.85 + rand() * 0.25));
   }
-  MH.build(scene, (x) => st.track(x)); BH.build(scene);
+  MH.build(scene, (x) => st.track(x)); BH.build(scene); VB.build(scene);
 
   // ---------- exits: lit posts and a sign where a road leaves; settlements, caves and the yard on the overland ----------
   const exits = [];
@@ -313,6 +380,52 @@ function buildArea(st, api, A) {
     else gatePosts(o, nm);
     exits.push(o);
   });
+
+  // ---------- props (Medium/High): a well on the green, market stalls, a campfire, barrels and crates by doors, banners ----------
+  // Only where they are clear of every NPC's spot, every door's enter point and every exit, so no one ends up inside a barrel.
+  const fires = [];
+  if (mm && pack("village") && !cave && !over) {
+    const PB = new Batch(kit), RL = realmLook(info.realm), flagC = (RL && RL.cloth) || P.accent;
+    const npcAt = A.npcs.map((n) => [n.px * PX, n.py * PX]), exAt = exits.map((o) => [o.x, o.z]);
+    const free = (x, z, r) => {
+      const tx = Math.floor(x / T), tz = Math.floor(z / T), t = at(tx, tz); if (t !== 0 && t !== 9 && t !== 1 && t !== 8) return false; if (covered[tz * W + tx]) return false;
+      for (const q of npcAt) if (Math.hypot(q[0] - x, q[1] - z) < r + 0.9) return false;
+      for (const q of doors) if (Math.hypot(q.x - x, q.z - z) < r + 1.6) return false;
+      for (const q of exAt) if (Math.hypot(q[0] - x, q[1] - z) < r + 3) return false;
+      for (const q of placed) if (Math.hypot(q[0] - x, q[1] - z) < r + q[2]) return false;
+      return true;
+    }, placed = [], put = (x, z, r) => { placed.push([x, z, r]); };
+    // the well: the middle of the plaza (or of the settlement), on the first clear spot spiralling out
+    if (sp.houses && sp.houses.length) {
+      let px = 0, pz = 0, pn = 0; for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (g[y][x] === 9) { px += (x + 0.5) * T; pz += (y + 0.5) * T; pn++; }
+      if (!pn) { px = W * T / 2; pz = H * T / 2; pn = 1; }
+      px /= pn; pz /= pn;
+      for (let k = 0; k < 40; k++) { const a = k * 2.4, r = k * 0.45, wx = px + Math.cos(a) * r, wz = pz + Math.sin(a) * r; if (free(wx, wz, 1.3)) { modelProp(PB, "well", mm.solid, wx, 0, wz, 1.9, rand() * 6); put(wx, wz, 1.3); break; } }
+    }
+    // by the doors: a barrel or crate stack beside some doors, and two stalls in front of the market
+    doors.forEach((d0) => {
+      for (const sd of [-1, 1]) {
+        const bx = d0.x + sd * (1.6 + rand() * 0.5), bz = d0.z - 0.7;
+        if (rand() < 0.55 && free(bx, bz, 0.5)) { const r = rand(); if (r < 0.5) { modelProp(PB, "barrel", mm.solid, bx, 0, bz, 0.6, rand() * 6); if (r < 0.25) modelProp(PB, "barrel", mm.solid, bx + sd * 0.55, 0, bz + 0.1, 0.58, rand() * 6); } else { modelProp(PB, "crate", mm.solid, bx, 0, bz, 0.62, rand()); if (r > 0.8) modelProp(PB, "crate", mm.solid, bx, 0.62, bz, 0.56, rand()); } put(bx, bz, 0.6); }
+      }
+      if (d0.key === "market") for (const sd of [-1, 1]) { const sx = d0.x + sd * 3.4, sz = d0.z + 1.6; if (free(sx, sz, 1.1)) { modelProp(PB, rand() < 0.5 ? "stall1" : "stall2", mm.solid, sx, 0, sz, 2.2, Math.PI + (rand() - 0.5) * 0.2, 0xffffff); put(sx, sz, 1.3); } }
+    });
+    // villages and camps: a campfire with benches; it flickers (light on High only, the rest is a cheap glow)
+    if (isV || info.type === "camp" || !info.type) {
+      for (let k = 0; k < 60; k++) {
+        const fx = (2 + rand() * (W - 4)) * T, fz = (2 + rand() * (H - 4)) * T;
+        if (!free(fx, fz, 2.2) || at(Math.floor(fx / T), Math.floor(fz / T)) === 1) continue;
+        modelProp(PB, "bonfire", mm.solid, fx, 0, fz, 1.1, rand() * 6);
+        modelProp(PB, "bench", mm.solid, fx, 0, fz - 1.5, 1.4, 0); modelProp(PB, "bench", mm.solid, fx + 1.4, 0, fz + 0.4, 1.4, Math.PI / 2 + 0.3);
+        fires.push(torch(kit, scene, fx, 0.55, fz, 0xff9a40, st.gfx === "high"));
+        put(fx, fz, 2.4); break;
+      }
+    }
+    // banners in the Realm's colours on the posts where the roads leave
+    const banG = recoloured("castle", "banner", { 7: flagC, 0: flagC, 4: 0x5a4632 }, "ban" + info.realm);
+    if (banG) { kit.g["v:banner"] = banG; for (const o of exits) { if (!o.veil) continue; const horiz = o.e.w >= o.e.h, half = (horiz ? o.e.w : o.e.h) * T / 2 + 0.4; for (const sd of [-1, 1]) { const bx = horiz ? o.x + sd * half : o.x, bz = horiz ? o.z : o.z + sd * half; PB.add("v:banner", mm.sway, bx, 2.7, bz, 1.4, 1.4, 1.4, (horiz ? 0 : Math.PI / 2) + (sd < 0 ? Math.PI : 0), 0xffffff); } } }
+    PB.build(scene);
+  }
   function gatePosts(o, nm) {
     const { e, x, z } = o, horiz = e.w >= e.h, half = (horiz ? e.w : e.h) * T / 2 + 0.4;
     const M = new Merge();
@@ -355,7 +468,7 @@ function buildArea(st, api, A) {
   const npcs = [];
   A.npcs.forEach((n) => {
     const x = n.px * PX, z = n.py * PX, o = { n, x, z, obj: null, mark: null, mk: -1, label: null };
-    if (n.chest) o.obj = chest(x, z);
+    if (n.chest || /chest|stash/.test(String(n.id || ""))) o.obj = chest(x, z);
     else if (n.gate) o.obj = portal(x, z);
     else if (n.cell) o.obj = cage(x, z);
     else if (n.draw) o.obj = signpost(x, z);
@@ -488,7 +601,17 @@ function buildArea(st, api, A) {
     if (v === "menu") api.openPlace(null);
   });
   st.listen(useBtn, "pointerdown", (e) => { e.stopPropagation(); e.preventDefault(); doUse(); });
-  function doUse() { if (!useAct) return; if (useAct.door) { api.sfx("door"); inp.keys = {}; api.openPlace(useAct.door.key); } else api.use(); }
+  // what the Use button does from here: talk / open / enter / parley from the sim, or a door into the town's menus
+  function refreshUse(hx, hz) {
+    const u = api.useInfo(); nearDoor = null;
+    if (!u && doors.length) { let bd = 9; for (const dr of doors) { const d = Math.hypot(dr.x - hx, dr.z - hz); if (d < dr.r && d < bd) { bd = d; nearDoor = dr; } } }
+    const act = u ? { l: u.l, n: u.n } : nearDoor ? { l: "Go in", n: nearDoor.label, door: nearDoor } : null;
+    const key = act ? act.l + "|" + act.n : "";
+    if (key !== (useBtn._k || "")) { useBtn._k = key; useBtn.innerHTML = act ? esc(act.l) + (act.n ? "<small>" + esc(act.n) + "</small>" : "") : ""; }
+    useAct = act;
+  }
+  // E / the button: re-check first, so a press right after arriving (or on a slow frame) still acts on what is here now
+  function doUse() { refreshUse(A.p.x * PX, A.p.y * PX); if (!useAct) return; if (useAct.door) { api.sfx("door"); inp.keys = {}; api.openPlace(useAct.door.key); } else api.use(); }
   inp.blocked = () => api.sheetOpen();
   inp.onKey = (k) => {
     if (k === "e" || k === "f") doUse();
@@ -587,8 +710,8 @@ function buildArea(st, api, A) {
     frameN++;
     const p = A.p, inDlg = api.inDlg(), paused = api.sheetOpen() || inDlg;
     if (st.onFrame) st.onFrame(t);
-    torches.forEach((x) => x.tick(t)); kit.tickStatics(dt);
-    if (frameN % 240 === 0) timeOfDay();
+    torches.forEach((x) => x.tick(t)); fires.forEach((x) => x.tick(t)); kit.tickStatics(dt);
+    if (frameN % 240 === 0) { const n0 = tod.night; timeOfDay(); if (L.env && Math.abs(tod.night - (tod.envN === undefined ? -1 : tod.envN)) > 0.06) { tod.envN = tod.night; L.env.refresh(); } }
     // window glow breathes like a hearth behind the glass, stronger after dark
     winMat.emissiveIntensity = 1.6 * (1 + tod.night * 0.5) * (0.9 + 0.06 * Math.sin(t * 2.3) + 0.04 * Math.sin(t * 7.1 + 1.3));
     if (L.band) L.band.userData.tick(camera.position.x, camera.position.z);
@@ -648,9 +771,9 @@ function buildArea(st, api, A) {
     else if (!paused && barkPool.length && frameN % 12 === 0) {
       for (const o of npcs) { if (!o.fig || o.mk > 0 || o.d > 3.6 || (o.barkCd || 0) > t) continue; o.barkCd = t + 40; barkO = o; barkT = 4.5; barkEl.textContent = "“" + barkPool[Math.floor(Math.random() * barkPool.length)] + "”"; break; }
     }
-    // name plates: the person the Talk pill points at (or the nearest), plus up to two others close by, dimmer;
+    // name plates (people only: plots, signs and chests get none): the person the Talk pill points at (or the nearest), plus up to two others close by, dimmer;
     // a plate that would overlap one already placed is hidden, so they never stack
-    byD.length = 0; for (const o of npcs) if (o.d < 8) byD.push(o); byD.sort((a, b) => a.d - b.d);
+    byD.length = 0; for (const o of npcs) if (o.fig && o.d < 8) byD.push(o); byD.sort((a, b) => a.d - b.d);
     { const tn = useAct && !useAct.door ? useAct.n : ""; const ti = tn ? byD.findIndex((o) => o.n.name === tn) : -1; if (ti > 0) byD.unshift(byD.splice(ti, 1)[0]); }
     const placed = [];
     for (let i = 0; i < nameEls.length; i++) {
@@ -689,14 +812,7 @@ function buildArea(st, api, A) {
     for (const s of signs) { const d = Math.hypot(s.position.x - hx, s.position.z - hz); s.material.opacity = clamp(1.6 - d / 12, 0, 1); s.visible = s.material.opacity > 0.02; }
 
     // the Use button: talk / open / enter / parley from the sim, or a door into the town's menus
-    if (frameN % 2 === 0) {
-      const u = api.useInfo(); nearDoor = null;
-      if (!u && doors.length) { let bd = 9; for (const dr of doors) { const d = Math.hypot(dr.x - hx, dr.z - hz); if (d < dr.r && d < bd) { bd = d; nearDoor = dr; } } }
-      const act = u ? { l: u.l, n: u.n } : nearDoor ? { l: "Go in", n: nearDoor.label, door: nearDoor } : null;
-      const key = act ? act.l + "|" + act.n : "";
-      if (key !== (useBtn._k || "")) { useBtn._k = key; useBtn.innerHTML = act ? esc(act.l) + (act.n ? "<small>" + esc(act.n) + "</small>" : "") : ""; }
-      useAct = act; useBtn.hidden = !act || paused;
-    }
+    if (frameN % 2 === 0) { refreshUse(hx, hz); useBtn.hidden = !useAct || paused; }
     // the objective beacon
     if (frameN % 20 === 1) {
       const tp = api.target();
@@ -709,7 +825,7 @@ function buildArea(st, api, A) {
     if (beacon.visible) { const d = Math.hypot(beacon.position.x - hx, beacon.position.z - hz); beacon.material.opacity = 0.08 * clamp((d - 7) / 12, 0, 1); beacon.visible = beacon.material.opacity > 0.003; beaconLab.material.opacity = clamp((d - 3) / 4, 0, 1); }
 
     // culling: far chunks off
-    if (!small && frameN % 8 === 0) for (const c of chunks) c.grp.visible = Math.hypot(c.x - hx, c.z - hz) < 72;
+    if (frameN % 8 === 0) for (const c of chunks) { const d = Math.hypot(c.x - hx, c.z - hz); if (!small) c.grp.visible = d < 72; if (c.near) { const nv = d < LODR; c.near.visible = nv; c.far.visible = !nv; } }
 
     // camera: over the shoulder; in a conversation, frame the speaker; never through a wall
     if (inDlg && !talkTo) { talkTo = nearN && nd < 4 ? nearN : null; dlgCamT = 0; } else if (!inDlg) talkTo = null;
