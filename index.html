@@ -4,6 +4,8 @@
 <link rel="stylesheet" href="premium/premium.css" data-fd-css>
 <script src="premium/canon.js"></script>
 <script src="premium/frontdoor.js"></script>
+<link rel="stylesheet" href="premium/p2.css" data-p2-css>
+<script src="premium/p2.js"></script>
 <style>@font-face{font-family:"Cinzel";font-style:normal;font-weight:500;font-display:swap;src:url(fonts/cinzel-latin-500-normal.woff2) format("woff2")}@font-face{font-family:"Cinzel";font-style:normal;font-weight:700;font-display:swap;src:url(fonts/cinzel-latin-700-normal.woff2) format("woff2")}@font-face{font-family:"IBM Plex Mono";font-style:normal;font-weight:400;font-display:swap;src:url(fonts/ibm-plex-mono-latin-400-normal.woff2) format("woff2")}@font-face{font-family:"IBM Plex Mono";font-style:normal;font-weight:500;font-display:swap;src:url(fonts/ibm-plex-mono-latin-500-normal.woff2) format("woff2")}@font-face{font-family:"IM Fell English";font-style:normal;font-weight:400;font-display:swap;src:url(fonts/im-fell-english-latin-400-normal.woff2) format("woff2")}@font-face{font-family:"IM Fell English";font-style:italic;font-weight:400;font-display:swap;src:url(fonts/im-fell-english-latin-400-italic.woff2) format("woff2")}</style>
 <style>
 /* Layout: full-screen campaign map, HUD pinned top, three menu buttons pinned bottom, slide-up sheets for places and menus. */
@@ -2074,7 +2076,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
       var cx0 = W / 2, cy0 = H * 0.45, dx = X - cx0, dy = Y - cy0, ang = Math.atan2(dy, dx), tx = (dx > 0 ? rgt - cx0 : lft - cx0) / (dx || 1e-6), ty = (dy > 0 ? bot - cy0 : top - cy0) / (dy || 1e-6), t = Math.min(Math.abs(tx), Math.abs(ty));
       var ax = cx0 + dx * t + Math.cos(ang) * pu * 3, ay = cy0 + dy * t + Math.sin(ang) * pu * 3;
       g.save(); g.translate(ax, ay); g.rotate(ang); g.fillStyle = "#1a1209"; g.beginPath(); g.moveTo(17, 0); g.lineTo(-10, -12); g.lineTo(-5, 0); g.lineTo(-10, 12); g.fill(); g.fillStyle = "#ffd84a"; g.beginPath(); g.moveTo(14, 0); g.lineTo(-7, -9); g.lineTo(-3, 0); g.lineTo(-7, 9); g.fill(); g.restore();
-      g.font = "bold 11px monospace"; g.textAlign = "center"; var lab = q.name, lw = g.measureText(lab).width; var lx = Math.max(lw / 2 + 6, Math.min(W - lw / 2 - 6, ax)), ly = Math.max(top - 6, Math.min(bot + 24, ay + (dy > 0 ? -18 : 26)));
+      g.font = "600 11px Inter, system-ui, sans-serif"; g.textAlign = "center"; var lab = q.name, lw = g.measureText(lab).width; var lx = Math.max(lw / 2 + 6, Math.min(W - lw / 2 - 6, ax)), ly = Math.max(top - 6, Math.min(bot + 24, ay + (dy > 0 ? -18 : 26)));
       g.fillStyle = "rgba(10,8,6,0.85)"; g.fillRect(lx - lw / 2 - 5, ly - 10, lw + 10, 15); g.fillStyle = "#ffd84a"; g.fillText(lab, lx, ly + 1); g.textAlign = "start";
     }
   }
@@ -2276,8 +2278,8 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
     if (TERRDIRTY || !TERRI) TERRI = buildTerritory();
     ctx.imageSmoothingEnabled = !PIX; detailPass(); ctx.drawImage(TERRI, cellOrg(curCell())[0], cellOrg(curCell())[1], WORLD, WORLD);
     if (TERRL && cam.z < 1.6) {
-      ctx.save(); ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.font = "italic 700 50px 'IM Fell English', Georgia, serif"; try { ctx.letterSpacing = "9px"; } catch (e) {}
-      TERRL.forEach(function (tl) { ctx.globalAlpha = Math.min(0.62, 1.1 * (1.6 - cam.z)); ctx.lineWidth = 6; ctx.strokeStyle = "rgba(10,8,6,0.7)"; ctx.strokeText(tl.name.toUpperCase(), tl.x, tl.y); ctx.fillStyle = tl.col; ctx.fillText(tl.name.toUpperCase(), tl.x, tl.y); });
+      ctx.save(); ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.font = "600 44px 'Cinzel', 'IM Fell English', Georgia, serif"; try { ctx.letterSpacing = "20px"; } catch (e) {}
+      TERRL.forEach(function (tl) { ctx.globalAlpha = Math.min(0.42, 0.8 * (1.6 - cam.z)); ctx.lineWidth = 6; ctx.strokeStyle = "rgba(10,8,6,0.7)"; ctx.strokeText(tl.name.toUpperCase(), tl.x, tl.y); ctx.fillStyle = tl.col; ctx.fillText(tl.name.toUpperCase(), tl.x, tl.y); });
       ctx.restore();
     }
 
@@ -16871,7 +16873,215 @@ setInterval(function () {
       AR: function () { return AR; }, spec: function (id) { return getSpec(id); }, caveTo: caveTo, caves: function () { try { return ovPoi().caves.map(function (c, k) { return { id: "cave" + k, name: c.name }; }); } catch (e) { return []; } }, writs: function (sid) { return vqOpen(sid); }, area3d: function () { return A3; }, a3on: function () { return a3on; }, startArea: function (id) { startArea(id); return !!AR; }, dlg: function () { return AR && AR.dlg; }, cp: function () { return cp(); },
       battleWith: function (n, kind) { var e = kind ? null : (S.enemies.filter(function (x) { return x.kind === "bandit"; })[0] || S.enemies[0]); if (kind) { e = { id: 990000 + Math.floor(Math.random() * 9999), kind: kind, n: n || 10, q: 1, x: S.px + 40, y: S.py, cool: 0 }; S.enemies.push(e); } if (!e) return false; if (n) e.n = n; startBattle(e); return true; },
       give: function (n) { S.from.merc = (S.from.merc || 0) + n; return T(); }, pref: pref,
-      k2: function () { return K2; }, k2a: function () { return k2a; } };
+      k2: function () { return K2; }, k2a: function () { return k2a; }, openSheet: function (k, id) { return openSheet(k, id); } };
+    // ===== PREMIUM PHASE 2 (game/premium-p2) ======================================================================
+    // premium/p2.js owns the look; this block hands it the game and wraps a few functions: the map HUD (updateHud),
+    // the party marker (partyLead/partyMan), map labels (plate), the camera (update), settlement and result sheets
+    // (siteSheet, battleSheet, finishBattle snapshot only), and closeSheet for the exit animation. If premium/p2.js is
+    // missing, window.VHP2 is undefined and nothing here runs. Save keys, quest ids and numbers are untouched.
+    (function () {
+      var P2 = window.VHP2; if (!P2 || !P2.attach) return;
+      try {
+        P2.attach({
+          S: function () { return S; }, act: function (a, x, y) { return act(a, x, y); }, save: function () { save(); },
+          music: function (v) { if (v !== undefined && !!v !== mOn) { mOn = !!v; try { localStorage.setItem(MUSK, mOn ? "on" : "off"); } catch (e) {} if (mOn) mInit(); mApply(); } return mOn; },
+          focus: function (s) { glideTo(s, true); }
+        });
+        // the game's own button click is replaced by the kit's cues (which follow the Interface sounds switch)
+        try { SFXS.click = function () {}; } catch (e) {}
+        var actP2 = act;
+        act = function (a, x, y) { if (a === "p2menu") { P2.openMenu(); return; } return actP2(a, x, y); };
+        var E = P2.esc;
+        function pal() { var r = P2.people(); return r ? r.pal : null; }
+
+        // ---- the world map HUD: one forged bar (day, crowns, grain, men, menu), then chips and the speed control ----
+        var IC = {
+          crown: '<svg viewBox="0 0 24 24" style="color:#f0cd80"><ellipse cx="12" cy="15.5" rx="7.5" ry="3"/><path d="M4.5 15.5v-3c0-1.7 3.4-3 7.5-3s7.5 1.3 7.5 3v3"/><ellipse cx="12" cy="12.5" rx="7.5" ry="3"/><path d="M9.5 12.4h5"/></svg>',
+          grain: '<svg viewBox="0 0 24 24" style="color:#e2c26e"><path d="M12 21V9"/><path d="M12 9c-2.6-.4-3.6-2.6-3.4-5 2.5.3 3.6 2.3 3.4 5zM12 9c2.6-.4 3.6-2.6 3.4-5-2.5.3-3.6 2.3-3.4 5zM12 14c-2.6-.4-3.8-2.4-3.6-4.8 2.6.3 3.8 2.2 3.6 4.8zM12 14c2.6-.4 3.8-2.4 3.6-4.8-2.6.3-3.8 2.2-3.6 4.8z"/></svg>',
+          men: '<svg viewBox="0 0 24 24" style="color:#d8c8a0"><path d="M12 3l6.5 2.6v4.9c0 4.6-2.8 7.6-6.5 9.5-3.7-1.9-6.5-4.9-6.5-9.5V5.6z"/><path d="M12 7.5v8M8.8 10.8h6.4"/></svg>',
+          menu: '<svg viewBox="0 0 24 24"><path d="M5 7h14M5 12h14M5 17h14"/></svg>',
+          pause: '<svg viewBox="0 0 24 24"><path class="f" d="M7 5h3.4v14H7zM13.6 5H17v14h-3.4z"/></svg>',
+          play: '<svg viewBox="0 0 24 24"><path class="f" d="M7 4.5l12 7.5-12 7.5z"/></svg>',
+          fast: '<svg viewBox="0 0 24 24"><path class="f" d="M3 5l9 7-9 7zM12 5l9 7-9 7z"/></svg>'
+        };
+        function stat(icon, val, cap, per, d, lbl) {
+          var low = per > 0 && d <= 3;
+          return '<span class="p2-st' + (low ? " low" : "") + '" aria-label="' + lbl + " " + val + '">' + icon + "<span><b>" + val + (cap ? "<small>/" + cap + "</small>" : "") + "</b><i>" + (per > 0 ? "−" + per.toFixed(1) + "/d · " + (d > 99 ? "99+" : d) + "d" : lbl) + "</i></span></span>";
+        }
+        var NAVK = { party: "party", inv: "party", realms: "realms", diplo: "realms", heroes: "heroes", skills: "skills", ledger: "ledger", record: "record", deep: "deep" };
+        var hudKey = "", navKey = null, topT = 0;
+        var uhP2 = updateHud;
+        updateHud = function () {
+          uhP2();
+          try {
+            var hud = $("hud"); if (!hud || !S) return;
+            var wd = wageDay(), ed = eatDay(), t = TIERS[hollow()], pts = points(), wars = Object.keys(S.pwar).filter(function (k) { return k !== "metal"; }).length;
+            var h = '<div class="p2-bar"><div class="p2-day"><b>Day ' + dayN() + "</b><span>" + MONTHS[Math.floor(S.day / 30) % 4] + '</span></div><div class="p2-stats">' +
+              stat(IC.crown, Math.floor(S.crowns), 0, wd, daysOf(S.crowns, wd), "Crowns") + stat(IC.grain, Math.floor(S.grain), 0, ed, daysOf(S.grain, ed), "Grain") + stat(IC.men, T(), capNow(), 0, 99, "Men") +
+              '</div><button class="p2-icon" data-act="p2menu" aria-label="Menu">' + IC.menu + "</button></div>" +
+              '<div class="p2-row"><div class="p2-chips">' +
+              '<span class="p2-chip lv" data-act="menu" data-a="skills">Lv <b>' + lvl() + "</b>" + (pts > 0 ? ' <b class="pts">+' + pts + "</b>" : "") + "</span>" +
+              (cp().on ? '<span class="p2-chip quest" data-act="quest">◆ Quest</span>' : "") +
+              '<span class="p2-chip void" data-act="magic">✦ Hollow <b>' + hollow() + "/6</b> " + E(t[0]) + "</span>" +
+              (mcOn() && S.mc.began && !S.mc.broken ? '<span class="p2-chip warn">Dominion ×' + mcPower().toFixed(1) + "</span>" : "") +
+              (S.allies.length ? '<span class="p2-chip gold" data-act="menu" data-a="heroes">Heroes ' + S.allies.length + "</span>" : "") +
+              (wars ? '<span class="p2-chip warn" data-act="menu" data-a="realms">At war ×' + wars + "</span>" : "") +
+              '</div><div class="p2-spd" role="group" aria-label="Speed">' +
+              [[0, "pause", "Pause"], [1, "play", "Normal speed"], [3, "fast", "Fast"]].map(function (b) { return '<button data-act="speed" data-a="' + b[0] + '" aria-label="' + b[2] + '"' + (S.speed === b[0] ? ' class="on ' + b[1] + '"' : "") + ">" + IC[b[1]] + "</button>"; }).join("") + "</div></div>";
+            if (h !== hudKey || !hud.querySelector(".p2-bar")) { hud.innerHTML = h; hud.classList.add("p2"); hudKey = h; }
+            var now = performance.now(); if (now - topT > 500) { topT = now; var bb = hud.lastElementChild && hud.lastElementChild.getBoundingClientRect(); if (bb) document.documentElement.style.setProperty("--p2-top-h", Math.round(bb.bottom) + "px"); }
+            var nk = sheet ? NAVK[sheet.kind] || "" : "";
+            if (nk !== navKey) { navKey = nk; var bs = document.querySelectorAll("#bar button"); for (var i = 0; i < bs.length; i++) bs[i].classList.toggle("p2-on", !!nk && bs[i].getAttribute("data-a") === nk); }
+            var onMap = !AR && !cur && $("title") && $("title").hidden; if (document.body.classList.contains("p2-map") !== onMap) document.body.classList.toggle("p2-map", onMap);
+          } catch (e) {}
+        };
+
+        // ---- parchment and ink over the map, like the book's endpaper map ----
+        try { var mp = $("map"); if (mp && !$("p2parch")) { var pa = document.createElement("div"); pa.id = "p2parch"; pa.className = "on"; var ik = document.createElement("div"); ik.id = "p2ink"; ik.className = "on"; mp.parentNode.insertBefore(pa, mp.nextSibling); mp.parentNode.insertBefore(ik, pa.nextSibling); } } catch (e) {}
+
+        // ---- your people on the map: the knight and the column in your Realm's colours, under your people's pennant ----
+        function pennant(x, y, dir, now, p) {
+          var px = x - dir * 15, top = y - 42, sw = Math.sin(now / 240) * 1.4;
+          ctx.save(); ctx.lineCap = "round";
+          ctx.strokeStyle = "#2a1c10"; ctx.lineWidth = 2.2; ctx.beginPath(); ctx.moveTo(px, y - 6); ctx.lineTo(px, top); ctx.stroke();
+          ctx.strokeStyle = "#d8c8a0"; ctx.lineWidth = 1.1; ctx.beginPath(); ctx.moveTo(px, y - 6); ctx.lineTo(px, top); ctx.stroke();
+          var L = -dir * 21;
+          ctx.beginPath(); ctx.moveTo(px, top); ctx.lineTo(px + L, top + 2 + sw); ctx.lineTo(px + L * 0.7, top + 7.5 + sw * 0.6); ctx.lineTo(px + L, top + 13 + sw); ctx.lineTo(px, top + 14); ctx.closePath();
+          ctx.fillStyle = p.a; ctx.fill(); ctx.lineWidth = 1.2; ctx.strokeStyle = p.c; ctx.stroke();
+          ctx.fillStyle = p.c; ctx.fillRect(px + (dir > 0 ? L * 0.55 : 0), top + 10 + sw * 0.5, Math.abs(L) * 0.55, 1.6);
+          ctx.fillStyle = p.glow; ctx.beginPath(); ctx.arc(px, top - 1.5, 1.8, 0, 6.283); ctx.fill();
+          ctx.restore();
+        }
+        partyLead = function (x, y, dir, phase, moving, now) {
+          var p = pal(), im = p && typeof spImg === "function" && spImg("tp_knight");
+          if (!p || !im) { horseRiderNew(x, y, dir, phase, moving, now); return; }
+          pennant(x, y, dir, now, p);
+          var tm = P2.tinted(im, "tp_knight", p.a, 0.6), h = 46, w = im.naturalWidth / im.naturalHeight * h, bob = moving ? -Math.abs(Math.sin(phase)) * 1.6 : 0;
+          ctx.save(); var lg = ctx.createRadialGradient(x, y - 12, 2, x, y - 12, 30); lg.addColorStop(0, p.glow + "88"); lg.addColorStop(1, p.glow + "00"); ctx.fillStyle = lg; ctx.beginPath(); ctx.arc(x, y - 12, 30, 0, 6.283); ctx.fill();
+          ctx.fillStyle = "rgba(0,0,0,0.35)"; ctx.beginPath(); ctx.ellipse(x, y + 1, w * 0.42, 3.2, 0, 0, 6.283); ctx.fill();
+          ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = "high"; ctx.translate(x, y + bob); if (dir < 0) ctx.scale(-1, 1); ctx.drawImage(tm, -w / 2, -h, w, h); ctx.restore();
+        };
+        partyMan = function (x, y, k, dir, phase, o) {
+          var p = pal(), id = o && o.sword ? "tp_sword" : "tp_spear", im = p && typeof spImg === "function" && spImg(id);
+          if (!p || !im) { personNew(x, y, k, dir, phase, o); return; }
+          var tm = P2.tinted(im, id, o && o.sword ? p.c : p.a, 0.6), h = 15 * (k || 1), w = im.naturalWidth / im.naturalHeight * h, bob = -Math.abs(Math.sin(phase)) * 0.9;
+          ctx.save(); ctx.fillStyle = "rgba(0,0,0,0.3)"; ctx.beginPath(); ctx.ellipse(x, y + 1, w * 0.4, 2, 0, 0, 6.283); ctx.fill();
+          ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = "high"; ctx.translate(x, y + bob); if (dir < 0) ctx.scale(-1, 1); ctx.drawImage(tm, -w / 2, -h, w, h); ctx.restore();
+        };
+
+        // ---- map labels: settlements as parchment cartouches with their Realm's crest; everything else as small iron plates ----
+        var curSite = null, dsP2 = drawSite;
+        drawSite = function (s, t) { curSite = s; try { dsP2(s, t); } finally { curSite = null; } };
+        function rr(x, y, w, h, r) { ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); }
+        plate = function (txt, x, y, font, col) {
+          var k = Math.min(1.7, Math.max(1, 0.85 / Math.max(0.05, cam.z))), m = /(\d+(\.\d+)?)px/.exec(font), px = (m ? +m[1] : 11) * k, s = curSite && txt === curSite.name ? curSite : null;
+          ctx.save(); ctx.textAlign = "center"; ctx.textBaseline = "middle";
+          if (s) {
+            var big = s.type !== "village", fs = px * (big ? 0.8 : 0.74), hgt = fs * 1.75, rid = s.owner === "player" && P2.people() ? P2.people().id : realmOf(s), cr = P2.crestImg(rid);
+            ctx.font = "600 " + fs.toFixed(1) + "px 'Cinzel', Georgia, serif"; try { ctx.letterSpacing = (fs * 0.12).toFixed(1) + "px"; } catch (e) {}
+            var label = txt.toUpperCase(), tw = ctx.measureText(label).width, cw = cr ? hgt * 0.95 : 0, w = tw + fs * 1.3 + cw, x0 = x - w / 2, y0 = y - hgt * 0.62;
+            ctx.shadowColor = "rgba(0,0,0,0.55)"; ctx.shadowBlur = 6 * k; ctx.shadowOffsetY = 2 * k;
+            var g = ctx.createLinearGradient(0, y0, 0, y0 + hgt); g.addColorStop(0, "#f1e4c3"); g.addColorStop(1, "#d6c191"); rr(x0, y0, w, hgt, 2.5 * k); ctx.fillStyle = g; ctx.fill();
+            ctx.shadowColor = "transparent"; ctx.lineWidth = 1.2 * k; ctx.strokeStyle = hostileSite(s) ? "#8e2416" : "#5a3e1a"; ctx.stroke();
+            rr(x0 + 2 * k, y0 + 2 * k, w - 4 * k, hgt - 4 * k, 1.5 * k); ctx.lineWidth = 0.6 * k; ctx.strokeStyle = "rgba(90,62,26,0.55)"; ctx.stroke();
+            if (cr) { var ch = hgt * 1.22, cwid = ch * 100 / 130; ctx.drawImage(cr, x0 - cwid * 0.3, y0 + hgt / 2 - ch / 2, cwid, ch); }
+            ctx.fillStyle = "#2b1d0f"; ctx.fillText(label, x0 + cw * 0.55 + (w - cw * 0.55) / 2 + fs * 0.06, y0 + hgt / 2 + fs * 0.06);
+          } else {
+            var f2 = px * 0.92; ctx.font = "600 " + f2.toFixed(1) + "px 'Inter', system-ui, sans-serif"; try { ctx.letterSpacing = "0px"; } catch (e) {}
+            var w2 = ctx.measureText(txt).width + f2 * 1.2, h2 = f2 * 1.7, x2 = x - w2 / 2, y2 = y - h2 * 0.62;
+            rr(x2, y2, w2, h2, h2 / 2); ctx.fillStyle = "rgba(12,9,7,0.84)"; ctx.fill(); ctx.lineWidth = 1 * k; ctx.strokeStyle = "rgba(232,199,126,0.42)"; ctx.stroke();
+            ctx.fillStyle = col; ctx.fillText(txt, x, y2 + h2 / 2 + f2 * 0.04);
+          }
+          ctx.restore();
+        };
+
+        // ---- the camera: eased glides to a settlement you tap, pinch to zoom ----
+        var G = null, lastTgt = null;
+        function eio(t) { return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2; }
+        function glideTo(s, sound) { if (!s) return; G = { t: 0, sx: cam.x, sy: cam.y, x: s.x, y: s.y }; if (sound) P2.cue("focus"); }
+        var upP2 = update;
+        update = function (dt) {
+          upP2(dt);
+          try {
+            if (S && S.target && S.target !== lastTgt) { lastTgt = S.target; if (S.target.site && !sheet && !AR) glideTo(site(S.target.site) || S.target, true); }
+            if (!S.target) lastTgt = null;
+            if (!G) return;
+            if (sheet || AR || cur || (VST.on && VST.drag) || P2.still()) { G = null; return; }
+            G.t += dt; var T1 = 0.75, T2 = 0.7, T3 = 0.85;
+            if (G.t < T1) { var a = eio(G.t / T1); cam.x = G.sx + (G.x - G.sx) * a; cam.y = G.sy + (G.y - G.sy) * a; }
+            else if (G.t < T1 + T2) { cam.x = G.x; cam.y = G.y; }
+            else if (G.t < T1 + T2 + T3) { var b = eio((G.t - T1 - T2) / T3); cam.x = G.x + (S.px - G.x) * b; cam.y = G.y + (S.py - G.y) * b; }
+            else G = null;
+          } catch (e) { G = null; }
+        };
+        try {
+          var PT = {}, pin = null, mapC = $("map");
+          if (mapC) {
+            mapC.addEventListener("pointerdown", function (e) { PT[e.pointerId] = { x: e.clientX, y: e.clientY }; var ids = Object.keys(PT); if (ids.length === 2 && !sheet && !AR) { VST.on = false; VST.drag = false; VST.dx = VST.dy = 0; try { vstHide(); } catch (x) {} var a = PT[ids[0]], b = PT[ids[1]]; pin = { d: Math.hypot(a.x - b.x, a.y - b.y) || 1, z: zt == null ? cam.z : zt }; G = null; } }, true);
+            mapC.addEventListener("pointermove", function (e) { if (!PT[e.pointerId]) return; PT[e.pointerId] = { x: e.clientX, y: e.clientY }; var ids = Object.keys(PT); if (pin && ids.length >= 2) { var a = PT[ids[0]], b = PT[ids[1]]; zt = zclamp(pin.z * (Math.hypot(a.x - b.x, a.y - b.y) / pin.d)); } }, true);
+            var pend = function (e) { delete PT[e.pointerId]; if (Object.keys(PT).length < 2) pin = null; };
+            mapC.addEventListener("pointerup", pend, true); mapC.addEventListener("pointercancel", pend, true);
+          }
+        } catch (e) {}
+
+        // ---- settlement sheets: a header strip over the Realm's horizon, the crest, then the people with work for you ----
+        var BD = { ember: 1, light: 1, shadow: 1, storm: 1, frost: 1, stone: 1, spirit: 1, metal: 1, march: 1 };
+        function face(id, letter, mark) {
+          return '<span class="p2-face">' + E((letter || "?").charAt(0).toUpperCase()) + (id ? '<img src="img/face/' + E(id) + '.webp" alt="" onerror="this.remove()">' : "") + (mark ? "<em>!</em>" : "") + "</span>";
+        }
+        var ssP2 = siteSheet;
+        siteSheet = function (s) {
+          var h = ssP2(s);
+          try {
+            var rid = realmOf(s), bd = BD[rid] ? rid : "ember", m = /^<h2>([\s\S]*?)<\/h2>(<p class="sub">[\s\S]*?<\/p>)/.exec(h);
+            if (!m) return h;
+            var cr = P2.crestSvg(s.owner === "player" && P2.people() ? P2.people().id : rid, "");
+            var hdr = '<div class="p2-hdr" style="background-image:linear-gradient(180deg,rgba(10,8,6,.05) 0%,rgba(10,8,6,.4) 55%,rgba(14,11,8,.98) 100%),url(g3d/assets/backdrops/' + bd + '.webp)">' + cr + "<div><h2>" + m[1] + "</h2>" + m[2] + "</div></div>";
+            h = hdr + h.slice(m[0].length);
+            // people: your quest's giver (with a portrait when one exists) and the local writ giver
+            var ppl = "", ob = null; try { ob = S.camp && S.camp.on ? objective() : null; } catch (e) {}
+            if (ob && ob.site === s.id) {
+              h = h.replace(/<p style="color:#ffd84a;margin:0\.4rem 0">◆ Your quest leads here: [\s\S]*?<\/p>/, "");
+              ppl += '<div class="p2-q lead">' + face(ob.npc, ob.npc || "Q", true) + '<span class="p2-qt"><b>Your quest leads here</b><small>' + E(ob.text) + "</small></span>" + (canWalk(s) && !AR ? '<button class="solid" data-act="vh3dwalk" data-a="' + s.id + '">Go</button>' : "") + "</div>";
+            }
+            var who = "", open = []; try { who = vqWho(s); open = vqOpen(s.id); } catch (e) {}
+            if (who && !hostileSite(s)) ppl += '<div class="p2-q">' + face(null, who.replace(/^(Reeve|Castellan|Watch Captain) /, ""), open.length > 0) + '<span class="p2-qt"><b>' + E(who) + "</b><small>" + (open.length ? open.length + (open.length === 1 ? " writ posted" : " writs posted") + " this week, paid by " + E(s.name) + "." : "Nothing posted this week.") + "</small></span>" + (open.length ? '<button data-act="writs" data-a="' + s.id + '">Writs</button>' : "") + "</div>";
+            if (ppl) { var wi = h.indexOf('<div class="vh3d-walk">'), we = wi >= 0 ? h.indexOf("</div>", wi) + 6 : hdr.length; h = h.slice(0, we) + '<div class="p2-people">' + ppl + "</div>" + h.slice(we); }
+          } catch (e) {}
+          return h;
+        };
+
+        // ---- battle results: a summary card above the field report (numbers read after finishBattle, never changed) ----
+        var fbP2 = finishBattle;
+        finishBattle = function () {
+          var b = B, pre = b ? { c: S.crowns, g: S.grain, m: T() } : null, r = fbP2.apply(this, arguments);
+          try { if (b && pre) { b.p2 = { c: Math.round(S.crowns - pre.c), g: Math.round(S.grain - pre.g), lost: Math.max(0, pre.m - T()), foes: Math.round(b.en0) }; if (sheet && sheet.kind === "battle" && B === b && B.stage === "result") renderSheet(); } } catch (e) {}
+          return r;
+        };
+        var bsP2 = battleSheet;
+        battleSheet = function () {
+          var h = bsP2();
+          try {
+            if (B && B.stage === "result") {
+              var q = B.p2 || {}, won = B.won === true, lost = B.won === false, sg = function (v) { return (v > 0 ? "+" : "") + v; };
+              var card = '<div class="p2-sum' + (lost ? " lose" : "") + '"><div class="p2-sum-k">' + (won ? "Victory" : lost ? "Defeat" : "Withdrawn") + '</div><div class="p2-sum-t">' + (won ? (B.siegeId ? "The hold is yours" : "They break!") : lost ? "Your line breaks" : "You got away") + "</div>" +
+                '<div class="p2-sum-g"><div><b>' + (q.foes || Math.round(B.en0 || 0)) + "</b><small>Foes</small></div><div><b" + (q.lost ? ' class="dn"' : "") + ">" + (q.lost ? "−" + q.lost : "0") + "</b><small>Men lost</small></div>" +
+                "<div><b" + (q.c > 0 ? ' class="up"' : q.c < 0 ? ' class="dn"' : "") + ">" + sg(q.c || 0) + "</b><small>Crowns</small></div><div><b" + (q.g > 0 ? ' class="up"' : q.g < 0 ? ' class="dn"' : "") + ">" + sg(q.g || 0) + "</b><small>Grain</small></div></div></div>";
+              var i = h.indexOf("</p>"); h = i >= 0 ? h.slice(0, i + 4) + card + h.slice(i + 4) : card + h; // first thing under the title, above the battle art
+            }
+          } catch (e) {}
+          return h;
+        };
+
+        // ---- sheets close with a short sink instead of vanishing ----
+        var csP2 = closeSheet;
+        closeSheet = function (force) {
+          var was = sheet; if (was && (force || !/^(battle|intro|ending|menu|newgame|story)$/.test(was.kind))) P2.sheetClosing();
+          return csP2.apply(this, arguments);
+        };
+      } catch (e) { console.error("premium phase 2", e); }
+    })();
+    // ===== /PREMIUM PHASE 2 ======================================================================================
   })();
   setInterval(function () { if (!sheet || sheet.kind !== "battle") save(); }, 4000);
   // ===== PREMIUM FRONT DOOR bridge (game/premium-v1) ===========================================================
