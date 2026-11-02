@@ -17075,6 +17075,14 @@ setInterval(function () {
           return h;
         };
 
+        // ---- the taller settlement header must not cost the jump to a section: try again once the sheet has settled ----
+        var opP2 = openPlace;
+        openPlace = function (sid, key) {
+          var r = opP2.apply(this, arguments);
+          try { if (SECS[key]) setTimeout(function () { var b = $("sbody"); if (b && b.scrollTop === 0 && sheet && sheet.kind === "site") scrollToSec(SECS[key]); }, 280); } catch (e) {}
+          return r;
+        };
+
         // ---- sheets close with a short sink instead of vanishing ----
         var csP2 = closeSheet;
         closeSheet = function (force) {
