@@ -32,7 +32,7 @@
 
 /* HERO */
 .vhh .vhh-hero{position:relative;padding-bottom:28px;background:radial-gradient(120% 60% at 70% 0%,rgba(142,92,255,.16),transparent 60%),var(--ink)}
-.vhh .vhh-hero-art{position:relative;width:100%;aspect-ratio:780/810;overflow:hidden}
+.vhh .vhh-hero-art{position:relative;width:100%;aspect-ratio:780/810;max-height:min(62vh,520px);overflow:hidden}
 .vhh .vhh-hero-art img{width:100%;height:100%;object-fit:cover;object-position:50% 30%}
 .vhh .vhh-hero-art::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(7,7,10,.25) 0%,rgba(7,7,10,0) 22%,rgba(7,7,10,.15) 45%,rgba(7,7,10,.82) 70%,var(--ink) 92%)}
 .vhh .vhh-hero-copy{position:relative;z-index:2;margin-top:-46%;padding:0 20px}
@@ -179,7 +179,7 @@
 @media (min-width:960px){
   .vhh .vhh-sec{padding:110px 0}
   .vhh .vhh-hero{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,.95fr);align-items:center;min-height:760px;max-width:1280px;margin:0 auto;padding:40px 0}
-  .vhh .vhh-hero-art{order:2;aspect-ratio:auto;height:100%;min-height:700px;-webkit-mask-image:radial-gradient(85% 75% at 60% 45%,#000 55%,transparent 100%);mask-image:radial-gradient(85% 75% at 60% 45%,#000 55%,transparent 100%)}
+  .vhh .vhh-hero-art{order:2;aspect-ratio:auto;max-height:none;height:100%;min-height:700px;-webkit-mask-image:radial-gradient(85% 75% at 60% 45%,#000 55%,transparent 100%);mask-image:radial-gradient(85% 75% at 60% 45%,#000 55%,transparent 100%)}
   .vhh .vhh-hero-art::after{background:linear-gradient(90deg,var(--ink) 0%,rgba(7,7,10,0) 30%),linear-gradient(0deg,var(--ink) 0%,rgba(7,7,10,0) 25%),linear-gradient(180deg,var(--ink) 0%,rgba(7,7,10,0) 18%)}
   .vhh .vhh-hero-copy{order:1;margin:0;padding:0 24px 0 56px}
   .vhh .vhh-grid{grid-template-columns:repeat(3,1fr);gap:14px}
