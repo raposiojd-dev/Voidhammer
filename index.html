@@ -2408,6 +2408,9 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
     ctx.restore();
   }
 
+  // premium P2 swaps these for Realm-tinted versions (your people's colours on the map); by default they draw as before
+  var partyLead = function (x, y, dir, phase, moving, now) { horseRiderNew(x, y, dir, phase, moving, now); };
+  var partyMan = function (x, y, k, dir, phase, o) { personNew(x, y, k, dir, phase, o); };
   function drawParty(now) {
     var moved = 0, dir = 1;
     if (LASTP) { var dx = S.px - LASTP.x, dy = S.py - LASTP.y; moved = Math.hypot(dx, dy); if (Math.abs(dx) > 0.02) LASTP.dir = dx > 0 ? 1 : -1; dir = LASTP.dir; }
@@ -2436,10 +2439,10 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
     all.sort(function (a, b) { return a.y - b.y; });
     var merc = S.from.merc || 0, mcount = Math.round(n * merc / Math.max(1, T()));
     all.forEach(function (a) {
-      if (a.lead) { horseRiderNew(S.px, S.py, dir, phase, moving, now); return; }
+      if (a.lead) { partyLead(S.px, S.py, dir, phase, moving, now); return; }
       var f = a.f, isMerc = f.i < mcount;
       var fdir = dir; var pp = TRAIL[TRAIL.length - 1 - f.i * 4]; var np = TRAIL[TRAIL.length - f.i * 4]; if (pp && np && Math.abs(np.x - pp.x) > 0.2) fdir = np.x > pp.x ? 1 : -1;
-      personNew(f.x, f.y, 1, fdir, phase + f.i * 0.8, isMerc
+      partyMan(f.x, f.y, 1, fdir, phase + f.i * 0.8, isMerc
         ? { body: "#4a4f58", trim: "#c8873a", helm: "#8a9096", spear: false, sword: true, shield: "#6e3a2a" }
         : { body: "#8a6a3a", trim: "#c8873a", helm: "#6b5a3a", spear: true, shield: "#c8873a", legs: "#3a2c1c" });
     });

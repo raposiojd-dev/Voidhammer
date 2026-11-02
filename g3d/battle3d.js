@@ -12,7 +12,7 @@ import { clone as skClone } from "./lib/SkeletonUtils.js";
 import { Merge, paintedSky, grassField, groundMat, horizonBand, loadArt, useSkyEnv } from "./art.js";
 import { buildSiege } from "./siege3d.js";
 const { THREE, REALMS, VOIDC, GROUND_TEX, GRASS_TINT, GRASS_N, CLOUD, COLD, tree, rng, vnoise, clamp, lerp, angLerp, shade, mix,
-  makeStage, makeKit, whenChars, heroLook, kaelLook, figure, animFigure, Batch, lights, particles, followCam, moveIntent, esc } = K3;
+  makeStage, makeKit, whenChars, heroLook, canonPal, kaelLook, figure, animFigure, Batch, lights, particles, followCam, moveIntent, esc } = K3;
 
 const G = 9.8;
 const ORD = { follow: "Follow me", hold: "Hold", charge: "Charge!", advance: "Advance", wall: "Shield wall" };
@@ -143,9 +143,13 @@ function buildBattle(st, api, info, done) {
     if (info.fac) { const r = REALMS[info.fac] || P; return { cloth: r.cloth[0], cloth2: r.cloth[3] || 0x2a2420, armour: cls !== "arch", metal: info.fac === "metal" ? 0x2c2c30 : info.fac === "light" ? 0xd0b050 : info.fac === "frost" ? 0x6a7a8a : 0x8a8e94, tabard: ecol2, helm: info.fac === "metal" ? "spike" : info.fac === "shadow" ? "hood" : "cap", weapon: wpn, shield: cls === "arch" || info.fac === "shadow" ? null : ecol2 }; }
     return { cloth: [0x6a4a2a, 0x4a3a2a, 0x5a3a24, 0x3a3020][Math.floor(rand() * 4)], cloth2: 0x2a2018, skin: [0xc89a78, 0x9a6a48, 0xd8b090][Math.floor(rand() * 3)], helm: rand() < 0.5 ? "hood" : rand() < 0.5 ? "cap" : "bare", hoodc: 0x3a2a1c, weapon: wpn, shield: cls !== "arch" && rand() < 0.4 ? 0x6a4a2a : null, armour: rand() < 0.2 };
   };
+  const RP = canonPal();
   const ownLook = (cls, ally) => {
     const wpn = cls === "arch" ? "bow" : cls === "spear" ? "spear" : rand() < 0.3 ? "spear" : "sword";
     if (ally) return { cloth: 0x3a3428, cloth2: 0x2a2420, armour: cls !== "arch", tabard: ally.col, helm: "cap", weapon: wpn, shield: cls === "arch" ? null : ally.col };
+    // premium P2: your column wears your people's colours (surcoat, hose, metal); shields keep your banner so the line reads as yours.
+    // Against your own Realm's lords the surcoat stays the banner colour, so the two sides never look alike.
+    if (RP && RP.id !== info.fac) { const L = RP.look; return { cloth: L.cloth, cloth2: L.legs, armour: cls !== "arch" && rand() < 0.65, tabard: L.cloth, metal: L.metal, helm: rand() < 0.7 ? "cap" : "bare", weapon: wpn, shield: cls === "arch" ? null : rand() < 0.75 ? info.banner : RP.a }; } // same rolls, same order as below
     return { cloth: 0x4a3e30, cloth2: 0x2a2420, armour: cls !== "arch" && rand() < 0.65, tabard: info.banner, helm: rand() < 0.7 ? "cap" : "bare", weapon: wpn, shield: cls === "arch" ? null : rand() < 0.75 ? info.banner : null };
   };
   const ringGeo = st.track(new THREE.RingGeometry(0.3, 0.42, 16));
@@ -268,8 +272,10 @@ function buildBattle(st, api, info, done) {
   // ---------- standards ----------
   const flags = [];
   const standard = (x, z, col) => { const y = H(x, z); const pole = new THREE.Mesh(kit.g.cyl, kit.mat(0x4a3420)); pole.scale.set(0.12, 5, 0.12); pole.position.set(x, y + 2.5, z); pole.castShadow = true; scene.add(pole); const fl = new THREE.Mesh(kit.g.box, kit.mat(col, { side: THREE.DoubleSide })); fl.scale.set(1.4, 0.9, 0.04); fl.position.set(x + 0.72, y + 4.4, z); fl.castShadow = true; scene.add(fl); flags.push(fl); };
-  if (siegeOn) { standard(-3, (defendP ? SG.innerZ - 9 : SG.wallZ + 34), info.banner); standard(4, (defendP ? SG.wallZ + 34 : SG.innerZ - 9), info.ecol); }
-  else { standard(-3, 25 * pDir, info.banner); standard(3, -25 * pDir, info.ecol); }
+  // premium P2: your standard flies your people's accent with a band of your banner colour and a finial in their third colour
+  const standardP = (x, z) => { if (!RP) { standard(x, z, info.banner); return; } standard(x, z, RP.a); const fl = flags[flags.length - 1], y = H(x, z); const band = new THREE.Mesh(kit.g.box, kit.mat(info.banner, { side: THREE.DoubleSide })); band.scale.set(1.4, 0.2, 0.05); band.position.set(x + 0.72, y + 3.86, z); scene.add(band); flags.push(band); const fin = new THREE.Mesh(kit.g.box, kit.mat(RP.c)); fin.scale.set(0.26, 0.26, 0.26); fin.rotation.set(0.6, 0.6, 0); fin.position.set(x, y + 5.08, z); scene.add(fin); void fl; };
+  if (siegeOn) { standardP(-3, (defendP ? SG.innerZ - 9 : SG.wallZ + 34)); standard(4, (defendP ? SG.wallZ + 34 : SG.innerZ - 9), info.ecol); }
+  else { standardP(-3, 25 * pDir); standard(3, -25 * pDir, info.ecol); }
 
   // ---------- HUD and controls ----------
   st.$(".v3-hud").innerHTML = '<h3 style="text-align:center">' + esc(info.title) + '</h3><div class="v3-bars"><div class="v3-bar"><i id="v3p" style="width:100%;background:linear-gradient(90deg,#8a5a24,' + info.banner + ')"></i></div><div class="v3-ord" id="v3o">Hold</div><div class="v3-bar e"><i id="v3e" style="width:100%;background:linear-gradient(90deg,' + (isVoid ? "#9a7cd0" : info.ecol) + ',#4a2a1a)"></i></div></div>';
