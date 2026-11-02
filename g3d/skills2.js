@@ -580,7 +580,7 @@
       // ---------------------------------------------------------------- the abilities ----------------------------------------------------------------
       const RUN = {
         cmd_rally(r) { const h = hp(); C.sfx("horn"); C.fx.ring(h.x, h.z, 20, TREE.cmd.col, 0.9); C.fx.flash(TREE.cmd.col, 0.25);
-          if (C.kind === "battle") { const n = C.unrout(20); C.morale(0.2 + 0.05 * r, 8); C.allyBuff("dmg", 0.15 + 0.05 * r, 8); C.msg(n ? n + " men turn back to the line." : "The rally sounds. The line answers.", 2); }
+          if (C.kind === "battle") { const n = C.unrout(20); C.morale(0.2 + 0.05 * r, 8); C.allyBuff("dmg", 0.15 + 0.05 * r, 8); C.msg(n ? n + (n === 1 ? " man turns" : " men turn") + " back to the line." : "The rally sounds. The line answers.", 2); }
           else { buff("dmg", 0.3, 5 + r); C.foes(5, null, h).forEach((f) => hit(f, 0, { stun: 0.8, nocombo: 1 })); C.msg("The rally sounds.", 1.5); } },
         cmd_wall(r) { const h = hp(); C.fx.ring(h.x, h.z, 6, TREE.cmd.col2, 0.6); C.sfx("hit");
           if (C.kind === "battle") { C.order("wall", "inf"); C.allyBuff("red", 0.3 + 0.05 * r, 6); buff("red", 0.3 + 0.05 * r, 6); C.msg("Shields up! The wall locks.", 1.6); }

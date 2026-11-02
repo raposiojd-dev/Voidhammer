@@ -474,6 +474,8 @@ function roundRect(x, a, b, w, h, r) { x.beginPath(); x.moveTo(a + r, b); x.arcT
 // the player's people (chosen in the character select, premium/canon.js) dress the hero in their Realm palette;
 // the banner colour stays on the shield, and the hero keeps a sword for the strike animations
 function canonLook() { try { const o = window.__vh && window.__vh.S() && window.__vh.S().opt, C = window.VH_CANON; if (!o || !o.people || !C) return null; const r = C.realm(o.people); return r && r.id === o.people ? r.look : null; } catch (e) { return null; } }
+// premium P2: the chosen people's full palette (accent, second, third, glow as hex numbers) for troops and standards
+function canonPal() { try { const o = window.__vh && window.__vh.S() && window.__vh.S().opt, C = window.VH_CANON; if (!o || !o.people || !C) return null; const r = C.realm(o.people); if (!r || r.id !== o.people) return null; const h = (x) => parseInt(String(x).replace("#", ""), 16); return { id: r.id, a: h(r.pal.a), b: h(r.pal.b), c: h(r.pal.c), glow: h(r.pal.glow), look: r.look }; } catch (e) { return null; } }
 function heroLook(banner, armed) { const c = canonLook(), h = heroLook0(banner, armed); if (!c) return h; return Object.assign(h, { cloth: c.cloth, cloth2: c.cloth2, legs: c.legs, boots: c.boots, metal: c.metal, dark: c.dark, leather: c.leather, trim: c.trim, skin: c.skin, hair: c.hair, lantern: c.lantern, helm: false }); }
 function heroLook0(banner, armed) { return { base: "soldier", cloth: banner, cloth2: shade(banner, 0.55).getHex(), metal: 0x9a9ea4, dark: 0x4a4440, leather: 0x5a3e28, legs: 0x3a2e24, skin: 0xc89a78, hair: 0x2e2018, helm: false, weapon: "sword", shieldKind: armed ? "round" : null, shield: banner }; }
 // Kaelren in the prequel era (John, J-9): Flameborne charcoal coat, madder-red undershirt, copper buttons, dark hair, warm tawny-brown skin
@@ -1354,4 +1356,4 @@ function buildBattle(st, api, info, done) {
 
 // shared pieces for the other scene modules (area3d.js, siege3d.js)
 export const K3 = { THREE, REALMS, VOIDC, WALL_STYLE, ROOF_TEX, GROUND_TEX, GRASS_TINT, GRASS_N, CLOUD, COLD, tree, hashStr, rng, vnoise, clamp, lerp, angLerp, shade, mix,
-  makeStage, makeKit, whenChars, charLook, heroLook, kaelLook, figure, animFigure, Batch, lights, particles, pool, torch, followCam, moveIntent, labelSprite, radialTex, esc };
+  makeStage, makeKit, whenChars, charLook, heroLook, canonPal, kaelLook, figure, animFigure, Batch, lights, particles, pool, torch, followCam, moveIntent, labelSprite, radialTex, esc };

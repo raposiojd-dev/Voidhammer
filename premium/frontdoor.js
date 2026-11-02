@@ -147,7 +147,15 @@
     whoosh: function (t) { hiss(t, 0.55, 0.12, 300, "bandpass", 2400); },
     boom: function (t) { tone(t, 90, 38, 1.6, 0.32, "sine"); tone(t, 180, 60, 0.6, 0.12, "triangle"); hiss(t, 1.4, 0.08, 1800, "lowpass", 200); tone(t + 0.12, 1568, 1560, 1.8, 0.025, "sine"); tone(t + 0.2, 2349, 2340, 1.6, 0.018, "sine"); },
     forge: function (t) { tone(t, 1320, 1310, 0.9, 0.11, "sine"); tone(t, 1980, 1975, 0.7, 0.06, "sine"); tone(t, 2640, 2630, 0.5, 0.03, "sine"); tone(t, 110, 48, 0.5, 0.25, "sine"); hiss(t, 0.08, 0.12, 5000, "highpass"); hiss(t + 0.05, 1.2, 0.05, 2600, "bandpass", 400); },
-    card: function (t) { hiss(t, 0.9, 0.035, 500, "bandpass", 1600); tone(t, 196, 196, 1.2, 0.03, "sine"); }
+    card: function (t) { hiss(t, 0.9, 0.035, 500, "bandpass", 1600); tone(t, 196, 196, 1.2, 0.03, "sine"); },
+    // premium P2 (map, sheets, battle): the same struck-metal family
+    confirm: function (t) { tone(t, 1180, 1180, 0.2, 0.08, "sine"); tone(t + 0.07, 1770, 1765, 0.26, 0.06, "sine"); tone(t, 150, 72, 0.12, 0.14, "sine"); hiss(t, 0.05, 0.05, 4200, "highpass"); },
+    open: function (t) { hiss(t, 0.32, 0.05, 260, "bandpass", 1500); tone(t, 330, 330, 0.3, 0.025, "sine"); },
+    close: function (t) { hiss(t, 0.24, 0.04, 1400, "bandpass", 300); tone(t, 520, 500, 0.12, 0.04, "sine"); },
+    focus: function (t) { tone(t, 1568, 1560, 0.4, 0.035, "sine"); tone(t + 0.05, 2093, 2090, 0.35, 0.02, "sine"); hiss(t, 0.3, 0.03, 900, "bandpass", 2600); },
+    clang: function (t) { tone(t, 2210, 2150, 0.32, 0.07, "triangle"); tone(t, 3310, 3260, 0.22, 0.04, "sine"); tone(t, 180, 90, 0.08, 0.12, "sine"); hiss(t, 0.09, 0.12, 5200, "highpass"); },
+    victory: function (t) { [392, 494, 587, 784].forEach(function (f, i) { tone(t + i * 0.11, f, f, 1.5 - i * 0.2, 0.07, "triangle"); tone(t + i * 0.11, f * 2, f * 2, 0.9, 0.025, "sine"); }); tone(t, 98, 49, 1.4, 0.24, "sine"); hiss(t, 0.9, 0.05, 1800, "lowpass", 300); },
+    defeat: function (t) { [330, 262, 196].forEach(function (f, i) { tone(t + i * 0.22, f, f * 0.98, 1.4, 0.06, "triangle"); }); tone(t, 82, 41, 2, 0.24, "sine"); hiss(t, 1.6, 0.05, 600, "lowpass", 120); }
   };
   function cue(n, arg) { var c = au(); if (!c || c.state !== "running") return; try { SFX[n](c.currentTime + 0.005, arg); } catch (e) {} }
   // unlock on the first touch (iOS needs this inside a gesture), for our cues and for the game's music
@@ -610,6 +618,7 @@
   window.VHFD = {
     attach: attach, onAct: onAct, onTitle: onTitle, onIntro: onIntro, onOrigin: onOrigin, migrate: migrate,
     idLabel: idLabel, openCreator: openCreator, toast: toast, crest: crest,
+    cue: cue, still: still, settings: openSettings, sfxOn: function () { return !!prefs.sfx; },
     _cc: function () { return CC; }, _in: function () { return IN; }, _skip: function () { endIntro(); }, _tap: function () { tapBegin(innerWidth / 2, innerHeight / 2); }
   };
 })();

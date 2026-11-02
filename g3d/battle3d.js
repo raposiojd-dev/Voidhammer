@@ -12,7 +12,7 @@ import { clone as skClone } from "./lib/SkeletonUtils.js";
 import { Merge, paintedSky, grassField, groundMat, horizonBand, loadArt, useSkyEnv } from "./art.js";
 import { buildSiege } from "./siege3d.js";
 const { THREE, REALMS, VOIDC, GROUND_TEX, GRASS_TINT, GRASS_N, CLOUD, COLD, tree, rng, vnoise, clamp, lerp, angLerp, shade, mix,
-  makeStage, makeKit, whenChars, heroLook, kaelLook, figure, animFigure, Batch, lights, particles, followCam, moveIntent, esc } = K3;
+  makeStage, makeKit, whenChars, heroLook, canonPal, kaelLook, figure, animFigure, Batch, lights, particles, followCam, moveIntent, esc } = K3;
 
 const G = 9.8;
 const ORD = { follow: "Follow me", hold: "Hold", charge: "Charge!", advance: "Advance", wall: "Shield wall" };
@@ -143,9 +143,13 @@ function buildBattle(st, api, info, done) {
     if (info.fac) { const r = REALMS[info.fac] || P; return { cloth: r.cloth[0], cloth2: r.cloth[3] || 0x2a2420, armour: cls !== "arch", metal: info.fac === "metal" ? 0x2c2c30 : info.fac === "light" ? 0xd0b050 : info.fac === "frost" ? 0x6a7a8a : 0x8a8e94, tabard: ecol2, helm: info.fac === "metal" ? "spike" : info.fac === "shadow" ? "hood" : "cap", weapon: wpn, shield: cls === "arch" || info.fac === "shadow" ? null : ecol2 }; }
     return { cloth: [0x6a4a2a, 0x4a3a2a, 0x5a3a24, 0x3a3020][Math.floor(rand() * 4)], cloth2: 0x2a2018, skin: [0xc89a78, 0x9a6a48, 0xd8b090][Math.floor(rand() * 3)], helm: rand() < 0.5 ? "hood" : rand() < 0.5 ? "cap" : "bare", hoodc: 0x3a2a1c, weapon: wpn, shield: cls !== "arch" && rand() < 0.4 ? 0x6a4a2a : null, armour: rand() < 0.2 };
   };
+  const RP = canonPal();
   const ownLook = (cls, ally) => {
     const wpn = cls === "arch" ? "bow" : cls === "spear" ? "spear" : rand() < 0.3 ? "spear" : "sword";
     if (ally) return { cloth: 0x3a3428, cloth2: 0x2a2420, armour: cls !== "arch", tabard: ally.col, helm: "cap", weapon: wpn, shield: cls === "arch" ? null : ally.col };
+    // premium P2: your column wears your people's colours (surcoat, hose, metal); shields keep your banner so the line reads as yours.
+    // Against your own Realm's lords the surcoat stays the banner colour, so the two sides never look alike.
+    if (RP && RP.id !== info.fac) { const L = RP.look; return { cloth: L.cloth, cloth2: L.legs, armour: cls !== "arch" && rand() < 0.65, tabard: L.cloth, metal: L.metal, helm: rand() < 0.7 ? "cap" : "bare", weapon: wpn, shield: cls === "arch" ? null : rand() < 0.75 ? info.banner : RP.a }; } // same rolls, same order as below
     return { cloth: 0x4a3e30, cloth2: 0x2a2420, armour: cls !== "arch" && rand() < 0.65, tabard: info.banner, helm: rand() < 0.7 ? "cap" : "bare", weapon: wpn, shield: cls === "arch" ? null : rand() < 0.75 ? info.banner : null };
   };
   const ringGeo = st.track(new THREE.RingGeometry(0.3, 0.42, 16));
@@ -268,8 +272,10 @@ function buildBattle(st, api, info, done) {
   // ---------- standards ----------
   const flags = [];
   const standard = (x, z, col) => { const y = H(x, z); const pole = new THREE.Mesh(kit.g.cyl, kit.mat(0x4a3420)); pole.scale.set(0.12, 5, 0.12); pole.position.set(x, y + 2.5, z); pole.castShadow = true; scene.add(pole); const fl = new THREE.Mesh(kit.g.box, kit.mat(col, { side: THREE.DoubleSide })); fl.scale.set(1.4, 0.9, 0.04); fl.position.set(x + 0.72, y + 4.4, z); fl.castShadow = true; scene.add(fl); flags.push(fl); };
-  if (siegeOn) { standard(-3, (defendP ? SG.innerZ - 9 : SG.wallZ + 34), info.banner); standard(4, (defendP ? SG.wallZ + 34 : SG.innerZ - 9), info.ecol); }
-  else { standard(-3, 25 * pDir, info.banner); standard(3, -25 * pDir, info.ecol); }
+  // premium P2: your standard flies your people's accent with a band of your banner colour and a finial in their third colour
+  const standardP = (x, z) => { if (!RP) { standard(x, z, info.banner); return; } standard(x, z, RP.a); const fl = flags[flags.length - 1], y = H(x, z); const band = new THREE.Mesh(kit.g.box, kit.mat(info.banner, { side: THREE.DoubleSide })); band.scale.set(1.4, 0.2, 0.05); band.position.set(x + 0.72, y + 3.86, z); scene.add(band); flags.push(band); const fin = new THREE.Mesh(kit.g.box, kit.mat(RP.c)); fin.scale.set(0.26, 0.26, 0.26); fin.rotation.set(0.6, 0.6, 0); fin.position.set(x, y + 5.08, z); scene.add(fin); void fl; };
+  if (siegeOn) { standardP(-3, (defendP ? SG.innerZ - 9 : SG.wallZ + 34)); standard(4, (defendP ? SG.wallZ + 34 : SG.innerZ - 9), info.ecol); }
+  else { standardP(-3, 25 * pDir); standard(3, -25 * pDir, info.ecol); }
 
   // ---------- HUD and controls ----------
   st.$(".v3-hud").innerHTML = '<h3 style="text-align:center">' + esc(info.title) + '</h3><div class="v3-bars"><div class="v3-bar"><i id="v3p" style="width:100%;background:linear-gradient(90deg,#8a5a24,' + info.banner + ')"></i></div><div class="v3-ord" id="v3o">Hold</div><div class="v3-bar e"><i id="v3e" style="width:100%;background:linear-gradient(90deg,' + (isVoid ? "#9a7cd0" : info.ecol) + ',#4a2a1a)"></i></div></div>';
@@ -352,9 +358,11 @@ function buildBattle(st, api, info, done) {
     if (v.hero) {
       dmg = info.hb * (0.8 + Math.random() * 0.4) * Math.min(1.6, (from ? from.w : info.hb) / info.hb) * (kind === "arrow" ? 0.6 : kind === "cav" ? 2 : 1);
       const blocking = (inp.rmb || inp.keys.control || blockHeld) && !(K2 && K2.noBlock());
-      if (blocking && from && frontal(v, from, 1.3)) { dmg *= kind === "cav" ? 0.5 : 0.2; spark(v.x, v.y + 1.3, v.z, 0xfff0c0); }
+      const blocked = blocking && from && frontal(v, from, 1.3);
+      if (blocked) { dmg *= kind === "cav" ? 0.5 : 0.2; spark(v.x, v.y + 1.3, v.z, 0xfff0c0); const bx = v.x + Math.sin(v.yaw) * 0.55, bz = v.z + Math.cos(v.yaw) * 0.55; spark(bx, v.y + 1.45, bz, 0xdff0ff, true); flashAt(bx, v.y + 1.4, bz, "block"); if (P2 && st.substeps === 1) P2.cue("clang"); shake(kind === "cav" ? 0.16 : 0.06); if (kind === "cav") hitStop(0.045); }
       if (K2) { dmg = K2.heroHurt(dmg, from, !from || frontal(v, from, 1.4)); if (dmg <= 0) return; }
       api.sfx && Math.random() < 0.5 && api.sfx("hurt");
+      if (!blocked && P2 && st.substeps === 1) { P2.hurtPulse(st.root); shake(kind === "cav" ? 0.3 : 0.12); if (kind === "cav") hitStop(0.05); }
     } else if (from && v.cls === "inf" && order[v.side].inf === "wall" && frontal(v, from, 1.2)) dmg *= kind === "arrow" ? 0.25 : 0.45;
     if (K2 && !v.hero) { if (from && from.side === "p" && !from.hero) dmg *= K2.allyMul(); if (v.side === "p") dmg *= 1 - K2.allyRed(); }
     else if (kind === "arrow" && v.onWall) dmg *= 0.55; // the battlements cover the men on the walk
@@ -372,14 +380,16 @@ function buildBattle(st, api, info, done) {
     // light auto-target: turn to the nearest foe in front within reach
     const t = nearestFoe(hero, 3.2); if (t && frontal(hero, t, 1.6)) hero.yaw = Math.atan2(t.x - hero.x, t.z - hero.z);
     later(0.16, () => {
-      let n = 0;
+      let n = 0, kills = 0;
       for (const o of units) {
         if (o.side !== "e" || !fighting(o)) continue; const d = Math.hypot(o.x - hero.x, o.z - hero.z); if (d > hero.reach + 0.6 || Math.abs(o.y - hero.y) > 2) continue;
         if (!frontal(hero, o, 1.0)) continue;
-        hurt(o, info.heroW * (0.9 + Math.random() * 0.3) * (K2 ? K2.strikeMul(o) : 1), hero); spark(o.x, o.y + 1.2, o.z); if (K2) K2.onStrikeHit(o); o.kx += Math.sin(hero.yaw) * 2.2; o.kz += Math.cos(hero.yaw) * 2.2; o.stag = Math.max(o.stag, 0.25);
+        hurt(o, info.heroW * (0.9 + Math.random() * 0.3) * (K2 ? K2.strikeMul(o) : 1), hero); spark(o.x, o.y + 1.2, o.z); if (K2) K2.onStrikeHit(o); if (o.dead) kills++; flashAt(o.x, o.y + 1.2, o.z, o.dead ? "kill" : "hit"); o.kx += Math.sin(hero.yaw) * 2.2; o.kz += Math.cos(hero.yaw) * 2.2; o.stag = Math.max(o.stag, 0.25);
         if (++n >= 3) break;
       }
       if (n && api.sfx) api.sfx("hit");
+      // a heavy strike (two or more men, or a kill) lands with a short freeze and a jolt
+      if (n >= 2 || kills) { hitStop(kills >= 2 || n >= 3 ? 0.06 : 0.045); shake(0.12 + 0.05 * Math.min(3, n)); flashAt(hero.x + Math.sin(hero.yaw) * 1.4, hero.y + 1.25, hero.z + Math.cos(hero.yaw) * 1.4, "heavy"); }
     });
   }
   let heroShotCd = 0;
@@ -397,7 +407,10 @@ function buildBattle(st, api, info, done) {
     const end = st.$(".v3-end");
     end.innerHTML = how === "win" ? (siegeOn ? (defendP ? "The walls hold!<small>they fall back from the gate</small>" : SG.breached ? "The gate is down!<small>the hold is yours</small>" : "The wall is taken!<small>the hold is yours</small>") : "They break!<small>the field is yours</small>")
       : how === "lose" ? (siegeOn && defendP ? "The walls are lost<small>fall back to the keep</small>" : "Your line breaks<small>fall back, fall back</small>") : "You pull back<small>the men follow your banner off the field</small>";
+    if (P2) { const parts = end.innerHTML.split("<small>"); P2.stinger(end, how, parts[0], (parts[1] || "").replace("</small>", "")); }
     end.classList.add("on"); if (how === "win" && api.sfx) api.sfx("horn"); fan.classList.remove("on");
+    // "They break!": the field slows for a heartbeat, the camera kicks, and a flash of gold rolls over the line
+    if (how === "win" && P2 && st.substeps === 1) { if (!calm()) slowT = 0.9; shake(0.28); hitStop(0.06); const fl = document.createElement("i"); fl.className = "p2-break"; st.root.appendChild(fl); setTimeout(() => fl.remove(), 1200); }
   }
   function report() {
     if (ended) return; ended = true;
@@ -429,6 +442,17 @@ function buildBattle(st, api, info, done) {
     });
   }
 
+  // ---------- premium P2 juice: hit-stop, camera shake, impact flashes, the break. Looks only: no number, roll or order changes,
+  // and none of it runs while the battle is fast-forwarded (st.substeps > 1), so results are the same on every preset ----------
+  const P2 = window.VHP2 || null, p2v = new THREE.Vector3(), shk = { x: 0, y: 0, a: 0, t: 0, s: 12345 }; // its own tiny generator: the shake never touches Math.random
+  let stopT = 0, slowT = 0;
+  const calm = () => !!(P2 && P2.still());
+  function hitStop(s) { if (st.substeps === 1) stopT = Math.max(stopT, s); }
+  function shake(a) { if (calm() || st.substeps > 1) return; shk.a = Math.max(shk.t > 0 ? shk.a : 0, a); shk.t = 0.26; }
+  function flashAt(x, y, z, kind) {
+    if (!P2 || st.substeps > 1) return; p2v.set(x, y, z).project(camera); if (p2v.z > 1 || Math.abs(p2v.x) > 1.1 || Math.abs(p2v.y) > 1.1) return;
+    const w = st.root.clientWidth, h = st.root.clientHeight; P2.flash(st.root, (p2v.x + 1) / 2 * w, (1 - p2v.y) / 2 * h, kind);
+  }
   const pend = [];
   function later(s, fn) { pend.push({ t: t0 + s, fn }); }
   followCam(camera, hero.x, hero.y, hero.z, yaw, 0.5, 8 * st.distK, 0.7, 0, true);
@@ -461,6 +485,8 @@ function buildBattle(st, api, info, done) {
     for (const k of sparks) if (k.s.visible) { k.t -= dt; k.s.scale.setScalar((k.big ? 1.2 : 0.5) + ((k.big ? 0.45 : 0.25) - k.t) * 3); k.s.material.opacity = k.t * 4; if (k.t <= 0) k.s.visible = false; }
     fx.userData.tick(dt, hero.x, hero.z); sky.userData.tick(dt, camera.position.x, camera.position.z); if (band) band.userData.tick(camera.position.x, camera.position.z); flags.forEach((f, i) => { f.rotation.y = Math.sin(time * 2 + i) * 0.25; });
     if (paused) return;
+    if (stopT > 0) { stopT -= dt; return; }
+    if (slowT > 0) { slowT -= dt; dt *= 0.25 + 0.75 * Math.max(0, 1 - slowT / 0.9); }
     if (SG) SG.tick(dt * speedK, time);
     if (fleeAsk > 0) fleeAsk -= dt;
     const sdt = dt * speedK; t0 += sdt; if (heroShotCd > 0) heroShotCd -= dt;
@@ -628,10 +654,12 @@ function buildBattle(st, api, info, done) {
     elP.style.width = Math.round(100 * clamp(pW / p0w, 0, 1)) + "%"; elE.style.width = Math.round(100 * clamp(eW / e0w, 0, 1)) + "%";
     elH.style.width = Math.round(100 * clamp(hero.hp / hero.hpm, 0, 1)) + "%"; if (elK && kael) elK.style.width = Math.round(100 * clamp(kael.dead ? 0 : kael.hp / kael.hpm, 0, 1)) + "%";
     if (st.frames % 15 === 0) { const c = (g) => units.filter((u) => u.side === "p" && u.cls === g && fighting(u)).length; grpEl.innerHTML = "<b>INF</b> " + c("inf") + " · " + ORD[order.p.inf] + "<br><b>ARCH</b> " + c("arch") + " · " + ORD[order.p.arch] + (fire.p ? "" : " · hold fire") + (c("cav") ? "<br><b>CAV</b> " + c("cav") + " · " + ORD[order.p.cav] : "") + "<br><b>MORALE</b> " + Math.round(sideM.p * 100) + "% · them " + Math.round(sideM.e * 100) + "%"; }
+    if (shk.x || shk.y) { camera.position.x -= shk.x; camera.position.y -= shk.y; shk.x = shk.y = 0; }
     // camera: over the shoulder, or a slow look over the field once you are down
     if (!heroDown) followCam(camera, hero.x, hero.y, hero.z, yaw, pitch, 8 * st.distK, 0.7, dt);
     else { let cx = 0, cz = 0, n = 0; for (const u of units) if (fighting(u)) { cx += u.x; cz += u.z; n++; } if (n) { cx /= n; cz /= n; } yaw += dt * 0.15; followCam(camera, cx, H(cx, cz), cz, yaw, 0.6, 24, 0, dt); }
     L.sun.position.set(hero.x + 30, 42, hero.z + 22); L.sun.target.position.set(hero.x, 0, hero.z);
+    if (shk.t > 0) { shk.t -= dt; const k = shk.a * Math.max(0, shk.t / 0.26); shk.s = (shk.s * 16807) % 2147483647; shk.x = (shk.s / 2147483647 - 0.5) * k; shk.s = (shk.s * 16807) % 2147483647; shk.y = (shk.s / 2147483647 - 0.5) * k * 0.6; camera.position.x += shk.x; camera.position.y += shk.y; }
     if (K2 && !paused) K2.tick(dt);
   });
   function frameOK() { return true; }

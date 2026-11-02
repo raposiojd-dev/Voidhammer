@@ -4,6 +4,8 @@
 <link rel="stylesheet" href="premium/premium.css" data-fd-css>
 <script src="premium/canon.js"></script>
 <script src="premium/frontdoor.js"></script>
+<link rel="stylesheet" href="premium/p2.css" data-p2-css>
+<script src="premium/p2.js"></script>
 <style>@font-face{font-family:"Cinzel";font-style:normal;font-weight:500;font-display:swap;src:url(fonts/cinzel-latin-500-normal.woff2) format("woff2")}@font-face{font-family:"Cinzel";font-style:normal;font-weight:700;font-display:swap;src:url(fonts/cinzel-latin-700-normal.woff2) format("woff2")}@font-face{font-family:"IBM Plex Mono";font-style:normal;font-weight:400;font-display:swap;src:url(fonts/ibm-plex-mono-latin-400-normal.woff2) format("woff2")}@font-face{font-family:"IBM Plex Mono";font-style:normal;font-weight:500;font-display:swap;src:url(fonts/ibm-plex-mono-latin-500-normal.woff2) format("woff2")}@font-face{font-family:"IM Fell English";font-style:normal;font-weight:400;font-display:swap;src:url(fonts/im-fell-english-latin-400-normal.woff2) format("woff2")}@font-face{font-family:"IM Fell English";font-style:italic;font-weight:400;font-display:swap;src:url(fonts/im-fell-english-latin-400-italic.woff2) format("woff2")}</style>
 <style>
 /* Layout: full-screen campaign map, HUD pinned top, three menu buttons pinned bottom, slide-up sheets for places and menus. */
@@ -836,6 +838,8 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
     S.salvage = lootCount();
     return Object.keys(got).map(function (k) { return got[k] + " " + LOOT[k].name.toLowerCase(); }).join(", ");
   }
+  // "1 spears" reads as a slip: one of anything is singular ("1 spear", "1 great axe"); "boots & cloaks" stays a set
+  function lootPhrase(n, name) { var t = String(name).toLowerCase(); if (n === 1 && t.indexOf("&") < 0) t = t.replace(/([a-rt-z])s$/, "$1"); return n + " " + t; }
   function lootCount() { var n = 0; Object.keys(S.loot).forEach(function (k) { n += S.loot[k]; }); return n; }
   function lootPrice(k, t, extra) { return LOOT[k].base * (t.type === "village" ? 0.75 : 1 - Math.min(0.7, (t.ssat || 0) + (extra || 0))) * (has("forge") ? 1.15 : 1) * (1 + 0.06 * ((S.skills && S.skills.haggler) || 0)) * (1 + 0.08 * sk("quickcoin") + 0.1 * sk("fence") + skfx("sell")); }
   var sheet = null, pausedSpeed = 0, B = null, confirming = null, reply = null, openRead = {}, resetting = false;
@@ -1184,7 +1188,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
       S.crowns += purse; S.grain += grainTake;
       if (e) S.enemies = S.enemies.filter(function (x) { return x.id !== e.id; });
       S.sites.forEach(function (s) { if (e && dist(e.x, e.y, s.x, s.y) < 120) bump(s, 10); });
-      B.out.push("They broke. You lost " + lost + " men and took " + lootTxt + ", " + purse + " crowns and " + grainTake + " grain from their packs.");
+      B.out.push("They broke. You lost " + lost + (lost === 1 ? " man" : " men") + " and took " + lootTxt + ", " + purse + " crowns and " + grainTake + " grain from their packs.");
       if (S.contract && S.contract.eid === B.eid) {
         S.crowns += S.contract.reward; B.out.push("Lord Vashen’s reward: " + S.contract.reward + " crowns.");
         var k = site("keep"); if (k) { k.credit += 1; bump(k, 20); }
@@ -1194,13 +1198,13 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
       if (B.kind === "rift") { S.rifts = S.rifts.filter(function (r) { return r.id !== B.riftId; }); S.voidR = Math.min(VOIDMAX, S.voidR + 80); S.pushes++; (S.riftBack = S.riftBack || []).push(S.day + 60 + Math.floor(Math.random() * 31)); if (S.pushes >= SEAL_AT && !S.sealed) sealVoid(); else if (!S.sealed) B.out.push("Push-back " + S.pushes + " of " + SEAL_AT + ". " + (SEAL_AT - S.pushes) + " more to seal the Void."); S.nextRift = Math.max(S.nextRift, S.day + 25); addXp(150 * Math.min(8, Math.pow(2, Math.max(0, S.pushes - 1)))); B.out.push("The grey edge closes. The Void is driven back. It will not stay shut forever."); if (S.pushes >= 3) { var rw = S.pushes === 3 ? [3, 2] : S.pushes === 4 ? [4, 3] : [5, 4], rc = cp(); if (!rc.items) rc.items = []; rw.forEach(function (rr) { var rit = genItem(rr, null, 3 + tier() * 2, true); rc.items.push(rit); B.out.push("Grey edge treasure: " + rit.name + "."); log("The grey edge gave up " + rit.name + ".", "e"); }); } news("A grey edge was closed. The Void fell back."); }
       if (B.kind === "lord") { lordRespawn(B.fac); news("You defeated " + B.title + "."); }
       if (B.siegeId) { var sg = site(B.siegeId); if (sg) { captureSite(sg, "player"); B.out.push("You hold " + sg.name + "."); } }
-      log("Won a fight against " + (B.title || (B.kind === "void" ? "Void-touched" : "bandits")) + ". Lost " + lost + " men.", "e");
+      log("Won a fight against " + (B.title || (B.kind === "void" ? "Void-touched" : "bandits")) + ". Lost " + lost + (lost === 1 ? " man" : " men") + ".", "e");
       B.won = true;
     } else {
       var extra = Math.ceil(T() * 0.25); loseTroops(extra); S.grain = Math.floor(S.grain * 0.7); S.crowns = Math.floor(S.crowns * 0.7);
       if (e) { e.cool = 3; var dx = S.px - e.x, dy = S.py - e.y, d = Math.hypot(dx, dy) || 1; S.px += dx / d * 45; S.py += dy / d * 45; }
-      B.out.push("You were driven off. " + (lost + extra) + " men lost, and they took a third of your grain and coin.");
-      log("Lost a fight. " + (lost + extra) + " men gone.", "e");
+      B.out.push("You were driven off. " + (lost + extra) + (lost + extra === 1 ? " man" : " men") + " lost, and they took a third of your grain and coin.");
+      log("Lost a fight. " + (lost + extra) + (lost + extra === 1 ? " man" : " men") + " gone.", "e");
       B.won = false;
     }
     B.stage = "result"; renderSheet();
@@ -1224,7 +1228,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
     B.kaelDone = true;
     if (choice === "hold") {
       var n = Math.min(6, Math.max(0, T() - 1)); loseTroops(n);
-      B.log.push("You pinned him with the warhorn. The right flank never heard the order. " + n + " men died there.");
+      B.log.push("You pinned him with the warhorn. The right flank never heard the order. " + n + (n === 1 ? " man" : " men") + " died there.");
       log("Held Kaelren back. Six men paid for it on the right flank.", "e");
       B.stage = "run"; renderSheet(); B.timer = setTimeout(fightStep, 850);
     } else if (choice === "burn") {
@@ -1292,7 +1296,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
       var left = removeMen(Math.min(Math.floor(T() / 3), 15));
       s.gar = Math.max(6, left * 1.5); s.m = Math.max(s.m, 40);
       s.unrest = 0; if (s.stock < 30) s.stock = 30;
-      log(FAC.player.name + " took " + s.name + " from " + FAC[old].name + ". " + left + " men hold it.", "e");
+      log(FAC.player.name + " took " + s.name + " from " + FAC[old].name + ". " + left + (left === 1 ? " man holds" : " men hold") + " it.", "e");
       toast("The banner of " + FAC.player.name + " flies over " + s.name + "."); news(FAC.player.name + " took " + s.name + " from " + FAC[old].name + ".");
       addXp(70);
     } else {
@@ -1802,8 +1806,6 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
     talkMsg = "“" + (S.mc && S.mc.began ? (out.length ? out.join(". ") + ". " : "") + (t ? "They are marching on " + FAC[t].name + ". " : "") + "Their power is ×" + mcPower().toFixed(1) + "." : "Wagons of iron in the north. Nothing has moved yet.") + "”";
   }
   // ---------- story mode: the Voidhammer, the Dominion, and Valek ----------
-  // PLACEHOLDER CANON: Valek = Elyon as a child, carrying a spark from every realm, taken by Metalcrown and made into Valek.
-  // Lore follows Lore Bible v5: Twin-Spark child Elyon/Valek, Iron Dominion, Synthesis Council, spark-reactors.
   function nwd(n) { return ["No", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight"][n] || String(n); }
   function loseFrac(f) { for (var k in S.from) S.from[k] = Math.max(0, Math.floor(S.from[k] * (1 - f))); if (typeof normVets === "function") normVets(); }
   function storyOn() { return !!(S.story && S.story.on && S.mc && S.mc.on); }
@@ -1822,11 +1824,11 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
       choices: [{ k: "warn", t: "Send riders to every court. (80 crowns)", fx: function () { S.crowns = Math.max(0, S.crowns - 80); news("Riders from a column in the field warn every court: the Dominion is collecting sparks, not land."); } },
                 { k: "keep", t: "Keep the case. Tell no one what is in it.", fx: function () { news("A case of Dominion orders has gone missing from the field."); } }] },
     b4: { t: "The Twin-Spark Child", sub: "Chapter IV", cond: function () { return mcFellCount() >= 2 || S.mc.defeats >= 2 || mcPower() >= 1.8; },
-      body: ["In a ledger from a siege wagon, one entry is circled in red. A child, born of all the Realms, carrying two sparks in one body: the prophecy of Twins that was never about twins. The Radiant Edict ordered him controlled. Metalcrown simply took him.", "They woke both sparks with a spark-reactor. One was gentle. One was hungry. The hungry one survived, and not because it was stronger.", "Beside the entry, a name someone tried to scratch out. Elyon. Whatever the Dominion is making, it started with him, and he was loved too late."],
+      body: ["In a ledger from a siege wagon, one entry is circled in red. A child, born of all the Realms, carrying two sparks in one body: the prophecy of Twins that was never about twins. The Radiant Edict ordered him controlled. Metalcrown simply took him.", "They woke both sparks with a spark-reactor. One was gentle. One was hungry. The hungry one survived, and not because it was stronger.", "Beside the entry, a name someone has scratched out so hard the pen went through the page. Whatever the Dominion is making, it started with him, and he was loved too late."],
       choices: [{ k: "tell", t: "Tell your heroes what you have learned. Some will not stay. (Allies lose 15%)", fx: function () { S.allies.forEach(function (a) { a.n = Math.max(2, Math.round(a.n * 0.85)); }); } },
                 { k: "hold", t: "Tell no one. A secret only you carry, and carrying it costs you. (40 crowns)", fx: function () { S.crowns = Math.max(0, S.crowns - 40); } }] },
     b5: { t: "Why the Dominion marches", sub: "Chapter V", cond: function () { return mcPower() >= 2 || mcFellCount() >= 3; },
-      body: ["You finally understand it. The Dominion is not saving anyone. It is a civilisation of engineers that decided suffering is the price of progress, and stopped asking whose.", "At its centre is a boy at war with himself. One half is the memory and the mercy. The other is the hunger and the will. It is not killing him. It is absorbing him, slowly, until remembering feels like pain. He does not want to rule. He wants to stop feeling divided.", "Every hold that burns is one more place where nobody remembers Elyon. And the long wars favour the Void."],
+      body: ["You finally understand it. The Dominion is not saving anyone. It is a civilisation of engineers that decided suffering is the price of progress, and stopped asking whose.", "At its centre is a boy at war with himself. One half is the memory and the mercy. The other is the hunger and the will. It is not killing him. It is absorbing him, slowly, until remembering feels like pain. He does not want to rule. He wants to stop feeling divided.", "Every hold that burns is one more place where nobody remembers the name the Dominion scratched out. And the long wars favour the Void."],
       ok: "Go on" },
     b6: { t: "He is waiting", sub: "Chapter VI", cond: function () { return S.sites.some(function (s) { return s.owner === "player" && (s.id === "ironwatch" || s.id === "steelgate"); }) || dist(S.px, S.py, (site("irontown") || { x: -999 }).x, (site("irontown") || { y: -999 }).y) < 260; },
       body: ["A single rider reaches your column under a flag of truce. He carries no letter. He recites it.", "“You have come a long way to ask a question you could have asked at home. Come and see what the world is when nothing is divided.”", "He does not speak like a soldier. He sounds like a boy who has been told what to say."],
@@ -1845,13 +1847,13 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
       ok: "Go on" },
     fin: { t: "The Iron Throne", sub: "Finale", body: ["The Iron Throne City is half empty. Its armies are in the south, under the walls of Meridian, and from the high windows of the hall you can see the Citadel burning. The reactors have stopped to listen.", "On a seat far too big for him sits Valek: slight, grey at the eyes, with a spark under his skin for every Realm you have crossed. “Everyone asks the same thing,” he says. “Who gets to decide what I become? Nobody asked me. They only ever asked what I was for.”", "The reactors are waiting. So is he. Something behind his eyes is listening too."],
       choices: [{ k: "break", t: "Break the reactors. Cut the Dominion’s heart out from under him. (Costs a third of your column)", fx: function () { loseFrac(0.33); } },
-                { k: "name", t: "Say his name. Elyon. (Needs your heroes to hear it, a case kept close, or that you reached for him at Ironwatch.)", fx: function () { if (!(S.story.ch.b4 === "tell" || S.story.ch.b3 === "keep" || cp().f.reach)) { S.story.ch.nameFail = 1; loseFrac(0.2); } } },
+                { k: "name", t: "Say the name the Dominion scratched out. (Needs your heroes to hear it, a case kept close, or that you reached for him at Ironwatch.)", fx: function () { if (!(S.story.ch.b4 === "tell" || S.story.ch.b3 === "keep" || cp().f.reach)) { S.story.ch.nameFail = 1; loseFrac(0.2); } } },
                 { k: "throne", t: "Take the Iron Throne yourself. Run the reactors. Make the war yours.", fx: function () {} }] }
   };
   var STORY_FIN = {
     break: "The reactors scream and stop. For the length of a breath there is only a boy in the chair. Then Valek stands, and the sparks are still burning under his skin, because they were never in the machines. He walks past you as if you were furniture. The Dominion has lost its foundries and kept its heir. By morning Meridian has fallen, every Realm that refused the Edict is at war with every Realm that kept it, and all of them are at war with Metalcrown. It cost you a third of those who followed you. The Thousand-Year War begins.",
-    name: "“Elyon.” Nobody has said it to him in a long time. Two sparks stir in one body, and for one heartbeat the boy comes up: thirteen and small for it, frightened, looking at you as if you were the first door he has seen open. He lowers his hand. He lets you live. Then the other one comes back the way a tide comes back, and Valek looks at that hand as if it had disobeyed him. “Go,” he says, “before I remember why I let you.” You go. Behind you the reactors wake. In the south the Citadel of Meridian falls before dawn. The Thousand-Year War begins.",
-    namefail: "“Elyon.” He does not turn. Nobody who knew him was there to make the name mean anything. The reactors flare, and you get out with what you can carry. Meridian falls the same night. He never saw you. The Thousand-Year War begins.",
+    name: "You say the name. Nobody has said it to him in a long time. Two sparks stir in one body, and for one heartbeat the boy comes up: thirteen and small for it, frightened, looking at you as if you were the first door he has seen open. He lowers his hand. He lets you live. Then the other one comes back the way a tide comes back, and Valek looks at that hand as if it had disobeyed him. “Go,” he says, “before I remember why I let you.” You go. Behind you the reactors wake. In the south the Citadel of Meridian falls before dawn. The Thousand-Year War begins.",
+    namefail: "You say the name. He does not turn. Nobody who knew him was there to make the name mean anything. The reactors flare, and you get out with what you can carry. Meridian falls the same night. He never saw you. The Thousand-Year War begins.",
     throne: "You sit where he sat. The reactors wake and find a new hand. Valek watches from the doorway, curious, then goes south to take Lightforge without you. Now the Dominion has two heads, and Metalcrown’s engineers love nothing more than a spare. The Realms look north and see you on the Iron Throne. Whatever you meant by it, they will call it war. The Thousand-Year War begins."
   };
   function storyQueue() {
@@ -1890,7 +1892,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
     if (!S.story || !S.story.on) return "";
     var kh = S.kael !== "away" ? "<p class=\"dim-t\">Before the last march the Flameborne King took Kaelren’s hand and pressed his thumb into the palm until it burned. “Bring him home,” he said. Kaelren has not said who he meant.</p>" : "";
     if (S.story.fin) return "<p>" + STORY_FIN[S.story.fin] + "</p>" + kh;
-    if (S.mc && S.mc.lost) return "<p>In the Iron Throne City a boy named Elyon sits very still while the world is finished around him. No one has said his name in a very long while.</p>" + kh;
+    if (S.mc && S.mc.lost) return "<p>In the Iron Throne City a boy sits very still while the world is finished around him. No one has said his true name in a very long while.</p>" + kh;
     return kh;
   }
 
@@ -2074,7 +2076,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
       var cx0 = W / 2, cy0 = H * 0.45, dx = X - cx0, dy = Y - cy0, ang = Math.atan2(dy, dx), tx = (dx > 0 ? rgt - cx0 : lft - cx0) / (dx || 1e-6), ty = (dy > 0 ? bot - cy0 : top - cy0) / (dy || 1e-6), t = Math.min(Math.abs(tx), Math.abs(ty));
       var ax = cx0 + dx * t + Math.cos(ang) * pu * 3, ay = cy0 + dy * t + Math.sin(ang) * pu * 3;
       g.save(); g.translate(ax, ay); g.rotate(ang); g.fillStyle = "#1a1209"; g.beginPath(); g.moveTo(17, 0); g.lineTo(-10, -12); g.lineTo(-5, 0); g.lineTo(-10, 12); g.fill(); g.fillStyle = "#ffd84a"; g.beginPath(); g.moveTo(14, 0); g.lineTo(-7, -9); g.lineTo(-3, 0); g.lineTo(-7, 9); g.fill(); g.restore();
-      g.font = "bold 11px monospace"; g.textAlign = "center"; var lab = q.name, lw = g.measureText(lab).width; var lx = Math.max(lw / 2 + 6, Math.min(W - lw / 2 - 6, ax)), ly = Math.max(top - 6, Math.min(bot + 24, ay + (dy > 0 ? -18 : 26)));
+      g.font = "600 11px Inter, system-ui, sans-serif"; g.textAlign = "center"; var lab = q.name, lw = g.measureText(lab).width; var lx = Math.max(lw / 2 + 6, Math.min(W - lw / 2 - 6, ax)), ly = Math.max(top - 6, Math.min(bot + 24, ay + (dy > 0 ? -18 : 26)));
       g.fillStyle = "rgba(10,8,6,0.85)"; g.fillRect(lx - lw / 2 - 5, ly - 10, lw + 10, 15); g.fillStyle = "#ffd84a"; g.fillText(lab, lx, ly + 1); g.textAlign = "start";
     }
   }
@@ -2276,8 +2278,8 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
     if (TERRDIRTY || !TERRI) TERRI = buildTerritory();
     ctx.imageSmoothingEnabled = !PIX; detailPass(); ctx.drawImage(TERRI, cellOrg(curCell())[0], cellOrg(curCell())[1], WORLD, WORLD);
     if (TERRL && cam.z < 1.6) {
-      ctx.save(); ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.font = "italic 700 50px 'IM Fell English', Georgia, serif"; try { ctx.letterSpacing = "9px"; } catch (e) {}
-      TERRL.forEach(function (tl) { ctx.globalAlpha = Math.min(0.62, 1.1 * (1.6 - cam.z)); ctx.lineWidth = 6; ctx.strokeStyle = "rgba(10,8,6,0.7)"; ctx.strokeText(tl.name.toUpperCase(), tl.x, tl.y); ctx.fillStyle = tl.col; ctx.fillText(tl.name.toUpperCase(), tl.x, tl.y); });
+      ctx.save(); ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.font = "600 44px 'Cinzel', 'IM Fell English', Georgia, serif"; try { ctx.letterSpacing = "20px"; } catch (e) {}
+      TERRL.forEach(function (tl) { ctx.globalAlpha = Math.min(0.42, 0.8 * (1.6 - cam.z)); ctx.lineWidth = 6; ctx.strokeStyle = "rgba(10,8,6,0.7)"; ctx.strokeText(tl.name.toUpperCase(), tl.x, tl.y); ctx.fillStyle = tl.col; ctx.fillText(tl.name.toUpperCase(), tl.x, tl.y); });
       ctx.restore();
     }
 
@@ -2312,7 +2314,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
     }
     ctx.beginPath(); ctx.strokeStyle = "rgba(200,135,58," + (0.28 + 0.18 * Math.sin(now / 400)) + ")"; ctx.lineWidth = 1.5; ctx.ellipse(S.px, S.py + 1, 17, 7, 0, 0, 6.283); ctx.stroke();
     drawParty(now);
-    label(T() + " men", S.px, S.py - 48, "#efe6cf");
+    label(T() + (T() === 1 ? " man" : " men"), S.px, S.py - 48, "#efe6cf");
 
     var vw = W / z, vh = H / z, x0 = cam.x - vw / 2, y0 = cam.y - vh * 0.45, off = now / 90;
     ctx.globalAlpha = 0.16;
@@ -2408,6 +2410,9 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
     ctx.restore();
   }
 
+  // premium P2 swaps these for Realm-tinted versions (your people's colours on the map); by default they draw as before
+  var partyLead = function (x, y, dir, phase, moving, now) { horseRiderNew(x, y, dir, phase, moving, now); };
+  var partyMan = function (x, y, k, dir, phase, o) { personNew(x, y, k, dir, phase, o); };
   function drawParty(now) {
     var moved = 0, dir = 1;
     if (LASTP) { var dx = S.px - LASTP.x, dy = S.py - LASTP.y; moved = Math.hypot(dx, dy); if (Math.abs(dx) > 0.02) LASTP.dir = dx > 0 ? 1 : -1; dir = LASTP.dir; }
@@ -2436,10 +2441,10 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
     all.sort(function (a, b) { return a.y - b.y; });
     var merc = S.from.merc || 0, mcount = Math.round(n * merc / Math.max(1, T()));
     all.forEach(function (a) {
-      if (a.lead) { horseRiderNew(S.px, S.py, dir, phase, moving, now); return; }
+      if (a.lead) { partyLead(S.px, S.py, dir, phase, moving, now); return; }
       var f = a.f, isMerc = f.i < mcount;
       var fdir = dir; var pp = TRAIL[TRAIL.length - 1 - f.i * 4]; var np = TRAIL[TRAIL.length - f.i * 4]; if (pp && np && Math.abs(np.x - pp.x) > 0.2) fdir = np.x > pp.x ? 1 : -1;
-      personNew(f.x, f.y, 1, fdir, phase + f.i * 0.8, isMerc
+      partyMan(f.x, f.y, 1, fdir, phase + f.i * 0.8, isMerc
         ? { body: "#4a4f58", trim: "#c8873a", helm: "#8a9096", spear: false, sword: true, shield: "#6e3a2a" }
         : { body: "#8a6a3a", trim: "#c8873a", helm: "#6b5a3a", spear: true, shield: "#c8873a", legs: "#3a2c1c" });
     });
@@ -4257,13 +4262,13 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
     aldreth_wait: { n: "Archmarshal Aldreth", t: "The north ward. Hurry." },
     aldreth_after: { n: "Archmarshal Aldreth", t: "I failed him. If you ever stand where I stood, let the child be a child." },
     cell_locked: { n: "The cell", t: "The stair is full of grey coats. Clear it first." },
-    cell_1: { n: "The cell", t: "The door hangs open, its lock turned inside out by a reactor's hum. On the cot lies a wooden toy horse with one leg broken off. On the wall, scratched with a spoon, the same word over and over in a child's hand: ELYON. ELYON. ELYON. Under the last one, in fresher scratches, a single letter. V. Wheel ruts lead north towards Ironwatch.", c: [{ t: "Follow the ruts.", set: { cell: 1 }, toast: "The wagon went north to Ironwatch." }] },
+    cell_1: { n: "The cell", t: "The door hangs open, its lock turned inside out by a reactor's hum. On the cot lies a wooden toy horse with one leg broken off. On the wall, scratched with a spoon, the same name over and over in a child's hand, each one scored through until it cannot be read. Under the last one, in fresher scratches, a single letter. V. Wheel ruts lead north towards Ironwatch.", c: [{ t: "Follow the ruts.", set: { cell: 1 }, toast: "The wagon went north to Ironwatch." }] },
     cell_done: { n: "The cell", t: "The cell is empty. The toy horse is still on the cot." },
     valek_rise: { n: "", t: "Overseer Quill goes down and crawls away into the smoke. Behind him the reactor wagon's doors stand open and the hum has stopped. A boy of about thirteen, small for it, sits on its floor with his knees drawn up. His eyes are the wrong age. Chains hang from his wrists and do not touch him. \"They said it would stop hurting,\" he says, to no one. Then something behind his eyes turns over like a key, and the air in the yard bends towards him.", c: [
-      { t: "Reach for him. Say his name: Elyon.", set: { reach: 1 }, go: "valek_rise2" },
+      { t: "Reach for him. Say his true name.", set: { reach: 1 }, go: "valek_rise2" },
       { t: "Cut the chains of the prisoners in the other wagons.", set: { freed: 1 }, give: { xp: 60 }, go: "valek_rise2" },
       { t: "Fall back. Live to fight him.", go: "valek_rise2" }] },
-    valek_rise2: { n: "", t: function () { var f = cp().f; return (f.reach ? "He looks at your hand as if it were a word in a language he used to know. For one breath Elyon is there, and frightened. Then the other one arrives, and the yard goes silent. \"No,\" says Valek, in a voice that is both of them. \"Nobody gets to call me back.\"" : f.freed ? "The chains fall from forty people, who run. You turn, and he is standing, and the Iron Wraiths in the yard have stopped moving. \"You freed them,\" he says, almost curious. \"Why? No one freed me.\"" : "You back away. He watches you do it with something close to disappointment. \"Everyone does that,\" says Valek.") + " The reactors answer him. Around you Ironwatch lights like a furnace. He does not strike. He lifts one hand, the Wraiths turn north, and the foundries of the Iron Dominion open their gates. The Radiant Edict made a cage. Metalcrown built the thing to put inside it."; },
+    valek_rise2: { n: "", t: function () { var f = cp().f; return (f.reach ? "He looks at your hand as if it were a word in a language he used to know. You say the name. For one breath the boy is there, and frightened. Then the other one arrives, and the yard goes silent. \"No,\" says Valek, in a voice that is both of them. \"Nobody gets to call me back.\"" : f.freed ? "The chains fall from forty people, who run. You turn, and he is standing, and the Iron Wraiths in the yard have stopped moving. \"You freed them,\" he says, almost curious. \"Why? No one freed me.\"" : "You back away. He watches you do it with something close to disappointment. \"Everyone does that,\" says Valek.") + " The reactors answer him. Around you Ironwatch lights like a furnace. He does not strike. He lifts one hand, the Wraiths turn north, and the foundries of the Iron Dominion open their gates. The Radiant Edict made a cage. Metalcrown built the thing to put inside it."; },
       c: [{ t: "Run.", fn: startDominion, set: { coup: 1, q6done: 1 }, give: { xp: 250 }, toast: "The Dominion marches. Return to Lord Brannoch." }] },
     tam_1: { n: "Tam the Drover", t: "Bandits dragged my wagon into the Thornfall Cave, up in the woods north of the road. Cutter Vane's lot. My whole season's wool is in there. Clear them out and what you find is yours, bar my wool.", c: [{ t: "I'll clear it.", set: { sq1: 1 }, toast: "Side quest: clear Thornfall Cave.", go: "tam_wait" }, { t: "Not now." }] },
     tam_wait: { n: "Tam the Drover", t: "The cave mouth is in the trees north of the road. Mind the slingers, they wait in the side tunnels." },
@@ -5055,7 +5060,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
     if (f.pageChoice) pick.push("The prophecy: " + (f.pageChoice === "share" ? "shared with every court." : f.pageChoice === "burn" ? "burned." : "sealed."));
     if (f.edictSide) pick.push("The Edict: " + (f.edictSide === "for" ? "you stood with Ardyn." : f.edictSide === "against" ? "you stood with Seraphine." : "you stood at the back."));
     if (f.noctis) pick.push("Noctis: " + (f.noctis === "chosen" ? "freed, and asked for nothing." : f.noctis === "used" ? "freed, to fight." : "left in his cell."));
-    if (f.coup) pick.push("Ironwatch: " + (f.reach ? "you reached for Elyon." : f.freed ? "you freed the prisoners." : "you fell back."));
+    if (f.coup) pick.push("Ironwatch: " + (f.reach ? "you reached for the boy inside him." : f.freed ? "you freed the prisoners." : "you fell back."));
     if (pick.length) { h += '<div class="sec">What you chose</div>'; pick.forEach(function (d) { h += "<p class=\"dim-t\">" + d + "</p>"; }); }
     if (f.tempered) h += "<p class=\"dim-t\">Blade tempered.</p>";
     return h;
@@ -9307,7 +9312,7 @@ var BIMG_SRC={"farm": "data:image/webp;base64,UklGRqyAAABXRUJQVlA4WAoAAAAQAAAAZw
       S.loot[k] = (S.loot[k] || 0) + 1; got[k] = (got[k] || 0) + 1;
     }
     S.salvage = lootCount();
-    return Object.keys(got).map(function (k) { return got[k] + " " + LOOT[k].name.toLowerCase(); }).join(", ");
+    return Object.keys(got).map(function (k) { return lootPhrase(got[k], LOOT[k].name); }).join(", ");
   }
   function ovFadeIds() { var o = []; TROOPT.forEach(function (q) { if (q.fade) o.push(q.id); }); return o; }
   function ovKindOrder() { return TROOPT.filter(function (q) { return q.id > 1; }).sort(function (a, b) { return b.mult - a.mult; }).map(function (q) { return q.id; }); }
@@ -11073,7 +11078,7 @@ function qFinish(q, opt, idx) { qFinish0(q, opt, idx); if (opt && typeof opt.eff
       { t: "“Stormreach rides first. Speed is what the Void cannot match.”", reward: { xp: 700, item: 3 }, set: { v6_storm: 1 }, eff: gift({ troops: 15, say: "Stormreach rides with you." }), text: "The riders pass in a roar of wind and thunder. The Void's quiet is the first thing to break." }] });
   ch({ id: "hollowthrone", opt: 0, act: 6, hub: "highmarch", npc: "hald", need: m("unmaderoad"), name: "The Hollow Throne", zone: "hollowthrone", zname: "The Hollow Throne", th: "pass", lv: 5, seed: 454, pal: ["hollowsent", "wraith"], boss: "hollowking", obj: "Drive the Herald off the Hollow Throne, or answer it.",
     gate: "A throne of nothing at the edge of the map. The Herald sits on it, wearing the faces of everyone the Void has ever eaten a name from.",
-    intro: function () { var f = F(); return "This is the last road before the north. " + (f.v6_choose ? "The Voyager will walk it as himself. " : f.v6_together ? "The Voyager walks beside you. " : "") + "The Herald has climbed onto the Hollow Throne, because the Void wants a seat close enough to watch the boy. It does not want the world. It wants to see what Elyon becomes. Every Realm that still answers has sent someone. Push it back from the edge, and whatever happens at the Iron Throne will happen without the Void leaning on it."; },
+    intro: function () { var f = F(); return "This is the last road before the north. " + (f.v6_choose ? "The Voyager will walk it as himself. " : f.v6_together ? "The Voyager walks beside you. " : "") + "The Herald has climbed onto the Hollow Throne, because the Void wants a seat close enough to watch the boy. It does not want the world. It wants to see what the boy becomes. Every Realm that still answers has sent someone. Push it back from the edge, and whatever happens at the Iron Throne will happen without the Void leaning on it."; },
     turn: "The throne is empty, for now. For a week the Realms shake hands with people who were their enemies a year ago, and nobody can quite say how. Then the riders come in from the north. The Dominion is marching on Lightforge, and the Iron Throne is open. Go and finish it.",
     opts: [{ t: "Break the Herald’s hold. The world must keep moving.", reward: { xp: 1200, crowns: 1000, item: 3, perm: "hp" }, set: { void_end: "broken" }, text: "The Herald comes apart like wet paper. The faces it wore go free one by one, and every one of them looks at you. The Void pulls back from the edge, stung. It will be back. Not soon." },
       { t: "Sit with the Herald. Show the Void that change does not have to end.", reward: { xp: 1200, perm: "pts" }, set: { void_end: "taught" }, text: "You sit on the empty step and tell it a story. It takes all night. At dawn the Void is still there, but it has stopped pressing. It is listening, which is not the same as friendly." },
@@ -11302,7 +11307,7 @@ function qFinish(q, opt, idx) { qFinish0(q, opt, idx); if (opt && typeof opt.eff
   function mkUpbText(o) {
     var t = Object.keys(o.sk || {}).map(function (q) { return skName(q) + (o.sk[q] > 1 ? " ×" + o.sk[q] : ""); }).join(", ");
     var kit = []; if (o.c) kit.push((o.c > 0 ? "+" : "−") + Math.abs(o.c) + " crowns"); if (o.g) kit.push("+" + o.g + " grain");
-    if (o.from) Object.keys(o.from).forEach(function (q) { kit.push("+" + o.from[q] + " men"); });
+    if (o.from) Object.keys(o.from).forEach(function (q) { kit.push("+" + o.from[q] + (o.from[q] === 1 ? " man" : " men")); });
     if (o.loot || o.gear) kit.push("gear"); return t + (kit.length ? " · " + kit.join(", ") : "");
   }
   function mkRender() {
@@ -14500,8 +14505,8 @@ var ERAS = [
   { id: "e1", t: "The Boy With Two Sparks", sub: "The Lantern Chronicle · The Child", min: 2, body: [
     "The Lantern keeps what the Codex would rather forget. A page comes loose from the Lantern Archives in Spiritveil, and the ink on it is still wet. Some of these pages are history. Some of them are not history yet.",
     "Frostgrave's Seers had foreseen a child born of every Realm, with two sparks in one body. The Twin-Spark prophecy. Edda Frostwraith wrote it down five hundred years ago and would not write down his face. The Conclave said a spark must be broken before it can be shaped, and sent for him.",
-    "His name was Elyon. He was small for his age, he collected feathers, and he was afraid of the dark because the dark answered him.",
-    "Lightforge took him first, to keep him safe. The Radiant Edict called it protection. Elyon called it a locked door."
+    "Nobody wrote his name on this page. He was small for his age, he collected feathers, and he was afraid of the dark because the dark answered him.",
+    "Lightforge took him first, to keep him safe. The Radiant Edict called it protection. The boy called it a locked door."
   ] },
   { id: "e2", t: "The Making of the Heir", sub: "The Lantern Chronicle · A Page Not Yet Written", min: 9, body: ["The ink on this page is still wet. It is written in the past tense about something that has not happened yet.", 
     "Metalcrown did not steal him. Metalcrown was handed him, through a gate someone left unguarded, and every Realm still says it was somebody else’s hand.",
@@ -14677,7 +14682,7 @@ if (typeof storyEndingBlock === "function") {
       var st = S.story; if (!st || !st.on) return h;
       var n = 0; CHR.forEach(function (c) { if (st.seen[c.id]) n++; });
       if (!n) return h;
-      h += '<p class="dim-t">You read ' + n + " of " + CHR.length + " lantern pages, from the boy Elyon to the last night of the Concord. The lantern holds more.</p>";
+      h += '<p class="dim-t">You read ' + n + " of " + CHR.length + " lantern pages, from the boy with two sparks to the last night of the Concord. The lantern holds more.</p>";
       BOOKS_AFTER.forEach(function (b) { h += "<p><b>" + b[0] + ".</b> " + b[1] + "</p>"; });
     } catch (e) {}
     return h;
@@ -16038,8 +16043,8 @@ setInterval(function () {
           var m = Math.min(5, v.W, room); if (m < 1) break;
           v.W -= m; S.from[v.id] = (S.from[v.id] || 0) + m;
           if (hollow() < 2) v.credit -= 1;
-          v.cause = "You took " + m + " men from the fields on day " + dayN() + ".";
-          log("Took " + m + " men from " + v.name + "’s fields. The cause is written down.", "e");
+          v.cause = "You took " + m + (m === 1 ? " man" : " men") + " from the fields on day " + dayN() + ".";
+          log("Took " + m + (m === 1 ? " man" : " men") + " from " + v.name + "’s fields. The cause is written down.", "e");
         }
         break;
       case "release":
@@ -16716,7 +16721,7 @@ setInterval(function () {
       return baOld.apply(this, arguments);
     };
     // ---- every village, town and castle has a local quest giver with a "!" (the week's writs, posted and paid locally) ----
-    var VQN = ["Hollis", "Brannoc", "Edda", "Morrow", "Tamsin", "Corwen", "Ilse", "Dunmore", "Agna", "Perrin"];
+    var VQN = ["Hollis", "Thursby", "Edda", /* was "Brannoc": clashed with the canon founder Brannoc the Paired (renamed 2 Nov) */ "Morrow", "Tamsin", "Corwen", "Ilse", "Dunmore", "Agna", "Perrin"];
     function vqWho(s) { var n = VQN[nhash("vq" + s.id) % VQN.length]; return (s.type === "village" ? "Reeve " : s.type === "castle" ? "Castellan " : "Watch Captain ") + n; }
     function vqOpen(sid) { try { return writList(sid).filter(function (w) { return !w.done; }); } catch (e) { return []; } }
     var gsOld = genSpec; genSpec = function (id) {
@@ -16868,7 +16873,234 @@ setInterval(function () {
       AR: function () { return AR; }, spec: function (id) { return getSpec(id); }, caveTo: caveTo, caves: function () { try { return ovPoi().caves.map(function (c, k) { return { id: "cave" + k, name: c.name }; }); } catch (e) { return []; } }, writs: function (sid) { return vqOpen(sid); }, area3d: function () { return A3; }, a3on: function () { return a3on; }, startArea: function (id) { startArea(id); return !!AR; }, dlg: function () { return AR && AR.dlg; }, cp: function () { return cp(); },
       battleWith: function (n, kind) { var e = kind ? null : (S.enemies.filter(function (x) { return x.kind === "bandit"; })[0] || S.enemies[0]); if (kind) { e = { id: 990000 + Math.floor(Math.random() * 9999), kind: kind, n: n || 10, q: 1, x: S.px + 40, y: S.py, cool: 0 }; S.enemies.push(e); } if (!e) return false; if (n) e.n = n; startBattle(e); return true; },
       give: function (n) { S.from.merc = (S.from.merc || 0) + n; return T(); }, pref: pref,
-      k2: function () { return K2; }, k2a: function () { return k2a; } };
+      k2: function () { return K2; }, k2a: function () { return k2a; }, openSheet: function (k, id) { return openSheet(k, id); } };
+    // ===== PREMIUM PHASE 2 (game/premium-p2) ======================================================================
+    // premium/p2.js owns the look; this block hands it the game and wraps a few functions: the map HUD (updateHud),
+    // the party marker (partyLead/partyMan), map labels (plate), the camera (update), settlement and result sheets
+    // (siteSheet, battleSheet, finishBattle snapshot only), and closeSheet for the exit animation. If premium/p2.js is
+    // missing, window.VHP2 is undefined and nothing here runs. Save keys, quest ids and numbers are untouched.
+    (function () {
+      var P2 = window.VHP2; if (!P2 || !P2.attach) return;
+      try {
+        P2.attach({
+          S: function () { return S; }, act: function (a, x, y) { return act(a, x, y); }, save: function () { save(); },
+          music: function (v) { if (v !== undefined && !!v !== mOn) { mOn = !!v; try { localStorage.setItem(MUSK, mOn ? "on" : "off"); } catch (e) {} if (mOn) mInit(); mApply(); } return mOn; },
+          focus: function (s) { glideTo(s, true); }
+        });
+        // the game's own button click is replaced by the kit's cues (which follow the Interface sounds switch)
+        try { SFXS.click = function () {}; } catch (e) {}
+        var actP2 = act;
+        act = function (a, x, y) { if (a === "p2menu") { P2.openMenu(); return; } return actP2(a, x, y); };
+        var E = P2.esc;
+        function pal() { var r = P2.people(); return r ? r.pal : null; }
+
+        // ---- the world map HUD: one forged bar (day, crowns, grain, men, menu), then chips and the speed control ----
+        var IC = {
+          crown: '<svg viewBox="0 0 24 24" style="color:#f0cd80"><ellipse cx="12" cy="15.5" rx="7.5" ry="3"/><path d="M4.5 15.5v-3c0-1.7 3.4-3 7.5-3s7.5 1.3 7.5 3v3"/><ellipse cx="12" cy="12.5" rx="7.5" ry="3"/><path d="M9.5 12.4h5"/></svg>',
+          grain: '<svg viewBox="0 0 24 24" style="color:#e2c26e"><path d="M12 21V9"/><path d="M12 9c-2.6-.4-3.6-2.6-3.4-5 2.5.3 3.6 2.3 3.4 5zM12 9c2.6-.4 3.6-2.6 3.4-5-2.5.3-3.6 2.3-3.4 5zM12 14c-2.6-.4-3.8-2.4-3.6-4.8 2.6.3 3.8 2.2 3.6 4.8zM12 14c2.6-.4 3.8-2.4 3.6-4.8-2.6.3-3.8 2.2-3.6 4.8z"/></svg>',
+          men: '<svg viewBox="0 0 24 24" style="color:#d8c8a0"><path d="M12 3l6.5 2.6v4.9c0 4.6-2.8 7.6-6.5 9.5-3.7-1.9-6.5-4.9-6.5-9.5V5.6z"/><path d="M12 7.5v8M8.8 10.8h6.4"/></svg>',
+          menu: '<svg viewBox="0 0 24 24"><path d="M5 7h14M5 12h14M5 17h14"/></svg>',
+          pause: '<svg viewBox="0 0 24 24"><path class="f" d="M7 5h3.4v14H7zM13.6 5H17v14h-3.4z"/></svg>',
+          play: '<svg viewBox="0 0 24 24"><path class="f" d="M7 4.5l12 7.5-12 7.5z"/></svg>',
+          fast: '<svg viewBox="0 0 24 24"><path class="f" d="M3 5l9 7-9 7zM12 5l9 7-9 7z"/></svg>'
+        };
+        function stat(icon, val, cap, per, d, lbl) {
+          var low = per > 0 && d <= 3;
+          return '<span class="p2-st' + (low ? " low" : "") + '" aria-label="' + lbl + " " + val + '">' + icon + "<span><b>" + val + (cap ? "<small>/" + cap + "</small>" : "") + "</b><i>" + (per > 0 ? "−" + per.toFixed(1) + "/d · " + (d > 99 ? "99+" : d) + "d" : lbl) + "</i></span></span>";
+        }
+        var NAVK = { party: "party", inv: "party", realms: "realms", diplo: "realms", heroes: "heroes", skills: "skills", ledger: "ledger", record: "record", deep: "deep" };
+        var hudKey = "", navKey = null, topT = 0;
+        var uhP2 = updateHud;
+        updateHud = function () {
+          uhP2();
+          try {
+            var hud = $("hud"); if (!hud || !S) return;
+            var wd = wageDay(), ed = eatDay(), t = TIERS[hollow()], pts = points(), wars = Object.keys(S.pwar).filter(function (k) { return k !== "metal"; }).length;
+            var h = '<div class="p2-bar"><div class="p2-day"><b>Day ' + dayN() + "</b><span>" + MONTHS[Math.floor(S.day / 30) % 4] + '</span></div><div class="p2-stats">' +
+              stat(IC.crown, Math.floor(S.crowns), 0, wd, daysOf(S.crowns, wd), "Crowns") + stat(IC.grain, Math.floor(S.grain), 0, ed, daysOf(S.grain, ed), "Grain") + stat(IC.men, T(), capNow(), 0, 99, "Men") +
+              '</div><button class="p2-icon" data-act="p2menu" aria-label="Menu">' + IC.menu + "</button></div>" +
+              '<div class="p2-row"><div class="p2-chips">' +
+              '<span class="p2-chip lv" data-act="menu" data-a="skills">Lv <b>' + lvl() + "</b>" + (pts > 0 ? ' <b class="pts">+' + pts + "</b>" : "") + "</span>" +
+              (cp().on ? '<span class="p2-chip quest" data-act="quest">◆ Quest</span>' : "") +
+              '<span class="p2-chip void" data-act="magic">✦ Hollow <b>' + hollow() + "/6</b> " + E(t[0]) + "</span>" +
+              (mcOn() && S.mc.began && !S.mc.broken ? '<span class="p2-chip warn">Dominion ×' + mcPower().toFixed(1) + "</span>" : "") +
+              (S.allies.length ? '<span class="p2-chip gold" data-act="menu" data-a="heroes">Heroes ' + S.allies.length + "</span>" : "") +
+              (wars ? '<span class="p2-chip warn" data-act="menu" data-a="realms">At war ×' + wars + "</span>" : "") +
+              '</div><div class="p2-spd" role="group" aria-label="Speed">' +
+              [[0, "pause", "Pause"], [1, "play", "Normal speed"], [3, "fast", "Fast"]].map(function (b) { return '<button data-act="speed" data-a="' + b[0] + '" aria-label="' + b[2] + '"' + (S.speed === b[0] ? ' class="on ' + b[1] + '"' : "") + ">" + IC[b[1]] + "</button>"; }).join("") + "</div></div>";
+            if (h !== hudKey || !hud.querySelector(".p2-bar")) { hud.innerHTML = h; hud.classList.add("p2"); hudKey = h; }
+            var now = performance.now(); if (now - topT > 500) { topT = now; var bb = hud.lastElementChild && hud.lastElementChild.getBoundingClientRect(); if (bb) document.documentElement.style.setProperty("--p2-top-h", Math.round(bb.bottom) + "px"); }
+            var nk = sheet ? NAVK[sheet.kind] || "" : "";
+            if (nk !== navKey) { navKey = nk; var bs = document.querySelectorAll("#bar button"); for (var i = 0; i < bs.length; i++) bs[i].classList.toggle("p2-on", !!nk && bs[i].getAttribute("data-a") === nk); }
+            var onMap = !AR && !cur && $("title") && $("title").hidden; if (document.body.classList.contains("p2-map") !== onMap) document.body.classList.toggle("p2-map", onMap);
+          } catch (e) {}
+        };
+
+        // ---- parchment and ink over the map, like the book's endpaper map ----
+        try { var mp = $("map"); if (mp && !$("p2parch")) { var pa = document.createElement("div"); pa.id = "p2parch"; pa.className = "on"; var ik = document.createElement("div"); ik.id = "p2ink"; ik.className = "on"; mp.parentNode.insertBefore(pa, mp.nextSibling); mp.parentNode.insertBefore(ik, pa.nextSibling); } } catch (e) {}
+
+        // ---- your people on the map: the knight and the column in your Realm's colours, under your people's pennant ----
+        function pennant(x, y, dir, now, p) {
+          var px = x - dir * 15, top = y - 42, sw = Math.sin(now / 240) * 1.4;
+          ctx.save(); ctx.lineCap = "round";
+          ctx.strokeStyle = "#2a1c10"; ctx.lineWidth = 2.2; ctx.beginPath(); ctx.moveTo(px, y - 6); ctx.lineTo(px, top); ctx.stroke();
+          ctx.strokeStyle = "#d8c8a0"; ctx.lineWidth = 1.1; ctx.beginPath(); ctx.moveTo(px, y - 6); ctx.lineTo(px, top); ctx.stroke();
+          var L = -dir * 21;
+          ctx.beginPath(); ctx.moveTo(px, top); ctx.lineTo(px + L, top + 2 + sw); ctx.lineTo(px + L * 0.7, top + 7.5 + sw * 0.6); ctx.lineTo(px + L, top + 13 + sw); ctx.lineTo(px, top + 14); ctx.closePath();
+          ctx.fillStyle = p.a; ctx.fill(); ctx.lineWidth = 1.2; ctx.strokeStyle = p.c; ctx.stroke();
+          ctx.fillStyle = p.c; ctx.fillRect(px + (dir > 0 ? L * 0.55 : 0), top + 10 + sw * 0.5, Math.abs(L) * 0.55, 1.6);
+          ctx.fillStyle = p.glow; ctx.beginPath(); ctx.arc(px, top - 1.5, 1.8, 0, 6.283); ctx.fill();
+          ctx.restore();
+        }
+        partyLead = function (x, y, dir, phase, moving, now) {
+          var p = pal(), im = p && typeof spImg === "function" && spImg("tp_knight");
+          if (!p || !im) { horseRiderNew(x, y, dir, phase, moving, now); return; }
+          pennant(x, y, dir, now, p);
+          var tm = P2.tinted(im, "tp_knight", p.a, 0.6), h = 46, w = im.naturalWidth / im.naturalHeight * h, bob = moving ? -Math.abs(Math.sin(phase)) * 1.6 : 0;
+          ctx.save(); var lg = ctx.createRadialGradient(x, y - 12, 2, x, y - 12, 30); lg.addColorStop(0, p.glow + "88"); lg.addColorStop(1, p.glow + "00"); ctx.fillStyle = lg; ctx.beginPath(); ctx.arc(x, y - 12, 30, 0, 6.283); ctx.fill();
+          ctx.fillStyle = "rgba(0,0,0,0.35)"; ctx.beginPath(); ctx.ellipse(x, y + 1, w * 0.42, 3.2, 0, 0, 6.283); ctx.fill();
+          ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = "high"; ctx.translate(x, y + bob); if (dir < 0) ctx.scale(-1, 1); ctx.drawImage(tm, -w / 2, -h, w, h); ctx.restore();
+        };
+        partyMan = function (x, y, k, dir, phase, o) {
+          var p = pal(), id = o && o.sword ? "tp_sword" : "tp_spear", im = p && typeof spImg === "function" && spImg(id);
+          if (!p || !im) { personNew(x, y, k, dir, phase, o); return; }
+          var tm = P2.tinted(im, id, o && o.sword ? p.c : p.a, 0.6), h = 15 * (k || 1), w = im.naturalWidth / im.naturalHeight * h, bob = -Math.abs(Math.sin(phase)) * 0.9;
+          ctx.save(); ctx.fillStyle = "rgba(0,0,0,0.3)"; ctx.beginPath(); ctx.ellipse(x, y + 1, w * 0.4, 2, 0, 0, 6.283); ctx.fill();
+          ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = "high"; ctx.translate(x, y + bob); if (dir < 0) ctx.scale(-1, 1); ctx.drawImage(tm, -w / 2, -h, w, h); ctx.restore();
+        };
+
+        // ---- map labels: settlements as parchment cartouches with their Realm's crest; everything else as small iron plates ----
+        var curSite = null, dsP2 = drawSite;
+        drawSite = function (s, t) { curSite = s; try { dsP2(s, t); } finally { curSite = null; } };
+        function rr(x, y, w, h, r) { ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); }
+        plate = function (txt, x, y, font, col) {
+          var k = Math.min(1.7, Math.max(1, 0.85 / Math.max(0.05, cam.z))), m = /(\d+(\.\d+)?)px/.exec(font), px = (m ? +m[1] : 11) * k, s = curSite && txt === curSite.name ? curSite : null;
+          ctx.save(); ctx.textAlign = "center"; ctx.textBaseline = "middle";
+          if (s) {
+            var big = s.type !== "village", fs = px * (big ? 0.8 : 0.74), hgt = fs * 1.75, rid = s.owner === "player" && P2.people() ? P2.people().id : realmOf(s), cr = P2.crestImg(rid);
+            ctx.font = "600 " + fs.toFixed(1) + "px 'Cinzel', Georgia, serif"; try { ctx.letterSpacing = (fs * 0.12).toFixed(1) + "px"; } catch (e) {}
+            var label = txt.toUpperCase(), tw = ctx.measureText(label).width, cw = cr ? hgt * 0.95 : 0, w = tw + fs * 1.3 + cw, x0 = x - w / 2, y0 = y - hgt * 0.62;
+            ctx.shadowColor = "rgba(0,0,0,0.55)"; ctx.shadowBlur = 6 * k; ctx.shadowOffsetY = 2 * k;
+            var g = ctx.createLinearGradient(0, y0, 0, y0 + hgt); g.addColorStop(0, "#f1e4c3"); g.addColorStop(1, "#d6c191"); rr(x0, y0, w, hgt, 2.5 * k); ctx.fillStyle = g; ctx.fill();
+            ctx.shadowColor = "transparent"; ctx.lineWidth = 1.2 * k; ctx.strokeStyle = hostileSite(s) ? "#8e2416" : "#5a3e1a"; ctx.stroke();
+            rr(x0 + 2 * k, y0 + 2 * k, w - 4 * k, hgt - 4 * k, 1.5 * k); ctx.lineWidth = 0.6 * k; ctx.strokeStyle = "rgba(90,62,26,0.55)"; ctx.stroke();
+            if (cr) { var ch = hgt * 1.22, cwid = ch * 100 / 130; ctx.drawImage(cr, x0 - cwid * 0.3, y0 + hgt / 2 - ch / 2, cwid, ch); }
+            ctx.fillStyle = "#2b1d0f"; ctx.fillText(label, x0 + cw * 0.55 + (w - cw * 0.55) / 2 + fs * 0.06, y0 + hgt / 2 + fs * 0.06);
+          } else {
+            var f2 = px * 0.92; ctx.font = "600 " + f2.toFixed(1) + "px 'Inter', system-ui, sans-serif"; try { ctx.letterSpacing = "0px"; } catch (e) {}
+            var w2 = ctx.measureText(txt).width + f2 * 1.2, h2 = f2 * 1.7, x2 = x - w2 / 2, y2 = y - h2 * 0.62;
+            rr(x2, y2, w2, h2, h2 / 2); ctx.fillStyle = "rgba(12,9,7,0.84)"; ctx.fill(); ctx.lineWidth = 1 * k; ctx.strokeStyle = "rgba(232,199,126,0.42)"; ctx.stroke();
+            ctx.fillStyle = col; ctx.fillText(txt, x, y2 + h2 / 2 + f2 * 0.04);
+          }
+          ctx.restore();
+        };
+
+        // ---- the camera: eased glides to a settlement you tap, pinch to zoom ----
+        var G = null, lastTgt = null;
+        function eio(t) { return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2; }
+        function glideTo(s, sound) { if (!s) return; G = { t: 0, sx: cam.x, sy: cam.y, x: s.x, y: s.y }; if (sound) P2.cue("focus"); }
+        var upP2 = update;
+        update = function (dt) {
+          upP2(dt);
+          try {
+            if (S && S.target && S.target !== lastTgt) { lastTgt = S.target; if (S.target.site && !sheet && !AR) glideTo(site(S.target.site) || S.target, true); }
+            if (!S.target) lastTgt = null;
+            if (!G) return;
+            if (sheet || AR || cur || (VST.on && VST.drag) || P2.still()) { G = null; return; }
+            G.t += dt; var T1 = 0.75, T2 = 0.7, T3 = 0.85;
+            if (G.t < T1) { var a = eio(G.t / T1); cam.x = G.sx + (G.x - G.sx) * a; cam.y = G.sy + (G.y - G.sy) * a; }
+            else if (G.t < T1 + T2) { cam.x = G.x; cam.y = G.y; }
+            else if (G.t < T1 + T2 + T3) { var b = eio((G.t - T1 - T2) / T3); cam.x = G.x + (S.px - G.x) * b; cam.y = G.y + (S.py - G.y) * b; }
+            else G = null;
+          } catch (e) { G = null; }
+        };
+        try {
+          var PT = {}, pin = null, mapC = $("map");
+          if (mapC) {
+            mapC.addEventListener("pointerdown", function (e) { PT[e.pointerId] = { x: e.clientX, y: e.clientY }; var ids = Object.keys(PT); if (ids.length === 2 && !sheet && !AR) { VST.on = false; VST.drag = false; VST.dx = VST.dy = 0; try { vstHide(); } catch (x) {} var a = PT[ids[0]], b = PT[ids[1]]; pin = { d: Math.hypot(a.x - b.x, a.y - b.y) || 1, z: zt == null ? cam.z : zt }; G = null; } }, true);
+            mapC.addEventListener("pointermove", function (e) { if (!PT[e.pointerId]) return; PT[e.pointerId] = { x: e.clientX, y: e.clientY }; var ids = Object.keys(PT); if (pin && ids.length >= 2) { var a = PT[ids[0]], b = PT[ids[1]]; zt = zclamp(pin.z * (Math.hypot(a.x - b.x, a.y - b.y) / pin.d)); } }, true);
+            var pend = function (e) { delete PT[e.pointerId]; if (Object.keys(PT).length < 2) pin = null; };
+            mapC.addEventListener("pointerup", pend, true); mapC.addEventListener("pointercancel", pend, true);
+          }
+        } catch (e) {}
+
+        // ---- settlement sheets: a header strip over the Realm's horizon, the crest, then the people with work for you ----
+        var BD = { ember: 1, light: 1, shadow: 1, storm: 1, frost: 1, stone: 1, spirit: 1, metal: 1, march: 1 };
+        function face(id, letter, mark) {
+          return '<span class="p2-face">' + E((letter || "?").charAt(0).toUpperCase()) + (id ? '<img src="img/face/' + E(id) + '.webp" alt="" onerror="this.remove()">' : "") + (mark ? "<em>!</em>" : "") + "</span>";
+        }
+        var ssP2 = siteSheet;
+        siteSheet = function (s) {
+          var h = ssP2(s);
+          try {
+            var rid = realmOf(s), bd = BD[rid] ? rid : "ember", m = /^<h2>([\s\S]*?)<\/h2>(<p class="sub">[\s\S]*?<\/p>)/.exec(h);
+            if (!m) return h;
+            var cr = P2.crestSvg(s.owner === "player" && P2.people() ? P2.people().id : rid, "");
+            var hdr = '<div class="p2-hdr" style="background-image:linear-gradient(180deg,rgba(10,8,6,.05) 0%,rgba(10,8,6,.4) 55%,rgba(14,11,8,.98) 100%),url(g3d/assets/backdrops/' + bd + '.webp)">' + cr + "<div><h2>" + m[1] + "</h2>" + m[2] + "</div></div>";
+            h = hdr + h.slice(m[0].length);
+            // people: your quest's giver (with a portrait when one exists) and the local writ giver
+            var ppl = "", ob = null; try { ob = S.camp && S.camp.on ? objective() : null; } catch (e) {}
+            if (ob && ob.site === s.id) {
+              h = h.replace(/<p style="color:#ffd84a;margin:0\.4rem 0">◆ Your quest leads here: [\s\S]*?<\/p>/, "");
+              ppl += '<div class="p2-q lead">' + face(ob.npc, ob.npc || "Q", true) + '<span class="p2-qt"><b>Your quest leads here</b><small>' + E(ob.text) + "</small></span>" + (canWalk(s) && !AR ? '<button class="solid" data-act="vh3dwalk" data-a="' + s.id + '">Go</button>' : "") + "</div>";
+            }
+            var who = "", open = []; try { who = vqWho(s); open = vqOpen(s.id); } catch (e) {}
+            if (who && !hostileSite(s)) ppl += '<div class="p2-q">' + face(null, who.replace(/^(Reeve|Castellan|Watch Captain) /, ""), open.length > 0) + '<span class="p2-qt"><b>' + E(who) + "</b><small>" + (open.length ? open.length + (open.length === 1 ? " writ posted" : " writs posted") + " this week, paid by " + E(s.name) + "." : "Nothing posted this week.") + "</small></span>" + (open.length ? '<button data-act="writs" data-a="' + s.id + '">Writs</button>' : "") + "</div>";
+            if (ppl) { var wi = h.indexOf('<div class="vh3d-walk">'), we = wi >= 0 ? h.indexOf("</div>", wi) + 6 : hdr.length; h = h.slice(0, we) + '<div class="p2-people">' + ppl + "</div>" + h.slice(we); }
+          } catch (e) {}
+          return h;
+        };
+
+        // ---- battle results: a summary card above the field report (numbers read after finishBattle, never changed) ----
+        var fbP2 = finishBattle;
+        finishBattle = function () {
+          var b = B, pre = b ? { c: S.crowns, g: S.grain, m: T() } : null, r = fbP2.apply(this, arguments);
+          try { if (b && pre) { b.p2 = { c: Math.round(S.crowns - pre.c), g: Math.round(S.grain - pre.g), lost: Math.max(0, pre.m - T()), foes: Math.round(b.en0) }; if (sheet && sheet.kind === "battle" && B === b && B.stage === "result") renderSheet(); } } catch (e) {}
+          return r;
+        };
+        var bsP2 = battleSheet;
+        battleSheet = function () {
+          var h = bsP2();
+          try {
+            if (B && B.stage === "result") {
+              var q = B.p2 || {}, won = B.won === true, lost = B.won === false, sg = function (v) { return (v > 0 ? "+" : "") + v; };
+              var card = '<div class="p2-sum' + (lost ? " lose" : "") + '"><div class="p2-sum-k">' + (won ? "Victory" : lost ? "Defeat" : "Withdrawn") + '</div><div class="p2-sum-t">' + (won ? (B.siegeId ? "The hold is yours" : "They break!") : lost ? "Your line breaks" : "You got away") + "</div>" +
+                '<div class="p2-sum-g"><div><b>' + (q.foes || Math.round(B.en0 || 0)) + "</b><small>Foes</small></div><div><b" + (q.lost ? ' class="dn"' : "") + ">" + (q.lost ? "−" + q.lost : "0") + "</b><small>Men lost</small></div>" +
+                "<div><b" + (q.c > 0 ? ' class="up"' : q.c < 0 ? ' class="dn"' : "") + ">" + sg(q.c || 0) + "</b><small>Crowns</small></div><div><b" + (q.g > 0 ? ' class="up"' : q.g < 0 ? ' class="dn"' : "") + ">" + sg(q.g || 0) + "</b><small>Grain</small></div></div></div>";
+              var i = h.indexOf("</p>"); h = i >= 0 ? h.slice(0, i + 4) + card + h.slice(i + 4) : card + h; // first thing under the title, above the battle art
+            }
+          } catch (e) {}
+          return h;
+        };
+
+        // ---- the taller settlement header must not cost the jump to a section: try again once the sheet has settled ----
+        var opP2 = openPlace;
+        openPlace = function (sid, key) {
+          var r = opP2.apply(this, arguments);
+          // for the next three seconds, if the sheet is back at the top (a slow phone, or the walk closing and re-rendering it)
+          // and the player has not touched it, jump to the section again
+          try {
+            if (SECS[key]) {
+              var b0 = $("sbody"), t0 = Date.now(), user = false, off = function () { user = true; };
+              if (b0) ["pointerdown", "wheel", "touchstart", "keydown"].forEach(function (n) { b0.addEventListener(n, off, { once: true, passive: true }); });
+              var iv = setInterval(function () {
+                var b = $("sbody"); if (user || !b || !sheet || sheet.kind !== "site" || sheet.id !== sid || Date.now() - t0 > 3000) { clearInterval(iv); return; }
+                if (b.scrollTop === 0) scrollToSec(SECS[key]);
+              }, 150);
+            }
+          } catch (e) {}
+          return r;
+        };
+
+        // ---- sheets close with a short sink instead of vanishing ----
+        var csP2 = closeSheet;
+        closeSheet = function (force) {
+          var was = sheet; if (was && (force || !/^(battle|intro|ending|menu|newgame|story)$/.test(was.kind))) P2.sheetClosing();
+          return csP2.apply(this, arguments);
+        };
+      } catch (e) { console.error("premium phase 2", e); }
+    })();
+    // ===== /PREMIUM PHASE 2 ======================================================================================
   })();
   setInterval(function () { if (!sheet || sheet.kind !== "battle") save(); }, 4000);
   // ===== PREMIUM FRONT DOOR bridge (game/premium-v1) ===========================================================
