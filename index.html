@@ -17079,7 +17079,18 @@ setInterval(function () {
         var opP2 = openPlace;
         openPlace = function (sid, key) {
           var r = opP2.apply(this, arguments);
-          try { if (SECS[key]) setTimeout(function () { var b = $("sbody"); if (b && b.scrollTop === 0 && sheet && sheet.kind === "site") scrollToSec(SECS[key]); }, 280); } catch (e) {}
+          // for the next three seconds, if the sheet is back at the top (a slow phone, or the walk closing and re-rendering it)
+          // and the player has not touched it, jump to the section again
+          try {
+            if (SECS[key]) {
+              var b0 = $("sbody"), t0 = Date.now(), user = false, off = function () { user = true; };
+              if (b0) ["pointerdown", "wheel", "touchstart", "keydown"].forEach(function (n) { b0.addEventListener(n, off, { once: true, passive: true }); });
+              var iv = setInterval(function () {
+                var b = $("sbody"); if (user || !b || !sheet || sheet.kind !== "site" || sheet.id !== sid || Date.now() - t0 > 3000) { clearInterval(iv); return; }
+                if (b.scrollTop === 0) scrollToSec(SECS[key]);
+              }, 150);
+            }
+          } catch (e) {}
           return r;
         };
 
