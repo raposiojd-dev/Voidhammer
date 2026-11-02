@@ -838,6 +838,8 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
     S.salvage = lootCount();
     return Object.keys(got).map(function (k) { return got[k] + " " + LOOT[k].name.toLowerCase(); }).join(", ");
   }
+  // "1 spears" reads as a slip: one of anything is singular ("1 spear", "1 great axe"); "boots & cloaks" stays a set
+  function lootPhrase(n, name) { var t = String(name).toLowerCase(); if (n === 1 && t.indexOf("&") < 0) t = t.replace(/([a-rt-z])s$/, "$1"); return n + " " + t; }
   function lootCount() { var n = 0; Object.keys(S.loot).forEach(function (k) { n += S.loot[k]; }); return n; }
   function lootPrice(k, t, extra) { return LOOT[k].base * (t.type === "village" ? 0.75 : 1 - Math.min(0.7, (t.ssat || 0) + (extra || 0))) * (has("forge") ? 1.15 : 1) * (1 + 0.06 * ((S.skills && S.skills.haggler) || 0)) * (1 + 0.08 * sk("quickcoin") + 0.1 * sk("fence") + skfx("sell")); }
   var sheet = null, pausedSpeed = 0, B = null, confirming = null, reply = null, openRead = {}, resetting = false;
@@ -9312,7 +9314,7 @@ var BIMG_SRC={"farm": "data:image/webp;base64,UklGRqyAAABXRUJQVlA4WAoAAAAQAAAAZw
       S.loot[k] = (S.loot[k] || 0) + 1; got[k] = (got[k] || 0) + 1;
     }
     S.salvage = lootCount();
-    return Object.keys(got).map(function (k) { return got[k] + " " + LOOT[k].name.toLowerCase(); }).join(", ");
+    return Object.keys(got).map(function (k) { return lootPhrase(got[k], LOOT[k].name); }).join(", ");
   }
   function ovFadeIds() { var o = []; TROOPT.forEach(function (q) { if (q.fade) o.push(q.id); }); return o; }
   function ovKindOrder() { return TROOPT.filter(function (q) { return q.id > 1; }).sort(function (a, b) { return b.mult - a.mult; }).map(function (q) { return q.id; }); }
@@ -16721,7 +16723,7 @@ setInterval(function () {
       return baOld.apply(this, arguments);
     };
     // ---- every village, town and castle has a local quest giver with a "!" (the week's writs, posted and paid locally) ----
-    var VQN = ["Hollis", "Brannoc", "Edda", "Morrow", "Tamsin", "Corwen", "Ilse", "Dunmore", "Agna", "Perrin"];
+    var VQN = ["Hollis", "Thursby", "Edda", /* was "Brannoc": clashed with the canon founder Brannoc the Paired (renamed 2 Nov) */ "Morrow", "Tamsin", "Corwen", "Ilse", "Dunmore", "Agna", "Perrin"];
     function vqWho(s) { var n = VQN[nhash("vq" + s.id) % VQN.length]; return (s.type === "village" ? "Reeve " : s.type === "castle" ? "Castellan " : "Watch Captain ") + n; }
     function vqOpen(sid) { try { return writList(sid).filter(function (w) { return !w.done; }); } catch (e) { return []; } }
     var gsOld = genSpec; genSpec = function (id) {
