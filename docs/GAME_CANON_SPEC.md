@@ -6,17 +6,17 @@ The game is set in the **late Ascension Era, just before the Radiant Edict**. Th
 
 ## THE ONE STORY SPINE (replaces the five separate finales)
 1. **The Concord's last season.** Realm politics, crises and lords. Metalcrown is mocked and kept out of Council seats, and is quietly preparing.
-2. **The TwinSpark child.** Rumours, then clues, then the truth: Elyon, a boy carrying two sparks from all Realms, is the subject of the old prophecy. Every faction wants him.
+2. **The TwinSpark child.** Rumours, then clues, then the truth: a boy carrying two sparks from all Realms, is the subject of the old prophecy. Every faction wants him.
 3. **The Edict.** Ardyn Solbrand passes the Radiant Edict. Stormreach rebels, Flameborne riots, Stonehold refuses, Spiritveil warns, Shadowdeep sabotages, and Metalcrown smiles.
-4. **The coup.** Metalcrown seizes Elyon and forces both sparks awake with a synthetic spark-reactor. **Valek, the Iron Heir, is born.** Valek kills Noctis. The Dominion marches on Lightforge.
+4. **The coup.** Metalcrown seizes the TwinSpark child and forces both sparks awake with a synthetic spark-reactor. **Valek, the Iron Heir, is born.** Valek kills Noctis. The Dominion marches on Lightforge.
 5. **Finale at the Iron Throne / the fall of Lightforge.** Existing ending choices (break / name / name-fails / take) become variations of one ending:
-   - **"Name"** is the most canon-faithful. The player speaks Elyon's name, and for one heartbeat Elyon surfaces and spares them, then Valek takes him back.
+   - **"Name"** is the most canon-faithful. The player speaks the boy's true name (never shown on screen), and for one heartbeat the boy surfaces and spares them, then Valek takes him back.
    - All variants close on **"The Thousand-Year War begins."** NG+ follows.
 
 The Void finale, the Hollow Throne and the Emberhold "He Kneels" quest must stop being separate endings. Fold them into the spine as acts or side arcs (see below).
 
 ## THE VOID IN THIS ERA
-The Void is stirring, not conquering. It noticed the TwinSpark child the moment he was conceived. Rifts are the first fractures. Keep the Rift and Void systems, but frame them as early warning signs drawn to Elyon and the coming war. The Void's big conquest (the Consumption) is centuries later, so no realm is fully eaten by the Void in this game.
+The Void is stirring, not conquering. It noticed the TwinSpark child the moment he was conceived. Rifts are the first fractures. Keep the Rift and Void systems, but frame them as early warning signs drawn to the TwinSpark child and the coming war. The Void's big conquest (the Consumption) is centuries later, so no realm is fully eaten by the Void in this game.
 
 ## THE NINE REALMS (identity, magic, cost)
 Keep the game's existing per-realm costs where they fit. Fix the identities.
@@ -36,7 +36,7 @@ Emberhold exists in this era only as a Flameborne/Stonehold frontier fortress (i
 ## CHARACTERS (this era)
 - **Kaelren**: a young **Flameborne** warrior, about 18, ward of the Flameborne King, who trained him ("Again, little ember"). Steady, notices what things cost, never chooses himself. **NOT Stormreach / "Stormborne".** He may keep a younger sister. **He cannot permanently die** (canon needs him alive): replace death with "carried from the field / wounded, returns later". The King's flame and oath are NOT given yet; that happens at the war's start, so a final-act hint is allowed: the King gives him a burn on the palm, "Bring him home."
 - **The Flameborne King**: warm, generous, brings bread, scholarship patron, writes unsent letters to people he failed. Under strain as the Edict nears. Any "Ember King" content means him. In this era he is **NOT the Harrowed King** and is not Void-corrupted.
-- **Elyon**: the TwinSpark child, an Academy student who hides how much power he has. Becomes **Valek** only at the coup.
+- **The TwinSpark child**: an Academy student who hides how much power he has. His name is sealed canon: never show it in game text, choices, comments or docs.
 - **Valek, the Iron Heir**: appears only after the coup (Act 4+). Kills Noctis.
 - **Noctis, the Iron Shade**: Metalcrown's first engineered machine-wraith, feared in children's stories. Can stay a freeable prisoner or companion. Valek kills him at the coup.
 - **The Eternal Voyager**: in this era he is alive and sits on the Aetherguard Council as the Hammer-Bearer, the one Councillor without a Realm. He is uncanny and kind. As an NPC he is fine; tone down "cannot die / void bargain not to feel" into "something the Codex cannot write". **His true name is unknown. Never give him one.**

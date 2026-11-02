@@ -46,7 +46,7 @@ const ok = (c, m) => { console.log((c ? "PASS " : "FAIL ") + m); if (!c) fails++
   // canon guard: no god words, no sealed names, Australian "towards" only, in every display string of the front door
   const leak = await js(() => {
     const txt = JSON.stringify(VH_CANON) + document.getElementById("fd-title").textContent;
-    const bad = [/\bgods?\b/i, /goddess|deity|divine|heaven|\bhell\b/i, /Eternal Voyager|Soulforged|Unwritten|Harrowed|Valek|Dalen/i, /\btoward\b/i, /\bcolor\b|\bhonor\b|\barmor\b/i];
+    const bad = [/\bgods?\b/i, /goddess|deity|divine|heaven|\bhell\b/i, /Eternal Voyager|Soulforged|Unwritten|Harrowed|Valek|Elyon|Dalen/i, /\btoward\b/i, /\bcolor\b|\bhonor\b|\barmor\b/i];
     return bad.filter((r) => r.test(txt)).map(String);
   });
   ok(leak.length === 0, "front-door text has no god words, sealed names or US spellings" + (leak.length ? ": " + leak.join(" ") : ""));
