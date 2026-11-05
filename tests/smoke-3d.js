@@ -254,7 +254,7 @@ const ok = (c, m) => { console.log((c ? "PASS " : "FAIL ") + m); if (!c) fails++
         const c = __vh.scene().ctl, k2 = c.k2(), s = __vh.S().sk2, hero = c.hero;
         // the hero is put beside a foe nine times over; keep him on his feet so a slow machine can't end the test early
         if (hero.hp > 0) hero.hp = hero.hpm;
-        c.units.forEach((u) => { if (u.side === "e" && !u.dead && !u.gone && u.hpm) u.hp = u.hpm; }); // and the bandits standing, so the battle outlasts nine casts
+        c.units.forEach((u) => { if (u.side === "e" && !u.dead && !u.gone) { if (u.hpm) u.hp = u.hpm; u.rout = false; u.morale = 1; } }); // and the bandits standing (and not running: the rout roll is random), so the battle outlasts nine casts
         const cs = c.state(); if (cs.over || cs.heroDown) return { ended: (cs.over ? "over " : "") + (cs.heroDown ? "hero down" : "") };
         s.r[id] = Math.max(1, s.r[id] || 0); s.eq[0] = id; __vh.k2().bump(); k2.core.cds = {}; k2.core.chg = {};
         // stand a few yards from the nearest living foe, facing it

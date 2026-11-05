@@ -246,7 +246,10 @@
       '<button id="tcont" data-act="tcont" class="fd-btn fd-btn--primary fd-reveal d3">Continue<small id="fd-cont-sub"></small></button>' +
       '<button id="tnew" data-act="tnew" class="fd-btn fd-reveal d4">New Game</button>' +
       '<button data-fd="settings" class="fd-btn fd-reveal d5">Settings</button>' +
-      '<button data-fd="credits" class="fd-btn fd-reveal d6">Credits</button></nav>' +
+      '<button data-fd="credits" class="fd-btn fd-reveal d6">Credits</button>' +
+      // the saga's free first chapter, a quiet link under the menu (a new tab, so the game keeps its place)
+      '<a class="fd-read fd-reveal d7" href="https://voidhammersaga.com/chapter-one?utm_source=game&amp;utm_medium=title" target="_blank" rel="noopener">' +
+      '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5.5c3-1.2 6-1.2 9 .8 3-2 6-2 9-.8V19c-3-1.2-6-1.2-9 .8-3-2-6-2-9-.8z"/><path d="M12 6.3V19.8"/></svg>Read the book free</a></nav>' +
       '<div class="fd-foot fd-reveal d7"><span>A saga by John Raposio</span><span>The Concord&#8217;s last season</span></div>' +
       '<div class="fd-grain"></div>' +
       '<button class="fd-tap" id="fd-tap" aria-label="Tap to begin"><div><span>Tap to begin</span><small>Best with sound</small></div></button>';

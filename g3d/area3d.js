@@ -8,7 +8,7 @@ import { K3 } from "./scene3d.js";
 import { Merge, paintedSky, grassField, groundMat, horizonBand, loadArt, useSkyEnv } from "./art.js";
 import { BARKS } from "./barks.js";
 import { setBiome, modelProp, pickW, biomeOf, recoloured, pack, FIRE } from "./models.js";
-const { THREE, REALMS, VOIDC, GROUND_TEX, GRASS_TINT, CLOUD, COLD, tree, rng, vnoise, clamp, lerp, angLerp, shade, mix,
+const { THREE, REALMS, townTone, VOIDC, GROUND_TEX, GRASS_TINT, CLOUD, COLD, tree, rng, vnoise, clamp, lerp, angLerp, shade, mix,
   makeStage, makeKit, whenChars, heroLook, kaelLook, figure, animFigure, Batch, lights, particles, pool, torch, followCam, moveIntent, labelSprite, radialTex, esc } = K3;
 
 export const T = 1.35, PX = T / 16;
@@ -31,10 +31,6 @@ function styleOnce() {
 #vh3d.v3-area .v3-top{top:auto;bottom:auto;top:calc(40% + env(safe-area-inset-top,0px));right:.55rem;flex-direction:column;align-items:flex-end}
 #vh3d.v3-area .v3-top button{min-width:5.2rem;padding:.55rem .6rem}
 #vh3d.v3-area .v3-top button.on{background:#c8873a;color:#1a1208}
-#vh3d .v3-use{position:absolute;left:50%;bottom:calc(1.4rem + env(safe-area-inset-bottom,0px));transform:translateX(-50%);min-width:11rem;max-width:62vw;padding:.95rem 1.4rem;border-radius:999px;border:2px solid #e3c27a;background:radial-gradient(circle at 50% 30%,#4a3214,#1a1208 70%);color:#fff2cf;font:700 1rem 'Cinzel',Georgia,serif;letter-spacing:.06em;text-shadow:0 1px 2px #000;box-shadow:0 0 22px #c8873a77,0 6px 18px #000;cursor:pointer;touch-action:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-#vh3d .v3-use small{display:block;font:500 .66rem 'IBM Plex Mono',monospace;letter-spacing:.12em;color:#e8d8a8;opacity:.85;margin-top:.1rem;text-transform:uppercase}
-#vh3d .v3-use:active{transform:translateX(-50%) scale(.96)}
-#vh3d .v3-use[hidden]{display:none}
 @media (max-width:600px){#vh3d .v3-use{bottom:calc(9.4rem + env(safe-area-inset-bottom,0px));min-width:9rem;max-width:46vw;padding:.85rem 1rem;font-size:.92rem}#vh3d.v3-area .v3-top{top:calc(30% + env(safe-area-inset-top,0px))}#vh3d.v3-area .v3-top button{min-width:4.4rem;padding:.45rem .4rem;font-size:.54rem}}
 #vh3d .v3-fl{position:absolute;left:0;top:0;pointer-events:none;font:700 .95rem 'IBM Plex Mono',monospace;color:#ffe9b0;text-shadow:0 1px 3px #000,0 0 6px #000;white-space:nowrap;will-change:transform}
 #vh3d .v3-fl.h{color:#ff7a6a}
@@ -106,7 +102,7 @@ function buildArea(st, api, A) {
   const sp = A.sp, W = A.W, H = A.H, g = A.g, info = api.info(A);
   setBiome(info.cave ? "shadow" : info.realm);
   const cave = !!info.cave, over = !!sp.over;
-  const P = REALMS[info.realm] || REALMS.ember, kit = makeKit(st), { scene, camera, inp } = st, rand = rng((A.id || "a") + "|3d");
+  const townish = info.type === "town" && !cave, P = townish ? townTone(REALMS[info.realm] || REALMS.ember, info.realm) : (REALMS[info.realm] || REALMS.ember), kit = makeKit(st), { scene, camera, inp } = st, rand = rng((A.id || "a") + "|3d");
   const art = kit.art, white = kit.mat(0xffffff);
   const th = A.th || {};
   const cG0 = new THREE.Color(hex(th.g && th.g[0], 0x3f7a3a)), cG1 = new THREE.Color(hex(th.g && th.g[1], 0x468540)), cPath = new THREE.Color(hex(th.path, 0xb89a62)), cPlaza = new THREE.Color(hex(th.plaza, 0x9a9486));
@@ -128,14 +124,14 @@ function buildArea(st, api, A) {
     const sun = new THREE.DirectionalLight(0x9a8ac0, 0.35); sun.position.set(centre.x + 10, 30, centre.z + 8); sun.target.position.copy(centre); scene.add(sun, sun.target);
     L = { hemi, sun };
   } else {
-    scene.fog = new THREE.FogExp2(P.fog, over ? 0.02 : 0.014 + info.voidNear * 0.006);
+    scene.fog = new THREE.FogExp2(P.fog, over ? 0.02 : (townish ? 0.011 : 0.014) + info.voidNear * 0.006);
     L = lights(st, P, centre, 26, { dim: info.realm === "shadow" || info.realm === "spirit", cold: COLD[info.realm] });
     const sky = paintedSky(P.sky, mix(P.fog, 0xffffff, 0.12), L.sun.position.clone().sub(centre), L.sun.color, info.voidNear, VOIDC, CLOUD[info.realm]); scene.add(sky);
     L.sky = sky;
     // the Realm's painted horizon (its 2D poster art), faint and far, behind the hills
     L.band = horizonBand(info.realm, P.fog, (x) => st.track(x), { amt: over ? 0.5 : 0.4 }); scene.add(L.band);
   }
-  st.setGrade(cave ? "cave" : info.realm);
+  st.setGrade(cave ? "cave" : info.realm, { town: townish });
   // time of day from the game clock: warm low sun at dawn and dusk, cold blue night, windows brighter after dark
   const tod = { sunI: L.sun.intensity, sunC: L.sun.color.clone(), hemiI: L.hemi.intensity, hemiC: L.hemi.color.clone(), top: L.sky && L.sky.material.uniforms.top.value.clone(), hor: L.sky && L.sky.material.uniforms.hor.value.clone(), night: 0 };
   const WARM = new THREE.Color(0xff9a52), NIGHT = new THREE.Color(0x52628e), NSKY = new THREE.Color(0x0b1022);
@@ -809,7 +805,9 @@ function buildArea(st, api, A) {
     // exits: soft pulse; locked ones dim
     if (frameN % 15 === 0) for (const o of exits) { let lk = ""; try { lk = o.e.lock ? o.e.lock() : ""; } catch (e) {} o.locked = !!lk; if (o.veil) o.veil.material.color.set(lk ? 0xff6a5a : 0xfff0c0); if (o.sign) o.sign.material.opacity = lk ? 0.45 : 1; }
     for (const o of exits) { if (o.veil) o.veil.material.opacity = (o.locked ? 0.06 : 0.1) + 0.06 * Math.sin(t * 3 + o.x); if (o.flag) o.flag.rotation.y = Math.sin(t * 1.7 + o.x) * 0.25; if (o.sign) { const d = Math.hypot(o.x - hx, o.z - hz); o.sign.visible = d < (over ? 70 : 40); } }
-    for (const s of signs) { const d = Math.hypot(s.position.x - hx, s.position.z - hz); s.material.opacity = clamp(1.6 - d / 12, 0, 1); s.visible = s.material.opacity > 0.02; }
+    // house plates: only the nearest building's plate shows, so plates never stack up or crowd the screen edge
+    { let si = -1, sd = 1e9; for (let i = 0; i < signs.length; i++) { const d = Math.hypot(signs[i].position.x - hx, signs[i].position.z - hz); if (d < sd) { sd = d; si = i; } }
+      for (let i = 0; i < signs.length; i++) { const s = signs[i]; s.material.opacity = i === si ? clamp(1.6 - sd / 12, 0, 1) : 0; s.visible = s.material.opacity > 0.02; } }
 
     // the Use button: talk / open / enter / parley from the sim, or a door into the town's menus
     if (frameN % 2 === 0) { refreshUse(hx, hz); useBtn.hidden = !useAct || paused; }

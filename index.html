@@ -17068,6 +17068,9 @@ setInterval(function () {
                 '<div class="p2-sum-g"><div><b>' + (q.foes || Math.round(B.en0 || 0)) + "</b><small>Foes</small></div><div><b" + (q.lost ? ' class="dn"' : "") + ">" + (q.lost ? "−" + q.lost : "0") + "</b><small>Men lost</small></div>" +
                 "<div><b" + (q.c > 0 ? ' class="up"' : q.c < 0 ? ' class="dn"' : "") + ">" + sg(q.c || 0) + "</b><small>Crowns</small></div><div><b" + (q.g > 0 ? ' class="up"' : q.g < 0 ? ' class="dn"' : "") + ">" + sg(q.g || 0) + "</b><small>Grain</small></div></div></div>";
               var i = h.indexOf("</p>"); h = i >= 0 ? h.slice(0, i + 4) + card + h.slice(i + 4) : card + h; // first thing under the title, above the battle art
+              // under the Continue button: the free chapter and Patreon, quiet links in a new tab (never in the way of Continue)
+              h += '<div class="vh-funnel"><a href="https://voidhammersaga.com/chapter-one?utm_source=game&amp;utm_medium=' + (won ? "victory" : "after-battle") + '" target="_blank" rel="noopener"><span class="vf-main">Want the story behind this?<b>Get Chapter Two free</b></span></a><br>' +
+                '<a href="https://www.patreon.com/voidhammerofficial?utm_source=game&amp;utm_medium=' + (won ? "victory" : "after-battle") + '" target="_blank" rel="noopener"><span class="vf-sub">Support the saga on Patreon</span></a></div>';
             }
           } catch (e) {}
           return h;

@@ -33,7 +33,7 @@ void main(){
   c += (texture2D(tSrc, vUv + dir * 3.231).rgb + texture2D(tSrc, vUv - dir * 3.231).rgb) * 0.07;
   gl_FragColor = vec4(c, 1.0);
 }`;
-const COMP = `uniform sampler2D tScene, tBloom; uniform vec2 px; uniform float exposure, bloomK, sat; uniform vec3 gain, lift, hi; varying vec2 vUv;
+const COMP = `uniform sampler2D tScene, tBloom; uniform vec2 px; uniform float exposure, bloomK, sat, con; uniform vec3 gain, lift, hi; varying vec2 vUv;
 float lu(vec3 c){ c = c / (1.0 + c); return dot(c, vec3(0.299, 0.587, 0.114)); }
 vec3 RRTAndODTFit(vec3 v){ vec3 a = v * (v + 0.0245786) - 0.000090537; vec3 b = v * (0.983729 * v + 0.4329510) + 0.238081; return a / b; }
 vec3 aces(vec3 color){
@@ -63,7 +63,7 @@ void main(){
   float l = dot(c, vec3(0.2126, 0.7152, 0.0722));
   c = c * gain * mix(vec3(1.0), hi, smoothstep(0.35, 0.95, l)) + lift * (1.0 - l);
   c = mix(vec3(dot(c, vec3(0.2126, 0.7152, 0.0722))), c, sat);
-  c = clamp(c, 0.0, 1.0); c = mix(c, c * c * (3.0 - 2.0 * c), 0.18); // a gentle S-curve: deeper shadows, cleaner mid contrast
+  c = clamp(c, 0.0, 1.0); c = mix(c, c * c * (3.0 - 2.0 * c), con); // a gentle S-curve: deeper shadows, cleaner mid contrast
   gl_FragColor = vec4(toSRGB(clamp(c, 0.0, 1.0)), 1.0);
 }`;
 
@@ -79,7 +79,7 @@ export function makePost(renderer) {
   const mk = (fs, u) => new THREE.ShaderMaterial({ vertexShader: VS, fragmentShader: fs, uniforms: u, depthTest: false, depthWrite: false, toneMapped: false });
   const mBright = mk(BRIGHT, { tSrc: { value: rS.texture }, px: { value: new THREE.Vector2() }, thr: { value: hdr ? 0.95 : 0.8 } });
   const mBlur = mk(BLUR, { tSrc: { value: null }, dir: { value: new THREE.Vector2() } });
-  const mComp = mk(COMP, { tScene: { value: rS.texture }, tBloom: { value: rA.texture }, px: { value: new THREE.Vector2() }, exposure: { value: 1 }, bloomK: { value: 0.4 }, sat: { value: 1 }, gain: { value: new THREE.Vector3(1, 1, 1) }, lift: { value: new THREE.Vector3() }, hi: { value: new THREE.Vector3(1, 1, 1) } });
+  const mComp = mk(COMP, { tScene: { value: rS.texture }, tBloom: { value: rA.texture }, px: { value: new THREE.Vector2() }, exposure: { value: 1 }, bloomK: { value: 0.4 }, sat: { value: 1 }, con: { value: 0.18 }, gain: { value: new THREE.Vector3(1, 1, 1) }, lift: { value: new THREE.Vector3() }, hi: { value: new THREE.Vector3(1, 1, 1) } });
   const v2 = new THREE.Vector2();
   function size() {
     renderer.getDrawingBufferSize(v2); const w = Math.max(2, v2.x | 0), h = Math.max(2, v2.y | 0); if (w === W && h === H) return;
@@ -90,7 +90,17 @@ export function makePost(renderer) {
   const post = {
     hdr,
     // the tints are pulled 30% back towards neutral and the lift halved, so the blacks stay deep and figures read
-    setGrade(key) { const g = GRADE[key] || GRADE.none, u = mComp.uniforms, k = (v) => v.map((x) => 1 + (x - 1) * 0.7); u.gain.value.fromArray(k(g.gain)); u.lift.value.fromArray(g.lift.map((x) => x * 0.5)); u.hi.value.fromArray(k(g.hi)); u.sat.value = 1 + (g.sat - 1) * 0.7; },
+    // towns and capitals (opt.town) already glow with torches, windows and the Realm's own light, so a warm Realm grade on
+    // top doubled the tint (Hearthmount went orange). There the grade keeps only a quarter of a warm tint (half of a cool
+    // one), a slight cool trim balances warm Realms, the shadow lift goes and the S-curve is firmer for contrast.
+    setGrade(key, opt) {
+      const g = GRADE[key] || GRADE.none, u = mComp.uniforms, town = !!(opt && opt.town), warm = g.gain[0] > g.gain[2] + 0.02;
+      const s = town ? (warm ? 0.25 : 0.5) : 0.7, k = (v) => v.map((x) => 1 + (x - 1) * s), trim = town && warm ? [0.98, 1.0, 1.035] : [1, 1, 1];
+      u.gain.value.fromArray(k(g.gain).map((x, i) => x * trim[i])); u.lift.value.fromArray(g.lift.map((x) => x * (town ? 0.1 : 0.5))); u.hi.value.fromArray(k(g.hi));
+      u.sat.value = town ? Math.min(1, 1 + (g.sat - 1) * s) * 0.97 : 1 + (g.sat - 1) * 0.7; u.con.value = town ? 0.3 : 0.18;
+    },
+    resize() { size(); },
+    dims() { size(); return [W, H]; },
     render(scene, camera) {
       size();
       const ar = renderer.autoClear; renderer.autoClear = true;
