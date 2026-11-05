@@ -400,3 +400,15 @@
 html.fd-rm .fd-grain, html.fd-rm .fd-fog, html.fd-rm .fd-rays, html.fd-rm #title.fd-on::before, html.fd-rm #title.fd-on #tvw, html.fd-rm .fd-logo .fd-sweep { animation: none !important; }
 html.fd-rm .fd-narr .w { animation-duration: 1ms !important; animation-delay: 0s !important; }
 html.fd-rm .sheet { animation: none; }
+
+/* funnel links: the free chapter and Patreon. Quiet, forged-gold text links, never buttons that compete with play */
+.fd-read { display: inline-flex; align-self: center; align-items: center; justify-content: center; gap: .45rem; min-height: 44px; margin-top: .15rem; padding: 0 .8rem; font: 600 .66rem/1 var(--fd-ui); letter-spacing: .18em; text-transform: uppercase; color: rgba(227, 194, 122, .82); text-decoration: none; border-bottom: 1px solid transparent; -webkit-tap-highlight-color: transparent; }
+.fd-read svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linejoin: round; }
+.fd-read:hover, .fd-read:focus-visible { color: #ffe2a6; text-shadow: 0 0 12px rgba(255, 122, 26, .45); }
+.vh-funnel { margin: .9rem 0 .2rem; padding: .7rem .2rem 0; border-top: 1px solid rgba(200, 135, 58, .28); text-align: center; font-family: 'IM Fell English', Georgia, serif; }
+.vh-funnel a { color: inherit; text-decoration: none; -webkit-tap-highlight-color: transparent; }
+.vh-funnel .vf-main { display: inline-flex; align-items: center; min-height: 44px; padding: 0 .4rem; font-style: italic; font-size: .95rem; line-height: 1.3; color: #e8d6a8; }
+.vh-funnel .vf-main b { margin-left: .35em; font: 600 .78rem 'Cinzel', Georgia, serif; font-style: normal; letter-spacing: .06em; color: #f2c46a; border-bottom: 1px solid rgba(242, 196, 106, .45); }
+.vh-funnel .vf-sub { display: inline-flex; align-items: center; min-height: 36px; padding: 0 .4rem; font: 500 .62rem 'IBM Plex Mono', ui-monospace, monospace; letter-spacing: .12em; text-transform: uppercase; color: rgba(201, 180, 138, .75); }
+.vh-funnel a:hover .vf-main b, .vh-funnel a:focus-visible b { color: #ffe2a6; }
+.vh-funnel .vf-sub:hover, .vh-funnel .vf-sub:focus-visible { color: #e3c27a; }

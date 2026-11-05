@@ -52,6 +52,13 @@ const lerp = (a, b, t) => a + (b - a) * t;
 function angLerp(a, b, t) { let d = b - a; while (d > Math.PI) d -= Math.PI * 2; while (d < -Math.PI) d += Math.PI * 2; return a + d * t; }
 function shade(hex, k) { const c = new THREE.Color(hex); c.multiplyScalar(k); return c; }
 function mix(h1, h2, t) { return new THREE.Color(h1).lerp(new THREE.Color(h2), t); }
+// towns and capitals: the Realm's light pulled towards neutral daylight (warm Realms most), so stone, cobbles and faces
+// read with contrast instead of one orange wash; torches and windows keep their warmth against it
+const TOWN_CUT = { ember: 0.55, metal: 0.4, light: 0.3 };
+function townTone(P, realm) {
+  const t = TOWN_CUT[realm] != null ? TOWN_CUT[realm] : 0.15, hx = (a, b, k) => mix(a, b, k).getHex();
+  return Object.assign({}, P, { sun: hx(P.sun, 0xfff2e2, t), hemi: hx(P.hemi, 0xc6ccd6, t), fog: hx(P.fog, 0x4e5258, t * 0.7), sky: hx(P.sky, 0x484c56, t * 0.6), town: true });
+}
 
 // ---------- the stage: renderer, DOM, input, disposal ----------
 let styled = false;
@@ -101,6 +108,17 @@ function styleOnce() {
 #vh3d.touch .v3-prompt{bottom:calc(9.2rem + env(safe-area-inset-bottom,0px));max-width:86vw;text-align:center}
 #vh3d.touch .v3-hp{bottom:calc(1rem + env(safe-area-inset-bottom,0px));width:min(12rem,42vw)}
 #vh3d .v3-end small{display:block;font:500 .8rem 'IBM Plex Mono',ui-monospace,monospace;letter-spacing:.2em;text-transform:uppercase;color:#d8c8a0;margin-top:.4rem}
+#vh3d .v3-use{position:absolute;left:50%;bottom:calc(1.4rem + env(safe-area-inset-bottom,0px));transform:translateX(-50%);min-width:11rem;max-width:62vw;padding:.95rem 1.4rem;border-radius:999px;border:2px solid #e3c27a;background:radial-gradient(circle at 50% 30%,#4a3214,#1a1208 70%);color:#fff2cf;font:700 1rem 'Cinzel',Georgia,serif;letter-spacing:.06em;text-shadow:0 1px 2px #000;box-shadow:0 0 22px #c8873a77,0 6px 18px #000;cursor:pointer;touch-action:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#vh3d .v3-use small{display:block;font:500 .66rem 'IBM Plex Mono',monospace;letter-spacing:.12em;color:#e8d8a8;opacity:.85;margin-top:.1rem;text-transform:uppercase}
+#vh3d .v3-use:active{transform:translateX(-50%) scale(.96)}
+#vh3d .v3-use[hidden]{display:none}
+@media (max-width:600px){#vh3d .v3-use{bottom:calc(9.4rem + env(safe-area-inset-bottom,0px));min-width:9rem;max-width:46vw;padding:.85rem 1rem;font-size:.92rem}}
+/* the town walk's building plate: one at a time, HTML so it can be clamped inside the screen (and the notch) */
+#vh3d .v3-plate{position:absolute;left:0;top:0;z-index:3;pointer-events:none;max-width:min(15rem,60vw);padding:.3rem .65rem .34rem;box-sizing:border-box;background:rgba(14,10,7,.8);border:1px solid rgba(200,135,58,.85);border-radius:6px;text-align:center;color:#f4e3b8;font:600 .8rem 'Cinzel',Georgia,serif;letter-spacing:.06em;text-shadow:0 1px 2px #000;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;will-change:transform;transition:opacity .2s}
+#vh3d .v3-plate small{display:block;overflow:hidden;text-overflow:ellipsis;font:500 .6rem 'IBM Plex Mono',ui-monospace,monospace;letter-spacing:.05em;color:#c9b48a}
+#vh3d .v3-plate[hidden]{display:none}
+#vh3d .v3-safe{position:absolute;visibility:hidden;pointer-events:none;left:calc(10px + env(safe-area-inset-left,0px));right:calc(10px + var(--vh-sr,env(safe-area-inset-right,0px)));top:calc(10px + env(safe-area-inset-top,0px));bottom:calc(10px + var(--vh-sb,env(safe-area-inset-bottom,0px)))}
+@media (orientation:landscape) and (max-height:520px){#vh3d .v3-plate{max-width:min(12rem,30vw);padding:.2rem .5rem .24rem;font-size:.68rem}#vh3d .v3-plate small{font-size:.54rem}}
 /* one round menu button replaces the top bars in every 3D view; the scene's own buttons live on in the panel */
 #vh3d .v3-top{display:none!important}
 body.vh3d-stage #musbtn,body.vh3d-stage #savebtn{display:none!important}
@@ -165,12 +183,29 @@ function makeStage(loadText, opts) {
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(58, 1, 0.1, 420);
   // portrait phones see a narrow slice, so the follow camera pulls back a little
-  function resize() { const w = root.clientWidth || innerWidth, h = root.clientHeight || innerHeight; renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix(); if (stageRef) stageRef.distK = camera.aspect < 0.8 ? 1.3 : 1; }
-  let stageRef = null;
-  resize();
+  let post = null, postFail = false, postAuto = false, grade = "none", gradeOpt = null;
+  // the drawing buffer, camera aspect and post targets always follow the canvas's real CSS box. iOS Safari reports the
+  // OLD size on resize/orientationchange (and the URL bar moves with no resize at all), so besides the events there is a
+  // ResizeObserver on the stage, debounced re-checks at ~120/300/800 ms, and a cheap check every 15 frames.
+  let szW = 0, szH = 0, szPr = 0;
+  function resize() {
+    const w = root.clientWidth || innerWidth, h = root.clientHeight || innerHeight, p = renderer.getPixelRatio();
+    if (!w || !h || (w === szW && h === szH && p === szPr)) return;
+    szW = w; szH = h; szPr = p;
+    renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix();
+    if (stageRef) stageRef.distK = camera.aspect < 0.8 ? 1.3 : 1;
+    if (post) { try { post.resize(); } catch (e) {} }
+  }
+  let stageRef = null, rzT = [];
   const disposers = [];
   const listen = (el, ev, fn, opt) => { el.addEventListener(ev, fn, opt); disposers.push(() => el.removeEventListener(ev, fn, opt)); };
-  listen(window, "resize", resize);
+  function kick() { resize(); rzT.forEach(clearTimeout); rzT = [120, 300, 800].map((ms) => setTimeout(resize, ms)); }
+  listen(window, "resize", kick); listen(window, "orientationchange", kick);
+  if (window.visualViewport) listen(window.visualViewport, "resize", kick);
+  try { if (screen.orientation) listen(screen.orientation, "change", kick); } catch (e) {}
+  if (window.ResizeObserver) { const ro = new ResizeObserver(() => resize()); ro.observe(root); disposers.push(() => ro.disconnect()); }
+  disposers.push(() => rzT.forEach(clearTimeout));
+  resize(); kick();
 
   // input: keyboard, mouse (drag to turn, click to act, right button to block), touch (left stick, right drag)
   const inp = { keys: {}, turn: 0, pitch: 0, click: 0, rmb: false, stick: { x: 0, y: 0, on: false }, blocked: () => false, onKey: null };
@@ -224,20 +259,20 @@ function makeStage(loadText, opts) {
 
   const menu = makeMenu(root, listen, () => stage);
   document.body.classList.add("vh3d-stage");
-  let post = null, postFail = false, postAuto = false, grade = "none";
   let raf = 0, last = 0, dead = false, frameFn = null, firstFrame = true, slowAcc = 0, slowN = 0, pr = renderer.getPixelRatio();
   function loop(t) {
     if (dead) return;
     raf = requestAnimationFrame(loop);
     const raw = (t - last) / 1000 || 0.016, dt = Math.min(0.05, raw); last = t;
     stage.frames++;
+    if (stage.frames % 15 === 0) resize();
     if (frameFn) for (let i = 0; i < stage.substeps; i++) frameFn(dt, t / 1000 + i * dt);
     // keep it smooth on slow machines: drop the render resolution step by step if frames run long
     // and if the resolution is already at its floor, High's post-processing switches itself off for this scene
     if (!firstFrame && raw < 1) { slowAcc += raw; slowN++; if (slowN >= 45) { if (slowAcc / slowN > 1 / 34) { if (pr > 0.6) { pr = Math.max(0.6, pr * 0.8); renderer.setPixelRatio(pr); resize(); } else if (post && !postAuto) postAuto = true; } slowAcc = 0; slowN = 0; } }
     VH_TIME.value = t / 1000;
     if (gfx === "high" && !postFail && !postAuto) {
-      if (!post) { try { post = makePost(renderer); post.setGrade(grade); } catch (e) { postFail = true; post = null; } }
+      if (!post) { try { post = makePost(renderer); post.setGrade(grade, gradeOpt); } catch (e) { postFail = true; post = null; } }
       if (post) { try { post.render(scene, camera); } catch (e) { postFail = true; renderer.setRenderTarget(null); renderer.render(scene, camera); } }
       else renderer.render(scene, camera);
     } else renderer.render(scene, camera);
@@ -258,12 +293,15 @@ function makeStage(loadText, opts) {
     },
     menu: null, menuSrc: null, menuToggles: [],
     // the Realm's colour grade (used by High's post-processing)
-    setGrade(k) { grade = k || "none"; if (post) post.setGrade(grade); },
+    // opt.town: towns and capitals get a lighter, cooler, higher-contrast take on the Realm's grade
+    setGrade(k, opt) { grade = k || "none"; gradeOpt = opt || null; if (post) post.setGrade(grade, gradeOpt); },
+    // test hooks (tests/aspect-probe.js): High's post target size, so it can be checked against the drawing buffer
+    postSize() { return post && gfx === "high" && !postFail && !postAuto ? post.dims() : null; },
     get post() { return !!post && gfx === "high" && !postFail && !postAuto; },
     start(fn) { frameFn = fn; raf = requestAnimationFrame(loop); },
     msg(t, secs) { const m = $(".v3-msg"); m.textContent = t; m.classList.add("on"); clearTimeout(msgT); msgT = setTimeout(() => m.classList.remove("on"), (secs || 3) * 1000); },
     dispose() {
-      if (dead) return; dead = true; cancelAnimationFrame(raf); clearTimeout(msgT);
+      if (dead) return; dead = true; cancelAnimationFrame(raf); clearTimeout(msgT); if (window.__vh3dStage === stage) window.__vh3dStage = null;
       disposers.forEach((d) => d()); menu.dispose(); if (!document.querySelectorAll("#vh3d").length || document.getElementById("vh3d") === root) document.body.classList.remove("vh3d-stage"); if (post) { try { post.dispose(); } catch (e) {} post = null; }
       const seen = new Set();
       scene.traverse((o) => {
@@ -283,6 +321,7 @@ function makeStage(loadText, opts) {
   const extraDispose = [];
   stageRef = stage;
   stage.menu = menu;
+  window.__vh3dStage = stage;
   return stage;
 }
 
@@ -336,6 +375,9 @@ function makeMenu(root, listen, getStage) {
     if (mb) { const on = !/off/i.test(mb.getAttribute("aria-label") || ""); h += '<button type="button" class="v3p-r' + (on ? " on" : "") + '" data-mi="' + act({ keep: true, run: () => mb.click() }) + '" role="switch" aria-checked="' + on + '">' + svgI("music") + '<span>Music</span><i class="v3p-sw"></i></button>'; }
     if (stg.hasGfx) { const g = stg.gfx; h += '<div class="v3p-r wide" role="group" aria-label="Graphics quality">' + svgI("gfx") + '<span>Graphics quality<small>Low saves battery; High adds glow and colour grading</small></span><div class="v3p-seg">' + ["low", "medium", "high"].map((q) => '<button type="button" data-gq="' + q + '" class="' + (g === q ? "on" : "") + '">' + (q[0].toUpperCase() + q.slice(1)) + "</button>").join("") + "</div></div>"; }
     h += "</div>";
+    // the saga behind the game: quiet links at the foot of the menu, in a new tab (the scene keeps running underneath)
+    h += '<div class="vh-funnel"><a href="https://voidhammersaga.com/chapter-one?utm_source=game&amp;utm_medium=pause" target="_blank" rel="noopener"><span class="vf-main">Want the story behind this?<b>Get Chapter Two free</b></span></a><br>' +
+      '<a href="https://www.patreon.com/voidhammerofficial?utm_source=game&amp;utm_medium=pause" target="_blank" rel="noopener"><span class="vf-sub">Support the saga on Patreon</span></a></div>';
     sheet.innerHTML = h;
   }
   function setOpen(v) {
@@ -464,7 +506,7 @@ function labelSprite(stage, text, sub) {
   if (sub) { x.font = "500 22px 'IBM Plex Mono', monospace"; x.fillStyle = "#c9b48a"; x.fillText(sub, 256, 92); }
   const t = stage.track(new THREE.CanvasTexture(c)); t.colorSpace = THREE.SRGBColorSpace;
   const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: t, transparent: true, depthWrite: false, fog: false }));
-  sp.scale.set(4.2, 1.05, 1); sp.renderOrder = 10;
+  sp.scale.set(4.2, 1.05, 1); sp.renderOrder = 10; sp.userData.label = true;
   return sp;
 }
 function roundRect(x, a, b, w, h, r) { x.beginPath(); x.moveTo(a + r, b); x.arcTo(a + w, b, a + w, b + h, r); x.arcTo(a + w, b + h, a, b + h, r); x.arcTo(a, b + h, a, b, r); x.arcTo(a, b, a + w, b, r); x.closePath(); }
@@ -659,13 +701,15 @@ export function walk(api, info, done) {
 
 function buildWalk(st, api, info, done) {
   setBiome(info.realm);
-  const P = REALMS[info.realm] || REALMS.ember, rand = rng(info.id + "|walk"), kit = makeKit(st), { scene, camera, inp } = st;
+  const townish = info.type === "town", P0 = REALMS[info.realm] || REALMS.ember, P = townish ? townTone(P0, info.realm) : P0;
+  const rand = rng(info.id + "|walk"), kit = makeKit(st), { scene, camera, inp } = st;
+  if (townish) st.setGrade(info.realm, { town: true });
   const B = new Batch(kit), white = kit.mat(0xffffff), winMat = kit.glow(0xffb45a), coldWin = kit.glow(0xc8dcff);
   const R = info.type === "village" ? 24 : info.type === "castle" ? 22 : info.size >= 4 ? 36 : 31;
   const walled = info.type !== "village";
   const solids = [], spots = [], torches = [], ticks = [];
   const tall = P.tall || 1, squat = P.squat || 1;
-  scene.fog = new THREE.FogExp2(P.fog, 0.014 + info.voidNear * 0.006);
+  scene.fog = new THREE.FogExp2(P.fog, (townish ? 0.011 : 0.014) + info.voidNear * 0.006);
   const L = lights(st, P, new THREE.Vector3(0, 0, 0), 30, { dim: info.realm === "shadow" || info.realm === "spirit", cold: COLD[info.realm] });
   const sky = paintedSky(P.sky, mix(P.fog, 0xffffff, 0.12), L.sun.position.clone(), L.sun.color, info.voidNear, VOIDC, CLOUD[info.realm]); scene.add(sky);
   const art = kit.art, M = new Merge();
@@ -808,7 +852,7 @@ function buildWalk(st, api, info, done) {
     spots.push({ key, label, x, z, r: 2.8 });
     const ring = new THREE.Mesh(new THREE.RingGeometry(0.9, 1.15, 28), new THREE.MeshBasicMaterial({ color: cold ? 0xb8a8ff : 0xffc870, transparent: true, opacity: 0.55, depthWrite: false, side: THREE.DoubleSide }));
     ring.rotation.x = -Math.PI / 2; ring.position.set(x, 0.07, z); scene.add(ring);
-    const sp = labelSprite(st, label, sub); sp.position.set(x, 3.6, z); scene.add(sp); SIGNS.push(sp);
+    SIGNS.push({ x, z, label, sub });
     ticks.push((dt, t) => { ring.material.opacity = 0.35 + 0.25 * Math.sin(t * 3 + x); ring.rotation.z += dt * 0.4; });
     if (light !== false) torches.push(torch(kit, scene, x + 1.4, 2.3, z, cold ? 0xc8dcff : P.torch, torches.length < 6, cold));
     B.box(x + 1.4, 1.1, z, 0.12, 2.2, 0.12, 0, 0x3a2a1c);
@@ -985,13 +1029,33 @@ function buildWalk(st, api, info, done) {
   st.$(".v3-hud").innerHTML = "<h3>" + esc(info.name) + "</h3><small>" + esc(where) + "</small>";
   st.$(".v3-keys").innerHTML = "WASD move · Shift run<br>drag or Q / E turn<br>E or Enter: go in · Tab: menu · Esc: map";
   st.$(".v3-top").innerHTML = '<button data-v="menu">Skip to menu</button><button data-v="map">Back to map</button>';
-  st.$(".v3-act").innerHTML = '<button data-v="use">Go in</button><button data-v="run">Run</button>';
+  // the same clean HUD as the villages: the round menu (top right), one round context pill (Go in / Leave), and no Run
+  // button: the stick pushed to its rim runs, Shift on a keyboard
+  st.$(".v3-act").innerHTML = "";
   st.gfxButton();
-  const prompt = st.$(".v3-prompt");
-  let running = false, exiting = false, cur = null;
+  const prompt = st.$(".v3-prompt"); prompt.hidden = true;
+  const useBtn = document.createElement("button"); useBtn.type = "button"; useBtn.className = "v3-use"; useBtn.hidden = true; st.root.appendChild(useBtn);
+  st.listen(useBtn, "pointerdown", (e) => { e.stopPropagation(); e.preventDefault(); use(); });
+  // one building plate, for the nearest door in range, clamped inside the screen and clear of the notch
+  const plate = document.createElement("div"); plate.className = "v3-plate"; plate.hidden = true; st.root.appendChild(plate);
+  const safe = document.createElement("div"); safe.className = "v3-safe"; st.root.appendChild(safe);
+  const pv = new THREE.Vector3(); let plateK = null, plateW = 0, plateH = 0, safeBox = null, plateN = 0;
+  function plateTick() {
+    let best = null, bd = 10; for (const s of SIGNS) { const d = Math.hypot(s.x - me.position.x, s.z - me.position.z); if (d < bd) { bd = d; best = s; } }
+    if (!best || api.sheetOpen() || exiting) { plate.hidden = true; return; }
+    camera.updateMatrixWorld(); pv.set(best.x, 3.4, best.z).project(camera);
+    if (pv.z > 1 || pv.z < -1) { plate.hidden = true; return; }
+    if (plateK !== best) { plateK = best; plate.innerHTML = esc(best.label) + (best.sub ? "<small>" + esc(best.sub) + "</small>" : ""); plate.hidden = false; plateW = plate.offsetWidth; plateH = plate.offsetHeight; safeBox = null; }
+    plate.hidden = false;
+    if (!safeBox || (plateN++ % 30) === 0) { safeBox = { l: safe.offsetLeft, t: safe.offsetTop, r: safe.offsetLeft + safe.offsetWidth, b: safe.offsetTop + safe.offsetHeight }; plateW = plate.offsetWidth; plateH = plate.offsetHeight; }
+    const cw = st.root.clientWidth, ch = st.root.clientHeight;
+    const x = clamp((pv.x + 1) / 2 * cw - plateW / 2, safeBox.l, Math.max(safeBox.l, safeBox.r - plateW)), y = clamp((1 - pv.y) / 2 * ch - plateH, safeBox.t, Math.max(safeBox.t, safeBox.b - plateH));
+    plate.style.transform = "translate(" + Math.round(x) + "px," + Math.round(y) + "px)";
+    plate.style.opacity = String(clamp(1.4 - bd / 8, 0.25, 1));
+  }
+  let exiting = false, cur = null;
   st.listen(st.root, "click", (e) => {
-    const b = e.target.closest("[data-v]"); if (b) { const v = b.getAttribute("data-v"); if (v === "menu") exit("menu"); else if (v === "map") exit("map"); else if (v === "use") use(); else if (v === "run") { running = !running; b.classList.toggle("on", running); } return; }
-    if (e.target === prompt || prompt.contains(e.target)) use();
+    const b = e.target.closest("[data-v]"); if (b) { const v = b.getAttribute("data-v"); if (v === "menu") exit("menu"); else if (v === "map") exit("map"); else if (v === "use") use(); }
   });
   inp.blocked = () => api.sheetOpen();
   inp.onKey = (k) => {
@@ -1033,7 +1097,7 @@ function buildWalk(st, api, info, done) {
       const k = inp.keys;
       yaw -= inp.turn * 0.006; inp.turn = 0; pitch = clamp(pitch + inp.pitch * 0.003, 0.08, 0.95); inp.pitch = 0;
       if (k.q || k.arrowleft) yaw += dt * 2.2; if ((k.e && !cur) || k.arrowright) yaw -= dt * 2.2;
-      const mv = moveIntent(inp, yaw), run = k.shift || running, sp = (run ? 6.4 : 3.2) * mv.amt;
+      const mv = moveIntent(inp, yaw), run = k.shift || (inp.stick.on && Math.hypot(inp.stick.x, inp.stick.y) > 0.92), sp = (run ? 6.4 : 3.2) * mv.amt;
       if (mv.amt > 0.05) {
         me.position.x += mv.x * sp * dt; me.position.z += mv.z * sp * dt; collide(me.position);
         me.rotation.y = angLerp(me.rotation.y, Math.atan2(mv.x, mv.z), 1 - Math.exp(-dt * 12));
@@ -1044,15 +1108,15 @@ function buildWalk(st, api, info, done) {
       if (inp.click) { inp.click = 0; if (cur) use(); }
       // nearest place
       let best = null, bd = 1e9; for (const s of spots) { const d = Math.hypot(s.x - me.position.x, s.z - me.position.z); if (d < s.r && d < bd) { bd = d; best = s; } }
-      if (best !== cur) { cur = best; if (cur) { prompt.innerHTML = "<b>E</b> &nbsp;" + (cur.key === "gate" ? esc(cur.label) + " · leave for the map" : "Go in · " + esc(cur.label)); prompt.hidden = false; } else prompt.hidden = true; }
+      if (best !== cur) { cur = best; if (cur) { useBtn.innerHTML = (cur.key === "gate" ? "Leave" : "Go in") + "<small>" + esc(cur.key === "gate" ? "to the map" : cur.label) + "</small>"; useBtn.hidden = false; } else useBtn.hidden = true; }
       if (me.position.z > R + 1.5 && !isV) exit("map");
       if (isV && Math.hypot(me.position.x, me.position.z) > R + 8) exit("map");
-    } else { prompt.hidden = true; cur = null; animFigure(me, moveT, 0, 0, false, dt); }
-    for (const s of SIGNS) { const d = Math.hypot(s.position.x - me.position.x, s.position.z - me.position.z); s.material.opacity = Math.min(clamp(1.6 - d / 12, 0, 1), clamp((d - 2.6) / 2.5, 0, 1)); s.visible = s.material.opacity > 0.02; }
+    } else { useBtn.hidden = true; cur = null; animFigure(me, moveT, 0, 0, false, dt); }
     followCam(camera, me.position.x, 0, me.position.z, yaw, pitch, 5.6 * st.distK, 0.55, dt);
     // keep the camera inside the walls so the gatehouse never fills the view
     if (walled && me.position.z < R - 1) { camera.position.z = Math.min(camera.position.z, R - 0.9); camera.position.x = clamp(camera.position.x, -R + 0.9, R - 0.9); if (camera.position.z < -R + 0.9) camera.position.z = -R + 0.9; }
     L.sun.position.set(me.position.x + 30, 42, me.position.z + 22); L.sun.target.position.set(me.position.x, 0, me.position.z);
+    plateTick();
   });
   return { stop: () => exit("map"), scene: st, info, me, spots, near: () => cur && cur.key, goTo(key) { const s = spots.find((p) => p.key === key); if (!s) return false; me.position.set(s.x, 0, s.z + 0.5); return true; } };
 }
@@ -1355,5 +1419,5 @@ function buildBattle(st, api, info, done) {
 }
 
 // shared pieces for the other scene modules (area3d.js, siege3d.js)
-export const K3 = { THREE, REALMS, VOIDC, WALL_STYLE, ROOF_TEX, GROUND_TEX, GRASS_TINT, GRASS_N, CLOUD, COLD, tree, hashStr, rng, vnoise, clamp, lerp, angLerp, shade, mix,
+export const K3 = { THREE, REALMS, townTone, VOIDC, WALL_STYLE, ROOF_TEX, GROUND_TEX, GRASS_TINT, GRASS_N, CLOUD, COLD, tree, hashStr, rng, vnoise, clamp, lerp, angLerp, shade, mix,
   makeStage, makeKit, whenChars, charLook, heroLook, canonPal, kaelLook, figure, animFigure, Batch, lights, particles, pool, torch, followCam, moveIntent, labelSprite, radialTex, esc };
