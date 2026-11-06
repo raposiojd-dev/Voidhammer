@@ -4007,10 +4007,14 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
       out.push({ t: "Drop it for good.", fn: function () { cp().items = cp().items.filter(function (q) { return q !== it; }); }, go: "gear" });
       out.push({ t: "Back.", go: "gear" }); return out; } };
   }
+  // "chestloot:<area id>:<chest index>". Area ids can hold colons themselves (writ:hub:week:n, g:site, yard:site),
+  // so the index is whatever follows the LAST colon. Splitting on every colon gave writ chests a key that never matched.
+  function chestParse(id) { var s = String(id).slice(10), k = s.lastIndexOf(":"); return { id: s.slice(0, k), ix: +s.slice(k + 1) }; }
   function getDlg0(id) {
     if (DLG[id]) return DLG[id]; if (id.indexOf("wq:") === 0) return wqNode(id.slice(3)); if (id.indexOf("rt:") === 0) return rtNode(id.slice(3)); if (id.indexOf("stash:") === 0) return stashNode(id); if (id.indexOf("plot:") === 0) return plotNode(id); if (id.indexOf("fore:") === 0) return foreNode(id.slice(5)); if (id.indexOf("estgate:") === 0) return gateNode(id.slice(8)); var m = id.split(":"), st = m[1] && site(m[1]); if (!st && m[0] !== "chestloot" && m[0] !== "item") return null; if (m[0] === "item") return itemNode(m[1]); var town = st && st.type !== "village", nm = TNAMES[nhash(id) % TNAMES.length];
-    if (m[0] === "chestloot") { var cid = m[1], cix = +m[2]; return { n: "Chest", t: "A weathered chest, unlocked. Something glints inside.", c: [{ t: "Open it.", fn: function () {
-      var lv = (AR.sp.chests[cix] && AR.sp.chests[cix][2]) || AR.sp.lv || 1; lv = Math.min(4, lv + Math.floor((lvl() - 1) / 5)); cp().f["chest:" + cid + ":" + cix] = 1;
+    if (m[0] === "chestloot") { var cpr = chestParse(id), cid = cpr.id, cix = cpr.ix, ckey = "chest:" + cid + ":" + cix; if (cp().f[ckey]) return DLG.chest_empty; return { n: "Chest", t: "A weathered chest, unlocked. Something glints inside.", c: [{ t: "Open it.", fn: function () {
+      if (cp().f[ckey]) { aToast("Empty."); return; } cp().f[ckey] = 1;
+      var lv = (AR.sp.chests[cix] && AR.sp.chests[cix][2]) || AR.sp.lv || 1; lv = Math.min(4, lv + Math.floor((lvl() - 1) / 5));
       var cr = 20 + Math.floor(Math.random() * 40 * lv); S.crowns += cr; var n = 2 + (Math.random() < 0.5 ? 1 : 0) + (lv >= 2 && Math.random() < 0.5 ? 1 : 0) + (lv >= 3 ? 1 : 0), i;
       for (i = 0; i < n; i++) { var x = Math.random(), tb = lv >= 3 ? [0, 0.2, 0.75] : lv === 2 ? [0.05, 0.5, 0.9] : [0.2, 0.75, 0.97], rr = x < tb[0] ? 0 : x < tb[1] ? 1 : x < tb[2] ? 2 : 3; if (lv >= 2 && Math.random() < 0.012 * lv) rr = 4; if (i === 0 && lv >= 2 && rr < 1) rr = 1; AR.items.push({ x: AR.p.x + (i - (n - 1) / 2) * 11, y: AR.p.y + 3 + (i % 2) * 4, t: "item", item: genItem(rr, null, lv) }); }
       if (lv >= 2) { cp().arrows = (cp().arrows || 0) + 6; } if (Math.random() < 0.5) { S.loot.shards = (S.loot.shards || 0) + 1; S.salvage = lootCount(); }
@@ -4411,6 +4415,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
     return h;
   }
   function qFinish0(q, opt, idx) {
+    if (cp().f["qd_" + q.id]) { aToast("Already claimed."); return; }
     var c = cp(), f = c.f, r = typeof opt.reward === "function" ? opt.reward(f) : opt.reward; f["qd_" + q.id] = 1; f["qe_" + q.id] = idx; if (opt.set) Object.keys(opt.set).forEach(function (k) { f[k] = opt.set[k]; });
     r = tierRw(r); if (r.xp) addXp(r.xp); if (r.crowns) S.crowns += r.crowns;
     if (r.perm === "hp") { c.qhp = (c.qhp || 0) + 1; if (AR) { AR.p.max = maxHp(); AR.p.hp = AR.p.max; } }
@@ -4638,10 +4643,14 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
     m.save(); m.setTransform(1, 0, 0, 1, 0, 0); ovGround(mc, th); m.restore();
     ovShade(m, g, W, H, th);
     var A = { id: id, sp: sp, W: W, H: H, g: g, mc: mc, th: th, npcs: [], en: [], items: [], proj: [], fx: [], floats: [], t: 0, dlg: null, dch: [] };
-    (sp.chests || []).forEach(function (ch, ci) { var key = "chest:" + id + ":" + ci; A.npcs.push({ id: "chest" + ci, name: "Chest", x: ch[0], y: ch[1], px: ch[0] * ATS + 8, py: ch[1] * ATS + 14, col: "#a07030", chest: 1, d: function () { return cp().f[key] ? "chest_empty" : "chestloot:" + id + ":" + ci; } }); });
+    // the open-once key: the overland has a different set of chests in every map cell, so its key carries the cell
+    var chid = sp.over ? id + "@" + curCell() : id;
+    (sp.chests || []).forEach(function (ch, ci) { var key = "chest:" + chid + ":" + ci; A.npcs.push({ id: "chest" + ci, name: "Chest", x: ch[0], y: ch[1], px: ch[0] * ATS + 8, py: ch[1] * ATS + 14, col: "#a07030", chest: 1, d: function () { return cp().f[key] ? "chest_empty" : "chestloot:" + chid + ":" + ci; } }); });
     var cl = cp().cleared[id];
     (sp.npcs || []).forEach(function (n) { A.npcs.push(Object.assign({}, n, { px: n.x * ATS + 8, py: n.y * ATS + 14 })); });
-    var rcl = cl && ovReentry(id, sp); if (!cl || rcl) (sp.enemies || []).forEach(function (q, i) { var d = q[7] ? Object.assign({}, ET[q[0]], q[7]) : ET[q[0]]; var tm = (1 + 0.8 * tier()) * (d.boss ? 1 + 0.55 * (lvScale() - 1) : lvScale()) * (d.boss ? 3.0 : 1.8) * (1 + 0.4 * (((q[3] || sp.lv) || 1) - 1)) * (q[6] || 1) * 1.2; A.en.push({ type: q[0], d: d, x: q[1] * ATS + 8, y: q[2] * ATS + 14, hx: q[1] * ATS + 8, hy: q[2] * ATS + 14, hp: d.hp * tm, hpm: d.hp * tm, cd: 0.5, kx: 0, ky: 0, flash: 0, dead: false, aggro: false, shot: 1 + i * 0.2, ok: q[4], wq: q[5], rp: rcl ? 1 : 0 }); });
+    // a boss you have beaten stays beaten (cp().bdown), except where coming back for it is the point: dungeon re-entry, lairs, the Deep
+    var rcl = cl && ovReentry(id, sp), bdn = cp().bdown || {}, bkeep = !rcl && sp.lair === undefined && !/^deep\d+$/.test(id);
+    if (!cl || rcl) (sp.enemies || []).forEach(function (q, i) { var d = q[7] ? Object.assign({}, ET[q[0]], q[7]) : ET[q[0]]; if (d && d.boss && bkeep && bdn[id + ":" + i]) return; var tm = (1 + 0.8 * tier()) * (d.boss ? 1 + 0.55 * (lvScale() - 1) : lvScale()) * (d.boss ? 3.0 : 1.8) * (1 + 0.4 * (((q[3] || sp.lv) || 1) - 1)) * (typeof q[6] === "number" && q[6] > 0 ? q[6] : 1) * 1.2; if (!(tm > 0) || !isFinite(tm)) tm = 1; A.en.push({ type: q[0], d: d, x: q[1] * ATS + 8, y: q[2] * ATS + 14, hx: q[1] * ATS + 8, hy: q[2] * ATS + 14, hp: d.hp * tm, hpm: d.hp * tm, cd: 0.5, kx: 0, ky: 0, flash: 0, dead: false, aggro: false, shot: 1 + i * 0.2, ok: q[4], wq: q[5], rp: rcl ? 1 : 0, ix: i }); });
     if (!cl || rcl) ovPopulate(A, sp, rcl);
     var ssx = sx !== undefined ? sx : sp.spawn[0], ssy = sy !== undefined ? sy : sp.spawn[1];
     var mx = maxHp();
@@ -4690,9 +4699,10 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
     ch.forEach(function (c, i) { var bad = (c.cost && S.crowns < c.cost) || (c.req && !c.req()); h += '<button data-act="adc" data-a="' + i + '"' + (bad ? ' class="dis"' : "") + (c.col ? ' style="color:' + c.col + ';border-color:' + c.col + '"' : "") + ">" + c.t + "</button>"; });
     el.innerHTML = h + "</div></div>";
   }
-  function dlgClose() { if (!AR) return; AR.dlg = null; $("adlg").hidden = true; if (AR.dlgAfter) { var f = AR.dlgAfter; AR.dlgAfter = null; f(); } }
+  function dlgClose() { if (!AR) return; AR.dlg = null; AR.dch = []; $("adlg").hidden = true; if (AR.dlgAfter) { var f = AR.dlgAfter; AR.dlgAfter = null; f(); } }
   function dlgChoose(i) {
-    var c = AR && AR.dch[i]; if (!c) return;
+    var c = AR && AR.dlg && AR.dch[i]; if (!c) return;
+    if (c.give && c.set && Object.keys(c.set).every(function (k) { return cp().f[k] === c.set[k]; })) { aToast("Already claimed."); if (c.go) dlgOpen(c.go); else dlgClose(); return; }
     if (c.cost && S.crowns < c.cost) { aToast("You cannot afford that."); return; }
     if (c.req && !c.req()) return;
     if (c.cost) S.crowns -= c.cost;
@@ -4721,7 +4731,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
     if (e.d.boss && sk("giantslayer")) dmg *= 1 + 0.10 * sk("giantslayer"); if (e.d.boss) dmg *= 1 + affSum("boss") + skfx("bossdmg"); if (e.d.boss && sk("bossbane")) dmg *= 1 + 0.20 * sk("bossbane"); if (COOP.guest() && COOP.hit(e, dmg, dx, dy)) return true; dmg = silStab(e, dmg); e.hp -= dmg; e.flash = 0.2; e.kx = dx / d * (kn || 130) * (e.d.boss ? 0.12 : 0.5); e.ky = dy / d * (kn || 130) * (e.d.boss ? 0.12 : 0.5); AR.fx.push({ x: e.x, y: e.y - 8, t: 0.2 });
     AR.floats.push({ x: e.x, y: e.y - 16, t: 0.7, s: String(Math.round(dmg * 10) / 10) });
     if (e.d.yieldAt && e.hp <= e.d.yieldAt && e.hp > 0 && !cp().f.rusk) { e.yield = true; e.hp = Math.max(1, e.hp); }
-    if (e.hp <= 0) killEn(e); return true;
+    if (!(e.hp > 0)) { e.hp = 0; killEn(e); } return true;
   }
   function aAttack() {
     var p = AR.p; if (p.cd > 0) return; sfx("swing"); p.atk = 0.2; p.cd = 0.36 * (1 - Math.min(0.5, affSum("cdr"))) * (1 - 0.08 * sk("tempo")); var dmg = atkDmg(), hits = []; COOP.pvSwing();
@@ -4750,7 +4760,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
     aToast("A memory burns. The wave breaks outward.");
   }
   function killEn00(e) {
-    e.dead = true; sfx("kill"); if (AR.sp.over) ovKill(e); if (e.ns) { AR.floats.push({ x: e.x, y: e.y - 20, t: 1, s: e.type === "assassin" ? "+30" : "+8", col: "#b69cff" }); S.crowns += e.type === "assassin" ? 30 : 8; } cp().kills = (cp().kills || 0) + 1; addXp((e.d.boss ? 30 : 8) * (1 + tier()));
+    if (e.dead) return; e.dead = true; sfx("kill"); if (e.d.boss && e.ix !== undefined && AR && AR.id) { var bdc = cp(); bdc.bdown = bdc.bdown || {}; bdc.bdown[AR.id + ":" + e.ix] = 1; } if (AR.sp.over) ovKill(e); if (e.ns) { AR.floats.push({ x: e.x, y: e.y - 20, t: 1, s: e.type === "assassin" ? "+30" : "+8", col: "#b69cff" }); S.crowns += e.type === "assassin" ? 30 : 8; } cp().kills = (cp().kills || 0) + 1; addXp((e.d.boss ? 30 : 8) * (1 + tier()));
     var c = Math.round(Math.floor(3 + Math.random() * 7) * (e.d.boss ? 5 : 1) * (1 + affSum("gold") + skfx("loot")) * (1 + 0.6 * tier())); S.crowns += c; if (affSum("life") > 0) AR.p.hp = Math.min(AR.p.max, AR.p.hp + affSum("life")); AR.floats.push({ x: e.x, y: e.y - 14, t: 1, s: "+" + c });
     if (Math.random() < 0.35 || e.d.boss) { var gr = e.d.boss ? 3 + Math.floor(Math.random() * 3) : 1 + Math.floor(Math.random() * 2); S.grain = (S.grain || 0) + gr; AR.floats.push({ x: e.x + 8, y: e.y - 8, t: 1, s: "+" + gr + " grain", col: "#e8d08a" }); }
     if (Math.random() < 0.3 || e.d.boss) AR.items.push({ x: e.x, y: e.y, t: "heart" });
@@ -5376,7 +5386,7 @@ var BIMG_SRC={"farm": "data:image/webp;base64,UklGRqyAAABXRUJQVlA4WAoAAAAQAAAAZw
     if (st === 0) return { n: q.who, t: wqTxt(q, q.off), c: [{ t: "I will do it.", fn: function () { c.wq[id] = 1; if (q.kind === "deliver") { c.vis = c.vis || {}; delete c.vis[wqTarget(q)]; } aToast("New work: " + q.n); } }, { t: "Not now." }] };
     if (st === 1) return { n: q.who, t: wqTxt(q, q.hint), c: [{ t: "On my way." }] };
     if (st === 2) return { n: q.who, t: wqTxt(q, q.done), c: [{ t: "Take the reward.", fn: function () {
-      c.wq[id] = 3; var rw = q.rw, lv = (WQ.indexOf(q) % 4) + 1; S.crowns += rw.cr; addXp(rw.xp * (1 + tier())); if (rw.pt) c.qpts = (c.qpts || 0) + rw.pt;
+      if (c.wq[id] === 3) { aToast("Already claimed."); return; } c.wq[id] = 3; var rw = q.rw, lv = (WQ.indexOf(q) % 4) + 1; S.crowns += rw.cr; addXp(rw.xp * (1 + tier())); if (rw.pt) c.qpts = (c.qpts || 0) + rw.pt;
       AR.items.push({ x: AR.p.x + 8, y: AR.p.y + 4, t: "item", item: genItem(rw.rar, null, lv) }); AR.floats.push({ x: AR.p.x, y: AR.p.y - 18, t: 1.2, s: "+" + rw.cr }); aToast(q.n + " complete" + (rw.pt ? ". +1 quest skill point." : ".")); } }] };
     return { n: q.who, t: "“Walk safe out there.”", c: [{ t: "And you." }] };
   }
@@ -6526,7 +6536,7 @@ var BIMG_SRC={"farm": "data:image/webp;base64,UklGRqyAAABXRUJQVlA4WAoAAAAQAAAAZw
     if (st === 0) return { n: q.who, t: q.off + "<br><br><i>Trial fee: " + q.fee + " crowns. If you fall, the guards stay.</i>", c: [{ t: "Pay " + q.fee + " crowns and take the trial.", cost: q.fee, col: "#c58aff", fn: function () { c.rt[id] = 1; aToast("Relic Trial begun: " + q.n); } }, { t: "Not yet." }] };
     if (st === 1) return { n: q.who, t: q.hint, c: [{ t: "On my way." }] };
     if (st === 2) return { n: q.who, t: q.done, c: [{ t: "Take the relic.", col: "#c58aff", fn: function () {
-      c.rt[id] = 3; addXp(300 * (1 + tier()) * (1 + rtIdx(q))); c.qpts = (c.qpts || 0) + 2; var it = rtMake(q);
+      if (c.rt[id] === 3) { aToast("Already claimed."); return; } c.rt[id] = 3; addXp(300 * (1 + tier()) * (1 + rtIdx(q))); c.qpts = (c.qpts || 0) + 2; var it = rtMake(q);
       AR.items.push({ x: AR.p.x + 8, y: AR.p.y + 4, t: "item", item: it }); aToast(it.name + "! A Mythic relic.", RAR[5].c); } }] };
     return { n: q.who, t: "“Carry it well.”", c: [{ t: "I will." }] };
   }
@@ -7786,10 +7796,8 @@ var BIMG_SRC={"farm": "data:image/webp;base64,UklGRqyAAABXRUJQVlA4WAoAAAAQAAAAZw
   function ovReentry(id, sp) {
     var c = cp(); if (!sp.dung || !c.cleared[id]) return false;
     c.rs = c.rs || {}; var st = c.rs[id];
-    if (!st || lvl() > st.l || dayN() - st.d >= 5) {
-      (sp.chests || []).forEach(function (ch, ci) { delete c.f["chest:" + id + ":" + ci]; });
-      c.rs[id] = { l: lvl(), d: dayN() };
-    }
+    // enemies come back; chests stay opened (each chest gives its loot once)
+    if (!st || lvl() > st.l || dayN() - st.d >= 5) c.rs[id] = { l: lvl(), d: dayN() };
     setTimeout(function () { if (AR && AR.id === id) aToast("Fresh blood. They have moved back in."); }, 1500);
     return true;
   }
@@ -7904,7 +7912,7 @@ var BIMG_SRC={"farm": "data:image/webp;base64,UklGRqyAAABXRUJQVlA4WAoAAAAQAAAAZw
       sfx("hit"); e.hp -= h.d; e.flash = 0.2; e.kx = dx / d * 130 * (e.d.boss ? 0.12 : 0.5); e.ky = dy / d * 130 * (e.d.boss ? 0.12 : 0.5);
       AR.fx.push({ x: e.x, y: e.y - 8, t: 0.2 }); AR.floats.push({ x: e.x, y: e.y - 16, t: 0.7, s: String(Math.round(h.d * 10) / 10) });
       if (e.d.yieldAt && e.hp <= e.d.yieldAt && e.hp > 0 && !cp().f.rusk) { e.yield = true; e.hp = Math.max(1, e.hp); }
-      if (e.hp <= 0) killEn(e);
+      if (!(e.hp > 0)) { e.hp = 0; killEn(e); }
     },
     // ---- war between players (both must declare it) ----
     setWar: function (v) {
@@ -10900,7 +10908,7 @@ function skTabs() {
   st.textContent = ".sktabs{overflow-x:auto;scrollbar-width:none}.sktabs::-webkit-scrollbar{display:none}.sktabs button{flex:0 0 auto!important;min-width:64px!important;padding-left:.4rem!important;padding-right:.4rem!important}.sktabs button.sh:not(.on){border-color:#3a6a5a}";
   document.head.appendChild(st);
 })();
-function qFinish(q, opt, idx) { qFinish0(q, opt, idx); if (opt && typeof opt.eff === "function") { try { opt.eff(); } catch (e) {} } }
+function qFinish(q, opt, idx) { if (cp().f["qd_" + q.id]) { aToast("Already claimed."); return; } qFinish0(q, opt, idx); if (opt && typeof opt.eff === "function") { try { opt.eff(); } catch (e) {} } }
 // ===== STORY EXPANSION: six chains of linked quests, Act VI, new characters. Every choice is remembered. =====
 (function () {
   function EB(id, name, hp, col, band, extra) { ET[id] = Object.assign({ hp: hp, sp: 36, dmg: 2, col: col, band: band, name: name, big: 1, boss: 1 }, extra || {}); }
@@ -11791,7 +11799,7 @@ function deepMul() { var n = deepNum(); return n ? 1 + 0.07 * n : 1; }
 function deepToll(n) { return 25 * n; }
 function deepEnter(n) {
   var c = cp(), pk = DPK[(n - 1) % DPK.length], id = "deep" + n, g = null;
-  Object.keys(c.f || {}).forEach(function (k) { if (k.indexOf("chest:deep") === 0) delete c.f[k]; });
+  // a floor's chests stay opened between descents (each gives its loot once)
   delete AREAS[id]; if (c.cleared) delete c.cleared[id]; if (c.rs) delete c.rs[id];
   (AREAS.ashford.npcs || []).forEach(function (o) { if (o.id === "gate_den") g = o; });
   var q = { seed: 7000 + n * 31, pal: pk.pal, boss: pk.boss, lv: 1 + Math.round(n * 0.7), zone: id, zname: "The Deep · Floor " + n, th: pk.th, hub: "ashford" };
@@ -11801,14 +11809,13 @@ function deepEnter(n) {
   aToast("Floor " + n + " · " + pk.n + ". Foes hit " + Math.round((deepMul() - 1) * 100) + "% harder. Nothing heals here.");
 }
 function deepClear(n) {
-  var d = deepS(); if (n > d.best) d.best = n; if (n === 1) d.runs++;
+  var d = deepS(), first = n > d.best; if (first) d.best = n; if (n === 1) d.runs++;
   var party = 1; try { party = COOP.count(); } catch (e) {}
   var cr = 30 * n * (party > 1 ? 1.25 : 1), xp = 25 * n * (party > 1 ? 1.25 : 1); cr = Math.round(cr); S.crowns += cr; addXp(xp);
-  if (party > 1) { d.tog = (d.tog || 0) + 1; var ex = genItem(1, null, n, false); if (!giveItem(ex, true)) dropAtP(ex); try { aToast("Fellowship spoils: +25% rewards and a bonus find (" + ex.name + ")"); } catch (e) {} }
-  var rar = n % 10 === 0 ? 5 : n % 5 === 0 ? 3 : (n >= 3 && Math.random() < 0.4 ? 2 : 1);
-  var it = genItem(rar, null, n, rar >= 3);
-  if (!giveItem(it, false)) dropAtP(it);
-  try { showAlert("FLOOR " + n + " CLEARED", "+" + cr + " crowns · " + it.name, "menu"); } catch (e) {}
+  if (party > 1) { d.tog = (d.tog || 0) + 1; if (first) { var ex = genItem(1, null, n, false); if (!giveItem(ex, true)) dropAtP(ex); try { aToast("Fellowship spoils: +25% rewards and a bonus find (" + ex.name + ")"); } catch (e) {} } }
+  // the floor's treasure (a legendary every fifth floor, a mythic every tenth) comes with its first clear only
+  var it = null; if (first) { var rar = n % 10 === 0 ? 5 : n % 5 === 0 ? 3 : (n >= 3 && Math.random() < 0.4 ? 2 : 1); it = genItem(rar, null, n, rar >= 3); if (!giveItem(it, false)) dropAtP(it); }
+  try { showAlert("FLOOR " + n + " CLEARED", "+" + cr + " crowns" + (it ? " · " + it.name : " · its treasure was taken on your first clear"), "menu"); } catch (e) {}
   setTimeout(function () { if (AR && AR.id === "deep" + n) dlgOpen("deep_next"); }, 1400);
 }
 DLG["deep_next"] = {
@@ -12864,7 +12871,7 @@ function writList(hub) {
   var ko = Math.floor(r() * WRITK.length), usedP = {};
   for (i = 0; i < 3; i++) {
     var K = WRITK[(ko + i) % WRITK.length], nm = ["Brek", "Oswin", "Marrow", "Tavish", "Hesper", "Corrin", "Ysolde", "Dunmore", "Ferris", "Agna"][Math.floor(r() * 10)] + " " + WRITA[Math.floor(r() * WRITA.length)], pl = WRITP[Math.floor(r() * WRITP.length)]; while (usedP[pl]) pl = WRITP[Math.floor(r() * WRITP.length)]; usedP[pl] = 1;
-    var lv = Math.max(1, Math.min(6, am + tr * 2 + i - 1 + (r() < 0.3 ? 1 : 0))), id = "writ:" + hub + ":" + wk + ":" + i;
+    var lv = Math.max(1, Math.min(6, am + tr * 2 + i - 1 + (r() < 0.3 ? 1 : 0))), id = "writ:" + hub + ":" + wk + ":" + i, lvf = S.writs && S.writs.lv && S.writs.lv[id]; if (lvf) lv = lvf;
     out.push({ id: id, hub: hub, i: i, k: K.k, title: K.t(nm, pl), sub: K.s(nm, pl), lv: lv, nm: nm, pl: pl, cr: Math.round((70 + 40 * lv) * (1 + 0.5 * tr)), xp: 50 + 35 * lv, done: !!done[id], seed: nhash(id) % 99991 });
   }
   return out;
@@ -12882,7 +12889,7 @@ function writSpec(id) {
   var en = [], ch = [], k, f = rooms[0], last = rooms[rooms.length - 1];
   function spot(o) { return [o.x + 1 + Math.floor(r() * (o.w - 2)), o.y + 1 + Math.floor(r() * (o.h - 2))]; }
   for (k = 1; k < rooms.length - 1; k++) { var cnt = 2 + Math.floor(r() * 3) + Math.floor(lv / 2); for (i = 0; i < cnt; i++) { var sp = spot(rooms[k]); en.push([tp[Math.floor(r() * tp.length)], sp[0], sp[1], lv]); } if (r() < 0.5) { var cs = spot(rooms[k]); ch.push([cs[0], cs[1], Math.min(4, lv)]); } }
-  var bs = [last.cx, last.cy]; en.push([bp[Math.floor(r() * bp.length)], bs[0], bs[1], lv, "", "", w.nm]); for (i = 0; i < 2 + Math.floor(lv / 3); i++) { var gs = spot(last); if (Math.abs(gs[0] - bs[0]) + Math.abs(gs[1] - bs[1]) > 2) en.push([tp[Math.floor(r() * tp.length)], gs[0], gs[1], lv]); }
+  var bs = [last.cx, last.cy]; en.push([bp[Math.floor(r() * bp.length)], bs[0], bs[1], lv, undefined, undefined, 1, { name: w.nm }]); for (i = 0; i < 2 + Math.floor(lv / 3); i++) { var gs = spot(last); if (Math.abs(gs[0] - bs[0]) + Math.abs(gs[1] - bs[1]) > 2) en.push([tp[Math.floor(r() * tp.length)], gs[0], gs[1], lv]); }
   ch.push([last.x + 1, last.y + 1, Math.min(4, lv + 1)]);
   var pil = []; rooms.forEach(function (o, ix) { if (ix === 0) return; for (var p = 0; p < 3; p++) { var sx = o.x + 1 + Math.floor(r() * (o.w - 2)), sy = o.y + 1 + Math.floor(r() * (o.h - 2)), bad = Math.abs(sx - o.cx) + Math.abs(sy - o.cy) <= 3; en.forEach(function (q) { if (Math.abs(q[1] - sx) + Math.abs(q[2] - sy) < 3) bad = true; }); ch.forEach(function (q) { if (Math.abs(q[0] - sx) + Math.abs(q[1] - sy) < 2) bad = true; }); if (!bad) pil.push([sx, sy]); } });
   var ex = { x: f.cx - 1, y: f.y + f.h - 1, w: 2, h: 1 }; Object.defineProperty(ex, "to", { get: function () { return "world"; }, enumerable: true });
@@ -12909,6 +12916,8 @@ function writGo(id) {
   var w = writById(id); if (!w) { toast("That writ has expired."); return; }
   if (w.done) { toast("Already honoured."); return; }
   if (AR && !AR.sp.over) { toast("Leave town first, then ride out."); return; }
+  // a writ keeps the level it had when you first went in, so its rooms, chests and boss are the same ones if you come back
+  S.writs = S.writs || { done: {}, n: 0 }; S.writs.lv = S.writs.lv || {}; Object.keys(S.writs.lv).forEach(function (k) { if (+k.split(":")[2] !== writWeek() && !S.writs.done[k]) delete S.writs.lv[k]; }); if (!S.writs.lv[id]) S.writs.lv[id] = w.lv;
   closeSheet(true); S.speed = 0; S.target = null; delete AREAS[id]; startArea(id); setTimeout(function () { aToast(w.title + ". " + w.nm + " is at the bottom.", "#e0bc6a"); }, 600);
 }
 function writTick() {
@@ -14262,7 +14271,9 @@ function ovUnstick(A) {
 function buildArea(id, sx, sy) {
   var li = ovLairIx(id);
   var sameRun = li && AR && AR.lair && AR.lair.n === li.n && AR.id !== id, fresh = li && !(sameRun && AREAS[id]);
-  if (fresh) { var c = cp(); if (li.fl === 1) { for (var q = 2; q <= 4; q++) { var oi = ovLairId(li.n, q); delete AREAS[oi]; if (c.cleared) delete c.cleared[oi]; if (c.rs) delete c.rs[oi]; } } delete AREAS[id]; if (c.cleared) delete c.cleared[id]; if (c.rs) delete c.rs[id]; Object.keys(c.f || {}).forEach(function (k) { if (k.indexOf("chest:" + id + ":") === 0) delete c.f[k]; }); }
+  if (fresh) { var c = cp(); if (li.fl === 1) { for (var q = 2; q <= 4; q++) { var oi = ovLairId(li.n, q); delete AREAS[oi]; if (c.cleared) delete c.cleared[oi]; if (c.rs) delete c.rs[oi]; } } delete AREAS[id]; if (c.cleared) delete c.cleared[id]; if (c.rs) delete c.rs[id];
+    // the hoard fills again only once the lair's master has been beaten again (st.n counts those clears); walking out and back in finds it as you left it
+    c.lairRun = c.lairRun || {}; var lrun = ovLairSt(li.n).n; if (c.lairRun[id] !== lrun) { Object.keys(c.f || {}).forEach(function (k) { if (k.indexOf("chest:" + id + ":") === 0) delete c.f[k]; }); c.lairRun[id] = lrun; } }
   var A = buildArea0(id, sx, sy);
   if (!li) try { ovInside(A); } catch (er) { if (window.console) console.error(er); }
   try { ovUnstick(A); } catch (er) { if (window.console) console.error(er); }
@@ -14286,21 +14297,23 @@ function ovLairDrop(x, y, mult, rolls) {
 function ovLairChestNode(id, ix) {
   var ch = AR.sp.chests[ix], key = "chest:" + id + ":" + ix;
   return { n: "Hoard", t: "A lair hoard. Whatever it kept, it kept for something worth killing.", c: [{ t: "Open it.", fn: function () {
-    cp().f[key] = 1; var d = ovLairDepth(AR.lair.st), cr = 90 + d * 60 + Math.floor(Math.random() * 70 * d); S.crowns += cr;
+    if (cp().f[key]) { aToast("Empty."); return; } cp().f[key] = 1; var d = ovLairDepth(AR.lair.st), cr = 90 + d * 60 + Math.floor(Math.random() * 70 * d); S.crowns += cr;
     ovLairDrop(AR.p.x, AR.p.y, 1, 1);
     if (Math.random() < 0.4) { cp().bread = Math.min(9, (cp().bread || 0) + 1); AR.floats.push({ x: AR.p.x, y: AR.p.y - 30, t: 1.4, s: "+1 bread", col: "#e8d08a" }); }
     if (Math.random() < 0.5) { S.loot.shards = (S.loot.shards || 0) + 1; S.salvage = lootCount(); }
     AR.floats.push({ x: AR.p.x, y: AR.p.y - 18, t: 1.2, s: "+" + cr });
   } }] };
 }
-function ovLoreFragNode(ix, k) { var A = AR, key = "chest:" + A.id + ":" + ix, n = A.lair.n; var nd = ovLoreNode(n, k); if (!nd) return null; nd.c = [{ t: "Keep it.", fn: function () { cp().f[key] = 1; ovLoreRead(n, k); } }]; nd.n = "A scrap of the record"; nd.t = nd.t; return nd; }
+function ovLoreFragNode(ix, k) { var A = AR, key = "chest:" + A.id + ":" + ix, n = A.lair.n; var nd = ovLoreNode(n, k); if (!nd) return null; nd.c = [{ t: "Keep it.", fn: function () { if (cp().f[key]) return; cp().f[key] = 1; ovLoreRead(n, k); } }]; nd.n = "A scrap of the record"; nd.t = nd.t; return nd; }
 function getDlg(id) {
-  if (id.indexOf("chestloot:") === 0 && AR && AR.lair) { var m = id.split(":"), ix = +m[2], ch = AR.sp.chests[ix]; if (ch && ch[3] === "L") return ovLairChestNode(m[1], ix); if (ch && ch[3] === "S") return ovLoreFragNode(ix, ch[4]); }
+  if (id.indexOf("chestloot:") === 0 && AR && AR.lair) { var m = chestParse(id), ix = m.ix, ch = AR.sp.chests[ix]; if (cp().f["chest:" + m.id + ":" + ix]) return DLG.chest_empty; if (ch && ch[3] === "L") return ovLairChestNode(m.id, ix); if (ch && ch[3] === "S") return ovLoreFragNode(ix, ch[4]); }
   if (id.indexOf("lore:") === 0) { var lm = id.split(":"); return ovLoreNode(+lm[1], +lm[2]); }
   return getDlg0(id);
 }
 function killEn(e) {
+  if (!e || e.dead) return; // a foe dies, and pays out, once
   killEn1(e);
+  try { if (e.d && e.d.boss && AR && AR.sp && AR.sp.writ) writTick(); } catch (er) {}
   try {
     if (!AR || !e || !e.d) return;
     if (AR.lair && e.d.lb) {
@@ -16206,7 +16219,7 @@ setInterval(function () {
         var c = cp(), t = +x; if (!(t >= 1 && t <= 2 && t <= (c.beat || 0) && t === (c.tier || 0) + 1)) return;
         var zs = {}; QS.forEach(function (q) { if (q.zone) zs[q.zone] = 1; });
         Object.keys(c.f).forEach(function (k) { var m = /^chest:([^:]+):/.exec(k); if (/^(qo|qd|qe|z|p)_/.test(k) || (m && zs[m[1]])) delete c.f[k]; });
-        c.f.track = null; c.cleared = {}; c.tier = t; toast((t === 1 ? "Nightmare" : "Ashfall") + " begins. The roads are the same. The things on them are not.");
+        c.f.track = null; c.cleared = {}; c.bdown = {}; c.tier = t; toast((t === 1 ? "Nightmare" : "Ashfall") + " begins. The roads are the same. The things on them are not.");
       })(); break;
       case "qtrack": cp().f.track = x === "main" ? null : x; break;
       case "qgo": { var qs = site(x); if (qs) { S.target = { t: "p", x: qs.x, y: qs.y, site: qs.id }; closeSheet(true); S.speed = 3; pausedSpeed = 3; } return; }
@@ -16873,7 +16886,12 @@ setInterval(function () {
       AR: function () { return AR; }, spec: function (id) { return getSpec(id); }, caveTo: caveTo, caves: function () { try { return ovPoi().caves.map(function (c, k) { return { id: "cave" + k, name: c.name }; }); } catch (e) { return []; } }, writs: function (sid) { return vqOpen(sid); }, area3d: function () { return A3; }, a3on: function () { return a3on; }, startArea: function (id) { startArea(id); return !!AR; }, dlg: function () { return AR && AR.dlg; }, cp: function () { return cp(); },
       battleWith: function (n, kind) { var e = kind ? null : (S.enemies.filter(function (x) { return x.kind === "bandit"; })[0] || S.enemies[0]); if (kind) { e = { id: 990000 + Math.floor(Math.random() * 9999), kind: kind, n: n || 10, q: 1, x: S.px + 40, y: S.py, cool: 0 }; S.enemies.push(e); } if (!e) return false; if (n) e.n = n; startBattle(e); return true; },
       give: function (n) { S.from.merc = (S.from.merc || 0) + n; return T(); }, pref: pref,
-      k2: function () { return K2; }, k2a: function () { return k2a; }, openSheet: function (k, id) { return openSheet(k, id); } };
+      k2: function () { return K2; }, k2a: function () { return k2a; }, openSheet: function (k, id) { return openSheet(k, id); },
+      // used by tests/bugfix-probe.js: the writ board, leaving an area, talking to a person or chest as the Use button does,
+      // one blow through the game's own damage path, and a save
+      writList: function (sid) { return writList(sid); }, writGo: function (id) { writGo(id); return !!(AR && AR.id === id); }, writTick: function () { writTick(); },
+      leave: function () { leaveArea(); return !AR; }, talk: function (nid) { var n = AR && AR.npcs.filter(function (q) { return q.id === nid; })[0]; if (!n) return false; dlgOpen(n.d()); return AR.dlg; },
+      hit: function (e, n) { return dmgEn(e, n, 0, 1, 1); }, save: function () { save(); }, areaIds: function () { return Object.keys(AREAS); } };
     // ===== PREMIUM PHASE 2 (game/premium-p2) ======================================================================
     // premium/p2.js owns the look; this block hands it the game and wraps a few functions: the map HUD (updateHud),
     // the party marker (partyLead/partyMan), map labels (plate), the camera (update), settlement and result sheets
