@@ -432,7 +432,16 @@ function renderResult(code,second){
     if(navigator.share){navigator.share({title:"Which Realm are you? — Voidhammer",text:text,url:url}).catch(function(e){if(!e||e.name!=="AbortError")fallback();});}
     else fallback();
   });
-  sh.appendChild(sb);sh.appendChild(toast);wrap.appendChild(sh);
+  sh.appendChild(sb);sh.appendChild(toast);
+  /* merch: Fourthwall product per Realm ("" = no button yet) */
+  var SHOP={flameborne:"https://voidhammer-shop.fourthwall.com/products/flameborne-crest-tee"};
+  var shop=SHOP[SLUG[code]];
+  if(shop){
+    var mb=el("a","btn btn--ghost");mb.id="cta-merch";mb.target="_blank";mb.rel="noopener";
+    mb.href=shop+(shop.indexOf("?")<0?"?":"&")+"utm_source=quiz&utm_medium=result&utm_campaign=merch_"+SLUG[code];
+    mb.innerHTML='Get your Realm\u2019s crest <span class="arr" aria-hidden="true">&rarr;</span>';
+    sh.appendChild(mb);
+  }wrap.appendChild(sh);
 
   // next steps
   var nx=el("div","next");
