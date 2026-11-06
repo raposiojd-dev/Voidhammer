@@ -1,6 +1,7 @@
 <!doctype html>
 <html lang="en-AU">
 <head>
+<base target="_top">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Which Realm are you? — Voidhammer</title>
@@ -11,14 +12,14 @@
 <meta property="og:title" content="Which Realm are you? — Voidhammer">
 <meta property="og:description" content="Nine Realms. Each would claim you. Twenty-four questions about you, not the world.">
 <meta property="og:url" content="https://voidhammersaga.com/quiz/">
-<meta property="og:image" content="https://voidhammersaga.com/quiz/og-keyart.jpg">
+<meta property="og:image" content="https://raposiojd-dev.github.io/Voidhammer/quiz/og-keyart.jpg">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta property="og:image:alt" content="An armoured figure looks out over a ruined land beneath a storm of violet light">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Which Realm are you? — Voidhammer">
 <meta name="twitter:description" content="Nine Realms. Each would claim you. Twenty-four questions about you, not the world.">
-<meta name="twitter:image" content="https://voidhammersaga.com/quiz/og-keyart.jpg">
+<meta name="twitter:image" content="https://raposiojd-dev.github.io/Voidhammer/quiz/og-keyart.jpg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Marcellus+SC&family=Spectral:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&display=swap">
@@ -404,7 +405,7 @@ function buildCard(code,second,opts){
   if(!opts.teaser)card.appendChild(el("p","signoff",sign));
   return card;
 }
-function shareUrl(code){return location.href.split("#")[0]+"#r="+SLUG[code];}
+function shareUrl(code){return "https://voidhammersaga.com/quiz/#r="+SLUG[code];}
 function shareText(code){return "I'm "+D.r[code][0]+" in the Voidhammer saga. Which Realm are you?";}
 function copy(text){
   if(navigator.clipboard&&window.isSecureContext)return navigator.clipboard.writeText(text);
