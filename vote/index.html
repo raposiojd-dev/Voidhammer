@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="en-AU">
+<head>
+<base target="_top">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Realm Vision Vote | Voidhammer</title>
+<meta name="description" content="Realm Vision: eight Realms, one song contest. Vote for your favourite in the Sparkbeat Cup.">
+<meta property="og:title" content="Realm Vision: vote for your favourite">
+<meta property="og:description" content="Fire v Ice. Dark v Light. Ground v Sky. Memory v Machine. Pick your winners in the Sparkbeat Cup.">
+<meta property="og:image" content="https://raposiojd-dev.github.io/Voidhammer/vote/og.jpg">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Marcellus&family=Spectral:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#15120F;--panel:#1E1915;--line:#3A3027;--gold:#C9A13B;--text:#EDE3CC;--dim:#AA9E87;--sel:#2A2216}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--text);font-family:Spectral,Georgia,serif;font-size:17px;line-height:1.5}
+.wrap{max-width:980px;margin:0 auto;padding:28px 16px 64px}
+header{text-align:center;margin-bottom:22px}
+.kicker{font-family:Marcellus,serif;color:var(--gold);letter-spacing:.14em;font-size:15px}
+h1{font-family:Marcellus,serif;font-weight:400;font-size:clamp(34px,7vw,58px);margin:.15em 0 .1em;line-height:1.1}
+.sub{color:var(--dim);font-style:italic;margin:0 auto;max-width:640px}
+.match{margin:22px 0 8px}
+.tag{text-align:center;font-family:Marcellus,serif;color:var(--gold);letter-spacing:.1em;font-size:14px;margin-bottom:8px}
+.pair{display:grid;grid-template-columns:1fr auto 1fr;gap:10px;align-items:stretch}
+.vs{align-self:center;font-family:Marcellus,serif;color:var(--gold);font-size:22px}
+.opt{position:relative;display:block;border:1px solid var(--line);background:var(--panel);border-radius:6px;overflow:hidden;cursor:pointer;transition:border-color .15s,transform .15s}
+.opt:hover{border-color:#6b5a3a}
+.opt input{position:absolute;opacity:0;pointer-events:none}
+.opt .art{height:150px;background-size:cover;background-position:center 30%;position:relative}
+.opt .art::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(21,18,15,.55) 0,rgba(21,18,15,0) 35%,rgba(21,18,15,.2) 60%,var(--panel) 100%)}
+.opt .realm{position:absolute;top:10px;left:12px;z-index:1;font-family:Marcellus,serif;color:var(--gold);font-size:13px;letter-spacing:.12em}
+.opt .body{padding:2px 14px 14px}
+.opt .act{font-family:Marcellus,serif;font-size:21px;line-height:1.2}
+.opt .song{color:var(--dim);font-style:italic;font-size:15px}
+.opt audio{width:100%;margin-top:10px;height:34px}
+.opt .tick{position:absolute;top:8px;right:10px;z-index:1;width:28px;height:28px;border-radius:50%;border:1px solid var(--gold);display:grid;place-items:center;color:var(--bg);background:rgba(21,18,15,.6);font-size:16px}
+.opt input:checked ~ .tick{background:var(--gold)}
+.opt input:checked ~ .tick::before{content:"\2713"}
+.opt:has(input:checked){border-color:var(--gold);background:var(--sel)}
+.opt input:focus-visible ~ .tick{outline:2px solid var(--text);outline-offset:2px}
+.form{margin:34px auto 0;max-width:520px;border:1px solid var(--line);border-radius:8px;padding:22px 18px;background:var(--panel)}
+.form h2{font-family:Marcellus,serif;font-weight:400;margin:0 0 4px;font-size:26px;text-align:center}
+.form p.small{color:var(--dim);font-size:14px;text-align:center;margin:0 0 14px}
+label.f{display:block;font-size:14px;color:var(--dim);margin:10px 0 4px}
+input[type=text],input[type=email]{width:100%;padding:11px 12px;border-radius:5px;border:1px solid var(--line);background:#120F0C;color:var(--text);font:inherit}
+input[type=text]:focus,input[type=email]:focus{outline:none;border-color:var(--gold)}
+button{margin-top:16px;width:100%;padding:13px;border:0;border-radius:5px;background:var(--gold);color:#1a140c;font-family:Marcellus,serif;font-size:19px;cursor:pointer}
+button:disabled{opacity:.5;cursor:not-allowed}
+.count{text-align:center;color:var(--dim);font-size:14px;margin-top:8px}
+.note{font-size:13px;color:var(--dim);margin-top:12px;text-align:center}
+.done{display:none;text-align:center}
+.done h2{color:var(--gold)}
+.err{color:#e08a6a;font-size:14px;text-align:center;min-height:1em;margin-top:8px}
+.rules{max-width:640px;margin:30px auto 0;color:var(--dim);font-size:14px;text-align:center}
+.rules a{color:var(--gold)}
+@media (max-width:640px){
+ .pair{grid-template-columns:1fr;gap:6px}
+ .vs{text-align:center;font-size:18px}
+ .opt .art{height:120px}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+ <div class="kicker">REALM VISION · SEASON ONE</div>
+ <h1 id="cupname">The Sparkbeat Cup</h1>
+ <p class="sub" id="cupsub">Quarter-finals. Eight Realms, eight dance tracks, four head-to-heads. Listen, pick your favourite in each match, and the winners face off next week.</p>
+</header>
+
+<form id="picks" novalidate>
+ <div id="matches"></div>
+</form>
+
+<div class="form" id="voteBox">
+ <h2>Cast your vote</h2>
+ <p class="small">Website votes count <b>three lamps</b>. Confirm your email and your vote counts.</p>
+ <label class="f" for="nm">Name</label>
+ <input type="text" id="nm" autocomplete="given-name" maxlength="60">
+ <label class="f" for="em">Email</label>
+ <input type="email" id="em" autocomplete="email" required maxlength="120">
+ <button type="button" id="go" disabled>Pick a winner in every match</button>
+ <div class="count" id="count">0 of 4 picked</div>
+ <div class="err" id="err" role="alert"></div>
+ <p class="note">By voting you join the Voidhammer email list for Realm Vision results and the Dispatch. One vote per email per round; voting again replaces your picks. Unsubscribe any time.</p>
+</div>
+
+<div class="form done" id="thanks">
+ <h2>Your lamps are lit</h2>
+ <p id="thanksPicks"></p>
+ <p class="small">Check your inbox and confirm your email, or your vote won't count. Results go up on Monday.</p>
+ <p class="small"><a href="https://voidhammersaga.com/quiz/" style="color:var(--gold)">Don't know your Realm? Take the quiz</a></p>
+</div>
+
+<p class="rules">Votes are counted from website votes (3 lamps), Instagram, YouTube and Threads polls and TikTok comments (1 lamp each), and Patreon (5 lamps). Every count is published. Songs are AI-assisted; written and produced by John Raposio.</p>
+</div>
+
+<iframe name="mlsink" id="mlsink" title="vote submission" style="display:none"></iframe>
+<form id="mlform" action="https://assets.mailerlite.com/jsonp/2172873/forms/203374447641494537/subscribe" method="post" target="mlsink" style="display:none">
+ <input type="hidden" name="fields[email]" id="f_em">
+ <input type="hidden" name="fields[name]" id="f_nm">
+ <input type="hidden" name="fields[realm_vision_vote]" id="f_vote">
+ <input type="hidden" name="ml-submit" value="1">
+ <input type="hidden" name="anticsrf" value="true">
+</form>
+
+<script>
+// ROUND CONFIG: edit this block each round
+var ROUND = {
+  code: "S1-SPARKBEAT-QF",
+  matches: [
+    {tag:"FIRE v ICE", a:{realm:"Flameborne",img:"flameborne",act:"Flashpoint",song:"Temper",audio:""}, b:{realm:"Frostgrave",img:"frostgrave",act:"The Knot-Cord Brothers",song:"Forty Seconds",audio:""}},
+    {tag:"DARK v LIGHT", a:{realm:"Shadowdeep",img:"shadowdeep",act:"Lights Out",song:"No Faces",audio:""}, b:{realm:"Lightforge",img:"lightforge",act:"Prism",song:"Seven Colours",audio:""}},
+    {tag:"GROUND v SKY", a:{realm:"Stonehold",img:"stonehold",act:"Seismic",song:"Aftershock",audio:""}, b:{realm:"Stormreach",img:"stormreach",act:"Updraft",song:"Freefall",audio:""}},
+    {tag:"MEMORY v MACHINE", a:{realm:"Spiritveil",img:"spiritveil",act:"Echo Bleed",song:"Somebody Else’s Summer",audio:""}, b:{realm:"Metalcrown",img:"metalcrown",act:"The Fitted",song:"Unplated",audio:""}}
+  ]
+};
+(function(){
+  var box=document.getElementById('matches');
+  function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c];});}
+  function card(m,i,side){
+    var o=m[side], id="m"+i+side;
+    return '<label class="opt" for="'+id+'">'+
+      '<input type="radio" name="m'+i+'" id="'+id+'" value="'+esc(o.act)+'">'+
+      '<span class="tick" aria-hidden="true"></span>'+
+      '<div class="art" style="background-image:url(img/'+o.img+'.jpg)"><span class="realm">'+esc(o.realm.toUpperCase())+'</span></div>'+
+      '<div class="body"><div class="act">'+esc(o.act)+'</div><div class="song">“'+esc(o.song)+'”</div>'+
+      (o.audio?'<audio controls preload="none" src="'+esc(o.audio)+'"></audio>':'')+
+      '</div></label>';
+  }
+  var html="";
+  ROUND.matches.forEach(function(m,i){
+    html+='<fieldset class="match" style="border:0;padding:0;margin:22px 0 8px"><legend class="tag" style="width:100%">'+esc(m.tag)+'</legend><div class="pair">'+card(m,i,'a')+'<div class="vs">v</div>'+card(m,i,'b')+'</div></fieldset>';
+  });
+  box.innerHTML=html;
+  // only one audio plays at a time
+  document.addEventListener('play',function(e){document.querySelectorAll('audio').forEach(function(a){if(a!==e.target)a.pause();});},true);
+
+  var go=document.getElementById('go'), cnt=document.getElementById('count'), err=document.getElementById('err');
+  function picks(){return ROUND.matches.map(function(m,i){var c=document.querySelector('input[name=m'+i+']:checked');return c?c.value:null;});}
+  function refresh(){
+    var p=picks(), n=p.filter(Boolean).length, N=ROUND.matches.length;
+    cnt.textContent=n+' of '+N+' picked';
+    go.disabled=n<N;
+    go.textContent=n<N?'Pick a winner in every match':'Vote';
+  }
+  document.getElementById('picks').addEventListener('change',refresh);
+  refresh();
+  go.addEventListener('click',function(){
+    err.textContent='';
+    var em=document.getElementById('em').value.trim(), nm=document.getElementById('nm').value.trim();
+    if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em)){err.textContent='Please enter a valid email so your vote can be confirmed.';return;}
+    var p=picks(); if(p.some(function(x){return !x;})){err.textContent='Pick a winner in every match.';return;}
+    var vote=ROUND.code+': '+p.join(' | ');
+    document.getElementById('f_em').value=em;
+    document.getElementById('f_nm').value=nm;
+    document.getElementById('f_vote').value=vote;
+    go.disabled=true; go.textContent='Lighting your lamps…';
+    document.getElementById('mlform').submit();
+    setTimeout(function(){
+      document.getElementById('voteBox').style.display='none';
+      var t=document.getElementById('thanks'); t.style.display='block';
+      document.getElementById('thanksPicks').textContent='Your picks: '+p.join(', ')+'.';
+      t.scrollIntoView({behavior:'smooth',block:'center'});
+    },900);
+  });
+})();
+</script>
+</body>
+</html>
