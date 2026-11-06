@@ -2844,25 +2844,26 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
       '<p class="dim-t">Tap a place to go there. Menus pause the world. Take work, buy cheap, sell dear, and find men who will follow you. Later, take a town of your own, and close the grey edges.</p><div class="btns"><button class="solid" data-act="begin">Begin</button></div>';
   }
   function tkwEnd() { var b = storyEndingBlock(); return b.indexOf("Thousand-Year War begins") > -1 ? "" : "<p><b style=\"font-weight:500;color:var(--amber)\">The Thousand-Year War begins.</b></p>"; }
+  function ch1Cta() { return '<p style="margin:14px 0 4px;padding:12px 14px;border:1px solid var(--amber);border-radius:8px;text-align:center"><b style="font-weight:500">The story continues in the novel.</b><br><span class="dim-t">Every night something comes over the wall of the last city in the world. It does not kill you. It forgets you.</span><br><a href="https://voidhammersaga.com/start?utm_source=game&utm_medium=ending" target="_blank" rel="noopener" style="color:var(--amber)">Read Chapter One free →</a></p>'; }
   function endingSheet() {
     if (S.mc && S.mc.broken) {
       return "<h2>The Iron Throne</h2><p class=\"sub\">Day " + dayN() + "</p>" +
         "<p>You hold the Iron Throne City for one night. From its high windows the smoke over the south is thicker than the smoke over the foundries. " + (realmList().length - mcFellCount()) + " of " + realmList().length + " realms still stand. " + S.allies.length + " heroes ride under your banner. " + T() + " men follow you.</p>" +
         storyEndingBlock() + "<p class=\"dim-t\">Every Realm was asked what it would be when the Edict came. Stormreach rode out, Flameborne burned, Stonehold shut its doors, Spiritveil wrote it all down, Shadowdeep said nothing, and Metalcrown smiled. You got to choose who lived through the first night. Nobody got to choose whether there would be a second.</p>" + tkwEnd() +
-        '<div class="btns"><button class="solid" data-act="keepgoing">Keep playing</button><button data-act="again">Begin again</button></div>';
+        ch1Cta() + '<div class="btns"><button class="solid" data-act="keepgoing">Keep playing</button><button data-act="again">Begin again</button></div>';
     }
     if (S.mc && S.mc.lost) {
       return "<h2>The Dominion is complete</h2><p class=\"sub\">Day " + dayN() + "</p>" +
         "<p>" + nwd(realmList().length) + " realms, one banner. Iron Throne City sends out the order that the shard has a single law now, and the law is efficiency. You are still alive, and so are the people who will not kneel.</p>" +
         storyEndingBlock() + "<p class=\"dim-t\">You can still break the Iron Throne. It will be harder now.</p>" + tkwEnd() +
-        '<div class="btns"><button class="solid" data-act="keepgoing">Keep fighting</button><button data-act="again">Begin again</button></div>';
+        ch1Cta() + '<div class="btns"><button class="solid" data-act="keepgoing">Keep fighting</button><button data-act="again">Begin again</button></div>';
     }
     var vs = S.sites.length, kt = S.kael === "alive" ? "Kaelren rides beside you." : S.kael === "wounded" ? "Kaelren is in the surgeon’s wagon, and will ride again." : "";
     return "<h2>The winter ends</h2><p class=\"sub\">Day " + dayN() + "</p>" +
       "<p>" + vs + " of " + S.total + " places still stand. " + T() + " men follow you. " + hollow() + " memories are gone. " + kt + "</p>" +
       (S.sealed ? "<p class=\"dim-t\">The Void has drawn back from the edge. It has not gone far, and it is still looking north.</p>" : (noVoid() ? "<p class=\"dim-t\">The realms still stand, for now.</p>" : "<p class=\"dim-t\">The edge has not stopped. You have only learned how far it is.</p>")) +
       "<p>In the spring the Edict’s wardens ride out of Meridian to count every spark, and Metalcrown’s foundries open their gates to meet them.</p>" + tkwEnd() +
-      '<div class="btns"><button class="solid" data-act="keepgoing">Keep playing</button><button data-act="again">Begin again</button></div>';
+      ch1Cta() + '<div class="btns"><button class="solid" data-act="keepgoing">Keep playing</button><button data-act="again">Begin again</button></div>';
   }
 
   function battleSheet() {
