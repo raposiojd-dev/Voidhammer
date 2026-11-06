@@ -168,6 +168,10 @@ var ROUND = {
     },900);
   });
 })();
+
+// tell the parent page (voidhammersaga.com/vote) how tall we are, so it has no inner scroll
+(function(){function send(){try{if(window.parent!==window){window.parent.postMessage({vhvHeight:document.documentElement.scrollHeight},'*');}}catch(e){}}
+window.addEventListener('load',send);window.addEventListener('resize',send);document.addEventListener('change',send);document.addEventListener('click',function(){setTimeout(send,1200);});setTimeout(send,600);})();
 </script>
 </body>
 </html>
