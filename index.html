@@ -16854,14 +16854,14 @@ setInterval(function () {
   }
   function stdSet(file, lvl) {
     if (!mac || !FMG) return; var now = mac.currentTime;
-    // enemies close: Ancient Frost with war drums; a boss: the heaviest drums
-    if (file === "std_frost") { if (lvl === "fight" || lvl === "boss") file = "std_frost_" + lvl; if (!STDE.std_frost_fight && STDE.std_frost) { stdEl("std_frost_fight"); stdEl("std_frost_boss"); } }
+    // enemies close: Ancient Frost's driving middle with war drums; a boss: The Tremor of the Void
+    if (file === "std_frost") { if (lvl === "fight") file = "std_frost_fight"; else if (lvl === "boss") file = "std_tremor_boss"; if (!STDE.std_frost_fight && STDE.std_frost) { stdEl("std_frost_fight"); stdEl("std_tremor_boss"); } }
     Object.keys(STDE).forEach(function (f) { var S = STDE[f]; if (f !== file && S.on) { S.on = false; S.g.gain.setTargetAtTime(0.0001, now, 0.5); clearTimeout(S.t); S.t = setTimeout(function () { if (!S.on) { try { S.a.pause(); } catch (er) {} } }, 3000); } });
     if (!file || !mOn) { if (!mOn) Object.keys(STDE).forEach(function (f) { var S = STDE[f]; if (S.on) { S.on = false; S.g.gain.setTargetAtTime(0.0001, now, 0.3); clearTimeout(S.t); S.t = setTimeout(function () { try { S.a.pause(); } catch (er) {} }, 1500); } }); return; }
     var S = stdEl(file); if (!S) return;
     if (!S.on) {
-      // the battle and boss versions are the same song with war drums: start them at the same moment so the switch is seamless
-      if (/^std_frost/.test(file)) { var prev = null; Object.keys(STDE).forEach(function (f) { var Q = STDE[f]; if (f !== file && /^std_frost/.test(f) && !Q.a.paused) prev = Q; }); if (prev) { var sync = function () { try { if (Math.abs(S.a.currentTime - prev.a.currentTime) > 0.08) S.a.currentTime = prev.a.currentTime + 0.03; } catch (er) {} }; if (S.a.readyState >= 1) sync(); else S.a.addEventListener("loadedmetadata", sync, { once: true }); S.a.addEventListener("playing", sync, { once: true }); } }
+      // fights jump to Ancient Frost's driving middle and pick up where they left off; a boss arriving starts The Tremor of the Void from its intro
+      if (file === "std_tremor_boss" && S.a.paused) { try { S.a.currentTime = 0; } catch (er) {} }
       S.on = true; clearTimeout(S.t); try { var pr = S.a.play(); if (pr && pr.catch) pr.catch(function () {}); } catch (er) {} }
     var P = STDP[lvl || "calm"], tc = (lvl === "fight" || lvl === "boss") ? 0.15 : 0.8; S.lp.frequency.setTargetAtTime(P.f, now, tc); S.ls.gain.setTargetAtTime(P.sh, now, tc); S.g.gain.setTargetAtTime(P.g, now, tc);
   }
