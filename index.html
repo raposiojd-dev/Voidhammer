@@ -16802,30 +16802,30 @@ setInterval(function () {
     }
   }
   // ===== STANDARD MUSIC: John's own songs, streamed (no big decode, easy on phones) =====
-  var STD = { title: "std_title", world: "std_frost", town: "std_frost", dungeon: "std_sundering", combat: "std_frost", boss: "std_frost" }, STDE = {}, stdLastM = "";
+  var STD = { title: "std_frost", world: "std_frost", town: "std_frost", dungeon: "std_frost", combat: "std_frost", boss: "std_frost" }, STDE = {}, stdLastM = "", STDLV = { title: "calm", world: "calm", town: "calm", dungeon: "mid", combat: "fight", boss: "boss" }, STDP = { calm: { f: 2200, sh: 0, g: 0.8 }, mid: { f: 3800, sh: 1, g: 0.9 }, fight: { f: 9000, sh: 2, g: 1 }, boss: { f: 20000, sh: 6, g: 1.25 } };
   function stdEl(f) {
     var e = STDE[f]; if (e) return e;
     var a = new Audio(); a.src = "mus/" + f + ".mp3"; a.loop = true; a.preload = "auto"; a.setAttribute("playsinline", "");
     var g = mac.createGain(); g.gain.value = 0.0001;
-    try { var sn = mac.createMediaElementSource(a); sn.connect(g); g.connect(FMG); } catch (er) { return null; }
-    return (STDE[f] = { a: a, g: g, on: false, t: 0 });
+    var lp = mac.createBiquadFilter(), ls = mac.createBiquadFilter(); lp.type = "lowpass"; lp.frequency.value = 2200; lp.Q.value = 0.5; ls.type = "lowshelf"; ls.frequency.value = 140; ls.gain.value = 0;
+    try { var sn = mac.createMediaElementSource(a); sn.connect(lp); lp.connect(ls); ls.connect(g); g.connect(FMG); } catch (er) { return null; }
+    return (STDE[f] = { a: a, g: g, lp: lp, ls: ls, on: false, t: 0, base: 0.8 });
   }
-  function stdSet(file) {
+  function stdSet(file, lvl) {
     if (!mac || !FMG) return; var now = mac.currentTime;
     Object.keys(STDE).forEach(function (f) { var S = STDE[f]; if (f !== file && S.on) { S.on = false; S.g.gain.setTargetAtTime(0.0001, now, 0.5); clearTimeout(S.t); S.t = setTimeout(function () { if (!S.on) { try { S.a.pause(); } catch (er) {} } }, 3000); } });
     if (!file || !mOn) { if (!mOn) Object.keys(STDE).forEach(function (f) { var S = STDE[f]; if (S.on) { S.on = false; S.g.gain.setTargetAtTime(0.0001, now, 0.3); clearTimeout(S.t); S.t = setTimeout(function () { try { S.a.pause(); } catch (er) {} }, 1500); } }); return; }
     var S = stdEl(file); if (!S) return;
     if (!S.on) { S.on = true; clearTimeout(S.t); try { var pr = S.a.play(); if (pr && pr.catch) pr.catch(function () {}); } catch (er) {} }
-    S.g.gain.setTargetAtTime(1, now, 0.6);
+    var P = STDP[lvl || "calm"]; S.lp.frequency.setTargetAtTime(P.f, now, 0.8); S.ls.gain.setTargetAtTime(P.sh, now, 0.8); S.g.gain.setTargetAtTime(P.g, now, 0.8);
   }
   function mFile(m) {
     var tt = document.getElementById("title"); if (tt && !tt.hidden && m === "world") m = "title";
     if (!mac) return; mLoadFiles();
     if (RVHOLD) { var nw0 = mac.currentTime; Object.keys(FS).forEach(function (k) { var S0 = FS[k]; if (S0 && S0.on) { S0.on = false; S0.g.gain.setTargetAtTime(0.0001, nw0, 0.3); S0.t = setTimeout(function () { try { S0.src.stop(); } catch (e) {} if (FS[k] === S0) FS[k] = null; }, 1500); } }); stdSet(""); if (mst) mst.gain.setTargetAtTime(0, nw0, 0.3); if (FMG) FMG.gain.setTargetAtTime(mOn ? 0.7 : 0, nw0, 0.3); return; }
     if (/^rv_/.test(m)) { mLoadOne(m); if (FB[m]) rvNote(m); else m = "town"; Object.keys(FB).forEach(function (k) { if (/^rv_/.test(k) && k !== m && !FS[k]) delete FB[k], FLOADING[k] = 0; }); }
-    // enemies nearby (combat/boss) never change the music: keep whatever was playing
-    if (!/^rv_/.test(m)) { if (m === "combat" || m === "boss") m = stdLastM || "world"; else stdLastM = m; }
-    stdSet(/^rv_/.test(m) ? "" : (STD[m] || "std_frost"));
+    // one song (Ancient Frost) for the whole game; calm walking, tenser fights, biggest for bosses
+    stdSet(/^rv_/.test(m) ? "" : (STD[m] || "std_frost"), STDLV[m]);
     var okm = !!FB[m], now = mac.currentTime;
     Object.keys(FB).forEach(function (k) {
       var on = mOn && okm && k === m, S = FS[k];
