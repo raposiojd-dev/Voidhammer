@@ -13185,7 +13185,7 @@ var VO = (function () {
     return (loading[name] = fetch("vo/" + name + ".mp3").then(function (r) { if (!r.ok) throw 0; return r.arrayBuffer(); }).then(function (ab) { return new Promise(function (res, rej) { c.decodeAudioData(ab, res, rej); }); }).then(function (b) { bufs[name] = b; return b; }));
   }
   function setDuck(d) {
-    try { if (typeof FMG !== "undefined" && FMG && FMG.gain) { var t = ctx().currentTime; FMG.gain.cancelScheduledValues(t); FMG.gain.setTargetAtTime(d ? 0.3 : 0.7, t, 0.2); } } catch (e) {}
+    try { if (typeof FMG !== "undefined" && FMG && FMG.gain) { var t = ctx().currentTime; FMG.gain.cancelScheduledValues(t); FMG.gain.setTargetAtTime(d ? 0.2 : 0.5, t, 0.2); } } catch (e) {}
   }
   function stop() { if (cur) { try { cur.src.stop(); } catch (e) {} cur = null; } setDuck(false); }
   function play(name, who, opt) {
@@ -13197,7 +13197,7 @@ var VO = (function () {
     load(name).then(function (b) {
       if (cur) { try { cur.src.stop(); } catch (e) {} }
       var s = c.createBufferSource(), g = c.createGain(); s.buffer = b; g.gain.value = who === "narrator" ? 1 : 0.95; s.connect(g); g.connect(c.destination);
-      cur = { src: s, who: who }; if (who === "narrator") setDuck(true);
+      cur = { src: s, who: who }; setDuck(true);
       s.onended = function () { if (cur && cur.src === s) { cur = null; setDuck(false); } };
       s.start();
     }).catch(function () {});
@@ -16788,7 +16788,7 @@ setInterval(function () {
   // ---- recorded score: decoded into buffers and looped sample-accurately (no gap), crossfaded between moods ----
   var FB = {}, FS = {}, FBAD = {}, FLOADING = {}, FMG = null, FLOAD = 0;
   function mLoadFiles() {
-    if (FLOAD || !mac) return; FLOAD = 1; FMG = mac.createGain(); FMG.gain.value = 0.7; FMG.connect(mac.destination);
+    if (FLOAD || !mac) return; FLOAD = 1; FMG = mac.createGain(); FMG.gain.value = 0.5; FMG.connect(mac.destination);
     /* old 8-second loops removed; standard music streams via stdSet() */
   }
   function mLoadOne(k) {
@@ -16836,7 +16836,7 @@ setInterval(function () {
       else if (S.on) { S.on = false; S.g.gain.setTargetAtTime(0.0001, now, 0.4); S.t = setTimeout(function () { try { S.src.stop(); } catch (e) {} if (FS[k] === S) FS[k] = null; }, 2500); }
     });
     if (mst) mst.gain.setTargetAtTime(0, now, 0.4);
-    if (FMG) FMG.gain.setTargetAtTime(mOn ? 0.7 : 0, now, 0.3);
+    if (FMG) FMG.gain.setTargetAtTime(mOn ? ((typeof VO !== "undefined" && VO.cur && VO.cur()) ? 0.2 : 0.5) : 0, now, 0.3);
   }
   function mSched() {
     if (!mac || mac.state !== "running") return;
