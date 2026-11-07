@@ -374,7 +374,7 @@ window.__vhGame = function () { (function () {
     noble: { name: "Noble exile", desc: "Eight loyal retainers, steel swords and 90 crowns, but Stonehold lords want you dead from day one.", intro: "You ride into Ashford under a cloak with no crest. Eight of your father’s retainers ride behind you, and there is a price on the name you no longer say. A Lantern archivist writes it down wrong, on purpose." },
     voidtouched: { name: "Void-touched", desc: "A forgotten name, void-glass and four exiles who follow you. Already hollow: you start having paid for it.", intro: "You walk into Ashford and cannot remember what you were called. The Void touched you once and let you go. Four people who knew you follow, and they say the name to you gently, as if to a child." }
   };
-  var DOMS = { off: 0, slow: 0.6, normal: 1, fast: 1.6 }, DOMSTART = { easy: 26, normal: 18, hard: 11 };
+  var DOMS = { off: 0, slow: 0.6, normal: 1, fast: 1.6 }, DOMSTART = { easy: 75, normal: 50, hard: 30 };
   var SIZES = { small: 0.6, medium: 0.8, large: 1, huge: 1.15 }, VOIDS = { off: 0, slow: 0.6, normal: 1, fast: 1.6 };
   var DIFFS = { easy: { en: 0.75, loot: 1.3, up: 0.8, voidm: 0.8, start: 60 }, normal: { en: 1, loot: 1, up: 1, voidm: 1, start: 0 }, hard: { en: 1.3, loot: 0.8, up: 1.2, voidm: 1.25, start: 0 } };
   function loadOpts() { try { var o = JSON.parse(localStorage.getItem(OPTKEY)); return Object.assign({}, OPTDEF, o || {}); } catch (e) { return Object.assign({}, OPTDEF); } }
@@ -964,11 +964,17 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
     var v = vs[rndInt(0, vs.length - 1)], a = rnd(0, 6.283), r = rnd(90, 150);
     S.enemies.push({ id: S.eid++, kind: "bandit", x: v.x + Math.cos(a) * r, y: v.y + Math.sin(a) * r, n: Math.round((rndInt(8, 16) + Math.floor(Math.min(S.day, 720) / 12)) * DF.en * (1 + 0.05 * (lvl() - 1))), q: 0.95, cool: 0, dest: null });
   }
+  // a Void raiding party: grows slowly with the days, and for its first four months it is sized to the column you lead, then grows past it slowly
+  function vRaidN() {
+    var n = (10 + Math.floor(Math.min(S.day, 540) / 8)) * DF.en * (1 + 0.04 * (lvl() - 1)) * ovVStr();
+    if (S.day < 240) { var ps = 0; try { ps = pStrength() / 1.35; } catch (e) {} var cap = Math.min(n, Math.max(8, ps * (0.7 + 0.3 * S.day / 240))), w = Math.max(0, Math.min(1, (S.day - 120) / 120)); n = cap * (1 - w) + n * w; }
+    return Math.max(6, Math.round(n));
+  }
   function spawnVoid() {
     if (!S.rifts.some(function (r) { return r.c === curCell(); })) return;
     var a = rnd(0, 6.283), r = S.voidR - 8, cx = ccx(S.px), cy = ccy(S.py);
     var _lr = S.rifts.filter(function (r) { return r.c === curCell(); }); if (_lr.length) { var rf = _lr[rndInt(0, _lr.length - 1)], p = riftPos(rf); cx = p.x; cy = p.y; r = 0; }
-    S.enemies.push({ id: S.eid++, kind: "void", x: cx + Math.cos(a) * (r || 22), y: cy + Math.sin(a) * (r || 22), n: Math.round((14 + Math.floor(Math.min(S.day, 540) / 6)) * DF.en * (1 + 0.05 * (lvl() - 1)) * ovVStr()), q: 1.35, cool: 0, dest: null });
+    S.enemies.push({ id: S.eid++, kind: "void", x: cx + Math.cos(a) * (r || 22), y: cy + Math.sin(a) * (r || 22), n: vRaidN(), q: 1.35, cool: 0, dest: null });
     toast("Something has walked out of the Void.");
   }
   function countKind(k) { return S.enemies.filter(function (e) { return e.kind === k; }).length; }
@@ -1065,8 +1071,8 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
           if (Math.random() < 0.25) e.dest = null;
         }
         if (e.kind === "void") {
-          s.m = Math.max(0, s.m - 18);
-          if (s.type === "village") { s.W = Math.floor(s.W * 0.97); s.I = Math.floor(s.I * 0.97); s.D = Math.floor(s.D * 0.97); s.cause = "Something stands at the edge of the village. Nothing has happened here for days."; }
+          s.m = Math.max(0, s.m - 8);
+          if (s.type === "village") { s.W = Math.floor(s.W * 0.985); s.I = Math.floor(s.I * 0.985); s.D = Math.floor(s.D * 0.985); s.cause = "Something stands at the edge of the village. Nothing has happened here for days."; }
         }
       });
     });
@@ -1084,7 +1090,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
 
     S.nextBandit--;
     if (S.nextBandit <= 0 && countKind("bandit") < 5) { spawnBandit(); S.nextBandit = rndInt(6, 10); }
-    if (S.day >= 30 && !S.sealed) { S.nextVoid--; if (S.nextVoid <= 0 && countKind("void") < (S.day >= 150 ? 3 : 2)) { spawnVoid(); S.nextVoid = rndInt(26, 42); } }
+    if (S.day >= 60 && !S.sealed) { S.nextVoid--; if (S.nextVoid <= 0 && countKind("void") < (S.day >= 300 ? 3 : S.day >= 150 ? 2 : 1)) { spawnVoid(); S.nextVoid = rndInt(35, 55); } }
 
     /* no calendar ending: the story decides when it ends, and the world keeps going after */
   }
@@ -14037,7 +14043,7 @@ function objective() {
 function ovVD() { return S.vd || (S.vd = { on: 0, nr: 0, g: {}, fell: {}, hn: 12 }); }
 function ovVCells() { var o = {}; S.sites.forEach(function (s) { o[cellAt(s.x, s.y)] = 1; }); return Object.keys(o).map(Number); }
 function ovVHeld() { var n = 0; S.sites.forEach(function (s) { if (s.vh) n += s.type === "village" ? 0.35 : 1; }); return n; }
-function ovVStr() { return Math.min(3.2, 1 + 0.1 * ovVHeld()); }
+function ovVStr() { return Math.min(2.2, 1 + 0.07 * ovVHeld()); }
 function ovGM(s) { var b = ovGM0(s); return s.vh ? b * ovVStr() : b; }
 function ownerCol(s) { return s && s.vh ? "#8a5ad0" : s && s.owner && FAC[s.owner] ? FAC[s.owner].col : "#c8873a"; }
 function voidRate() { return 0; }
@@ -14112,7 +14118,7 @@ function sealVoid() {
 }
 function ovVHeldT() { return S.sites.filter(function (q) { return q.vh && q.type !== "village"; }).length; }
 function ovVCap() { var f = cp().f, d = S.day, n = 0, sb = !cp().on;
-  if (d >= 150) n = 1; if (d >= 300 && (f.edict || sb)) n = 2; if (d >= 450 && (f.coup || sb)) n = 3; if (S.tkw) n = 4;
+  if (d >= 200) n = 1; if (d >= 360 && (f.edict || sb)) n = 2; if (d >= 520 && (f.coup || sb)) n = 3; if (S.tkw) n = 4;
   return Math.min(n, Math.max(1, Math.floor(ovVCells().length / 2))); }
 function ovVMayTake(s) { if (!s || s.id === "irontown") return false; if (Object.keys(FAC).some(function (k) { return FAC[k].cap === s.id; })) return false;
   if (s.owner !== "player" && s.owner !== "rebel" && holdings(s.owner).length <= 2) return false; return true; }
@@ -14130,12 +14136,12 @@ function aiDay() { aiDay0(); try { ovVoidDay(); } catch (e) { if (window.console
 function ovVoidDay() {
   if (!S || S.ended) return;
   S.voidR = VOIDMAX; var v = ovVD();
-  if (S.sealed && !S.voidTaught && !cp().f.voidsealed && !noVoid()) { if (S.sealAt == null) S.sealAt = S.day; if (S.day - S.sealAt >= 180) { S.sealed = false; S.sealAt = null; S.pushes = 0; news("The edge has started to hum again. Whatever the seal held back has found the seam."); } }
+  if (S.sealed && !S.voidTaught && !cp().f.voidsealed && !noVoid()) { if (S.sealAt == null) S.sealAt = S.day; if (S.day - S.sealAt >= 240) { S.sealed = false; S.sealAt = null; S.pushes = 0; news("The edge has started to hum again. Whatever the seal held back has found the seam."); } }
   if (noVoid() || S.sealed) return;
   SEAL_AT = v.on ? 9 : 5;
   if (!v.mig) { v.mig = 1; if (!ovGateOpen()) S.rifts.forEach(function (r) { r.c = 4; delete r.x; delete r.y; }); }
   if (!ovGateOpen() && !v.on) {
-    var want = S.day >= 240 ? 3 : S.day >= 140 ? 2 : S.day >= 45 ? 1 : 0, pend = (S.riftBack || []).length;
+    var want = S.day >= 280 ? 3 : S.day >= 160 ? 2 : S.day >= 60 ? 1 : 0, pend = (S.riftBack || []).length;
     if (S.rifts.length + pend < want && S.day >= (S.nextRift || 0)) { S.rifts.push(ovNewRift(4)); S.nextRift = S.day + 45; toast("A grey edge has opened on the Flameborne shore."); news("A grey edge has opened on the Flameborne shore."); }
     return;
   }
@@ -14154,21 +14160,21 @@ function ovVoidDay() {
   }
   cells.forEach(function (c) {
     var rs = S.rifts.filter(function (r) { return r.c === c; }); if (!rs.length) return;
-    var g = v.g[c] || (v.g[c] = { due: S.day + 220, tgt: null, at: 0 });
+    var g = v.g[c] || (v.g[c] = { due: S.day + 300, tgt: null, at: 0 });
     if (!g.tgt && S.day >= g.due && ovVHeldT() < ovVCap()) {
       var best = null, bd = 1e9;
       S.sites.forEach(function (s) {
         if (s.type === "village" || s.vh || cellAt(s.x, s.y) !== c || !ovVMayTake(s)) return;
         rs.forEach(function (r) { var p = riftPos(r), d = Math.hypot(p.x - s.x, p.y - s.y); if (d < bd) { bd = d; best = s; } });
       });
-      if (best) { g.tgt = best.id; g.at = S.day + 14; news("The Void is closing on " + best.name + "."); if (best.owner === "player") toast("The Void is closing on " + best.name + ". You have days."); else if (c === curCell()) toast("The Void is closing on " + best.name + "."); }
+      if (best) { g.tgt = best.id; g.at = S.day + 21; news("The Void is closing on " + best.name + "."); if (best.owner === "player") toast("The Void is closing on " + best.name + ". You have days."); else if (c === curCell()) toast("The Void is closing on " + best.name + "."); }
       else g.due = S.day + 60;
     }
     if (g.tgt && S.day >= g.at) {
       var s2 = site(g.tgt), held = 0; S.sites.forEach(function (q) { if (q.vh && cellAt(q.x, q.y) === c) held++; });
       g.tgt = null;
       if (s2 && !s2.vh && ovVMayTake(s2) && ovVHeldT() < ovVCap()) {
-        var atk = (32 + Math.min(45, 0.1 * (S.day - (v.t0 || S.day)))) * ovVStr() * (1 + 0.3 * Math.min(3, rs.length)), def = s2.gar * s2.wall;
+        var atk = (26 + Math.min(36, 0.08 * (S.day - (v.t0 || S.day)))) * ovVStr() * (1 + 0.3 * Math.min(3, rs.length)), def = s2.gar * s2.wall;
         S.enemies.forEach(function (e) { if (e.kind === "lord" && e.fac === s2.owner && Math.hypot(e.x - s2.x, e.y - s2.y) < 90) def += e.n * e.q * 0.8; });
         if (Math.hypot(S.px - s2.x, S.py - s2.y) < 90) def += pStrength() * 0.8;
         S.allies.forEach(function (h) { if (!h.away && Math.hypot(h.x - s2.x, h.y - s2.y) < 90) def += allyStr(h) * 0.6; });
