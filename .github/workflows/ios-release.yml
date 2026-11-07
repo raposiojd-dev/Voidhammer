@@ -18,6 +18,12 @@ jobs:
         env: { T: "${{ secrets.APPLE_TEAM_ID }}", K: "${{ secrets.ASC_KEY_ID }}", I: "${{ secrets.ASC_ISSUER_ID }}", P: "${{ secrets.ASC_KEY_P8 }}" }
         run: |
           for v in T K I P; do [ -n "${!v}" ] || { echo "Missing secret for $v. See the comments at the top of this file."; exit 1; }; done
+      - name: Select Xcode 26 (Apple requires the iOS 26 SDK for uploads)
+        run: |
+          X=$(ls -d /Applications/Xcode_26*.app 2>/dev/null | sort -V | tail -1)
+          [ -n "$X" ] || { echo "No Xcode 26 on this runner:"; ls -d /Applications/Xcode*; exit 1; }
+          sudo xcode-select -s "$X/Contents/Developer"
+          xcodebuild -version
       - run: cd app && npm ci && ./sync-web.sh .. && npx cap sync ios
       - name: Write API key
         run: |
