@@ -436,8 +436,8 @@
       hud = { el, castBtn, mode, onCast, open: trayOpen(), btns: [], last: "" };
       const tr = el.querySelector(".k2tray");
       for (let i = 0; i < 3; i++) { const b = document.createElement("button"); b.className = "k2ab"; b.setAttribute("data-k2slot", i); b.innerHTML = '<i class="k2ic"></i><i class="k2cd"></i><b class="k2key"></b><em class="k2cost"></em>'; tr.appendChild(b); hud.btns.push(b); }
-      if (mode === "area") { const lb = document.createElement("button"); lb.className = "k2ledger"; lb.textContent = "Ledger"; lb.setAttribute("data-k2ledger", "1"); tr.appendChild(lb); hud.ledger = lb; }
-      const down = (e) => { const b = e.target.closest("[data-k2slot],[data-k2ledger]"); if (!b) return; e.stopPropagation(); e.preventDefault(); if (b.hasAttribute("data-k2ledger")) { env.ledger(); return; } onCast(+b.getAttribute("data-k2slot")); };
+      if (mode === "area") { const lb = document.createElement("button"); lb.className = "k2ledger"; lb.textContent = "Change"; lb.setAttribute("data-k2change", "1"); tr.appendChild(lb); hud.ledger = lb; }
+      const down = (e) => { const b = e.target.closest("[data-k2slot],[data-k2change]"); if (!b) return; e.stopPropagation(); e.preventDefault(); if (b.hasAttribute("data-k2change")) { openLoadout(); return; } onCast(+b.getAttribute("data-k2slot")); };
       el.addEventListener("pointerdown", down);
       hud.down = down;
       layout(); setTimeout(layout, 300); window.addEventListener("resize", layout);
@@ -995,7 +995,7 @@
       let h = '<div class="k2s"><div class="k2L">';
       h += '<div class="k2top"><div><h2>Realm Arts</h2><p class="sub">' + env.pname() + " · Level " + L + (s.spark ? " · Spark: <b style=\"color:" + TREE[s.spark].col + '">' + TREE[s.spark].name + "</b>" : " · no Spark yet") + (s.half ? " · Half: <b style=\"color:" + TREE[s.half].col + '">' + TREE[s.half].name + "</b>" : "") + '</p></div><div class="k2pts' + (P ? " has" : "") + '"><b>' + P + "</b><span>point" + (P === 1 ? "" : "s") + "</span></div></div>";
       // loadout
-      h += '<div class="k2load"><span>Abilities on your buttons</span>' + s.eq.map((id, i) => { const n = id && NODE[id]; return '<button class="k2slot' + (n ? "" : " empty") + '" data-k2sel="' + (id || "") + '" style="' + cv((n ? TREE[n.tree].col : "#3a2e1c")) + '"><i>' + (n ? svgGlyph(n.glyph, 26, TREE[n.tree].col2) : svgGlyph("lock", 18, "#5a4a2a")) + "</i><b>" + (n ? n.name : "Empty") + "</b><em>" + (i + 1) + "</em></button>"; }).join("") + "</div>";
+      h += '<div class="k2load"><span>Abilities on your buttons · tap to change</span>' + s.eq.map((id, i) => { const n = id && NODE[id]; return '<button class="k2slot' + (n ? "" : " empty") + '" data-k2pick="' + i + '" style="' + cv((n ? TREE[n.tree].col : "#3a2e1c")) + '"><i>' + (n ? svgGlyph(n.glyph, 26, TREE[n.tree].col2) : svgGlyph("lock", 18, "#5a4a2a")) + "</i><b>" + (n ? n.name : "Empty") + "</b><em>" + (i + 1) + "</em></button>"; }).join("") + "</div>";
       // tree picker
       if (!UI.tree) UI.tree = s.spark || "cmd";
       h += '<div class="k2trees">' + TREES.map((t) => { const rl = role(t.id), n = spentIn(t.id), lock = t.id !== "cmd" && !rl && s.spark && s.half, ready = P > 0 && treeNodes(t.id).some((q) => !why(q)); return '<button class="k2tr' + (UI.tree === t.id ? " on" : "") + (lock ? " lock" : "") + (ready ? " ready" : "") + '" data-k2tree="' + t.id + '" style="' + cv(t.col, t.col2) + '"><i>' + svgGlyph(t.glyph, 26) + "</i><b>" + t.name + "</b>" + (rl === "spark" ? "<em>SPARK</em>" : rl === "half" ? "<em>HALF</em>" : n ? "<em>" + n + "</em>" : "") + "</button>"; }).join("") + "</div>";
@@ -1025,8 +1025,24 @@
       h += "</div>";
       return h;
     }
+    // change which learned abilities sit on your three buttons, any time
+    function openLoadout() {
+      UI.modal = { kind: "load" };
+      try { const o = window.__vh && window.__vh.openSheet; if (o) o("skills"); else env.render(); } catch (e) {}
+      setTimeout(function () { try { env.render(); } catch (e) {} }, 30);
+    }
+    function loadModal() {
+      const s = st(), eq = s.eq, act = Object.keys(NODE).filter((id) => NODE[id].kind === "a" && R(id) > 0);
+      let h = '<div class="k2modal"><div class="k2mb wide" style="animation:none"><h3>Your three buttons</h3><p class="dim-t">Put any ability you have learned on button 1, 2 or 3. Change it whenever you like.</p>';
+      h += '<div class="k2lrow k2lhead"><span></span><span>' + [0, 1, 2].map((i) => "<b>" + (i + 1) + "</b>").join("") + "</span></div>";
+      if (!act.length) h += '<p class="dim-t">You have not learned an ability yet. Spend a point on an active in any art, then it can go here.</p>';
+      act.forEach((id) => { const n = NODE[id], t = TREE[n.tree]; h += '<div class="k2lrow" style="' + cv(t.col, t.col2) + '"><span><i>' + svgGlyph(n.glyph, 22, t.col2) + "</i>" + n.name + "</span><span>" + [0, 1, 2].map((i) => '<button data-k2eq="' + id + '" data-k2slot2="' + i + '" class="' + (eq[i] === id ? "on" : "") + '">' + (i + 1) + "</button>").join("") + "</span></div>"; });
+      h += '<div class="k2lrow"><span class="dim-t">Clear a button</span><span>' + [0, 1, 2].map((i) => '<button data-k2clr="' + i + '"' + (eq[i] ? "" : " disabled") + ">" + (i + 1) + "</button>").join("") + "</span></div>";
+      return h + '<div class="k2mbtn"><button class="solid" data-k2modal="no">Done</button></div></div></div>';
+    }
     function modal() {
       const m = UI.modal;
+      if (m.kind === "load") return loadModal();
       if (m.kind === "role") { const n = NODE[m.id], t = TREE[n.tree], s = st(), half = !!s.spark; return '<div class="k2modal"><div class="k2mb" style="' + cv(t.col, t.col2) + '"><i class="k2crest big">' + svgGlyph(t.glyph, 64) + "</i><h3>" + (half ? "A Half-Spark" : "Recognition") + "</h3><p>" + (half ? t.name + " answers you, but only by halves. You can learn its first two tiers. It pays the same price per use, but you cannot draw enough to go past the Debt." : t.name + " answers you. This becomes your <b>Spark</b>: the full art, every tier, both keystones, and the full price: <b>" + ARTS[t.art].meter + "</b>.") + '</p><p class="k2price2">' + t.price + '</p><div class="k2mbtn"><button data-k2modal="no">Not yet</button><button class="solid" data-k2modal="yes">' + (half ? "Take the Half-Spark" : "Let it answer") + "</button></div></div></div>"; }
       if (m.kind === "ks") { const n = NODE[m.id], t = TREE[n.tree], pair = treeNodes(n.tree).filter((q) => q.kind === "k"); return '<div class="k2modal"><div class="k2mb wide" style="' + cv(t.col, t.col2) + '"><h3>Choose who you become</h3><p class="dim-t">One keystone per art. The other road closes until you unlearn.</p><div class="k2ksc">' + pair.map((q) => '<button class="k2ksb' + (q.id === m.id ? " on" : "") + '" data-k2kspick="' + q.id + '"><i>' + svgGlyph(q.glyph, 44) + "</i><b>" + q.name + "</b><p>" + q.line + "</p><ul>" + q.what().map((x) => "<li>" + x + "</li>").join("") + "</ul></button>").join('<div class="k2or">OR</div>') + '</div><div class="k2mbtn"><button data-k2modal="no">Not yet</button><button class="solid" data-k2modal="yes">Become ' + n.name + "</button></div></div></div>"; }
       if (m.kind === "respec") return '<div class="k2modal"><div class="k2mb"><h3>The Contradiction</h3><p>Forget every rank in every art for <b>' + respecCost() + " crowns</b>. Your Spark and Half-Spark are free to choose again.</p><p>Nothing walks back a Mid price: your marks stay. For five days, every price costs a quarter more while your life and your arts disagree.</p><div class=\"k2mbtn\"><button data-k2modal=\"no\">Keep who I am</button><button class=\"solid\" data-k2modal=\"yes\">Unlearn</button></div></div></div>";
@@ -1042,10 +1058,12 @@
       svg.setAttribute("viewBox", "0 0 " + w.clientWidth + " " + w.clientHeight); svg.style.height = w.clientHeight + "px"; svg.innerHTML = out;
     }
     function click(e) {
-      const b = e.target.closest("[data-k2sel],[data-k2tree],[data-k2learn],[data-k2eq],[data-k2respec],[data-k2modal],[data-k2kspick]"); if (!b) return false;
+      const b = e.target.closest("[data-k2sel],[data-k2tree],[data-k2learn],[data-k2eq],[data-k2respec],[data-k2modal],[data-k2kspick],[data-k2pick],[data-k2clr]"); if (!b) return false;
       if (b.hasAttribute("data-k2tree")) { UI.tree = b.getAttribute("data-k2tree"); UI.sel = null; }
       else if (b.hasAttribute("data-k2sel")) { const id = b.getAttribute("data-k2sel"); if (id && NODE[id]) { UI.sel = id; UI.tree = NODE[id].tree; } }
       else if (b.hasAttribute("data-k2eq")) equip(b.getAttribute("data-k2eq"), +b.getAttribute("data-k2slot2"));
+      else if (b.hasAttribute("data-k2pick")) UI.modal = { kind: "load" };
+      else if (b.hasAttribute("data-k2clr")) { const s = st(), i = +b.getAttribute("data-k2clr"); s.eq[i] = null; ver++; env.save(); }
       else if (b.hasAttribute("data-k2kspick")) { UI.modal = { kind: "ks", id: b.getAttribute("data-k2kspick") }; }
       else if (b.hasAttribute("data-k2learn")) { const id = b.getAttribute("data-k2learn"), n = NODE[id]; if (n.kind === "k") UI.modal = { kind: "ks", id }; else { const r = learn(id); if (r === "role") UI.modal = { kind: "role", id }; } }
       else if (b.hasAttribute("data-k2respec")) UI.modal = { kind: "respec" };
@@ -1077,7 +1095,7 @@
     ".k2top{display:flex;justify-content:space-between;align-items:flex-start;gap:.6rem}.k2top h2{margin:0}.k2top .sub{margin:.1rem 0 0;font-size:.82rem;line-height:1.35}",
     ".k2pts{min-width:3.6rem;text-align:center;border:1px solid #6a5028;border-radius:4px;padding:.25rem .4rem;background:linear-gradient(#1c150c,#0d0a06)}.k2pts b{display:block;font:500 1.6rem var(--serif2,Georgia);color:#e8cc84;line-height:1}.k2pts span{font:500 .5rem var(--mono,monospace);letter-spacing:.14em;text-transform:uppercase;color:#a89468}.k2pts.has{border-color:#e0bc6a;box-shadow:0 0 14px rgba(224,188,106,.45)}",
     ".k2load{display:grid;grid-template-columns:auto 1fr 1fr 1fr;gap:6px;align-items:center;margin:.6rem 0 .5rem}.k2load>span{font:500 .52rem var(--mono,monospace);letter-spacing:.12em;text-transform:uppercase;color:#8a7a54;max-width:4.6rem;line-height:1.3}",
-    ".k2slot{position:relative;display:flex;flex-direction:column;align-items:center;gap:2px;padding:.35rem .2rem;border:1px solid #4a3a22;border-radius:6px;background:#100c07;color:#e8cc84;min-width:0;touch-action:manipulation}.k2slot i{display:grid;place-items:center;width:38px;height:38px;border-radius:50%;background:radial-gradient(circle at 40% 30%,var(--k2d),#0a0806 75%);box-shadow:0 0 0 2px #0a0806,0 0 0 3px var(--k2c)}.k2slot.empty i{background:#14100a;box-shadow:0 0 0 2px #0a0806,0 0 0 3px #3a2e1c}.k2slot b{font:500 .62rem var(--serif2,Georgia);letter-spacing:0;text-transform:none;text-align:center;line-height:1.1;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.k2slot em{position:absolute;top:3px;left:5px;font:600 .55rem var(--mono,monospace);font-style:normal;color:#8a7a54}",
+    ".k2lrow{display:flex;align-items:center;justify-content:space-between;gap:.5rem;padding:.35rem .2rem;border-bottom:1px solid #2e2414}.k2lrow>span:first-child{display:flex;align-items:center;gap:.45rem;color:#e8cc84}.k2lrow i{display:inline-flex}.k2lrow button{min-width:40px;min-height:36px;margin-left:.3rem}.k2lrow button.on{background:#e8b04a;color:#140d05;border-color:#e8b04a}.k2lrow button[disabled]{opacity:.35}.k2lhead b{display:inline-block;min-width:40px;margin-left:.3rem;text-align:center;opacity:.7}" + ".k2slot{position:relative;display:flex;flex-direction:column;align-items:center;gap:2px;padding:.35rem .2rem;border:1px solid #4a3a22;border-radius:6px;background:#100c07;color:#e8cc84;min-width:0;touch-action:manipulation}.k2slot i{display:grid;place-items:center;width:38px;height:38px;border-radius:50%;background:radial-gradient(circle at 40% 30%,var(--k2d),#0a0806 75%);box-shadow:0 0 0 2px #0a0806,0 0 0 3px var(--k2c)}.k2slot.empty i{background:#14100a;box-shadow:0 0 0 2px #0a0806,0 0 0 3px #3a2e1c}.k2slot b{font:500 .62rem var(--serif2,Georgia);letter-spacing:0;text-transform:none;text-align:center;line-height:1.1;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.k2slot em{position:absolute;top:3px;left:5px;font:600 .55rem var(--mono,monospace);font-style:normal;color:#8a7a54}",
     ".k2trees{display:grid;grid-template-columns:repeat(5,1fr);gap:5px;margin:.3rem 0 .6rem}",
     ".k2tr{position:relative;display:flex;flex-direction:column;align-items:center;gap:2px;padding:.4rem .1rem .3rem;border:1px solid #3a2e1c;border-radius:6px;background:#0e0b07;color:var(--k2c);min-width:0;touch-action:manipulation}.k2tr i{display:grid;place-items:center;width:40px;height:40px;border-radius:50%;background:radial-gradient(circle at 40% 30%,var(--k2dd),#080604 75%);box-shadow:0 0 0 2px #080604,0 0 0 3px var(--k2d)}.k2tr b{font:500 .58rem var(--serif2,Georgia);letter-spacing:0;text-transform:none;color:#d8c290;text-align:center;line-height:1.05;max-width:100%}.k2tr em{position:absolute;top:2px;right:3px;font:700 .44rem var(--mono,monospace);font-style:normal;letter-spacing:.06em;color:#120c06;background:var(--k2c);border-radius:2px;padding:0 3px}",
     ".k2tr.on{border-color:var(--k2c);background:linear-gradient(var(--k2t),#0e0b07);box-shadow:0 0 12px var(--k2g)}.k2tr.lock{opacity:.38;filter:grayscale(.8)}.k2tr.ready i{animation:k2pulse 2.2s ease-in-out infinite}",
