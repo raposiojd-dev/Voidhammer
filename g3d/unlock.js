@@ -4,7 +4,7 @@
 (function () {
   var PID = "com.voidhammer.shatteredrealms.fullgame", FREE_DAYS = 60, KEY = "voidhammer_unlock";
   var C = window.Capacitor, native = !!(C && C.isNativePlatform && C.isNativePlatform());
-  var NP = null, price = "A$9.99", busy = false, ov = null;
+  var NP = null, price = "A$9.99", busy = false, ov = null, productOK = false; /* the gate only appears once the App Store actually offers the unlock */
   var LINKS = [["Website", "https://voidhammersaga.com"], ["Instagram", "https://www.instagram.com/voidhammersaga"], ["TikTok", "https://www.tiktok.com/@voidhammersaga"],
     ["YouTube", "https://www.youtube.com/@voidhammersaga"], ["Threads", "https://www.threads.com/@voidhammersaga"]];
   if (!native) LINKS.push(["Patreon", "https://www.patreon.com/voidhammerofficial"]);
@@ -35,7 +35,7 @@
   function check() {
     var np = getNP(); if (!np || !np.getPurchases) return;
     np.getPurchases({ productType: "inapp" }).then(function (r) { if (owns(r && r.purchases)) { setUnlocked(); close(); refreshFollow(); } }).catch(function () {});
-    if (np.getProducts) np.getProducts({ productIdentifiers: [PID], productType: "inapp" }).then(function (r) { var p = r && r.products && r.products[0]; if (p && p.priceString) { price = p.priceString; var b = ov && ov.querySelector(".buy"); if (b) b.textContent = "Unlock the full game · " + price; } }).catch(function () {});
+    if (np.getProducts) np.getProducts({ productIdentifiers: [PID], productType: "inapp" }).then(function (r) { var p = r && r.products && r.products[0]; if (p && (p.priceString || p.identifier)) { productOK = true; if (p.priceString) price = p.priceString; var b = ov && ov.querySelector(".buy"); if (b) b.textContent = "Unlock the full game · " + price; } }).catch(function () {});
   }
   function refreshFollow() { var f = document.getElementById("vhfollow"); if (f) { f.remove(); addFollow(); } }
   function msg(t) { var m = ov && ov.querySelector(".msg"); if (m) m.textContent = t || ""; }
@@ -69,8 +69,8 @@
     if (!native || unlocked()) return;
     var s = S(); if (!s || typeof s.day !== "number") return;
     var t = document.getElementById("title"); if (t && !t.hidden) { close(); return; }
-    if (s.day >= FREE_DAYS) { s.speed = 0; showGate(); }
+    if (s.day >= FREE_DAYS && productOK) { s.speed = 0; showGate(); }
   }, 400);
-  if (native) setTimeout(check, 1500);
+  if (native) { setTimeout(check, 1500); setInterval(function () { if (!productOK && !unlocked()) check(); }, 60000); }
   window.__vhUnlock = { owned: unlocked, show: showGate, pid: PID };
 })();
