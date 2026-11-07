@@ -65,6 +65,7 @@ button:disabled{opacity:.5;cursor:not-allowed}
 </head>
 <body>
 <div class="wrap">
+<div id="backbar" style="display:none;margin:0 0 14px"><button type="button" class="gameback" style="width:100%;padding:12px;border-radius:6px;border:1px solid var(--gold);background:#120F0C;color:var(--gold);font:inherit;font-weight:600;letter-spacing:.04em;cursor:pointer">← Back to the game</button></div>
 <header>
  <div class="kicker">REALM VISION · SEASON ONE</div>
  <h1 id="cupname">The Sparkbeat Cup</h1>
@@ -92,6 +93,7 @@ button:disabled{opacity:.5;cursor:not-allowed}
  <h2>Your lamps are lit</h2>
  <p id="thanksPicks"></p>
  <p class="small">Check your inbox and confirm your email, or your vote won't count. Results go up on Monday.</p>
+ <button type="button" class="gameback" style="display:none;width:100%;margin:10px 0 4px;padding:12px;border-radius:6px;border:1px solid var(--gold);background:var(--gold);color:#120F0C;font:inherit;font-weight:700;letter-spacing:.04em;cursor:pointer" id="backdone">← Back to the game</button>
  <p class="small"><a href="https://voidhammersaga.com/quiz/" style="color:var(--gold)">Don't know your Realm? Take the quiz</a></p>
 </div>
 
@@ -169,6 +171,22 @@ var ROUND = {
       t.scrollIntoView({behavior:'smooth',block:'center'});
     },900);
   });
+})();
+
+// opened from the game (?utm_source=game): offer a way back, at the top and after the vote
+(function(){
+  var fromGame=false;try{fromGame=/(^|[?&])utm_source=game(&|$)/.test(location.search);}catch(e){}
+  if(!fromGame)return;
+  var GAME="https://raposiojd-dev.github.io/Voidhammer/";
+  document.getElementById('backbar').style.display='block';
+  document.getElementById('backdone').style.display='block';
+  function back(){
+    try{if(window.opener&&!window.opener.closed){window.close();return;}}catch(e){}
+    var ref="";try{ref=document.referrer||"";}catch(e){}
+    if(ref&&/\/Voidhammer\/?(index\.html)?(\?|#|$)/.test(ref)&&history.length>1){history.back();return;}
+    location.href=GAME;
+  }
+  Array.prototype.forEach.call(document.querySelectorAll('.gameback'),function(b){b.addEventListener('click',back);});
 })();
 
 // tell the parent page (voidhammersaga.com/vote) how tall we are, so it has no inner scroll
