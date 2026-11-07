@@ -989,6 +989,7 @@
       return '<div class="k2pm" style="' + cv(t.col) + '"><div class="k2pmh"><b>' + A.meter + '</b><span>' + t.name + (role(t.id) === "half" ? " · Half-Spark" : role(t.id) === "spark" ? " · Spark" : "") + '</span><em>' + STAGE_NAMES[sg] + ": " + A.stages[sg] + '</em></div><div class="k2bar big"><i class="fl" style="width:' + fl + '%"></i><i class="v" style="width:' + v + '%"></i><u style="left:50%"></u><u style="left:75%"></u>' + (cap(a) < 100 ? '<i class="cap" style="left:' + cap(a) + '%"></i>' : "") + "</div><p>" + A.body[Math.max(sg, stageOf(fl))] + (mk ? " <b>Marks: " + mk + "</b> (they never walk back; the meter cannot fall below " + fl + ")." : "") + (a === "storm" && s.years ? " You have spent <b>" + s.years.toFixed(1) + " years</b> of your life in the sky." : "") + "</p></div>";
     }
     function sheet() {
+      css();
       const s = st(); if (!s) return "<p>No game.</p>";
       const L = env.lvl(), P = points();
       let h = '<div class="k2s"><div class="k2L">';
