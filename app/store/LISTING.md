@@ -43,7 +43,7 @@ Dozens of hours of quests, sixteen boss lairs with their own stories, dungeons, 
 PLAYS OFFLINE. NO ACCOUNT. NO ADS. NO PURCHASES BEYOND THE GAME.
 
 ## What's new (1.0)
-First release.
+First release. Includes the Realm Vision November event: hear each Realm's song in its towns, meet the bands, join the concert in every Realm capital, and vote for your favourite songs (voting opens a web page in your browser).
 
 ## Age rating questionnaire (App Store Connect → Age Rating)
 - Cartoon or Fantasy Violence: **Frequent/Intense**
@@ -66,3 +66,5 @@ The app is iPhone-only so no iPad screenshots are needed.
 
 ## App Review notes (paste into "Notes")
 Voidhammer is a self-contained offline game. No login is needed. Tap New Game → create a character → Begin. Co-op (optional, in the ☰ menu) uses peer-to-peer WebRTC between two devices and needs no account.
+
+In November 2026 the game runs a limited-time in-game event, "Realm Vision" (posters, a stage and concerts in the Realm capitals). It ends on 30 November and switches itself off. One host dialogue offers an optional link to our public voting web page (voidhammersaga.com), which opens in Safari outside the app; entering an email there is optional, happens on the website only, and is not collected by the app. The app itself still collects no data.
