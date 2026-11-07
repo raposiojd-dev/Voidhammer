@@ -16802,7 +16802,7 @@ setInterval(function () {
     }
   }
   // ===== STANDARD MUSIC: John's own songs, streamed (no big decode, easy on phones) =====
-  var STD = { title: "std_title", world: "std_frost", town: "std_frost", dungeon: "std_sundering", combat: "std_tremor", boss: "std_tremor" }, STDE = {};
+  var STD = { title: "std_title", world: "std_frost", town: "std_frost", dungeon: "std_sundering", combat: "std_frost", boss: "std_frost" }, STDE = {}, stdLastM = "";
   function stdEl(f) {
     var e = STDE[f]; if (e) return e;
     var a = new Audio(); a.src = "mus/" + f + ".mp3"; a.loop = true; a.preload = "auto"; a.setAttribute("playsinline", "");
@@ -16823,6 +16823,8 @@ setInterval(function () {
     if (!mac) return; mLoadFiles();
     if (RVHOLD) { var nw0 = mac.currentTime; Object.keys(FS).forEach(function (k) { var S0 = FS[k]; if (S0 && S0.on) { S0.on = false; S0.g.gain.setTargetAtTime(0.0001, nw0, 0.3); S0.t = setTimeout(function () { try { S0.src.stop(); } catch (e) {} if (FS[k] === S0) FS[k] = null; }, 1500); } }); stdSet(""); if (mst) mst.gain.setTargetAtTime(0, nw0, 0.3); if (FMG) FMG.gain.setTargetAtTime(mOn ? 0.7 : 0, nw0, 0.3); return; }
     if (/^rv_/.test(m)) { mLoadOne(m); if (FB[m]) rvNote(m); else m = "town"; Object.keys(FB).forEach(function (k) { if (/^rv_/.test(k) && k !== m && !FS[k]) delete FB[k], FLOADING[k] = 0; }); }
+    // enemies nearby (combat/boss) never change the music: keep whatever was playing
+    if (!/^rv_/.test(m)) { if (m === "combat" || m === "boss") m = stdLastM || "world"; else stdLastM = m; }
     stdSet(/^rv_/.test(m) ? "" : (STD[m] || "std_frost"));
     var okm = !!FB[m], now = mac.currentTime;
     Object.keys(FB).forEach(function (k) {
