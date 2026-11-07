@@ -467,6 +467,7 @@ function buildArea(st, api, A) {
     if (n.chest || /chest|stash/.test(String(n.id || ""))) o.obj = chest(x, z);
     else if (n.gate) o.obj = portal(x, z);
     else if (n.cell) o.obj = cage(x, z);
+    else if (n.id === "rvboard" && A._rv) o.obj = rvBoard3D(x, z);
     else if (n.draw) o.obj = signpost(x, z);
     else {
       // townsfolk wear their Realm's palette (premium/canon.js), blended with their own colours so each still reads apart
@@ -479,6 +480,78 @@ function buildArea(st, api, A) {
     }
     npcs.push(o);
   });
+  // ---------- Realm Vision (November event): poster boards, the stage, the band and the lights ----------
+  function rvCanvasTex(w, h, draw) { const c = document.createElement("canvas"); c.width = w; c.height = h; draw(c.getContext("2d"), w, h); const t = st.track(new THREE.CanvasTexture(c)); t.colorSpace = THREE.SRGBColorSpace; return t; }
+  function rvBoard3D(x, z) {
+    const R = window.__rvInfo && window.__rvInfo(A._rv.own); const grp = new THREE.Group(); if (!R) return grp;
+    const I = R.I, wood = kit.mat(0x4a3624), bg = new THREE.BoxGeometry(1, 1, 1); st.track(bg);
+    [-0.78, 0.78].forEach((dx) => { const p = new THREE.Mesh(bg, wood); p.scale.set(0.14, 2.5, 0.14); p.position.set(dx, 1.25, 0); p.castShadow = true; grp.add(p); });
+    const tex = rvCanvasTex(512, 320, (g, w, h) => {
+      g.fillStyle = "#14101a"; g.fillRect(0, 0, w, h); g.strokeStyle = I.c1; g.lineWidth = 10; g.strokeRect(10, 10, w - 20, h - 20);
+      g.textAlign = "center"; g.fillStyle = I.c2; g.font = "900 78px Georgia, serif"; g.fillText("REALM", w / 2, 108); g.fillText("VISION", w / 2, 188);
+      g.fillStyle = I.c1; g.font = "700 30px Georgia, serif"; g.fillText("VOTE · MEET THE BAND · JOIN IN", w / 2, 240); g.font = "700 26px Georgia, serif"; g.fillStyle = "#f0e2b8"; g.fillText("NOVEMBER ONLY", w / 2, 284);
+    });
+    const pn = new THREE.Mesh(st.track(new THREE.PlaneGeometry(1.8, 1.125)), new THREE.MeshBasicMaterial({ map: tex, side: THREE.DoubleSide })); pn.position.set(0, 2.15, 0.1); grp.add(pn);
+    const back = new THREE.Mesh(bg, wood); back.scale.set(1.9, 1.2, 0.08); back.position.set(0, 2.15, 0.0); grp.add(back);
+    const gl = new THREE.Sprite(new THREE.SpriteMaterial({ map: kit.glowTex, color: hex(I.c1), transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, opacity: 0.55 })); gl.scale.setScalar(3.2); gl.position.set(0, 2.15, 0.3); grp.add(gl);
+    const sp0 = sp.spawn || [A.W / 2, A.H / 2]; grp.rotation.y = Math.atan2(sp0[0] * T + T / 2 - x, sp0[1] * T + T / 2 - z);
+    grp.position.set(x, 0, z); scene.add(grp); return grp;
+  }
+  function rvStage3D() {
+    const R = window.__rvInfo && window.__rvInfo(A._rv.own), s = A._rv.stage; if (!R || !s) return null;
+    const I = R.I, songs = R.songs, x0 = s.x * PX, z0 = s.y * PX, w = s.w * PX, d = s.h * PX, cx = x0 + w / 2, grp = new THREE.Group(), bg = new THREE.BoxGeometry(1, 1, 1); st.track(bg);
+    const c1 = hex(I.c1), c2 = hex(I.c2), dark = kit.mat(0x1a1620), metal = kit.mat(0x3a3440, { metalness: 0.5, roughness: 0.5 });
+    function box(m, px, py, pz, sx, sy, sz, rot) { const b = new THREE.Mesh(bg, m); b.scale.set(sx, sy, sz); b.position.set(px, py, pz); if (rot) b.rotation.y = rot; b.castShadow = true; b.receiveShadow = true; grp.add(b); return b; }
+    const glowM = (c, o) => new THREE.MeshBasicMaterial({ color: c, transparent: o < 1, opacity: o == null ? 1 : o });
+    box(kit.mat(0x2b2430), cx, 0.28, z0 + d * 0.46, w, 0.56, d * 0.92);
+    box(glowM(c1), cx, 0.58, z0 + d * 0.46 + d * 0.46, w, 0.05, 0.06);
+    for (let i = 0; i < 9; i++) box(glowM(i % 2 ? c2 : c1), x0 + 0.25 + i * ((w - 0.5) / 8), 0.3, z0 + d * 0.92 + 0.02, 0.18, 0.1, 0.04);
+    box(kit.mat(0x14101a), cx, 2.3, z0 + 0.12, w * 0.9, 2.0, 0.14);
+    const tex = rvCanvasTex(768, 256, (g, ww, hh) => {
+      g.fillStyle = I.bg; g.fillRect(0, 0, ww, hh); const gr = g.createLinearGradient(0, 0, ww, 0); gr.addColorStop(0, I.c1 + "55"); gr.addColorStop(0.5, I.c2 + "33"); gr.addColorStop(1, I.c1 + "55"); g.fillStyle = gr; g.fillRect(0, 0, ww, hh);
+      g.strokeStyle = I.c1; g.lineWidth = 8; g.strokeRect(8, 8, ww - 16, hh - 16); g.textAlign = "center"; g.fillStyle = I.c2; g.font = "900 96px Georgia, serif"; g.fillText("REALM VISION", ww / 2, 120);
+      g.fillStyle = I.c1; g.font = "700 38px Georgia, serif"; g.fillText(songs.map((q) => q[1]).join("  ·  ").toUpperCase(), ww / 2, 180); g.fillStyle = "#f0e2b8"; g.font = "700 28px Georgia, serif"; g.fillText("LIVE ALL NOVEMBER", ww / 2, 224);
+    });
+    const scr = new THREE.Mesh(st.track(new THREE.PlaneGeometry(w * 0.84, w * 0.84 / 3)), new THREE.MeshBasicMaterial({ map: tex })); scr.position.set(cx, 2.35, z0 + 0.2); grp.add(scr);
+    [x0 - 0.05, x0 + w + 0.05].forEach((px) => box(metal, px, 1.8, z0 + d * 0.9, 0.16, 3.6, 0.16));
+    box(metal, cx, 3.55, z0 + d * 0.9, w + 0.3, 0.16, 0.16); box(metal, cx, 3.55, z0 + 0.12, w + 0.3, 0.16, 0.16);
+    const beams = [], lamps = [], nL = Math.max(3, Math.round(w / 1.8));
+    for (let i = 0; i < nL; i++) {
+      const lx = x0 + 0.5 + i * ((w - 1) / (nL - 1)), col = i % 2 ? c2 : c1, pv = new THREE.Group(); pv.position.set(lx, 3.45, z0 + d * 0.88);
+      const can = new THREE.Mesh(bg, glowM(col)); can.scale.set(0.3, 0.22, 0.3); can.position.y = -0.05; pv.add(can);
+      const cone = new THREE.Mesh(st.track(new THREE.ConeGeometry(0.9, 3.4, 14, 1, true).translate(0, -1.7, 0)), new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: 0.1, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide }));
+      pv.add(cone); grp.add(pv); beams.push({ pv, cone, i }); lamps.push(can);
+    }
+    [x0 - 0.7, x0 + w + 0.7].forEach((px) => { box(dark, px, 0.8, z0 + d * 0.75, 0.7, 1.6, 0.6); box(glowM(c1), px, 1.3, z0 + d * 0.75 + 0.31, 0.5, 0.06, 0.02); box(metal, px, 0.45, z0 + d * 0.75 + 0.31, 0.38, 0.38, 0.02); });
+    const mk = (cloth, hair, skin, base) => ({ ch: { base: base || "man", cloth, cloth2: cloth, hood: cloth, legs: 0x2a2228, hair, skin }, cloth });
+    const look = [[c1, hex(I.hair), 0xd8b090, "woman"], [c2, 0x2a1a14, 0xc89a78, "man"], [c1, 0x8a5a30, 0xb88a68, "man"], [c2, 0x14121c, 0xe0c8b0, "woman"]];
+    const spots = [[cx, z0 + d * 0.78], [x0 + w * 0.22, z0 + d * 0.6], [x0 + w * 0.78, z0 + d * 0.6], [cx, z0 + d * 0.3]], band = [];
+    for (let i = 0; i < 4; i++) {
+      const q = look[i], f = figure(kit, { ch: { base: q[3], cloth: q[0], cloth2: shade(q[0], 0.6).getHex(), hood: shade(q[0], 0.75).getHex(), legs: 0x2a2228, hair: q[1], skin: q[2] }, cloth: q[0], cloth2: q[0], skin: q[2] });
+      f.position.set(spots[i][0], 0.56, spots[i][1]); f.rotation.y = 0; grp.add(f); band.push({ f, y: 0.56, i });
+    }
+    const dm = [[-0.7, 0], [0.7, 0], [0, -0.45]]; dm.forEach((q) => { const c = new THREE.Mesh(st.track(new THREE.CylinderGeometry(0.34, 0.34, 0.5, 14)), glowM(0x3a3040)); c.position.set(cx + q[0], 1.0, z0 + d * 0.42 + q[1] * 0.4); grp.add(c); const rim = new THREE.Mesh(st.track(new THREE.CylinderGeometry(0.36, 0.36, 0.05, 14)), glowM(c1)); rim.position.set(cx + q[0], 1.27, z0 + d * 0.42 + q[1] * 0.4); grp.add(rim); });
+    box(kit.mat(0x6a4a28), x0 + w * 0.22 - 0.05, 1.0, z0 + d * 0.6 + 0.35, 0.9, 0.12, 0.2, 0.5);
+    box(kit.mat(0x1c1822), x0 + w * 0.78, 0.95, z0 + d * 0.6 + 0.45, 1.3, 0.12, 0.5);
+    [-1, 1].forEach((sd, k) => {
+      const px = sd < 0 ? x0 - 1.3 : x0 + w + 1.3, pz = z0 + d * 0.95, pole = new THREE.Group(); box(kit.mat(0x4a3624), px, 1.8, pz, 0.12, 3.6, 0.12);
+      const cl = new THREE.Mesh(st.track(new THREE.PlaneGeometry(0.9, 2.2)), new THREE.MeshBasicMaterial({ map: rvCanvasTex(128, 320, (g, ww, hh) => { g.fillStyle = I.c1; g.fillRect(0, 0, ww, hh); g.fillStyle = I.bg; g.fillRect(0, hh - 60, ww, 60); g.fillStyle = I.c2; g.font = "900 70px Georgia, serif"; g.textAlign = "center"; g.fillText("R", ww / 2, 100); g.fillText("V", ww / 2, 190); }), side: THREE.DoubleSide }));
+      cl.position.set(px + 0.5 * sd, 2.5, pz); grp.add(cl); band.push({ cl, k });
+    });
+    const lg = new THREE.Sprite(new THREE.SpriteMaterial({ map: kit.glowTex, color: c1, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, opacity: 0.4 })); lg.scale.set(w * 1.6, 5, 1); lg.position.set(cx, 2.4, z0 + d * 0.7); grp.add(lg);
+    scene.add(grp);
+    return { update(t, dt) {
+      const ph = (t * 2.15) % 1, pulse = Math.pow(1 - ph, 2);
+      band.forEach((b) => {
+        if (b.cl) { b.cl.rotation.y = Math.sin(t * 1.6 + b.k) * 0.35; return; }
+        b.f.position.y = 0.56 + Math.abs(Math.sin(ph * Math.PI)) * 0.07; b.f.rotation.y = Math.sin(t * 1.2 + b.i) * 0.18;
+        animFigure(b.f, t, 0, b.i === 0 || b.i === 3 ? Math.max(0, 1 - ph * 1.4) : 0, false, dt);
+      });
+      beams.forEach((b) => { b.pv.rotation.z = Math.sin(t * 0.9 + b.i * 1.3) * 0.42; b.pv.rotation.x = Math.cos(t * 0.7 + b.i) * 0.2; b.cone.material.opacity = 0.07 + 0.08 * pulse + 0.03 * Math.sin(t * 3 + b.i); });
+      lg.material.opacity = 0.28 + 0.2 * pulse;
+    } };
+  }
+  const rv3 = A._rv && A._rv.stage && window.__rvInfo && window.__rvInfo(A._rv.own) ? rvStage3D() : null;
   function chest(x, z) {
     const grp = new THREE.Group(), body = new THREE.Mesh(kit.g.box, kit.mat(0x7a4a24)), lid = new THREE.Mesh(kit.g.box, kit.mat(0x8a5a2c)), band = new THREE.Mesh(kit.g.box, kit.mat(0xb89a50, { metalness: 0.6, roughness: 0.4 }));
     body.scale.set(0.95, 0.55, 0.62); body.position.y = 0.28; lid.scale.set(0.97, 0.18, 0.64); lid.position.y = 0.62; band.scale.set(0.12, 0.6, 0.66); band.position.y = 0.32;
@@ -707,6 +780,7 @@ function buildArea(st, api, A) {
     const p = A.p, inDlg = api.inDlg(), paused = api.sheetOpen() || inDlg;
     if (st.onFrame) st.onFrame(t);
     torches.forEach((x) => x.tick(t)); fires.forEach((x) => x.tick(t)); kit.tickStatics(dt);
+    if (rv3) rv3.update(t, dt);
     if (frameN % 240 === 0) { const n0 = tod.night; timeOfDay(); if (L.env && Math.abs(tod.night - (tod.envN === undefined ? -1 : tod.envN)) > 0.06) { tod.envN = tod.night; L.env.refresh(); } }
     // window glow breathes like a hearth behind the glass, stronger after dark
     winMat.emissiveIntensity = 1.6 * (1 + tod.night * 0.5) * (0.9 + 0.06 * Math.sin(t * 2.3) + 0.04 * Math.sin(t * 7.1 + 1.3));

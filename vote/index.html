@@ -148,6 +148,8 @@ var ROUND = {
     go.textContent=n<N?'Pick a winner in every match':'Vote';
   }
   document.getElementById('picks').addEventListener('change',refresh);
+  // picks passed in from the game (?picks=Act|Act|Act|Act)
+  try{(new URLSearchParams(location.search).get('picks')||'').split('|').forEach(function(v,i){if(!v)return;var r=document.querySelectorAll('input[name=m'+i+']');for(var j=0;j<r.length;j++){if(r[j].value===v)r[j].checked=true;}});}catch(e){}
   refresh();
   go.addEventListener('click',function(){
     err.textContent='';

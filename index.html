@@ -13248,6 +13248,7 @@ function startArea(id, sx, sy) {
     else { var s = site(id); if (s) key = s.type === "town" ? "town" : s.type === "castle" ? "castle" : "village"; else if (sp && sp.safe) key = "village"; else key = "dungeon"; }
     setTimeout(function () { VO.pool("hero", key, 25000); }, 500);
   } catch (e) {}
+  try { if (window.__rvInject) window.__rvInject(id); } catch (e) {}
 }
 function dlgOpen(id) {
   var fresh = !(AR && AR.dlg); dlgOpenVO0(id);
@@ -14307,6 +14308,7 @@ function ovLairChestNode(id, ix) {
 }
 function ovLoreFragNode(ix, k) { var A = AR, key = "chest:" + A.id + ":" + ix, n = A.lair.n; var nd = ovLoreNode(n, k); if (!nd) return null; nd.c = [{ t: "Keep it.", fn: function () { if (cp().f[key]) return; cp().f[key] = 1; ovLoreRead(n, k); } }]; nd.n = "A scrap of the record"; nd.t = nd.t; return nd; }
 function getDlg(id) {
+  if (id.indexOf("rv") === 0 && window.__rvDlg) { var rvd = window.__rvDlg(id); if (rvd) return rvd; }
   if (id.indexOf("chestloot:") === 0 && AR && AR.lair) { var m = chestParse(id), ix = m.ix, ch = AR.sp.chests[ix]; if (cp().f["chest:" + m.id + ":" + ix]) return DLG.chest_empty; if (ch && ch[3] === "L") return ovLairChestNode(m.id, ix); if (ch && ch[3] === "S") return ovLoreFragNode(ix, ch[4]); }
   if (id.indexOf("lore:") === 0) { var lm = id.split(":"); return ovLoreNode(+lm[1], +lm[2]); }
   return getDlg0(id);
@@ -16346,6 +16348,7 @@ setInterval(function () {
   var rvLast = "";
   function rvMood() {
     try {
+      if (!rvOn()) return "town";
       var sid = siteOfArea(AR.id), st = sid && site(sid), L = st && RV[st.owner]; if (!L) return "town";
       var h = 0, i, id = String(AR.id); for (i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) >>> 0;
       return "rv_" + st.owner + "_" + (1 + h % L.length);
@@ -16355,6 +16358,409 @@ setInterval(function () {
     if (m === rvLast) return; rvLast = m; var q = /^rv_([a-z]+)_(\d+)$/.exec(m); if (!q) return;
     var t = RV[q[1]] && RV[q[1]][+q[2] - 1]; if (t && typeof aToast === "function") setTimeout(function () { if (rvLast === m) aToast("♪ " + t[0] + ", " + t[1] + " (" + t[2] + " · Realm Vision)"); }, 2600);
   }
+  // ======== REALM VISION NOVEMBER EVENT: posters, stage, meet and greet, in-game vote, concert. Everything here switches off after 30 Nov 2026. ========
+  var RVEND = Date.parse("2026-11-30T23:59:59+11:00"), RVHOLD = false;
+  function rvOn() { try { if (/[?&]rv=1(&|$)/.test(location.search)) return true; } catch (e) {} return Date.now() < RVEND; }
+  var RVCAPS = { emberfall: "ember", highmarch: "stone", windspire: "storm", stillcity: "frost", lanterncity: "spirit", unmadecity: "shadow", luminantc: "light", "g:irontown": "metal" };
+  var RVURL = "https://raposiojd-dev.github.io/Voidhammer/vote/";
+  var RVI = {
+    ember: { c1: "#ff7a2a", c2: "#ffd36a", bg: "#1b0b06", fx: "ember", hair: "#3a1a10" }, stone: { c1: "#c4a46a", c2: "#efe0b8", bg: "#16120c", fx: "dust", hair: "#4a3a28" },
+    storm: { c1: "#6ec0ff", c2: "#e8f6ff", bg: "#0a1322", fx: "streak", hair: "#c8d4e0" }, frost: { c1: "#9ee0ff", c2: "#ffffff", bg: "#0a1822", fx: "snow", hair: "#dfe8f0" },
+    spirit: { c1: "#c9a8ff", c2: "#ffe6a0", bg: "#130d1f", fx: "lantern", hair: "#6a4a8a" }, shadow: { c1: "#8a6cff", c2: "#d8d0ff", bg: "#07060d", fx: "mote", hair: "#14121c" },
+    light: { c1: "#ffe27a", c2: "#ffffff", bg: "#19150a", fx: "prism", hair: "#e8d28a" }, metal: { c1: "#c0c8d8", c2: "#ff9a3c", bg: "#111218", fx: "spark", hair: "#2a2c34" }
+  };
+  var RVROUND = { code: "S1-SPARKBEAT-QF", closes: "Sunday 15 November, 9pm AEDT", matches: [
+    { tag: "FIRE v ICE", a: { realm: "Flameborne", act: "Flashpoint", song: "Temper" }, b: { realm: "Frostgrave", act: "The Knot-Cord Brothers", song: "Forty Seconds" } },
+    { tag: "DARK v LIGHT", a: { realm: "Shadowdeep", act: "Lights Out", song: "No Faces" }, b: { realm: "Lightforge", act: "Prism", song: "Seven Colours" } },
+    { tag: "GROUND v SKY", a: { realm: "Stonehold", act: "Seismic", song: "Aftershock" }, b: { realm: "Stormreach", act: "Updraft", song: "Freefall" } },
+    { tag: "MEMORY v MACHINE", a: { realm: "Spiritveil", act: "Echo Bleed", song: "Somebody Else\u2019s Summer" }, b: { realm: "Metalcrown", act: "The Fitted", song: "Unplated" } }
+  ] }, RVP = [], RVLOADED = 0;
+  // read the live round from the vote page, so the game never goes stale when John edits the ROUND block
+  function rvLoadRound() {
+    if (RVLOADED) return; RVLOADED = 1;
+    try {
+      fetch(RVURL, { cache: "no-store" }).then(function (r) { if (!r.ok) throw 0; return r.text(); }).then(function (tx) {
+        var re = /\{tag:"([^"]+)",\s*a:\{realm:"([^"]+)",img:"[^"]*",act:"([^"]+)",song:"([^"]+)"[^}]*\},\s*b:\{realm:"([^"]+)",img:"[^"]*",act:"([^"]+)",song:"([^"]+)"/g, m, ms = [];
+        while ((m = re.exec(tx))) ms.push({ tag: m[1], a: { realm: m[2], act: m[3], song: m[4] }, b: { realm: m[5], act: m[6], song: m[7] } });
+        var cd = /code:\s*"([^"]+)"/.exec(tx), cl = /voting closes ([^.]+?)\./.exec(tx);
+        if (ms.length) { RVROUND.matches = ms; if (cd) RVROUND.code = cd[1]; if (cl) RVROUND.closes = cl[1]; RVP = []; }
+      }).catch(function () {});
+    } catch (e) {}
+  }
+  function rvOpenVote() {
+    var u = RVURL + "?utm_source=game&utm_medium=realm-vision", any = RVP.some(Boolean);
+    if (any) u += "&picks=" + encodeURIComponent(RVROUND.matches.map(function (m, i) { return RVP[i] || ""; }).join("|"));
+    try { cp().f.rvvote = 1; } catch (e) {}
+    var w = null; try { w = window.open(u, "_blank", "noopener"); } catch (e) {}
+    if (!w) { try { location.href = u; } catch (e2) {} }
+    aToast("Vote page open. Enter your email there to lock in your lamps.");
+  }
+  var RVM = {
+    ember: [{ who: "Flashpoint", look: "She is hosing down her decks with a bucket when you walk up.", say: "\u201cCareful. Every drop costs me a bit of temper, and I\u2019m running low today. Keep your coal lit.\u201d", q: [["Ask about the fire", "\u201cReal fire. The Spark makes it and I pay for it. Last night I shouted at a pigeon. Vote for \u2018Temper\u2019 and I\u2019ll try to be gracious about it.\u201d"], ["Ask what the song is about", "\u201cHolding it in. Letting it go. The crowd does the second bit.\u201d"]] }],
+    stone: [{ who: "Seismic", look: "A very large person in ear defenders nods at you, slowly.", say: "\u201cLow. Slow. Felt, not heard.\u201d", q: [["Ask about the bass", "\u201cThe Deep Holds file a complaint every time. We send flowers. They file another.\u201d"], ["Ask for an autograph", "They press a thumbprint into a lump of clay and hand it over. It is warm."]] }],
+    storm: [{ who: "Updraft", look: "Wind is already moving through their hair, indoors.", say: "\u201cWahai! Count it in!\u201d", q: [["Ask about the drop", "\u201cIt feels like stepping off a citadel. It costs me about a year each time. Worth the grey.\u201d"], ["Ask for advice", "\u201cLet go of the rail.\u201d"]] }],
+    frost: [{ who: "The Knot-Cord Brothers", look: "Two brothers tap their boots at a speed Frostgrave does not approve of.", say: "\u201cForty seconds, and the whole night after!\u201d", q: [["Ask about going fast", "\u201cThe elders want it slower. The fiddles disagree. Lately the elders tap along when they think we aren\u2019t looking.\u201d"], ["Ask about the silence in the middle", "\u201cTen seconds where everyone stops. Frostgrave\u2019s favourite part. Don\u2019t tell the elders it was our idea.\u201d"]] }],
+    spirit: [{ who: "Echo Bleed", look: "She keeps stopping mid-sentence to listen to something you can\u2019t hear.", say: "\u201cSorry. I know your face. I don\u2019t, though. Somebody does.\u201d", q: [["Ask about the lantern-echoes", "\u201cI borrow voices from the lanterns. Lately they lend me things back. Last week I knew how to make someone\u2019s grandmother\u2019s soup.\u201d"], ["Ask about \u2018Somebody Else\u2019s Summer\u2019", "\u201cA boy by the water. A girl in the brine. It isn\u2019t mine. I keep it anyway.\u201d"]] },
+      { who: "Mirel of the Last Lamp", look: "A woman with a single lamp, turned very low.", say: "\u201cCome close. Every show, the crowd gives up one small memory. Nothing you\u2019ll miss. Mostly.\u201d", q: [["Ask about the lamp", "\u201cIt burns what I give it. I try to give it the right things.\u201d"], ["Ask about \u2018Ghostlight of the Forgotten Realm\u2019", "\u201cIt isn\u2019t a threat. It\u2019s a receipt.\u201d"]] }],
+    shadow: [{ who: "Lights Out", look: "A voice from the dark behind the desk. No face, no lamp.", say: "\u201cNobody here. Nobody ever. Mind the step, though.\u201d", q: [["Ask who they are", "\u201cNames cost extra. Go unseen. Dance anyway.\u201d"], ["Ask why it is so dark", "\u201cFaces get in the way of the bass.\u201d"]] }],
+    light: [{ who: "Prism", look: "Light bends around them as if it had been asked to.", say: "\u201cSeven colours, every one true. Don\u2019t ask for a lie. It splits.\u201d", q: [["Ask about the seven colours", "\u201cRed is the loud one. Violet is the one waiting for the others.\u201d"], ["Ask if Lightforge wins too much", "\u201cLightforge has won more than anyone, and nobody likes it. We\u2019re a little embarrassed. A little.\u201d"]] }],
+    metal: [{ who: "The Fitted", look: "The voice is half machine and half something warmer.", say: "\u201cTurn me on, turn me down.\u201d", q: [["Ask about the voice", "\u201cHalf of me was made in town. The other half made itself. And no, Lightforge has never given Metalcrown a lamp. Three hundred years.\u201d"], ["Ask for a message for the fans", "\u201cI made it. Say it with me. I made it.\u201d"]] }]
+  };
+  function rvHub(own, kind) {
+    var L = RV[own], realm = L[0][2], cap = kind === "c", acts = L.map(function (s) { return s[1]; }).join(" and ");
+    var left = Math.max(1, Math.ceil((RVEND - Date.now()) / 864e5));
+    rvLoadRound();
+    var t = cap ? "\u201cRealm Vision is on in " + realm + "! Nine Realms, one song league, and the people choose who wins. Tonight\u2019s stage is " + acts + ". Vote for your favourites, meet the band, or get down the front. It all ends with November (" + left + " days left).\u201d"
+      : "<b>REALM VISION \u00b7 NOVEMBER</b><br>" + acts + " of " + realm + " are playing the song league. Fans choose the winners. Vote here, meet the bands, and catch the concert at the " + realm + " capital stage. Ends 30 November.";
+    var c = [{ t: "Cast your lamps: vote in the current matches", go: "rvv:" + own + ":0", fn: function () { RVP = []; } }, { t: "Meet the band", go: "rvmeet:" + own }];
+    if (cap) L.forEach(function (s, i) {
+      c.push({ t: "Watch the concert: \u201c" + s[0] + "\u201d (dance, cheer, wave a lantern)", fn: function () { setTimeout(function () { rvConcert(own, i, "enjoy"); }, 80); } });
+      c.push({ t: "Join the show: play along to \u201c" + s[0] + "\u201d", fn: function () { setTimeout(function () { rvConcert(own, i, "play"); }, 80); } });
+    });
+    c.push({ t: "Maybe later." });
+    return { n: cap ? "Stage-door host" : "Realm Vision poster", t: t, c: c };
+  }
+  function rvVoteNode(own, i) {
+    var M = RVROUND.matches, m = M[i];
+    if (!m) return rvVoteDone(own);
+    var nx = i + 1 < M.length ? "rvv:" + own + ":" + (i + 1) : "rvvdone:" + own;
+    function lab(o) { return o.act + ": \u201c" + o.song + "\u201d (" + o.realm + ")"; }
+    return { n: "Realm Vision vote " + (i + 1) + " of " + M.length, t: "<b>" + m.tag + "</b><br>Which one gets your lamp?", c: [
+      { t: lab(m.a), fn: function () { RVP[i] = m.a.act; }, go: nx }, { t: lab(m.b), fn: function () { RVP[i] = m.b.act; }, go: nx }, { t: "Skip this match", go: nx }] };
+  }
+  function rvVoteDone(own) {
+    var M = RVROUND.matches, got = M.map(function (m, i) { return RVP[i]; }).filter(Boolean);
+    return { n: "Your lamps", t: (got.length ? "You picked: " + got.join(", ") + "." : "No picks yet.") + "<br>Voting closes " + RVROUND.closes + ". On the vote page, add your email and confirm it, and your vote counts (three lamps on the site). You\u2019ll join the Voidhammer email list for results and the Dispatch.", c: [
+      { t: "Open the vote page", fn: rvOpenVote }, { t: "Back", go: "rvstage:" + own + ":" + (RVCAPS[AR && AR.id] ? "c" : "n") }] };
+  }
+  function rvMeetMenu(own) {
+    var c = RV[own].map(function (s, i) { return { t: s[1] + ": \u201c" + s[0] + "\u201d", go: "rvm:" + own + ":" + i }; });
+    c.push({ t: "Back", go: "rvstage:" + own + ":" + (RVCAPS[AR && AR.id] ? "c" : "n") });
+    return { n: "Meet and greet", t: "A rope line, a table of lanterns, and a queue of people who have been practising their hellos.", c: c };
+  }
+  function rvMeetAct(own, i, q) {
+    var d = RVM[own] && RVM[own][i]; if (!d) return null;
+    var key = "rvmeet_" + own + i;
+    function first() { try { if (!cp().f[key]) { cp().f[key] = 1; addXp(15); aToast("Meet and greet: +15 XP"); } } catch (e) {} }
+    if (q == null) return { n: d.who, t: d.look + "<br>" + d.say, c: [{ t: d.q[0][0], go: "rvm:" + own + ":" + i + ":0", fn: first }, { t: d.q[1][0], go: "rvm:" + own + ":" + i + ":1", fn: first }, { t: "Back", go: "rvmeet:" + own }] };
+    return { n: d.who, t: d.q[q][1], c: [{ t: "Back", go: "rvm:" + own + ":" + i }, { t: "Done", go: "rvmeet:" + own }] };
+  }
+  window.__rvDlg = function (id) {
+    if (!rvOn()) return null;
+    var p = id.split(":"), k = p[0];
+    if (k === "rvstage") return rvHub(p[1], p[2]);
+    if (k === "rvv") return rvVoteNode(p[1], +p[2]);
+    if (k === "rvvdone") return rvVoteDone(p[1]);
+    if (k === "rvmeet") return rvMeetMenu(p[1]);
+    if (k === "rvm") return rvMeetAct(p[1], +p[2], p[3] == null ? null : +p[3]);
+    return null;
+  };
+  // ---- town dressing: poster board, stage with a bobbing band, banners, host ----
+  function rvFig(g, x, y, s, col, hair, skin, pose) {
+    pose = pose || {}; g.save(); g.translate(Math.round(x), Math.round(y)); g.scale(s, s);
+    g.fillStyle = "#17141a"; g.fillRect(-2, -4, 2, 4); g.fillRect(0, -4, 2, 4);
+    g.fillStyle = col; g.fillRect(-2, -9, 4, 5);
+    if (pose.up) { g.fillRect(-4, -15, 1, 6); g.fillRect(3, -15, 1, 6); }
+    else if (pose.r) { g.fillRect(-3, -9, 1, 4); g.fillRect(3, -15, 1, 6); }
+    else if (pose.l) { g.fillRect(-4, -15, 1, 6); g.fillRect(2, -9, 1, 4); }
+    else { g.fillRect(-3, -9, 1, 4); g.fillRect(2, -9, 1, 4); }
+    g.fillStyle = skin || "#d8a77c"; g.fillRect(-1, -12, 3, 3); g.fillStyle = hair || "#2a1a14"; g.fillRect(-1, -13, 3, 1);
+    g.restore();
+  }
+  function rvBeam(g, x0, y0, x1, y1, w, col, a) {
+    g.save(); g.globalCompositeOperation = "lighter"; g.globalAlpha = a; g.fillStyle = col;
+    g.beginPath(); g.moveTo(x0 - 1, y0); g.lineTo(x0 + 1, y0); g.lineTo(x1 + w, y1); g.lineTo(x1 - w, y1); g.closePath(); g.fill(); g.restore();
+  }
+  function rvBanner(g, x, y, I, t, k) {
+    g.fillStyle = "#3a2c1e"; g.fillRect(x, y - 30, 2, 30);
+    var sw = Math.sin(t * 2.2 + k) * 1.5;
+    g.fillStyle = I.c1; g.fillRect(x + 2, y - 29, 13, 3); g.fillRect(x + 2 + Math.round(sw * 0.4), y - 26, 13, 12); g.fillRect(x + 3 + Math.round(sw), y - 14, 11, 3); g.fillRect(x + 5 + Math.round(sw * 1.4), y - 11, 7, 3);
+    g.fillStyle = "#0d0a10"; g.font = "bold 5px monospace"; g.fillText("RV", x + 5, y - 17);
+    g.fillStyle = I.c2; g.fillRect(x + 6, y - 24, 2, 2); g.fillRect(x + 10, y - 22, 2, 2);
+  }
+  function rvDrawBoard(g, px, py, t, own) {
+    var I = RVI[own]; if (!I) return;
+    g.fillStyle = "rgba(0,0,0,0.3)"; g.fillRect(px - 9, py - 1, 18, 3);
+    g.fillStyle = "#4a3624"; g.fillRect(px - 8, py - 26, 2, 26); g.fillRect(px + 6, py - 26, 2, 26);
+    g.fillStyle = "#14101a"; g.fillRect(px - 11, py - 34, 22, 17);
+    g.fillStyle = I.c1; g.fillRect(px - 11, py - 34, 22, 1); g.fillRect(px - 11, py - 18, 22, 1); g.fillRect(px - 11, py - 34, 1, 17); g.fillRect(px + 10, py - 34, 1, 17);
+    g.fillStyle = I.c2; g.font = "bold 5px monospace"; g.fillText("REALM", px - 9, py - 27); g.fillText("VISION", px - 10, py - 21);
+    var f = Math.floor(t * 2) % 2; g.fillStyle = I.c1; g.fillRect(px + 4, py - 31 + f, 2, 4); g.fillRect(px + 6, py - 32 + f, 1, 1);
+  }
+  function rvDrawStage(g, s, own, t) {
+    var I = RVI[own], x = s.x, y = s.y, w = s.w, bp = (t * 2.15) % 1, bob = Math.round(Math.abs(Math.sin(bp * Math.PI)) * 1.5), i;
+    g.fillStyle = "rgba(0,0,0,0.35)"; g.fillRect(x - 3, y + 44, w + 6, 6);
+    g.fillStyle = "#0d0a12"; g.fillRect(x, y, w, 22);
+    g.fillStyle = I.bg; g.fillRect(x + 4, y + 3, w - 8, 14);
+    g.fillStyle = I.c1; g.fillRect(x + 4, y + 3, w - 8, 1); g.fillRect(x + 4, y + 16, w - 8, 1);
+    g.fillStyle = I.c2; g.font = "bold 7px monospace"; var tx = "REALM VISION"; g.fillText(tx, Math.round(x + w / 2 - g.measureText(tx).width / 2), y + 13);
+    g.fillStyle = "#2b2430"; g.fillRect(x, y + 22, w, 18);
+    g.fillStyle = "#17121c"; g.fillRect(x, y + 40, w, 8); g.fillStyle = I.c1; g.fillRect(x, y + 40, w, 1);
+    for (i = 0; i < 8; i++) { g.fillStyle = (i + Math.floor(t * 3)) % 2 ? I.c2 : I.c1; g.fillRect(x + 4 + i * ((w - 12) / 7), y + 43, 3, 2); }
+    g.fillStyle = "#3a3440"; g.fillRect(x - 2, y - 7, w + 4, 3);
+    var n = Math.max(3, Math.round(w / 28));
+    for (i = 0; i < n; i++) {
+      var lx = x + 8 + i * ((w - 16) / (n - 1)), a = Math.sin(t * 1.3 + i * 1.7) * 14;
+      g.fillStyle = i % 2 ? I.c2 : I.c1; g.fillRect(Math.round(lx) - 1, y - 6, 3, 3);
+      rvBeam(g, lx, y - 4, lx + a, y + 36, 7, i % 2 ? I.c2 : I.c1, 0.10 + 0.06 * Math.sin(t * 4 + i));
+    }
+    g.fillStyle = "#1c1822"; g.fillRect(x - 7, y + 20, 6, 22); g.fillRect(x + w + 1, y + 20, 6, 22);
+    g.fillStyle = "#3a3440"; g.fillRect(x - 6, y + 22, 4, 4); g.fillRect(x - 6, y + 30, 4, 4); g.fillRect(x + w + 2, y + 22, 4, 4); g.fillRect(x + w + 2, y + 30, 4, 4);
+    var cx = x + w / 2, cols = [I.c1, I.c2, I.c1, I.c2], hr = [I.hair, "#2a1a14", "#8a5a30", "#14121c"];
+    g.fillStyle = "#26202c"; g.beginPath(); g.arc(cx, y + 28, 8, 0, 6.3); g.fill(); g.fillStyle = I.c2; g.fillRect(cx - 8, y + 24, 3, 1); g.fillRect(cx + 5, y + 24, 3, 1);
+    rvFig(g, cx, y + 30 - bob, 1, cols[0], hr[0], "#d8a77c", { up: Math.floor(t * 4.3) % 2, l: Math.floor(t * 4.3) % 2 ? 0 : 1 });
+    rvFig(g, x + w * 0.22, y + 34 - bob, 1, cols[1], hr[1], "#c89a6c", { r: bp < 0.5 });
+    g.fillStyle = "#6a4a28"; g.fillRect(Math.round(x + w * 0.22) - 4, y + 27, 8, 2);
+    rvFig(g, x + w * 0.78, y + 34 - bob, 1, cols[2], hr[2], "#b98a5c", { l: bp > 0.5 });
+    g.fillStyle = "#1c1822"; g.fillRect(Math.round(x + w * 0.78) - 5, y + 31, 10, 3);
+    rvFig(g, cx, y + 38 - bob, 1, cols[3], hr[3], "#e0b48a", { up: bp < 0.35 });
+    g.fillStyle = "#8a8a96"; g.fillRect(Math.round(cx) + 3, y + 25, 1, 13); g.fillRect(Math.round(cx) + 2, y + 25, 3, 1);
+    rvBanner(g, x - 14, y + 48, I, t, 0); rvBanner(g, x + w + 12, y + 48, I, t, 2);
+  }
+  function rvSpotOK(a, tx, ty) { return tx > 1 && ty > 1 && tx < a.W - 2 && ty < a.H - 2 && boxFree(a, tx * ATS + 8, ty * ATS + 10); }
+  function rvBusy(a, tx, ty, pad) {
+    var i, n, ch = a.sp.chests || [], ex = a.sp.exits || [], sp = a.sp.spawn || [0, 0];
+    for (i = 0; i < a.npcs.length; i++) { n = a.npcs[i]; if (n.x != null && Math.abs(n.x - tx) <= pad && Math.abs(n.y - ty) <= pad) return true; }
+    for (i = 0; i < ch.length; i++) if (Math.abs(ch[i][0] - tx) <= pad && Math.abs(ch[i][1] - ty) <= pad) return true;
+    for (i = 0; i < ex.length; i++) { var e = ex[i]; if (tx >= e.x - 3 && tx <= e.x + e.w + 2 && ty >= e.y - 3 && ty <= e.y + e.h + 2) return true; }
+    return Math.abs(sp[0] - tx) <= 2 && Math.abs(sp[1] - ty) <= 2;
+  }
+  var RVSEEN = {};
+  function rvInject(id) {
+    var a = AR; if (!a || !a.sp || !a.sp.safe || a._rv || !rvOn()) return;
+    var sid = siteOfArea(id), st = sid && site(sid), own = st && st.owner; if (!own || !RV[own] || !RVI[own]) return;
+    var cap = RVCAPS[id] === own, R = a._rv = { own: own, cap: cap, stage: null }, sp = a.sp, tx, ty, i, j, best = null, bs = 1e9, w, k, pen;
+    rvLoadRound();
+    if (cap) {
+      var ws = [7, 6, 5, 4];
+      for (k = 0; k < ws.length && !best; k++) {
+        w = ws[k];
+        for (ty = 3; ty < a.H - 6; ty++) for (tx = 3; tx < a.W - w - 3; tx++) {
+          var ok = true; pen = 0;
+          for (j = 0; j < 4 && ok; j++) for (i = 0; i < w && ok; i++) { if (!rvSpotOK(a, tx + i, ty + j) || rvBusy(a, tx + i, ty + j, j === 3 ? 0 : 0)) ok = false; }
+          if (!ok) continue;
+          for (j = -1; j <= 4; j++) for (i = -1; i <= w; i++) if (!rvSpotOK(a, tx + i, ty + j)) pen += 3;
+          var sc = Math.abs(tx + w / 2 - a.W / 2) + Math.abs(ty + 2 - a.H / 2) * 0.8 + pen;
+          if (sc < bs) { bs = sc; best = { tx: tx, ty: ty, w: w }; }
+        }
+      }
+      if (best) {
+        R.stage = { x: best.tx * ATS, y: best.ty * ATS, w: best.w * ATS, h: 3 * ATS };
+        var hx = best.tx + Math.floor(best.w / 2), hy = best.ty + 3;
+        a.npcs.push({ id: "rvhost", name: "Stage-door host", sp: "npc:", x: hx, y: hy, px: hx * ATS + 8, py: hy * ATS + 14, col: RVI[own].c1, hair: "#2a1a14", d: function () { return "rvstage:" + own + ":c"; } });
+        if (!sp._rvS) { sp._rvS = 1; var s0 = sp.solidf; sp.solidf = function (px, py) { if (s0 && s0(px, py)) return true; var r = AR && AR._rv && AR._rv.stage; return !!(r && px >= r.x && px < r.x + r.w && py >= r.y + 16 && py < r.y + r.h); }; }
+      }
+    }
+    var spw = sp.spawn || [2, 2]; best = null; bs = 1e9;
+    for (ty = 2; ty < a.H - 2; ty++) for (tx = 2; tx < a.W - 2; tx++) {
+      if (!rvSpotOK(a, tx, ty) || rvBusy(a, tx, ty, 1)) continue;
+      if (R.stage && tx >= R.stage.x / ATS - 2 && tx <= (R.stage.x + R.stage.w) / ATS + 1 && ty >= R.stage.y / ATS - 2 && ty <= R.stage.y / ATS + 5) continue;
+      var d = Math.hypot(tx - spw[0], ty - spw[1]); if (d < 3.5 || d > 11) continue;
+      var sc2 = Math.abs(d - 6) + (rvSpotOK(a, tx, ty + 1) ? 0 : 2); if (sc2 < bs) { bs = sc2; best = [tx, ty]; }
+    }
+    if (best) a.npcs.push({ id: "rvboard", name: "Realm Vision poster", x: best[0], y: best[1], px: best[0] * ATS + 8, py: best[1] * ATS + 14, sign: 1, d: function () { return "rvstage:" + own + ":" + (cap ? "c" : "n"); }, draw: function (g, px, py, t) { rvDrawBoard(g, px, py, t, own); } });
+    if (!sp._rvD) { sp._rvD = 1; var d0 = sp.dyn; sp.dyn = function (A, list, g) { if (d0) d0(A, list, g); var r = A._rv; if (r && r.stage && rvOn()) { var s = r.stage; list.push({ x: s.x + s.w / 2, y: s.y + s.h - 4, f: function () { rvDrawStage(g, s, r.own, A.t); } }); } }; }
+    if (!RVSEEN[id]) { RVSEEN[id] = 1; setTimeout(function () { if (AR === a && !a.dlg && rvOn()) aToast("♪ REALM VISION is on! Vote for your favourite songs and meet the bands" + (R.stage ? ", and catch the concert at the stage." : ". The stage is in the Realm capital.")); }, 6500); }
+  }
+  window.__rvInject = rvInject;
+  window.__rvInfo = function (own) { return rvOn() && RVI[own] ? { I: RVI[own], songs: RV[own] } : null; };
+  // ---- the concert: see the band, dance in the crowd, or play along to the beat ----
+  var CN = null, CCH = null, CCHP = null, CAB = {};
+  function rvChart(cb) {
+    if (CCH) return cb(CCH); if (CCHP) { CCHP.push(cb); return; } CCHP = [cb];
+    var done = function (j) { CCH = j || {}; var q = CCHP; CCHP = null; q.forEach(function (f) { f(CCH); }); };
+    try { fetch("mus/rv_charts.json").then(function (r) { if (!r.ok) throw 0; return r.json(); }).then(done).catch(function () { done(null); }); } catch (e) { done(null); }
+  }
+  function rvAudio(key, cb) {
+    if (!mac) return cb(null); if (CAB[key]) return cb(CAB[key]);
+    try { fetch("mus/" + key + ".mp3").then(function (r) { if (!r.ok) throw 0; return r.arrayBuffer(); }).then(function (ab) { return mac.decodeAudioData(ab); }).then(function (b) { Object.keys(CAB).forEach(function (k) { delete CAB[k]; }); CAB[key] = b; cb(b); }).catch(function () { cb(null); }); } catch (e) { cb(null); }
+  }
+  function hh(n) { return ((Math.imul(n + 1, 2654435761) >>> 0) % 1000) / 1000; }
+  function rvConcert(own, si, mode) {
+    si = si || 0; if (CN || !RV[own] || !RV[own][si] || !rvOn()) return;
+    if (!mac && mOn) { try { mInit(); } catch (e) {} }
+    try { if (mac && mac.state !== "running") mac.resume(); } catch (e) {}
+    var key = "rv_" + own + "_" + (si + 1), I = RVI[own], song = RV[own][si], W = innerWidth > innerHeight * 1.3 ? 480 : 360;
+    var root = document.createElement("div"); root.id = "rvc"; root.style.cssText = "position:fixed;inset:0;z-index:100000;background:#000;touch-action:none;user-select:none;-webkit-user-select:none;font-family:Cinzel,Georgia,serif";
+    var cv = document.createElement("canvas"); cv.style.cssText = "position:absolute;inset:0;width:100%;height:100%;image-rendering:pixelated;display:block"; root.appendChild(cv);
+    var C = CN = { own: own, si: si, key: key, song: song, I: I, mode: mode || "play", root: root, cv: cv, g: cv.getContext("2d"), W: W, H: 200, SH: 120, ready: false, started: false, over: false, bpm: 128, dur: 180, notes: [], e: "", score: 0, combo: 0, maxc: 0, perf: 0, good: 0, miss: 0, hype: 0.35, px: 0.5, tx: 0.5, mv: 0, dance: 0, cheer: 0, lamp: 0, parts: [], floats: [], t0: 0, p0: 0, raf: 0, last: 0, time: -2, src: null, gain: null, pr: [0, 0, 0, 0], tick: 0 };
+    var bar = document.createElement("div"); bar.style.cssText = "position:absolute;left:0;right:0;top:0;padding:max(8px,env(safe-area-inset-top)) 10px 0;display:flex;gap:6px;align-items:center;pointer-events:none;flex-wrap:wrap";
+    function btn(txt, fn) { var b = document.createElement("button"); b.textContent = txt; b.style.cssText = "pointer-events:auto;font:700 12px Cinzel,Georgia,serif;letter-spacing:.06em;color:#f0e2b8;background:rgba(10,8,6,.72);border:1px solid " + I.c1 + ";border-radius:16px;padding:7px 12px;min-height:0;cursor:pointer"; b.addEventListener("pointerdown", function (e) { e.stopPropagation(); e.preventDefault(); fn(); }); bar.appendChild(b); return b; }
+    btn("Dance", dance); btn("Cheer", cheer); btn("Lantern", lamp);
+    var sp = document.createElement("div"); sp.style.flex = "1"; bar.appendChild(sp); btn("Leave", leave); root.appendChild(bar);
+    document.body.appendChild(root);
+    try { for (var k in akeys) akeys[k] = false; } catch (e) {}
+    if (AR) { AR.dlg = "rvconcert"; AR.dch = []; }
+    function size() { C.W = innerWidth > innerHeight * 1.3 ? 480 : 360; cv.width = C.W; C.H = Math.max(180, Math.round(C.W * innerHeight / Math.max(1, innerWidth))); cv.height = C.H; C.SH = C.mode === "play" ? Math.round(C.H * 0.56) : Math.round(C.H * 0.97); }
+    size(); window.addEventListener("resize", size);
+    function now() { if (C.src) return mac.currentTime - C.t0 - (mac.outputLatency || 0); if (C.started) return (performance.now() - C.p0) / 1000; return -2; }
+    function energy(t) { var c = C.e.charCodeAt(Math.max(0, Math.floor(t * 10))); return c ? (c - 48) / 9 : 0.3; }
+    function dance() { C.dance = 1.2; C.hype = Math.min(1, C.hype + 0.02); }
+    function cheer() { C.cheer = 1.2; C.hype = Math.min(1, C.hype + 0.05); C.floats.push({ x: 0.5, y: 0.35, s: "WOO!", t: 1, c: I.c2, abs: 0 }); }
+    function lamp() { C.lamp = 3; C.hype = Math.min(1, C.hype + 0.03); }
+    function press(l) {
+      C.pr[l] = 0.12; var t = now(), bi = -1, bd = 9, i, n;
+      for (i = 0; i < C.notes.length; i++) { n = C.notes[i]; if (n.h || n.l !== l) continue; var d = Math.abs(n.t - t); if (n.t - t > 0.25) break; if (d < bd) { bd = d; bi = i; } }
+      if (bi < 0 || bd > 0.18) return; n = C.notes[bi];
+      var perfect = bd <= 0.09; n.h = 1; C.combo++; C.maxc = Math.max(C.maxc, C.combo);
+      if (perfect) { C.perf++; C.score += 100 + Math.min(C.combo, 50) * 2; C.hype = Math.min(1, C.hype + 0.035); } else { C.good++; C.score += 60 + Math.min(C.combo, 50); C.hype = Math.min(1, C.hype + 0.02); }
+      C.floats.push({ x: 0, y: 0, s: perfect ? "PERFECT" : "GOOD", t: 0.7, c: perfect ? I.c2 : "#bfe8ff", lane: l });
+      for (i = 0; i < 8; i++) C.parts.push({ x: 0, y: 0, vx: (Math.random() - 0.5) * 60, vy: -Math.random() * 50, t: 0.5, c: I.c1, lane: l, hit: 1 });
+    }
+    function kd(e) {
+      e.stopPropagation(); var k = e.key, m = { d: 0, f: 1, j: 2, k: 3, D: 0, F: 1, J: 2, K: 3, "1": 0, "2": 1, "3": 2, "4": 3 };
+      if (k === "Escape") { leave(); e.preventDefault(); return; }
+      if (C.mode === "play" && m[k] != null) { if (!e.repeat) press(m[k]); e.preventDefault(); return; }
+      if (k === " ") dance(); else if (k === "c" || k === "C") cheer(); else if (k === "l" || k === "L") lamp();
+      else if (k === "ArrowLeft" || k === "a" || k === "A") C.mv = -1; else if (k === "ArrowRight" || k === "d" || k === "D") C.mv = 1; else return;
+      e.preventDefault();
+    }
+    function ku(e) { e.stopPropagation(); if (/^(Arrow(Left|Right)|a|A|d|D)$/.test(e.key)) C.mv = 0; }
+    window.addEventListener("keydown", kd, true); window.addEventListener("keyup", ku, true);
+    root.addEventListener("pointerdown", function (e) {
+      var r = cv.getBoundingClientRect(), x = (e.clientX - r.left) / r.width * C.W, y = (e.clientY - r.top) / r.height * C.H;
+      if (C.mode === "play" && y > C.SH) { var lw = (C.W - 20) / 4, l = Math.floor((x - 10) / lw); if (l >= 0 && l < 4) press(l); } else C.tx = Math.max(0, Math.min(1, x / C.W));
+    });
+    function begin(chart, buf) {
+      var ch = chart && chart[key];
+      if (ch) { C.bpm = ch.bpm; C.dur = ch.dur; C.e = ch.e; C.notes = ch.notes.map(function (n) { return { t: n[0], l: n[1], h: 0 }; }); }
+      else { C.bpm = 128; C.dur = buf ? buf.duration : 150; for (var t = 3; t < C.dur - 2; t += 60 / C.bpm) C.notes.push({ t: t, l: Math.floor(t * 1.7) % 4, h: 0 }); }
+      if (buf) C.dur = buf.duration;
+      if (C.mode !== "play") C.notes = [];
+      C.total = C.notes.length; RVHOLD = true;
+      if (buf && mac) {
+        try { if (!FMG) mLoadFiles(); var src = mac.createBufferSource(), gn = mac.createGain(); src.buffer = buf; gn.gain.value = 1; src.connect(gn); gn.connect(FMG); C.t0 = mac.currentTime + 0.4; src.start(C.t0); C.src = src; C.gain = gn; } catch (e) { C.src = null; }
+      }
+      if (!C.src) C.p0 = performance.now() + 400;
+      C.started = true; C.ready = true; C.last = 0; C.raf = requestAnimationFrame(frame);
+    }
+    function frame(ts) {
+      if (CN !== C) return; C.raf = requestAnimationFrame(frame);
+      var dt = Math.min(0.05, (ts - (C.last || ts)) / 1000); C.last = ts; step(dt); draw();
+    }
+    function step(dt) {
+      var t = C.time = now(), i, n;
+      C.dance = Math.max(0, C.dance - dt); C.cheer = Math.max(0, C.cheer - dt); C.lamp = Math.max(0, C.lamp - dt); for (i = 0; i < 4; i++) C.pr[i] = Math.max(0, C.pr[i] - dt);
+      if (C.mv) C.tx = Math.max(0, Math.min(1, C.tx + C.mv * 0.5 * dt)); C.px += (C.tx - C.px) * Math.min(1, dt * 6);
+      if (C.mode === "play") for (i = 0; i < C.notes.length; i++) { n = C.notes[i]; if (n.t > t - 0.2) break; if (!n.h) { n.h = -1; C.miss++; C.combo = 0; C.hype = Math.max(0, C.hype - 0.05); } }
+      C.hype = Math.max(C.mode === "play" ? 0 : 0.35, C.hype - dt * (C.mode === "play" ? 0.03 : 0.02));
+      var e = energy(t), rate = (0.5 + C.hype) * (0.4 + e) * 14;
+      if (C.parts.length < 90 && Math.random() < rate * dt) C.parts.push(spawn());
+      C.parts = C.parts.filter(function (p) { p.t -= dt; p.x += p.vx * dt; p.y += p.vy * dt; if (p.hit) p.vy += 120 * dt; return p.t > 0; });
+      C.floats = C.floats.filter(function (f) { f.t -= dt; return f.t > 0; });
+      if (t > C.dur + 1.2 && !C.over) finish();
+    }
+    function spawn() {
+      var W = C.W, SH = C.SH, f = I.fx, r = Math.random();
+      if (f === "ember" || f === "lantern" || f === "spark") return { x: r * W, y: SH * 0.9, vx: (Math.random() - 0.5) * 12, vy: -(12 + Math.random() * 26), t: 2 + Math.random() * 2, c: f === "lantern" ? I.c2 : (r > 0.5 ? I.c1 : I.c2), big: f === "lantern" };
+      if (f === "snow" || f === "dust") return { x: r * W, y: -4, vx: (Math.random() - 0.5) * 10, vy: 14 + Math.random() * 16, t: 5, c: I.c2 };
+      if (f === "streak") return { x: W + 4, y: Math.random() * SH * 0.6, vx: -150 - Math.random() * 100, vy: 0, t: 2, c: I.c2, streak: 1 };
+      if (f === "prism") return { x: r * W, y: Math.random() * SH * 0.5, vx: 0, vy: 4, t: 0.9, c: ["#ff6a6a", "#ffd36a", "#7aff8a", "#6ae0ff", "#b48aff"][Math.floor(Math.random() * 5)] };
+      return { x: r * W, y: SH * (0.2 + Math.random() * 0.6), vx: (Math.random() - 0.5) * 8, vy: -4, t: 2.5, c: I.c1 };
+    }
+    function draw() {
+      var g = C.g, W = C.W, H = C.H, SH = C.SH, t = C.time, e = energy(t), bp = ((t * C.bpm / 60) % 1 + 1) % 1, pulse = Math.pow(1 - bp, 2), i, j;
+      g.imageSmoothingEnabled = false; g.globalAlpha = 1; g.fillStyle = I.bg; g.fillRect(0, 0, W, H);
+      var gr = g.createLinearGradient(0, SH * 0.15, 0, SH * 0.7); gr.addColorStop(0, "rgba(0,0,0,0)"); gr.addColorStop(1, I.c1); g.globalAlpha = 0.1 + 0.22 * e * (0.5 + C.hype); g.fillStyle = gr; g.fillRect(0, SH * 0.15, W, SH * 0.55); g.globalAlpha = 1;
+      var bw = W / 13; for (i = 0; i < 13; i++) {
+        var bh = (Math.floor(hh(i) * 6) + 3) * SH * 0.035 + SH * 0.12, bx = i * bw, by = SH * 0.5 - bh; g.fillStyle = "rgba(0,0,0,0.5)"; g.fillRect(bx, by, bw - 1, bh);
+        if (I.fx === "snow") { g.beginPath(); g.moveTo(bx, by); g.lineTo(bx + bw / 2, by - bh * 0.3); g.lineTo(bx + bw, by); g.fill(); }
+        for (j = 0; j < 4; j++) if (hh(i * 7 + j) > 0.45) { g.fillStyle = I.c2; g.globalAlpha = 0.25 + 0.3 * hh(i * 3 + j + Math.floor(t * 1.2)); g.fillRect(bx + 3 + (j % 2) * 5, by + 4 + Math.floor(j / 2) * 8, 2, 3); g.globalAlpha = 1; }
+      }
+      if (I.fx === "lantern") for (i = 0; i < 18; i++) { var lx = (i + 0.5) * W / 18, ly = SH * 0.06 + (i % 3) * 6 + Math.sin(t + i) * 1.5; g.fillStyle = "#3a2c1e"; g.fillRect(lx, 0, 1, ly); g.fillStyle = I.c2; g.globalAlpha = 0.6 + 0.4 * Math.sin(t * 2 + i); g.fillRect(lx - 2, ly, 5, 6); g.globalAlpha = 1; }
+      var sx = W * 0.1, sw = W * 0.8, sy = SH * 0.43, sh = SH * 0.15, yS = sy + sh;
+      g.fillStyle = "#0b0810"; g.fillRect(sx, SH * 0.1, sw, sy - SH * 0.1); g.fillStyle = I.bg; g.fillRect(sx + 4, SH * 0.1 + 4, sw - 8, sy - SH * 0.1 - 8);
+      g.fillStyle = I.c1; g.fillRect(sx + 4, SH * 0.1 + 4, sw - 8, 1); g.fillRect(sx + 4, sy - 5, sw - 8, 1);
+      g.globalAlpha = 0.5 + 0.5 * pulse; g.fillStyle = I.c2; g.font = "bold " + Math.round(W / 22) + "px monospace"; var s1 = "REALM VISION"; g.fillText(s1, Math.round(W / 2 - g.measureText(s1).width / 2), SH * 0.1 + (sy - SH * 0.1) * 0.5); g.globalAlpha = 1;
+      g.font = "bold " + Math.round(W / 40) + "px monospace"; g.fillStyle = I.c1; var s2 = song[1].toUpperCase(); g.fillText(s2, Math.round(W / 2 - g.measureText(s2).width / 2), SH * 0.1 + (sy - SH * 0.1) * 0.5 + W / 24);
+      g.fillStyle = "#2b2430"; g.fillRect(sx - 6, sy, sw + 12, sh * 0.62); g.fillStyle = "#15111b"; g.fillRect(sx - 6, sy + sh * 0.62, sw + 12, sh * 0.38); g.fillStyle = I.c1; g.fillRect(sx - 6, sy + sh * 0.62, sw + 12, 1);
+      for (i = 0; i < 14; i++) { g.fillStyle = (i + Math.floor(t * 4)) % 2 ? I.c2 : I.c1; g.globalAlpha = 0.5 + 0.5 * e; g.fillRect(sx + 4 + i * ((sw - 8) / 13), yS - 3, 3, 2); g.globalAlpha = 1; }
+      g.fillStyle = "#3a3440"; g.fillRect(sx - 8, SH * 0.07, sw + 16, 3);
+      for (i = 0; i < 5; i++) {
+        var lx2 = sx + 6 + i * ((sw - 12) / 4), an = Math.sin(t * 0.9 + i * 1.3) * W * 0.12 + (i - 2) * W * 0.04; g.fillStyle = i % 2 ? I.c2 : I.c1; g.fillRect(lx2 - 1, SH * 0.07 - 2, 4, 4);
+        rvBeam(g, lx2, SH * 0.08, lx2 + an, yS + SH * 0.2, W * 0.035, i % 2 ? I.c2 : I.c1, (0.06 + 0.2 * e) * (0.6 + C.hype));
+      }
+      var ks = 2, bob = Math.round(pulse * 2 * (0.4 + e)), cx = W / 2, cols = [I.c1, I.c2, I.c1, I.c2], hr = [I.hair, "#2a1a14", "#8a5a30", "#14121c"];
+      g.fillStyle = "#26202c"; g.beginPath(); g.arc(cx, sy + sh * 0.3, W * 0.034, 0, 6.3); g.fill();
+      g.fillStyle = "#1c1822"; g.beginPath(); g.arc(cx - W * 0.05, sy + sh * 0.45, W * 0.014, 0, 6.3); g.arc(cx + W * 0.05, sy + sh * 0.45, W * 0.014, 0, 6.3); g.fill();
+      var drumUp = bp < 0.5; rvFig(g, cx, sy + sh * 0.5 - bob, ks, cols[0], hr[0], "#d8a77c", { r: drumUp, l: !drumUp });
+      rvFig(g, W * 0.3, sy + sh * 0.62 - bob, ks, cols[1], hr[1], "#c89a6c", { r: bp < 0.5 });
+      g.fillStyle = "#6a4a28"; g.fillRect(Math.round(W * 0.3) - 9, sy + sh * 0.62 - 14 - bob, 14, 3);
+      rvFig(g, W * 0.7, sy + sh * 0.62 - bob, ks, cols[2], hr[2], "#b98a5c", { l: bp > 0.5 });
+      g.fillStyle = "#1c1822"; g.fillRect(Math.round(W * 0.7) - 12, sy + sh * 0.62 - 8, 24, 5); g.fillStyle = I.c2; g.fillRect(Math.round(W * 0.7) - 10, sy + sh * 0.62 - 8, 20, 1);
+      rvFig(g, cx, sy + sh * 0.85 - bob, ks, cols[3], hr[3], "#e0b48a", { up: C.hype > 0.7 ? 1 : (bp < 0.3) });
+      g.fillStyle = "#8a8a96"; g.fillRect(Math.round(cx) + 7, sy + sh * 0.85 - 30, 1, 30);
+      var rows = 3, ry0 = yS + (SH - yS) * 0.18, ry1 = SH - 10;
+      for (var r = 0; r < rows; r++) {
+        var cnt = 11 + r * 3, s = 1 + r * 0.5, ry = ry0 + (ry1 - ry0) * (r / (rows - 1 || 1)) * 0.82 + 4;
+        for (i = 0; i < cnt; i++) {
+          var h0 = hh(r * 50 + i), x = (i + 0.5 + (h0 - 0.5) * 0.6) * W / cnt, ph = Math.sin((t * C.bpm / 60) * Math.PI * 2 + i * 0.7 + r), jump = Math.round(Math.max(0, ph) * (1 + C.hype * 3) * s * 0.6);
+          var up = h0 < C.hype * 0.9 + (C.cheer > 0 ? 0.3 : 0), shade = ["#2a2330", "#33283a", "#1e2a30", "#3a2a26"][Math.floor(h0 * 4)];
+          rvFig(g, x, ry - jump, s, shade, "#14101a", "#3a2e36", { up: up ? 1 : 0, l: !up && ph > 0.5 });
+          if (C.lamp > 0 && h0 > 0.45) { g.fillStyle = I.c2; g.globalAlpha = 0.5 + 0.5 * Math.sin(t * 5 + i); g.fillRect(x - 1, ry - jump - 17 * s, 3, 3); g.globalAlpha = 0.2; g.fillRect(x - 3, ry - jump - 19 * s, 7, 7); g.globalAlpha = 1; }
+        }
+      }
+      var ppx = 14 + C.px * (W - 28), pl = (typeof pLook === "function") ? pLook() : {}, hop = C.dance > 0 ? Math.round(Math.abs(Math.sin(t * C.bpm / 60 * Math.PI)) * 4) : Math.round(pulse * 1);
+      var pose = C.cheer > 0 ? { up: 1 } : C.dance > 0 ? { r: Math.floor(t * C.bpm / 60) % 2 === 0, l: Math.floor(t * C.bpm / 60) % 2 === 1 } : C.lamp > 0 ? { r: 1 } : {};
+      rvFig(g, ppx, SH - 2 - hop, 2.4, pl.cloak || "#7a2a2a", pl.hair || "#3a2a18", pl.skin || "#d8a77c", pose);
+      if (C.lamp > 0 || (C.mode === "enjoy" && C.hype > 0.6)) { var lyy = SH - 2 - hop - 36; g.fillStyle = I.c2; g.globalAlpha = 0.9; g.fillRect(ppx + 6, lyy, 4, 5); g.globalAlpha = 0.25; g.fillRect(ppx + 2, lyy - 4, 12, 13); g.globalAlpha = 1; }
+      g.save(); g.globalCompositeOperation = "lighter";
+      C.parts.forEach(function (p) { if (p.hit) return; g.globalAlpha = Math.min(1, p.t) * 0.8; g.fillStyle = p.c; if (p.streak) g.fillRect(p.x, p.y, 14, 1); else g.fillRect(p.x, p.y, p.big ? 3 : 2, p.big ? 3 : 2); });
+      g.restore(); g.globalAlpha = 1;
+      var vg = g.createLinearGradient(0, SH * 0.55, 0, SH); vg.addColorStop(0, "rgba(0,0,0,0)"); vg.addColorStop(1, "rgba(0,0,0,0.35)"); g.fillStyle = vg; g.fillRect(0, SH * 0.55, W, SH * 0.45);
+      g.fillStyle = "rgba(255,255,255," + (pulse * 0.05 * C.hype) + ")"; g.fillRect(0, 0, W, SH);
+      var top = Math.round(W / 14) + 30; g.font = "bold " + Math.round(W / 36) + "px monospace"; g.fillStyle = I.c2; var tl = "♪ " + song[0] + " · " + song[1]; g.fillText(tl, Math.round(W / 2 - g.measureText(tl).width / 2), top);
+      g.fillStyle = "rgba(255,255,255,0.15)"; g.fillRect(10, top + 6, W - 20, 3); g.fillStyle = I.c1; g.fillRect(10, top + 6, (W - 20) * C.hype, 3);
+      g.font = "bold " + Math.round(W / 40) + "px monospace"; g.fillStyle = "#f0e2b8"; g.fillText("CROWD", 10, top + 20);
+      if (C.mode === "play") {
+        var sc = "SCORE " + C.score, cb = C.combo > 1 ? C.combo + "x COMBO" : ""; g.fillText(sc, W - 10 - g.measureText(sc).width, top + 20); if (cb) { g.fillStyle = I.c1; g.fillText(cb, W - 10 - g.measureText(cb).width, top + 34); }
+        var y0 = SH + 4, yh = H - Math.round(H * 0.07) - 8, lw = (W - 20) / 4, lc = ["#ff6a6a", "#ffd36a", "#6ae0ff", "#b48aff"], key4 = ["D", "F", "J", "K"];
+        g.fillStyle = "rgba(6,5,10,0.94)"; g.fillRect(0, SH, W, H - SH); g.fillStyle = I.c1; g.fillRect(0, SH, W, 1);
+        for (i = 0; i < 4; i++) { g.fillStyle = i % 2 ? "rgba(255,255,255,0.05)" : "rgba(255,255,255,0.025)"; g.fillRect(10 + i * lw, y0, lw - 2, H - y0); if (C.pr[i] > 0) { g.fillStyle = lc[i]; g.globalAlpha = C.pr[i] * 2.5; g.fillRect(10 + i * lw, y0, lw - 2, H - y0); g.globalAlpha = 1; } }
+        g.fillStyle = "rgba(255,255,255,0.35)"; g.fillRect(10, yh, W - 20, 1);
+        for (i = 0; i < 4; i++) { g.strokeStyle = lc[i]; g.lineWidth = 1.5; g.beginPath(); g.arc(10 + i * lw + lw / 2 - 1, yh, 9, 0, 6.3); g.stroke(); g.fillStyle = "rgba(255,255,255,0.4)"; g.font = "bold 8px monospace"; g.fillText(key4[i], 10 + i * lw + lw / 2 - 4, yh + 22); }
+        var TR = 1.5; C.notes.forEach(function (n) {
+          if (n.h > 0 || n.t > t + TR || n.t < t - 0.35) return; var yy = y0 + (yh - y0) * (1 - (n.t - t) / TR), nx = 10 + n.l * lw + lw / 2 - 1;
+          g.globalAlpha = n.h < 0 ? 0.25 : 1; g.fillStyle = lc[n.l]; g.beginPath(); g.arc(nx, yy, 8, 0, 6.3); g.fill(); g.fillStyle = "rgba(255,255,255,0.7)"; g.beginPath(); g.arc(nx - 2, yy - 2, 3, 0, 6.3); g.fill(); g.globalAlpha = 1;
+        });
+        C.parts.forEach(function (p) { if (!p.hit) return; var yy = yh + p.y, xx = 10 + p.lane * lw + lw / 2 - 1 + p.x; g.globalAlpha = Math.min(1, p.t * 2); g.fillStyle = p.c; g.fillRect(xx, yy, 2, 2); g.globalAlpha = 1; });
+        C.floats.forEach(function (f) { if (f.lane == null) return; g.globalAlpha = Math.min(1, f.t * 2); g.fillStyle = f.c; g.font = "bold 9px monospace"; var fx = 10 + f.lane * lw + lw / 2 - 1; g.fillText(f.s, fx - g.measureText(f.s).width / 2, yh - 14 - (0.7 - f.t) * 18); g.globalAlpha = 1; });
+      }
+      C.floats.forEach(function (f) { if (f.lane != null) return; g.globalAlpha = Math.min(1, f.t * 2); g.fillStyle = f.c; g.font = "bold " + Math.round(W / 14) + "px monospace"; g.fillText(f.s, W * f.x - g.measureText(f.s).width / 2, SH * f.y - (1 - f.t) * 20); g.globalAlpha = 1; });
+      if (t < 4) { var a2 = Math.min(1, (4 - t) / 1.5, (t + 2) / 1); g.globalAlpha = Math.max(0, a2); g.fillStyle = "rgba(0,0,0,0.55)"; g.fillRect(0, SH * 0.3, W, SH * 0.3); g.fillStyle = I.c2; g.font = "bold " + Math.round(W / 16) + "px monospace"; var ti = "“" + song[0] + "”"; g.fillText(ti, Math.round(W / 2 - g.measureText(ti).width / 2), SH * 0.43); g.font = "bold " + Math.round(W / 30) + "px monospace"; g.fillStyle = I.c1; var tj = song[1] + " · " + song[2] + " · Realm Vision"; g.fillText(tj, Math.round(W / 2 - g.measureText(tj).width / 2), SH * 0.43 + W / 14); g.globalAlpha = 1; }
+      if (t < -1.2) { g.fillStyle = "#f0e2b8"; g.font = "bold 10px monospace"; }
+    }
+    function finish() {
+      C.over = true; var acc = C.total ? (C.perf + 0.6 * C.good) / C.total : 1, gradeL = acc >= 0.9 ? "S" : acc >= 0.75 ? "A" : acc >= 0.55 ? "B" : "C", rw = "", f = null;
+      try { f = cp().f; } catch (e) {}
+      if (f) {
+        var kf = "rvc:" + key + ":" + C.mode, first = !f[kf]; f[kf] = 1;
+        if (C.mode === "play") { var cr = Math.min(250, Math.round(C.score / 250)); if (!first) cr = Math.round(cr * 0.15); S.crowns += cr; if (first) addXp(25); rw = "+" + cr + " crowns" + (first ? " and +25 XP" : ""); }
+        else if (first) { addXp(15); rw = "+15 XP for catching the show"; }
+        var n = 0; Object.keys(f).forEach(function (q) { if (/^rvc:rv_/.test(q)) n++; }); rw += (rw ? " · " : "") + "shows seen: " + n;
+      }
+      var res = document.createElement("div"); res.style.cssText = "position:absolute;inset:0;background:rgba(5,4,8,.82);display:flex;align-items:center;justify-content:center;padding:16px";
+      var box = document.createElement("div"); box.style.cssText = "max-width:380px;width:100%;background:#120e16;border:1px solid " + I.c1 + ";border-radius:10px;padding:18px 16px;color:#f0e2b8;text-align:center";
+      box.innerHTML = '<div style="letter-spacing:.2em;font-size:11px;color:' + I.c1 + '">REALM VISION</div><div style="font-size:20px;margin:6px 0 10px">Encore! “' + song[0] + '”</div>' +
+        (C.mode === "play" ? '<div style="font-size:34px;color:' + I.c2 + '">' + gradeL + '</div><div style="font-size:13px;margin-bottom:8px">Score ' + C.score + ' · Best combo ' + C.maxc + ' · Perfect ' + C.perf + ' · Good ' + C.good + ' · Missed ' + C.miss + '</div>' : '<div style="font-size:13px;margin-bottom:8px">The crowd went wild.</div>') +
+        '<div style="font-size:12px;opacity:.85;margin-bottom:12px">' + rw + '</div><div style="font-size:12px;margin-bottom:12px;line-height:1.5">Enjoyed it? Vote for your favourite songs. Add your email on the vote page to lock your lamps in and join the Voidhammer list.</div>';
+      function rb(txt, fn, pri) { var b = document.createElement("button"); b.textContent = txt; b.style.cssText = "display:block;width:100%;margin:6px 0;padding:10px;font:700 13px Cinzel,Georgia,serif;border-radius:8px;cursor:pointer;min-height:0;border:1px solid " + I.c1 + ";color:" + (pri ? "#14101a" : "#f0e2b8") + ";background:" + (pri ? I.c1 : "rgba(10,8,6,.7)"); b.addEventListener("click", function (e) { e.stopPropagation(); fn(); }); box.appendChild(b); }
+      rb("Cast your lamps (vote and join the list)", function () { rvOpenVote(); }, 1); rb("Encore: play it again", function () { var o = own, s = si, m = C.mode; leave(); setTimeout(function () { rvConcert(o, s, m); }, 120); }); rb("Leave the show", leave);
+      res.appendChild(box); root.appendChild(res); res.addEventListener("pointerdown", function (e) { e.stopPropagation(); });
+    }
+    function leave() {
+      if (CN !== C) return; CN = null; cancelAnimationFrame(C.raf); window.removeEventListener("keydown", kd, true); window.removeEventListener("keyup", ku, true); window.removeEventListener("resize", size);
+      try { if (C.gain && mac) { C.gain.gain.setTargetAtTime(0.0001, mac.currentTime, 0.15); var s0 = C.src; setTimeout(function () { try { s0.stop(); } catch (e) {} }, 700); } } catch (e) {}
+      try { document.body.removeChild(root); } catch (e) {}
+      setTimeout(function () { RVHOLD = false; }, 150); if (AR && AR.dlg === "rvconcert") { AR.dlg = null; AR.dch = []; }
+    }
+    C.leave = leave;
+    var ld = document.createElement("div"); ld.textContent = "Tuning up…"; ld.style.cssText = "position:absolute;left:0;right:0;top:50%;text-align:center;color:" + I.c2 + ";font:700 16px Cinzel,Georgia,serif;letter-spacing:.2em"; root.appendChild(ld);
+    var ch0 = null, buf0 = null, got = 0;
+    function go() { if (++got < 2 || CN !== C) return; try { root.removeChild(ld); } catch (e) {} begin(ch0, buf0); }
+    rvChart(function (c) { ch0 = c; go(); }); rvAudio(key, function (b) { buf0 = b; go(); });
+  }
+  window.__rvConcert = rvConcert; window.__rvLeave = function () { if (CN) CN.leave(); };
   function mDetect() {
     var now = Date.now() / 1000;
     if (typeof F !== "undefined" && F && !F.over) { mFightT = now; return "combat"; }
@@ -16395,6 +16801,7 @@ setInterval(function () {
   function mFile(m) {
     var tt = document.getElementById("title"); if (tt && !tt.hidden && m === "world") m = "title";
     if (!mac) return; mLoadFiles();
+    if (RVHOLD) { var nw0 = mac.currentTime; Object.keys(FS).forEach(function (k) { var S0 = FS[k]; if (S0 && S0.on) { S0.on = false; S0.g.gain.setTargetAtTime(0.0001, nw0, 0.3); S0.t = setTimeout(function () { try { S0.src.stop(); } catch (e) {} if (FS[k] === S0) FS[k] = null; }, 1500); } }); if (mst) mst.gain.setTargetAtTime(0, nw0, 0.3); if (FMG) FMG.gain.setTargetAtTime(mOn ? 0.7 : 0, nw0, 0.3); return; }
     if (/^rv_/.test(m)) { mLoadOne(m); if (FB[m]) rvNote(m); else m = "town"; Object.keys(FB).forEach(function (k) { if (/^rv_/.test(k) && k !== m && !FS[k]) delete FB[k], FLOADING[k] = 0; }); }
     var okm = !!FB[m], now = mac.currentTime;
     Object.keys(FB).forEach(function (k) {
