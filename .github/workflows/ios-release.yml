@@ -30,9 +30,8 @@ jobs:
           xcodebuild -project App.xcodeproj -scheme App -configuration Release -sdk iphoneos \
             -archivePath $RUNNER_TEMP/App.xcarchive archive \
             DEVELOPMENT_TEAM=${{ secrets.APPLE_TEAM_ID }} CURRENT_PROJECT_VERSION=$BUILD \
-            -allowProvisioningUpdates \
-            -authenticationKeyPath ~/.appstoreconnect/private_keys/AuthKey_${{ secrets.ASC_KEY_ID }}.p8 \
-            -authenticationKeyID ${{ secrets.ASC_KEY_ID }} -authenticationKeyIssuerID ${{ secrets.ASC_ISSUER_ID }}
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY=""
+      # Archive is unsigned on purpose (no test device needed); the export step below signs it for the App Store.
       - name: Export and upload to TestFlight
         working-directory: app/ios/App
         run: |
