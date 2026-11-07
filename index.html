@@ -16337,6 +16337,24 @@ setInterval(function () {
     mst.gain.setTargetAtTime(mOn ? 0.55 : 0, mac.currentTime, 0.6);
     mTimer = setInterval(mSched, 100);
   }
+  // ---- Realm Vision: each Realm's towns play that Realm's song from the song league ----
+  var RV = {
+    ember: [["Temper", "Flashpoint", "Flameborne"]], stone: [["Aftershock", "Seismic", "Stonehold"]], storm: [["Freefall", "Updraft", "Stormreach"]],
+    frost: [["Forty Seconds", "The Knot-Cord Brothers", "Frostgrave"]], spirit: [["Somebody Else's Summer", "Echo Bleed", "Spiritveil"], ["Ghostlight of the Forgotten Realm", "Mirel of the Last Lamp", "Spiritveil"]],
+    shadow: [["No Faces", "Lights Out", "Shadowdeep"]], light: [["Seven Colours", "Prism", "Lightforge"]], metal: [["Unplated", "The Fitted", "Metalcrown"]]
+  };
+  var rvLast = "";
+  function rvMood() {
+    try {
+      var sid = siteOfArea(AR.id), st = sid && site(sid), L = st && RV[st.owner]; if (!L) return "town";
+      var h = 0, i, id = String(AR.id); for (i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) >>> 0;
+      return "rv_" + st.owner + "_" + (1 + h % L.length);
+    } catch (e) { return "town"; }
+  }
+  function rvNote(m) {
+    if (m === rvLast) return; rvLast = m; var q = /^rv_([a-z]+)_(\d+)$/.exec(m); if (!q) return;
+    var t = RV[q[1]] && RV[q[1]][+q[2] - 1]; if (t && typeof aToast === "function") setTimeout(function () { if (rvLast === m) aToast("♪ " + t[0] + ", " + t[1] + " (" + t[2] + " · Realm Vision)"); }, 2600);
+  }
   function mDetect() {
     var now = Date.now() / 1000;
     if (typeof F !== "undefined" && F && !F.over) { mFightT = now; return "combat"; }
@@ -16344,7 +16362,7 @@ setInterval(function () {
       var fight = false, boss = false; AR.en.forEach(function (e) { if (!e.dead && !e.gone && e.aggro) { fight = true; if (e.d.boss) boss = true; } });
       if (boss) { mFightT = now; return "boss"; } if (fight) { mFightT = now; return "combat"; }
       if (now - mFightT < 3 && (mMood === "boss" || mMood === "combat")) return mMood;
-      return AR.sp && AR.sp.over ? (nightK() > 0.7 ? "dungeon" : "world") : AR.sp && AR.sp.safe ? "town" : "dungeon";
+      return AR.sp && AR.sp.over ? (nightK() > 0.7 ? "dungeon" : "world") : AR.sp && AR.sp.safe ? rvMood() : "dungeon";
     }
     return "world";
   }
@@ -16359,20 +16377,25 @@ setInterval(function () {
   }
   function mKick(t) { var o = mac.createOscillator(), g = mac.createGain(); o.type = "triangle"; o.frequency.setValueAtTime(150, t); o.frequency.exponentialRampToValueAtTime(45, t + 0.12); g.gain.setValueAtTime(1, t); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.18); o.connect(g); g.connect(mbus.drum); o.start(t); o.stop(t + 0.2); }
   // ---- recorded score: decoded into buffers and looped sample-accurately (no gap), crossfaded between moods ----
-  var FB = {}, FS = {}, FBAD = {}, FMG = null, FLOAD = 0;
+  var FB = {}, FS = {}, FBAD = {}, FLOADING = {}, FMG = null, FLOAD = 0;
   function mLoadFiles() {
     if (FLOAD || !mac) return; FLOAD = 1; FMG = mac.createGain(); FMG.gain.value = 0.7; FMG.connect(mac.destination);
-    ["world", "town", "dungeon", "combat", "boss", "title"].forEach(function (k) {
+    ["world", "town", "dungeon", "combat", "boss", "title"].forEach(mLoadOne);
+  }
+  function mLoadOne(k) {
+    if (FB[k] || FBAD[k] || FLOADING[k] || !mac) return; FLOADING[k] = 1;
+    {
       try { fetch("mus/" + k + ".mp3").then(function (r) { if (!r.ok) throw 0; return r.arrayBuffer(); }).then(function (ab) { return mac.decodeAudioData(ab); }).then(function (buf) {
         // trim encoder padding so the loop point is seamless
         var d = buf.getChannelData(0), n = d.length, s = 0, e = n - 1; while (s < n && Math.abs(d[s]) < 0.004) s++; while (e > s && Math.abs(d[e]) < 0.004) e--;
-        FB[k] = { b: buf, s: s / buf.sampleRate, e: e / buf.sampleRate };
+        FB[k] = { b: buf, s: s / buf.sampleRate, e: e / buf.sampleRate }; FLOADING[k] = 0;
       }).catch(function () { FBAD[k] = 1; }); } catch (e) { FBAD[k] = 1; }
-    });
+    }
   }
   function mFile(m) {
     var tt = document.getElementById("title"); if (tt && !tt.hidden && m === "world") m = "title";
     if (!mac) return; mLoadFiles();
+    if (/^rv_/.test(m)) { mLoadOne(m); if (FB[m]) rvNote(m); else m = "town"; Object.keys(FB).forEach(function (k) { if (/^rv_/.test(k) && k !== m && !FS[k]) delete FB[k], FLOADING[k] = 0; }); }
     var okm = !!FB[m], now = mac.currentTime;
     Object.keys(FB).forEach(function (k) {
       var on = mOn && okm && k === m, S = FS[k];
@@ -16389,7 +16412,7 @@ setInterval(function () {
     if (!mac || mac.state !== "running") return;
     var m = mDetect(); if (m !== mMood) { mMood = m; mStep = 0; mNext = Math.max(mNext, mac.currentTime + 0.05); }
     mFile(m);
-    var P = MP[m], tr = 1 + 0.06 * (typeof tier === "function" ? tier() : 0), sd = 30 / (P.bpm * tr), wv = mPulse(P.duty), w25 = mPulse(0.25);
+    var P = MP[m] || MP.town, tr = 1 + 0.06 * (typeof tier === "function" ? tier() : 0), sd = 30 / (P.bpm * tr), wv = mPulse(P.duty), w25 = mPulse(0.25);
     while (mNext < mac.currentTime + 0.6) {
       var t = mNext, s = mStep % 32, bar = s >> 3, e8 = s & 7, ch = P.ch[bar], rt = P.rt[bar], ev = P.ev[s];
       if (ev) mNote(wv, mF(ev.s), t, ev.len * sd * 0.92, 1, mbus.lead, 0.75);
