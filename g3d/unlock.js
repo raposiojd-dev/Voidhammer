@@ -4,7 +4,7 @@
 (function () {
   var PID = "com.voidhammer.shatteredrealms.fullgame", FREE_DAYS = 60, KEY = "voidhammer_unlock";
   var C = window.Capacitor, native = !!(C && C.isNativePlatform && C.isNativePlatform());
-  var NP = null, price = "A$9.99", busy = false, ov = null, productOK = false; /* the gate only appears once the App Store actually offers the unlock */
+  var NP = null, price = "A$9.99", busy = false, ov = null, productOK = false, lastS = null, lastDay = 0; /* the gate only appears once the App Store actually offers the unlock */
   var LINKS = [["Website", "https://voidhammersaga.com"], ["Instagram", "https://www.instagram.com/voidhammersaga"], ["TikTok", "https://www.tiktok.com/@voidhammersaga"],
     ["YouTube", "https://www.youtube.com/@voidhammersaga"], ["Threads", "https://www.threads.com/@voidhammersaga"]];
   if (!native) LINKS.push(["Patreon", "https://www.patreon.com/voidhammerofficial"]);
@@ -69,7 +69,8 @@
     if (!native || unlocked()) return;
     var s = S(); if (!s || typeof s.day !== "number") return;
     var t = document.getElementById("title"); if (t && !t.hidden) { close(); return; }
-    if (s.day >= FREE_DAYS && productOK) { s.speed = 0; showGate(); }
+    var live = (s === lastS && s.day > lastDay); lastS = s; lastDay = s.day; /* only gate a game whose clock is actually running (not a stale save behind the intro) */
+    if (s.day >= FREE_DAYS && productOK && (live || ov)) { s.speed = 0; showGate(); }
   }, 400);
   if (native) { setTimeout(check, 1500); setInterval(function () { if (!productOK && !unlocked()) check(); }, 60000); }
   window.__vhUnlock = { owned: unlocked, show: showGate, pid: PID };
