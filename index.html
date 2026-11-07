@@ -92,7 +92,8 @@ button.cast { color: #e6dcff; border-color: #9a7cd0; background: rgba(154,124,20
 #abow { right: 7rem; bottom: calc(1.9rem + env(safe-area-inset-bottom, 0px)); border: 3px solid #e8d8a8; background: rgba(110,80,40,0.9); color: #f2e6c8; box-shadow: 0 4px 0 #3a2410; }
 #abow small { display: block; font-size: 0.7rem; opacity: 0.85; }
 #acast { right: 1.9rem; bottom: calc(8.6rem + env(safe-area-inset-bottom, 0px)); border: 3px solid #d9ccff; background: rgba(90,50,170,0.92); color: #efe6ff; box-shadow: 0 4px 0 #2a1860, 0 0 16px rgba(160,120,255,0.55); animation: castp 2s ease-in-out infinite; }
-#adlg { max-height: 68vh; overflow-y: auto; }
+#adlg { max-height: min(68vh, calc(100vh - 1.4rem)); overflow-y: auto; touch-action: pan-y; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
+@media (orientation: landscape) { #adlg { max-height: calc(100vh - 1rem); } }
 #aatk:active { transform: translateY(2px); box-shadow: 0 2px 0 #6a3a12; }
 #atoast { position: absolute; left: 1rem; right: 1rem; top: 8.6rem; border-radius: 8px; box-shadow: 0 4px 18px rgba(0,0,0,0.5); text-align: center; background: rgba(14,12,9,0.85); border: 2px solid #8a5a2a; padding: 0.55rem 0.8rem; color: #f2e6c8; font-size: 0.9rem; pointer-events: none; max-width: 28rem; margin-inline: auto; }
 #adlg { position: absolute; left: 0.6rem; right: 0.6rem; bottom: calc(0.8rem + env(safe-area-inset-bottom, 0px)); max-width: 30rem; margin-inline: auto; background: rgba(14,12,9,0.95); border: 3px solid #c8873a; padding: 0.9rem 1rem; z-index: 17; }
@@ -16391,9 +16392,8 @@ setInterval(function () {
     var u = RVURL + "?utm_source=game&utm_medium=realm-vision", any = RVP.some(Boolean);
     if (any) u += "&picks=" + encodeURIComponent(RVROUND.matches.map(function (m, i) { return RVP[i] || ""; }).join("|"));
     try { cp().f.rvvote = 1; } catch (e) {}
-    var w = null; try { w = window.open(u, "_blank", "noopener"); } catch (e) {}
-    if (!w) { try { location.href = u; } catch (e2) {} }
-    aToast("Vote page open. Enter your email there to lock in your lamps.");
+    try { var an = document.createElement("a"); an.href = u; an.target = "_blank"; an.rel = "noopener noreferrer"; an.style.display = "none"; document.body.appendChild(an); an.click(); setTimeout(function () { try { document.body.removeChild(an); } catch (e) {} }, 500); } catch (e) {}
+    aToast("Vote page opened in a new tab. Enter your email there to lock in your lamps, then come back to the game.");
   }
   var RVM = {
     ember: [{ who: "Flashpoint", look: "She is hosing down her decks with a bucket when you walk up.", say: "\u201cCareful. Every drop costs me a bit of temper, and I\u2019m running low today. Keep your coal lit.\u201d", q: [["Ask about the fire", "\u201cReal fire. The Spark makes it and I pay for it. Last night I shouted at a pigeon. Vote for \u2018Temper\u2019 and I\u2019ll try to be gracious about it.\u201d"], ["Ask what the song is about", "\u201cHolding it in. Letting it go. The crowd does the second bit.\u201d"]] }],
@@ -16563,6 +16563,9 @@ setInterval(function () {
     if (!RVSEEN[id]) { RVSEEN[id] = 1; setTimeout(function () { if (AR === a && !a.dlg && rvOn()) aToast("♪ REALM VISION is on! Vote for your favourite songs and meet the bands" + (R.stage ? ", and catch the concert at the stage." : ". The stage is in the Realm capital.")); }, 6500); }
   }
   window.__rvInject = rvInject;
+
+  // dialogs taller than the screen scroll with a finger; the game's drag-to-look handlers must not swallow the touch
+  (function () { function fix() { var d = document.getElementById("adlg"); if (!d || d._sc) return; d._sc = 1; ["pointerdown", "pointermove", "touchstart", "touchmove", "wheel"].forEach(function (ev) { d.addEventListener(ev, function (e) { e.stopPropagation(); }, { passive: true }); }); } fix(); document.addEventListener("DOMContentLoaded", fix); })();
   window.__rvInfo = function (own) { return rvOn() && RVI[own] ? { I: RVI[own], songs: RV[own] } : null; };
   // ---- the concert: see the band, dance in the crowd, or play along to the beat ----
   var CN = null, CCH = null, CCHP = null, CAB = {};
