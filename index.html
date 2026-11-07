@@ -16789,7 +16789,7 @@ setInterval(function () {
   var FB = {}, FS = {}, FBAD = {}, FLOADING = {}, FMG = null, FLOAD = 0;
   function mLoadFiles() {
     if (FLOAD || !mac) return; FLOAD = 1; FMG = mac.createGain(); FMG.gain.value = 0.7; FMG.connect(mac.destination);
-    ["world", "town", "dungeon", "combat", "boss", "title"].forEach(mLoadOne);
+    /* old 8-second loops removed; standard music streams via stdSet() */
   }
   function mLoadOne(k) {
     if (FB[k] || FBAD[k] || FLOADING[k] || !mac) return; FLOADING[k] = 1;
@@ -16801,11 +16801,29 @@ setInterval(function () {
       }).catch(function () { FBAD[k] = 1; }); } catch (e) { FBAD[k] = 1; }
     }
   }
+  // ===== STANDARD MUSIC: John's own songs, streamed (no big decode, easy on phones) =====
+  var STD = { title: "std_title", world: "std_frost", town: "std_frost", dungeon: "std_sundering", combat: "std_tremor", boss: "std_tremor" }, STDE = {};
+  function stdEl(f) {
+    var e = STDE[f]; if (e) return e;
+    var a = new Audio(); a.src = "mus/" + f + ".mp3"; a.loop = true; a.preload = "auto"; a.setAttribute("playsinline", "");
+    var g = mac.createGain(); g.gain.value = 0.0001;
+    try { var sn = mac.createMediaElementSource(a); sn.connect(g); g.connect(FMG); } catch (er) { return null; }
+    return (STDE[f] = { a: a, g: g, on: false, t: 0 });
+  }
+  function stdSet(file) {
+    if (!mac || !FMG) return; var now = mac.currentTime;
+    Object.keys(STDE).forEach(function (f) { var S = STDE[f]; if (f !== file && S.on) { S.on = false; S.g.gain.setTargetAtTime(0.0001, now, 0.5); clearTimeout(S.t); S.t = setTimeout(function () { if (!S.on) { try { S.a.pause(); } catch (er) {} } }, 3000); } });
+    if (!file || !mOn) { if (!mOn) Object.keys(STDE).forEach(function (f) { var S = STDE[f]; if (S.on) { S.on = false; S.g.gain.setTargetAtTime(0.0001, now, 0.3); clearTimeout(S.t); S.t = setTimeout(function () { try { S.a.pause(); } catch (er) {} }, 1500); } }); return; }
+    var S = stdEl(file); if (!S) return;
+    if (!S.on) { S.on = true; clearTimeout(S.t); try { var pr = S.a.play(); if (pr && pr.catch) pr.catch(function () {}); } catch (er) {} }
+    S.g.gain.setTargetAtTime(1, now, 0.6);
+  }
   function mFile(m) {
     var tt = document.getElementById("title"); if (tt && !tt.hidden && m === "world") m = "title";
     if (!mac) return; mLoadFiles();
-    if (RVHOLD) { var nw0 = mac.currentTime; Object.keys(FS).forEach(function (k) { var S0 = FS[k]; if (S0 && S0.on) { S0.on = false; S0.g.gain.setTargetAtTime(0.0001, nw0, 0.3); S0.t = setTimeout(function () { try { S0.src.stop(); } catch (e) {} if (FS[k] === S0) FS[k] = null; }, 1500); } }); if (mst) mst.gain.setTargetAtTime(0, nw0, 0.3); if (FMG) FMG.gain.setTargetAtTime(mOn ? 0.7 : 0, nw0, 0.3); return; }
+    if (RVHOLD) { var nw0 = mac.currentTime; Object.keys(FS).forEach(function (k) { var S0 = FS[k]; if (S0 && S0.on) { S0.on = false; S0.g.gain.setTargetAtTime(0.0001, nw0, 0.3); S0.t = setTimeout(function () { try { S0.src.stop(); } catch (e) {} if (FS[k] === S0) FS[k] = null; }, 1500); } }); stdSet(""); if (mst) mst.gain.setTargetAtTime(0, nw0, 0.3); if (FMG) FMG.gain.setTargetAtTime(mOn ? 0.7 : 0, nw0, 0.3); return; }
     if (/^rv_/.test(m)) { mLoadOne(m); if (FB[m]) rvNote(m); else m = "town"; Object.keys(FB).forEach(function (k) { if (/^rv_/.test(k) && k !== m && !FS[k]) delete FB[k], FLOADING[k] = 0; }); }
+    stdSet(/^rv_/.test(m) ? "" : (STD[m] || "std_frost"));
     var okm = !!FB[m], now = mac.currentTime;
     Object.keys(FB).forEach(function (k) {
       var on = mOn && okm && k === m, S = FS[k];
@@ -16815,7 +16833,7 @@ setInterval(function () {
       if (on) S.g.gain.setTargetAtTime(1, now, 0.5);
       else if (S.on) { S.on = false; S.g.gain.setTargetAtTime(0.0001, now, 0.4); S.t = setTimeout(function () { try { S.src.stop(); } catch (e) {} if (FS[k] === S) FS[k] = null; }, 2500); }
     });
-    if (mst) mst.gain.setTargetAtTime(mOn && !okm ? 0.55 : 0, now, 0.4);
+    if (mst) mst.gain.setTargetAtTime(0, now, 0.4);
     if (FMG) FMG.gain.setTargetAtTime(mOn ? 0.7 : 0, now, 0.3);
   }
   function mSched() {
@@ -16839,7 +16857,7 @@ setInterval(function () {
       mNext += sd; mStep++;
     }
   }
-  function mApply() { if (mac && mst) mst.gain.setTargetAtTime(mOn ? 0.55 : 0, mac.currentTime, 0.3); if (mBtn) { mBtn.textContent = mOn ? "♪" : "×"; mBtn.style.opacity = mOn ? "1" : "0.55"; mBtn.setAttribute("aria-label", mOn ? "Music on" : "Music off"); } }
+  function mApply() { if (mac && mst) mst.gain.setTargetAtTime(0, mac.currentTime, 0.3); if (mBtn) { mBtn.textContent = mOn ? "♪" : "×"; mBtn.style.opacity = mOn ? "1" : "0.55"; mBtn.setAttribute("aria-label", mOn ? "Music on" : "Music off"); } }
   function mFirst() { if (mOn) mInit(); }
   ["pointerdown", "touchstart", "keydown"].forEach(function (ev) { document.addEventListener(ev, mFirst, { passive: true }); });
   mBtn = document.createElement("button"); mBtn.id = "musbtn"; mBtn.style.cssText = "position:fixed;right:8px;top:calc(46% - 90px);z-index:60;width:34px;height:34px;min-height:0;padding:0;border-radius:50%;background:rgba(12,11,9,.7);border:1px solid #8f8672;color:#e8d8a8;font-size:16px;letter-spacing:0;line-height:1;text-transform:none";
