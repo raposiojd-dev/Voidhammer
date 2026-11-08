@@ -2851,7 +2851,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
       '<p class="dim-t">Tap a place to go there. Menus pause the world. Take work, buy cheap, sell dear, and find men who will follow you. Later, take a town of your own, and close the grey edges.</p><div class="btns"><button class="solid" data-act="begin">Begin</button></div>';
   }
   function tkwEnd() { var b = storyEndingBlock(); return b.indexOf("Thousand-Year War begins") > -1 ? "" : "<p><b style=\"font-weight:500;color:var(--amber)\">The Thousand-Year War begins.</b></p>"; }
-  function ch1Cta() { return '<p style="margin:14px 0 4px;padding:12px 14px;border:1px solid var(--amber);border-radius:8px;text-align:center"><b style="font-weight:500">The story continues in the novel.</b><br><span class="dim-t">Every night something comes over the wall of the last city in the world. It does not kill you. It forgets you.</span><br><a href="https://voidhammersaga.com/start?utm_source=game&utm_medium=ending" target="_blank" rel="noopener" style="color:var(--amber)">Read Chapter One free →</a></p>'; }
+  function ch1Cta() { return '<p style="margin:14px 0 4px;padding:12px 14px;border:1px solid var(--amber);border-radius:8px;text-align:center"><b style="font-weight:500">The story continues in the novel.</b><br><span class="dim-t">Every night, something waits at the edge of the torchlight in the last city in the world. If it gets you, nobody remembers you were there.</span><br><a href="https://voidhammersaga.com/start?utm_source=game&utm_medium=ending" target="_blank" rel="noopener" style="color:var(--amber)">Read Chapter One free →</a></p>'; }
   function endingSheet() {
     if (S.mc && S.mc.broken) {
       return "<h2>The Iron Throne</h2><p class=\"sub\">Day " + dayN() + "</p>" +
@@ -16442,8 +16442,18 @@ setInterval(function () {
     var u = RVURL + "?utm_source=game&utm_medium=realm-vision", any = RVP.some(Boolean);
     if (any) u += "&picks=" + encodeURIComponent(RVROUND.matches.map(function (m, i) { return RVP[i] || ""; }).join("|"));
     try { cp().f.rvvote = 1; } catch (e) {}
-    try { var an = document.createElement("a"); an.href = u; an.target = "_blank"; an.rel = "noopener noreferrer"; an.style.display = "none"; document.body.appendChild(an); an.click(); setTimeout(function () { try { document.body.removeChild(an); } catch (e) {} }, 500); } catch (e) {}
-    aToast("Vote page opened in a new tab. Enter your email there to lock in your lamps, then come back to the game.");
+    /* open the vote page inside the game (an overlay), so the app never jumps out to the browser */
+    try {
+      var ov = document.getElementById("rvvov"); if (ov) ov.remove();
+      ov = document.createElement("div"); ov.id = "rvvov";
+      ov.style.cssText = "position:fixed;inset:0;z-index:70;background:#0c0a08;display:flex;flex-direction:column;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)";
+      ov.innerHTML = '<div style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid #4a3820;background:#14100c"><button type="button" id="rvvx" style="font:600 14px Georgia,serif;color:#e8c070;background:none;border:1px solid #8a6a32;border-radius:8px;padding:8px 12px">\u2190 Back to the game</button><span style="color:#c8b088;font:13px Georgia,serif">Realm Vision \u00b7 vote</span></div><iframe id="rvvf" title="Realm Vision vote" style="flex:1;width:100%;border:0;background:#0c0a08" src="' + u.replace(/"/g, "&quot;") + '&embed=game"></iframe>';
+      document.body.appendChild(ov);
+      var close = function () { var o = document.getElementById("rvvov"); if (o) o.remove(); window.removeEventListener("message", onm); };
+      var onm = function (e) { try { if (e && e.data && e.data.vh === "closeVote") close(); } catch (er) {} };
+      window.addEventListener("message", onm);
+      document.getElementById("rvvx").onclick = close;
+    } catch (e) {}
   }
   var RVM = {
     ember: [{ who: "Flashpoint", look: "She is hosing down her decks with a bucket when you walk up.", say: "\u201cCareful. Every drop costs me a bit of temper, and I\u2019m running low today. Keep your coal lit.\u201d", q: [["Ask about the fire", "\u201cReal fire. The Spark makes it and I pay for it. Last night I shouted at a pigeon. Vote for \u2018Temper\u2019 and I\u2019ll try to be gracious about it.\u201d"], ["Ask what the song is about", "\u201cHolding it in. Letting it go. The crowd does the second bit.\u201d"]] }],

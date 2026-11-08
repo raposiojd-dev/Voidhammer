@@ -181,6 +181,7 @@ var ROUND = {
   document.getElementById('backbar').style.display='block';
   document.getElementById('backdone').style.display='block';
   function back(){
+    try{if(window.parent&&window.parent!==window){window.parent.postMessage({vh:'closeVote'},'*');return;}}catch(e){}
     try{if(window.opener&&!window.opener.closed){window.close();return;}}catch(e){}
     var ref="";try{ref=document.referrer||"";}catch(e){}
     if(ref&&/\/Voidhammer\/?(index\.html)?(\?|#|$)/.test(ref)&&history.length>1){history.back();return;}
