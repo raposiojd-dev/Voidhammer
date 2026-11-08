@@ -1149,7 +1149,9 @@
     ".k2ledger{position:absolute;width:64px;min-height:44px;padding:.25rem 0;border-radius:4px;border:1px solid #8a7ad0;background:#140c2a;color:#e8dcff;font:600 .55rem 'IBM Plex Mono',monospace;letter-spacing:.08em;text-transform:uppercase;opacity:0;pointer-events:none!important;transition:opacity .18s}.k2ledger.on{opacity:.95;pointer-events:auto!important}",
     ".k2open{filter:brightness(1.25) saturate(1.2)}",
     ".k2flash{position:absolute;inset:0;pointer-events:none;opacity:0;z-index:25;mix-blend-mode:screen}",
-    "#vh3d .b3-btns [data-b=cast]{grid-column:1;grid-row:1;width:3.9rem;height:3.9rem;background:radial-gradient(circle at 40% 30%,#6a4fd8,#1a1040 70%);border-color:#a99ce8;font-size:.62rem}",
+    "#vh3d .b3-btns [data-b=cast]{grid-column:1;grid-row:1}",
+    /* ability buttons wear the same bronze medallion ring as Strike, Cast, Shoot and Block; the Realm colour lives in the glass inside */
+    ".k2ab{border:0!important;background:url(img/btn_frame.webp) center/100% 100% no-repeat,radial-gradient(circle at 42% 34%,var(--k2c) 0%,var(--k2d) 30%,#07050a 62%)!important;box-shadow:0 6px 12px rgba(0,0,0,.7)!important}.k2ab.ready{box-shadow:0 6px 12px rgba(0,0,0,.7),0 0 16px var(--k2g)!important}.k2ab.empty{background:url(img/btn_frame.webp) center/100% 100% no-repeat,radial-gradient(circle,#1a140c 0%,#07050a 62%)!important}.k2ab .k2cd{inset:19%!important}.k2ab .k2ic{filter:drop-shadow(0 0 4px rgba(0,0,0,.8))}",
     "@media (max-width:600px){#vh3d .b3-ordbtn.k2left{left:.8rem;transform:none;bottom:calc(7.4rem + env(safe-area-inset-bottom,0px))}}",
     "#askill,#asksw{display:none!important}"
   ].join("\n");

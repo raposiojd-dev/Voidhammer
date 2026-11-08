@@ -8696,15 +8696,15 @@ var BIMG_SRC={"farm": "data:image/webp;base64,UklGRqyAAABXRUJQVlA4WAoAAAAQAAAAZw
     var c = document.createElement("div"); c.id = "fbtns"; c.style.cssText = "position:fixed;right:10px;z-index:200;display:none;gap:8px;flex-direction:row;align-items:flex-end";
     var defs = [["shoot", "SHOOT", "radial-gradient(circle at 35% 30%,#8a6a3a,#3a2814 75%)", "#d8b878"], ["cast", "CAST", "radial-gradient(circle at 35% 30%,#4a3a9a,#1a1040 75%)", "#8a7ad0"], ["strike", "STRIKE", "radial-gradient(circle at 35% 30%,#c8402e,#5a1208 75%)", "#f0b0a0"]];
     defs.forEach(function (d) {
-      var b = document.createElement("button"); b.textContent = d[1]; b.setAttribute("data-fa", d[0]);
-      b.style.cssText = "width:60px;height:60px;border-radius:50%;border:3px solid " + d[3] + ";background:" + d[2] + ";color:#fff;font:700 9px Georgia,serif;letter-spacing:0;padding:0;box-shadow:0 4px 8px #000;touch-action:manipulation";
+      var b = document.createElement("button"); b.innerHTML = '<span style="display:inline-block;padding:2px 6px;border-radius:2px;background:rgba(10,7,4,.78);border:1px solid rgba(201,162,74,.45)">' + d[1] + "</span>"; b.setAttribute("data-fa", d[0]);
+      b.style.cssText = "width:60px;height:76px;border:0;border-radius:0;background:url(img/btn_" + d[0] + ".webp) center top/60px 60px no-repeat;display:flex;align-items:flex-end;justify-content:center;color:#f3e6c6;font:700 9px 'Cinzel',Georgia,serif;letter-spacing:.08em;text-shadow:0 1px 2px #000;padding:0;filter:drop-shadow(0 4px 6px rgba(0,0,0,.7));touch-action:manipulation";
       b.addEventListener("pointerdown", function (ev) { ev.preventDefault(); ev.stopPropagation(); ovFAct(d[0]); });
       c.appendChild(b);
     });
     document.body.appendChild(c);
     setInterval(function () {
       var on = false; try { on = !!(F && !F.over && !F.deploy && $("bfc") && $("bfc").offsetParent && F.hero && !F.hero.dead); } catch (e) {}
-      if (on) { var par = $("bfc").parentNode; if (c.parentNode !== par) par.appendChild(c); var bb = $("bfb").getBoundingClientRect(); c.style.top = Math.max(120, bb.top - 76) + "px"; }
+      if (on) { var par = $("bfc").parentNode; if (c.parentNode !== par) par.appendChild(c); var bb = $("bfb").getBoundingClientRect(); c.style.top = Math.max(120, bb.top - 92) + "px"; }
       c.style.display = "none"; /* round Shoot/Cast/Strike buttons removed */
     }, 250);
   })();

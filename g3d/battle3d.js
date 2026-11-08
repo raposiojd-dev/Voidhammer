@@ -27,6 +27,19 @@ function styleOnce() {
 #vh3d .b3-btns [data-b=blk]{grid-column:1;grid-row:2;width:4.4rem;height:4.4rem;background:radial-gradient(circle at 40% 30%,#6a7a8a,#1e2630 70%)}
 #vh3d .b3-btns [data-b=shoot]{grid-column:2;grid-row:1;width:4.2rem;height:4.2rem;background:radial-gradient(circle at 40% 30%,#8a7a3a,#2a240c 70%)}
 #vh3d .b3-btns button.on{filter:brightness(1.5);transform:scale(.95)}
+/* the same painted medallions as the field and the caves: a bronze ring with the label on a plate below */
+#vh3d .b3-btns button{background:none!important;border:0!important;box-shadow:none!important;border-radius:0!important;position:relative;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding:0 0 .05rem;color:#f3e6c6;font:700 .56rem/1 'Cinzel',Georgia,serif;letter-spacing:.08em;text-transform:uppercase;text-shadow:0 1px 2px #000;filter:none}
+#vh3d .b3-btns button:before{content:'';position:absolute;left:0;top:0;width:100%;aspect-ratio:1/1;background:var(--bimg) center/contain no-repeat;transition:transform .08s;filter:drop-shadow(0 5px 8px rgba(0,0,0,.7))}
+#vh3d .b3-btns button>span{position:relative;display:inline-block;padding:.12rem .45rem;border-radius:2px;background:rgba(10,7,4,.78);border:1px solid rgba(201,162,74,.45);white-space:nowrap}
+#vh3d .b3-btns button:active:before,#vh3d .b3-btns button.on:before{transform:scale(.93);filter:brightness(1.35)}
+#vh3d .b3-btns button.on{transform:none}
+#vh3d .b3-btns [data-b=atk]{--bimg:url(img/btn_strike.webp);width:5.4rem!important;height:6.4rem!important}
+#vh3d .b3-btns [data-b=blk]{--bimg:url(img/btn_block.webp);width:4.2rem!important;height:5.1rem!important}
+#vh3d .b3-btns [data-b=shoot]{--bimg:url(img/btn_shoot.webp);width:4.2rem!important;height:5.1rem!important}
+#vh3d .b3-btns [data-b=cast]{--bimg:url(img/btn_cast.webp);width:4.2rem!important;height:5.1rem!important}
+#vh3d .b3-btns [hidden]{display:none!important}
+#vh3d .b3-btns button{outline:0}#vh3d .b3-btns button:after{display:none!important}
+#vh3d .b3-btns button{outline:0}#vh3d .b3-btns button:after{display:none!important}
 #vh3d .b3-ordbtn{position:absolute;left:50%;transform:translateX(-50%);bottom:calc(1rem + env(safe-area-inset-bottom,0px));padding:.85rem 1.5rem;border-radius:999px;border:2px solid #e3c27a;background:radial-gradient(circle at 50% 30%,#4a3214,#1a1208 70%);color:#fff2cf;font:700 .95rem 'Cinzel',Georgia,serif;letter-spacing:.08em;box-shadow:0 0 18px #c8873a66,0 6px 16px #000;touch-action:none;cursor:pointer}
 #vh3d .b3-ordbtn small{display:block;font:500 .6rem 'IBM Plex Mono',monospace;letter-spacing:.12em;color:#e8d8a8;text-transform:uppercase}
 #vh3d .b3-fan{position:absolute;left:50%;bottom:calc(5.6rem + env(safe-area-inset-bottom,0px));transform:translateX(-50%);display:none;flex-direction:column;align-items:center;gap:.45rem;padding:.6rem;background:#0c0906e6;border:1px solid #8a6a30;border-radius:8px;box-shadow:0 10px 30px #000c;max-width:94vw}
@@ -286,7 +299,7 @@ function buildBattle(st, api, info, done) {
   st.$(".v3-act").innerHTML = "";
   st.gfxButton();
   const root = st.root;
-  const btns = document.createElement("div"); btns.className = "b3-btns"; btns.innerHTML = '<button data-b="shoot"' + (info.hasBow ? "" : " hidden") + '>Shoot</button><button data-b="blk">Block</button><button data-b="atk">Strike</button>' + (api.sk2 ? '<button data-b="cast">✦ Cast</button>' : ""); root.appendChild(btns);
+  const btns = document.createElement("div"); btns.className = "b3-btns"; btns.innerHTML = '<button data-b="shoot"' + (info.hasBow ? "" : " hidden") + '><span>Shoot</span></button><button data-b="blk"><span>Block</span></button><button data-b="atk"><span>Strike</span></button>' + (api.sk2 ? '<button data-b="cast"><span>✦ Cast</span></button>' : ""); root.appendChild(btns);
   const ordBtn = document.createElement("button"); ordBtn.className = "b3-ordbtn" + (api.sk2 ? " k2left" : ""); ordBtn.innerHTML = 'Orders<small id="b3og">all · hold</small>'; root.appendChild(ordBtn);
   const fan = document.createElement("div"); fan.className = "b3-fan";
   fan.innerHTML = '<div class="row grp"><button data-g="all" class="on">All</button><button data-g="inf">Infantry</button><button data-g="arch">Archers</button><button data-g="cav">Cavalry</button></div>' +
