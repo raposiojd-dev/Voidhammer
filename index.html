@@ -1045,7 +1045,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
         v.build.left--; bump(v, 1.5);
         if (v.build.left <= 0) {
           var bd = BUILDINGS[v.build.id]; v.has = v.has || {}; v.has[v.build.id] = true; if (v.build.id === "farm") v.farm = 0; else v.W += bd.jobs;
-          log("The " + bd.name + " at " + v.name + " is finished. The men who built it work here now.", "e"); toast("The " + bd.name + " at " + v.name + " is finished."); v.build = null;
+          log((/^your /i.test(bd.name) ? "" : "The ") + bd.name + " at " + v.name + " is finished. The men who built it work here now.", "e"); toast((/^your /i.test(bd.name) ? "" : "The ") + bd.name + " at " + v.name + " is finished."); v.build = null;
         }
       }
       if (v.stock <= 0) {
@@ -1401,7 +1401,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
         if (s.build.left <= 0) {
           var hb = HOLDB[s.build.id]; s.has = s.has || {}; s.has[s.build.id] = true;
           if (s.build.id === "barracks") s.gmax += 40; if (s.build.id === "walls") s.wall += 0.6; if (s.build.id === "granary") s.cap = Math.round(s.cap * 1.5);
-          log("The " + hb.name + " at " + s.name + " is finished.", "e"); toast("The " + hb.name + " at " + s.name + " is finished."); s.build = null;
+          log((/^your /i.test(hb.name) ? "" : "The ") + hb.name + " at " + s.name + " is finished.", "e"); toast((/^your /i.test(hb.name) ? "" : "The ") + hb.name + " at " + s.name + " is finished."); s.build = null;
         }
       }
       var hh = s.has || {};
