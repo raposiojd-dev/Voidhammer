@@ -119,9 +119,9 @@ function buildArea(st, api, A) {
   let L;
   if (cave) {
     scene.background = new THREE.Color(0x07060a);
-    scene.fog = new THREE.FogExp2(0x0a080e, 0.06);
-    const hemi = new THREE.HemisphereLight(0x8a8ab0, 0x1a1418, 0.55); scene.add(hemi);
-    const sun = new THREE.DirectionalLight(0x9a8ac0, 0.35); sun.position.set(centre.x + 10, 30, centre.z + 8); sun.target.position.copy(centre); scene.add(sun, sun.target);
+    scene.fog = new THREE.FogExp2(0x0a080e, 0.032);
+    const hemi = new THREE.HemisphereLight(0x9a98c0, 0x3a3038, 1.05); scene.add(hemi);
+    const sun = new THREE.DirectionalLight(0xa89ac8, 0.6); sun.position.set(centre.x + 10, 30, centre.z + 8); sun.target.position.copy(centre); scene.add(sun, sun.target);
     L = { hemi, sun };
   } else {
     scene.fog = new THREE.FogExp2(P.fog, over ? 0.02 : (townish ? 0.011 : 0.014) + info.voidNear * 0.006);
@@ -147,7 +147,8 @@ function buildArea(st, api, A) {
   if (L.sky) { L.env = useSkyEnv(st, scene, L.sky); st.track(L.env); }
   timeOfDay();
   // the hero carries a lantern underground
-  const lantern = cave ? new THREE.PointLight(0xffb070, 30, 14, 1.6) : null; if (lantern) scene.add(lantern);
+  const lantern = cave ? new THREE.PointLight(0xffc080, 70, 26, 1.15) : null; if (lantern) scene.add(lantern);
+  const lanternFill = cave ? new THREE.PointLight(0xffd8a8, 11, 12, 1) : null; if (lanternFill) scene.add(lanternFill); // a softer light just ahead and above, so the hero's face and the next few strides show
 
   // ---------- ground: one vertex per tile corner, coloured by tile ----------
   const gg = new THREE.PlaneGeometry(W * T, H * T, W, H); gg.rotateX(-Math.PI / 2); gg.translate(W * T / 2, 0, H * T / 2);
@@ -421,6 +422,14 @@ function buildArea(st, api, A) {
     const banG = recoloured("castle", "banner", { 7: flagC, 0: flagC, 4: 0x5a4632 }, "ban" + info.realm);
     if (banG) { kit.g["v:banner"] = banG; for (const o of exits) { if (!o.veil) continue; const horiz = o.e.w >= o.e.h, half = (horiz ? o.e.w : o.e.h) * T / 2 + 0.4; for (const sd of [-1, 1]) { const bx = horiz ? o.x + sd * half : o.x, bz = horiz ? o.z : o.z + sd * half; PB.add("v:banner", mm.sway, bx, 2.7, bz, 1.4, 1.4, 1.4, (horiz ? 0 : Math.PI / 2) + (sd < 0 ? Math.PI : 0), 0xffffff); } } }
     PB.build(scene);
+  }
+  // caves: torches set into the walls every few strides, so the dark has edges you can read (the nearest four throw real light)
+  if (cave) {
+    const cand = [];
+    for (let y = 1; y < H - 1; y++) for (let x = 1; x < W - 1; x++) if (at(x, y) === 0 && (at(x - 1, y) === 2 || at(x + 1, y) === 2 || at(x, y - 1) === 2 || at(x, y + 1) === 2)) cand.push([x, y, rand()]);
+    cand.sort((p, q) => p[2] - q[2]);
+    const picked = []; for (const c of cand) { if (picked.length >= 18) break; if (picked.every((p) => Math.hypot(p[0] - c[0], p[1] - c[1]) > 7)) picked.push(c); }
+    picked.forEach((c, i) => fires.push(torch(kit, scene, (c[0] + 0.5) * T, 1.9, (c[1] + 0.5) * T, 0xffa452, i < 5 && st.gfx !== "low")));
   }
   function gatePosts(o, nm) {
     const { e, x, z } = o, horiz = e.w >= e.h, half = (horiz ? e.w : e.h) * T / 2 + 0.4;
@@ -810,7 +819,8 @@ function buildArea(st, api, A) {
     const atkK = (p.atk || 0) > 0 ? p.atk / 0.2 : (p.atk2 || 0) > 0 ? p.atk2 / 0.2 : 0; atkPrev = p.atk || 0;
     animFigure(me, t, moveAmt, atkK, false, dt);
     hurtEl.style.opacity = p.flash > 0 ? Math.min(1, p.flash * 4).toFixed(2) : "0";
-    if (lantern) lantern.position.set(hx, 2.2, hz);
+    if (lantern) lantern.position.set(hx, 2.6, hz);
+    if (lanternFill) lanternFill.position.set(hx + Math.sin(heroYaw) * 2.2, 1.8, hz + Math.cos(heroYaw) * 2.2);
 
     // NPCs: markers, names, turning to look at you, chests that open
     let nearN = null, nd = 9;

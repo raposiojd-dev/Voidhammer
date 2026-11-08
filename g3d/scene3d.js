@@ -271,6 +271,7 @@ function makeStage(loadText, opts) {
     // and if the resolution is already at its floor, High's post-processing switches itself off for this scene
     if (!firstFrame && raw < 1) { slowAcc += raw; slowN++; if (slowN >= 45) { if (slowAcc / slowN > 1 / 34) { if (pr > 0.6) { pr = Math.max(0.6, pr * 0.8); renderer.setPixelRatio(pr); resize(); } else if (post && !postAuto) postAuto = true; } slowAcc = 0; slowN = 0; } }
     VH_TIME.value = t / 1000;
+    { let br = 1; try { br = window.__vhBright || 1; } catch (e) {} renderer.toneMappingExposure = 1.05 * br * (grade === "cave" ? 1.2 : 1); } // Brightness setting (Save game sheet); caves get a little extra
     if (gfx === "high" && !postFail && !postAuto) {
       if (!post) { try { post = makePost(renderer); post.setGrade(grade, gradeOpt); } catch (e) { postFail = true; post = null; } }
       if (post) { try { post.render(scene, camera); } catch (e) { postFail = true; renderer.setRenderTarget(null); renderer.render(scene, camera); } }
