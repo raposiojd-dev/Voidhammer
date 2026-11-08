@@ -1209,6 +1209,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
       B.won = true;
     } else {
       var extra = Math.ceil(T() * 0.25); loseTroops(extra); S.grain = Math.floor(S.grain * 0.7); S.crowns = Math.floor(S.crowns * 0.7);
+      S.grace = S.day + 4;
       if (e) { e.cool = 3; var dx = S.px - e.x, dy = S.py - e.y, d = Math.hypot(dx, dy) || 1; S.px += dx / d * 45; S.py += dy / d * 45; }
       B.out.push("You were driven off. " + (lost + extra) + (lost + extra === 1 ? " man" : " men") + " lost, and they took a third of your grain and coin.");
       log("Lost a fight. " + (lost + extra) + (lost + extra === 1 ? " man" : " men") + " gone.", "e");
@@ -1435,11 +1436,11 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
       } else if (e.kind === "lord") {
         spd = 44;
         if (e.fac === "metal" && S.mc && S.day < S.mc.start) { if (e.dest) { tx = e.dest.x; ty = e.dest.y; } }
-        else if (S.pwar[e.fac] && dp < (e.fac === "metal" ? 200 : 160) && es > ps * 0.75 && e.cool <= 0) { tx = S.px; ty = S.py; spd = e.fac === "metal" ? 62 : 58; }
+        else if (S.pwar[e.fac] && !vhSafe(1) && dp < (e.fac === "metal" ? 200 : 160) && es > ps * 0.75 && e.cool <= 0) { tx = S.px; ty = S.py; spd = e.fac === "metal" ? 62 : 58; }
         else if (e.dest) { tx = e.dest.x; ty = e.dest.y; }
       } else {
         spd = 34;
-        if (dp < 90 && e.cool <= 0) { tx = S.px; ty = S.py; spd = 50; }
+        if (dp < 90 && e.cool <= 0 && !vhSafe(0)) { tx = S.px; ty = S.py; spd = 50; }
         else {
           var best = null, bd = 1e9;
           S.sites.forEach(function (s) { var d = dist(e.x, e.y, s.x, s.y); if (d < bd) { bd = d; best = s; } });
@@ -1452,11 +1453,14 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
     });
   }
 
+  /* new players: lords do not hunt you in the first 30 days (or until level 5, up to day 60); after any defeat nobody hunts you for 4 days */
+  function vhSafe(lord) { if (S.day < (S.grace || 0)) return true; if (!lord) return false; return S.day < 30 || (lvl() < 5 && S.day < 60); }
   function checkCollisions() {
     if (sheet) return;
     for (var i = 0; i < S.enemies.length; i++) {
       var e = S.enemies[i];
       if (e.kind === "lord" && !S.pwar[e.fac]) continue;
+      if (S.day < (S.grace || 0)) continue; /* a few days of safety after a defeat */
       if (e.cool <= 0 && dist(e.x, e.y, S.px, S.py) < 14) { startBattle(e); return; }
     }
     for (var j = 0; j < S.rifts.length; j++) {
