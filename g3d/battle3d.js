@@ -239,7 +239,7 @@ function buildBattle(st, api, info, done) {
       const d = front(s), fy = d > 0 ? Math.PI : 0;
       if (siegeOn && ((s === "p") === defendP)) {
         // defenders: archers and a line of infantry on the wall walk, the rest behind the gate
-        anchor[s].inf = { x: 0, z: SG.innerZ - 4, yaw: 0 }; anchor[s].arch = { x: 0, z: SG.wallZ - 0.2, yaw: 0, wall: true }; anchor[s].cav = { x: 10, z: SG.innerZ - 8, yaw: 0 };
+        const dsp = s === "p" ? ownSplit : eSplit, fewBows = (dsp.arch || 0) < 6; /* few archers: the foot man the walk too, so the wall is never empty */ anchor[s].inf = fewBows ? { x: 0, z: SG.wallZ - 0.2, yaw: 0, wall: true } : { x: 0, z: SG.innerZ - 4, yaw: 0 }; anchor[s].arch = { x: 0, z: SG.wallZ - 0.2, yaw: 0, wall: true }; anchor[s].cav = { x: 10, z: SG.innerZ - 8, yaw: 0 };
       } else {
         const z0 = siegeOn ? (SG.wallZ + 26) : 15 * d;
         anchor[s].inf = { x: 0, z: z0, yaw: fy }; anchor[s].arch = { x: 0, z: z0 + 5 * (siegeOn ? 1 : d), yaw: fy }; anchor[s].cav = { x: 15 * (s === "p" ? 1 : -1), z: z0 + 1 * d, yaw: fy };
@@ -254,6 +254,7 @@ function buildBattle(st, api, info, done) {
     let cols, sp, sr;
     if (g === "arch") { cols = A.wall ? Math.min(n, Math.ceil(SG.wallW / 1.6)) : Math.ceil(Math.sqrt(n * 4)); sp = A.wall ? Math.min(1.8, SG.wallW / Math.max(1, cols)) : 1.8; sr = 1.6; }
     else if (g === "cav") { cols = Math.ceil(Math.sqrt(n * 1.5)); sp = 2.0; sr = 2.6; }
+    else if (A.wall) { cols = Math.min(n, Math.ceil(SG.wallW / 1.2)); sp = Math.min(1.5, SG.wallW / Math.max(1, cols)); sr = 0.6; } // a single file along the walk
     else { cols = wall ? Math.ceil(Math.sqrt(n * 2.2)) : Math.ceil(Math.sqrt(n * 3.2)); sp = wall ? 0.95 : 1.35; sr = wall ? 1.0 : 1.5; }
     // spears in the front rank against horse; the rest behind
     if (g === "inf") list.sort((a, b) => (b.spear ? 1 : 0) - (a.spear ? 1 : 0));
