@@ -122,10 +122,12 @@ export function buildSiege(st, kit, art, P, info, H0, defendP) {
       return false;
     },
     // the hero climbs a ladder or the stairs by walking into the foot of it
-    heroClimb(h) {
+    // a generous catch (1.5) and only when walking towards the wall, so stepping off a ladder or stair foot never re-climbs it
+    heroClimb(h, mv) {
       if (h.climb || h.onWall) return;
-      for (const L of ladders) if (Math.hypot(h.x - L.x, h.z - L.footZ) < 0.8) { SG.startClimb(h, L.x, L.footZ, L.x, wallZ + 0.3, true, 1.6); return; }
-      for (const sx of stairs) if (Math.hypot(h.x - sx, h.z - (wallZ - TH / 2 - 5.6)) < 0.8) { SG.startClimb(h, sx, wallZ - TH / 2 - 5.6, sx, wallZ - 0.5, true, 1.4); return; }
+      const mz = mv ? mv.z : 0;
+      if (mz < -0.3) for (const L of ladders) if (Math.hypot(h.x - L.x, h.z - L.footZ) < 1.5) { SG.startClimb(h, h.x, h.z, L.x, wallZ + 0.3, true, 1.6); return; }
+      if (mz > 0.3) for (const sx of stairs) if (Math.hypot(h.x - sx, h.z - (wallZ - TH / 2 - 5.6)) < 1.5) { SG.startClimb(h, h.x, h.z, sx, wallZ - 0.5, true, 1.4); return; }
     },
     // the hero gets off the walk by pushing towards either edge: the stairs or a ladder if one is close, otherwise a quick drop
     heroDown(h, dir) {
