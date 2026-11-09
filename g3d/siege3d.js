@@ -75,7 +75,7 @@ export function buildSiege(st, kit, art, P, info, H0, defendP) {
   const glows = [];
   for (const x of [-26, -12, 12, 26]) { const f = new THREE.Mesh(kit.g.flame, kit.glow(0xff8a3a)); f.position.set(x, WH + 0.6, wallZ - 0.6); scene.add(f); glows.push(f); }
 
-  let gateHP = 100, breached = false, breachT = 0, wallTaken = false, wallT = 0, crewPicked = false;
+  let gateHP = 100, breached = false, breachT = 0, wallTaken = false, wallT = 0, crewPicked = false, inT = 0;
   const attacker = defendP ? "e" : "p";
   const SG = {
     wallZ, innerZ, wallW: (X1 - X0) - 6, WH,
@@ -88,6 +88,18 @@ export function buildSiege(st, kit, art, P, info, H0, defendP) {
       if (SG.inBand(z)) return breached && Math.abs(x) < GATE - 0.4;
       if (z < wallZ - TH / 2 && (x < X0 || x > X1)) return false;
       return true;
+    },
+    // a move the wall refuses slides along it instead of stopping dead; near an open gate it funnels in towards the passage
+    slide(u, nx, nz) {
+      if (SG.canStand(nx, nz, u)) return [nx, nz];
+      if (breached && !u.onWall && Math.abs(u.x) < GATE + 3.5 && Math.abs(u.z - wallZ) < TH / 2 + 2.5) {
+        const step = Math.hypot(nx - u.x, nz - u.z), tx = u.x - Math.sign(u.x) * Math.min(Math.abs(u.x), step);
+        if (SG.canStand(tx, nz, u)) return [tx, nz];
+        if (SG.canStand(tx, u.z, u)) return [tx, u.z];
+      }
+      if (SG.canStand(nx, u.z, u)) return [nx, u.z];
+      if (SG.canStand(u.x, nz, u)) return [u.x, nz];
+      return null;
     },
     blocks(a) { return SG.inBand(a.z) && a.y < WH + 0.2 && a.y > 0 && !(breached && Math.abs(a.x) < GATE && a.y < 4.4) && a.x > X0 && a.x < X1; },
     climb(u, dt) {
@@ -157,13 +169,15 @@ export function buildSiege(st, kit, art, P, info, H0, defendP) {
       let aOn = 0, dOn = 0; for (const u of SG.units) if (u.onWall && !u.dead && !u.gone && !u.rout) { if (u.side === attacker) aOn++; else dOn++; }
       if (aOn >= 4 && dOn === 0) wallT += dt; else wallT = Math.max(0, wallT - dt * 0.5);
       if (wallT > 6) wallTaken = true;
+      // through the gate: the hold falls once the attackers stand in the yard, not the moment the gate gives
+      if (breached) { let aIn = 0; for (const u of SG.units) if (u.side === attacker && !u.onWall && !u.dead && !u.gone && !u.rout && u.z < wallZ - TH / 2 - 1.5) aIn++; if (aIn >= 5) inT += dt; else inT = Math.max(0, inT - dt * 0.5); }
     },
     outcome() {
-      const attWin = (breached && breachT > 5) || wallTaken;
+      const attWin = (breached && (inT > 4 || breachT > 45)) || wallTaken;
       if (!attWin) return null;
       return attacker === "p" ? "win" : "lose";
     },
-    state: () => ({ gate: Math.max(0, Math.round(gateHP)), breached, wallTaken, ramDist: Math.max(0, ram.z - (wallZ + TH / 2 + 2.7)), onWall: SG.units ? SG.units.filter((u) => u.onWall && !u.dead && !u.gone).length : 0, ladders: ladders.length, attacker }),
+    state: () => ({ gate: Math.max(0, Math.round(gateHP)), breached, wallTaken, ramDist: Math.max(0, ram.z - (wallZ + TH / 2 + 2.7)), onWall: SG.units ? SG.units.filter((u) => u.onWall && !u.dead && !u.gone).length : 0, ladders: ladders.length, attacker, inside: inT }),
     _ram: ram
   };
   function nearest(list, x) { let b = list[0]; for (const v of list) if (Math.abs(v - x) < Math.abs(b - x)) b = v; return b; }

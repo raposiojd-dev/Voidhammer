@@ -514,7 +514,7 @@ function buildBattle(st, api, info, done) {
       if (k.q || k.arrowleft) yaw += dt * 2.4; if (k.e || k.arrowright) yaw -= dt * 2.4;
       const blocking = (inp.rmb || k.control || blockHeld) && !(K2 && K2.noBlock());
       const mv = moveIntent(inp, yaw), run = (k.shift || (st.coarse && mv.amt > 0.92)) && !blocking, sp = (blocking ? 1.8 : run ? 6.2 : 4.0) * mv.amt * (K2 ? K2.speedMul() : 1);
-      if (mv.amt > 0.05) { const nx = hero.x + mv.x * sp * dt, nz = hero.z + mv.z * sp * dt; if (SG) { SG.heroClimb(hero, mv); if (hero.onWall !== hero.wasOn) { hero.wasOn = hero.onWall; hero.downT = -0.6; } if (hero.onWall && Math.abs(mv.z) > 0.55 && Math.abs(mv.z) > Math.abs(mv.x)) { hero.downT = (hero.downT || 0) + dt; if (hero.downT > 0.3) { hero.downT = 0; SG.heroDown(hero, mv.z < 0 ? -1 : 1); } } else hero.downT = 0; if (hero.onWall && !hero.wallTip) { hero.wallTip = true; st.msg("On the wall. Push off either edge to climb down.", 3); } } if (!SG || SG.canStand(nx, nz, hero)) { hero.x = nx; hero.z = nz; } hero.mv = mv.amt * (run ? 1.6 : 1.2); if (hero.atk <= 0) hero.yaw = angLerp(hero.yaw, Math.atan2(mv.x, mv.z), 1 - Math.exp(-dt * 12)); }
+      if (mv.amt > 0.05) { const nx = hero.x + mv.x * sp * dt, nz = hero.z + mv.z * sp * dt; if (SG) { SG.heroClimb(hero, mv); if (hero.onWall !== hero.wasOn) { hero.wasOn = hero.onWall; hero.downT = -0.6; } if (hero.onWall && Math.abs(mv.z) > 0.55 && Math.abs(mv.z) > Math.abs(mv.x)) { hero.downT = (hero.downT || 0) + dt; if (hero.downT > 0.3) { hero.downT = 0; SG.heroDown(hero, mv.z < 0 ? -1 : 1); } } else hero.downT = 0; if (hero.onWall && !hero.wallTip) { hero.wallTip = true; st.msg("On the wall. Push off either edge to climb down.", 3); } } if (!SG) { hero.x = nx; hero.z = nz; } else { const q = SG.slide(hero, nx, nz); if (q) { hero.x = q[0]; hero.z = q[1]; } } hero.mv = mv.amt * (run ? 1.6 : 1.2); if (hero.atk <= 0) hero.yaw = angLerp(hero.yaw, Math.atan2(mv.x, mv.z), 1 - Math.exp(-dt * 12)); }
       else { hero.mv = 0; if (blocking) hero.yaw = angLerp(hero.yaw, yaw + Math.PI, 1 - Math.exp(-dt * 10)); }
       if (inp.click) { inp.click = 0; if (!st.coarse) { hero.yaw = yaw + Math.PI; strike(); } }
       hero.block = blocking;
@@ -595,7 +595,8 @@ function buildBattle(st, api, info, done) {
         sp *= k2s;
         const dx = tx - u.x, dz = tz - u.z, d = Math.hypot(dx, dz) || 1, step = Math.min(d, sp * sdt);
         const nx = u.x + dx / d * step, nz = u.z + dz / d * step;
-        if (!SG || SG.canStand(nx, nz, u)) { u.vx = (nx - u.x) / Math.max(sdt, 1e-3); u.vz = (nz - u.z) / Math.max(sdt, 1e-3); u.x = nx; u.z = nz; } else { u.vx = u.vz = 0; }
+        const q = SG ? SG.slide(u, nx, nz) : [nx, nz];
+        if (q) { u.vx = (q[0] - u.x) / Math.max(sdt, 1e-3); u.vz = (q[1] - u.z) / Math.max(sdt, 1e-3); u.x = q[0]; u.z = q[1]; } else { u.vx = u.vz = 0; }
         u.mv = sp > 3.6 ? 1.5 : 1;
         u.yaw = angLerp(u.yaw, Math.atan2(dx, dz), 0.15);
       } else { u.mv = Math.max(0, u.mv - sdt * 4); u.vx = u.vz = 0; }
