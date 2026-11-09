@@ -127,7 +127,19 @@ export function buildSiege(st, kit, art, P, info, H0, defendP) {
       for (const L of ladders) if (Math.hypot(h.x - L.x, h.z - L.footZ) < 0.8) { SG.startClimb(h, L.x, L.footZ, L.x, wallZ + 0.3, true, 1.6); return; }
       for (const sx of stairs) if (Math.hypot(h.x - sx, h.z - (wallZ - TH / 2 - 5.6)) < 0.8) { SG.startClimb(h, sx, wallZ - TH / 2 - 5.6, sx, wallZ - 0.5, true, 1.4); return; }
     },
-    heroDown(h) { if (!h.onWall || h.climb) return; for (const sx of stairs) if (Math.abs(h.x - sx) < 0.7) { SG.startClimb(h, sx, wallZ - 0.6, sx, wallZ - TH / 2 - 6, false, 1.2); return; } },
+    // the hero gets off the walk by pushing towards either edge: the stairs or a ladder if one is close, otherwise a quick drop
+    heroDown(h, dir) {
+      if (!h.onWall || h.climb) return;
+      const x = Math.max(X0 + 2, Math.min(X1 - 2, h.x));
+      if (dir < 0) {
+        const sx = nearest(stairs, h.x);
+        if (Math.abs(h.x - sx) < 2.5) { SG.startClimb(h, sx, wallZ - 0.6, sx, wallZ - TH / 2 - 6, false, 1.2); return; }
+        SG.startClimb(h, x, wallZ - 0.6, x, wallZ - TH / 2 - 1.6, false, 0.7); return;
+      }
+      const L = nearestLadder(h.x);
+      if (L && Math.abs(h.x - L.x) < 1.5) { SG.startClimb(h, L.x, wallZ + 0.3, L.x, L.footZ, false, 1.2); return; }
+      SG.startClimb(h, x, wallZ + 0.6, x, wallZ + TH / 2 + 1.6, false, 0.7);
+    },
     tick(dt) {
       if (!SG.units) return;
       if (!crewPicked) { crewPicked = true; const inf = SG.units.filter((u) => u.side === attacker && u.cls === "inf" && !u.hero && !u.kael).sort((a, b) => Math.hypot(a.x - ram.x, a.z - ram.z) - Math.hypot(b.x - ram.x, b.z - ram.z)).slice(0, 4); inf.forEach((u, i) => { u.ramCrew = true; u.ramOff = (i - 1.5) * 0.8; }); }
