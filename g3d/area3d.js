@@ -802,7 +802,7 @@ function buildArea(st, api, A) {
     const k = inp.keys; if (k.arrowleft || k.q) yaw += dt * 2.2; if (k.arrowright || k.r) yaw -= dt * 2.2;
     let mv = moveIntent(inp, yaw);
     if (autoRun && mv.amt < 0.05) mv = { x: -Math.sin(yaw), z: -Math.cos(yaw), amt: 1 };
-    if (inp.stick.on && autoRun && Math.hypot(inp.stick.x, inp.stick.y) > 0.2) autoRun = false;
+    if (inp.stick.on && autoRun) autoRun = false; // touching the stick takes over, as the message says
     // the stick pushed to its rim sprints (as in battle); Shift on a keyboard; auto-run jogs at full pace
     const rim = inp.stick.on && Math.hypot(inp.stick.x, inp.stick.y) > 0.92;
     const sprint = (k.shift || rim) ? 1.35 : 1;

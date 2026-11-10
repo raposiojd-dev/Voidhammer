@@ -228,7 +228,9 @@ function makeStage(loadText, opts) {
     if (opts.host) e.stopPropagation();
     canvas.focus({ preventScroll: true });
     if (e.pointerType === "touch") {
-      if (e.clientX < root.clientWidth * 0.45 && stickId < 0) {
+      // a new touch on the left always takes the stick, so a stick whose finger-up never arrived can't stay stuck
+      if (e.clientX < root.clientWidth * 0.45) {
+        if (drag && drag.id === e.pointerId) drag = null;
         stickId = e.pointerId; inp.stick = { x: 0, y: 0, on: true, ox: e.clientX, oy: e.clientY };
         stickEl.hidden = false; stickEl.style.left = e.clientX + "px"; stickEl.style.top = e.clientY + "px"; knob.style.transform = "";
       } else drag = { id: e.pointerId, x: e.clientX, y: e.clientY, sx: e.clientX, sy: e.clientY, t: performance.now(), touch: true };
@@ -253,7 +255,15 @@ function makeStage(loadText, opts) {
       drag = null;
     }
   };
-  listen(canvas, "pointerup", up); listen(canvas, "pointercancel", up);
+  listen(canvas, "pointerup", up); listen(canvas, "pointercancel", up); listen(canvas, "lostpointercapture", up);
+  // belt and braces: iOS can drop pointerup (a second finger, a system swipe, the app losing focus)
+  const stickReset = () => { stickId = -1; inp.stick = { x: 0, y: 0, on: false }; stickEl.hidden = true; drag = null; };
+  listen(window, "pointerup", up); listen(window, "pointercancel", up);
+  listen(canvas, "touchend", (e) => { if (!e.touches || e.touches.length === 0) stickReset(); });
+  listen(canvas, "touchcancel", stickReset);
+  listen(window, "blur", stickReset);
+  listen(document, "visibilitychange", () => { if (document.hidden) stickReset(); });
+  inp.stickReset = stickReset;
   listen(canvas, "contextmenu", (e) => e.preventDefault());
   if (opts.host) { listen(canvas, "pointermove", (e) => e.stopPropagation()); listen(canvas, "pointerup", (e) => e.stopPropagation()); listen(canvas, "touchstart", (e) => { e.stopPropagation(); e.preventDefault(); }, { passive: false }); }
 

@@ -6411,7 +6411,7 @@ var BIMG_SRC={"farm": "data:image/webp;base64,UklGRqyAAABXRUJQVlA4WAoAAAAQAAAAZw
       if (mode === "field" && F && !F.over && !F.hero.dead) F.hm = { x: F.hero.x, y: F.hero.y };
       if (mode === "map" && !sheet) { var best = null, bd = 22; S.sites.forEach(function (s) { var d = dist(S.px, S.py, s.x, s.y); if (d < bd) { bd = d; best = s; } }); if (best) { S.px = best.x; S.py = best.y; arrive(best.id); } }
     }
-    el.addEventListener("pointerup", up); el.addEventListener("pointercancel", up); window.addEventListener("pointerup", function (e) { if (VST.on && e.pointerId === VST.id && VST.mode === mode) up(e); });
+    el.addEventListener("pointerup", up); el.addEventListener("pointercancel", up); el.addEventListener("lostpointercapture", up); window.addEventListener("pointerup", function (e) { if (VST.on && e.pointerId === VST.id && VST.mode === mode) up(e); }); window.addEventListener("pointercancel", function (e) { if (VST.on && e.pointerId === VST.id && VST.mode === mode) up(e); }); window.addEventListener("blur", function () { VST.on = false; VST.drag = false; VST.dx = VST.dy = 0; try { vstHide(); } catch (x) {} });
   }
   function mapStickMove(dd) {
     if (!(VST.on && VST.drag && VST.mode === "map") || sheet) return false;
@@ -9662,7 +9662,7 @@ var BIMG_SRC={"farm": "data:image/webp;base64,UklGRqyAAABXRUJQVlA4WAoAAAAQAAAAZw
       if (mode === "field" && F && !F.over && !F.hero.dead) F.hm = { x: F.hero.x, y: F.hero.y };
       if (mode === "map" && !sheet) { var best = null, bd = 22; S.sites.forEach(function (s) { var d = dist(S.px, S.py, s.x, s.y); if (d < bd) { bd = d; best = s; } }); if (best) { S.px = best.x; S.py = best.y; arrive(best.id); } }
     }
-    el.addEventListener("pointerup", up); el.addEventListener("pointercancel", up); window.addEventListener("pointerup", function (e) { if (VST.on && e.pointerId === VST.id && VST.mode === mode) up(e); });
+    el.addEventListener("pointerup", up); el.addEventListener("pointercancel", up); el.addEventListener("lostpointercapture", up); window.addEventListener("pointerup", function (e) { if (VST.on && e.pointerId === VST.id && VST.mode === mode) up(e); }); window.addEventListener("pointercancel", function (e) { if (VST.on && e.pointerId === VST.id && VST.mode === mode) up(e); }); window.addEventListener("blur", function () { VST.on = false; VST.drag = false; VST.dx = VST.dy = 0; try { vstHide(); } catch (x) {} });
   }
 
   // ---- experience belongs to each troop type: it is earned by those who fight, and spent on their promotion ----
