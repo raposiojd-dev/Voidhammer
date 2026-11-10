@@ -2662,7 +2662,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
     h += '<div class="sec">Work</div>';
     h += row("Work the fields", "Two days for 14 crowns. You eat with them.", "Work", "labour", v.id, "", false);
     h += '<div class="sec">Men</div>';
-    h += row("Take idle men", v.I < 1 ? (v.starving ? "None idle. Hungry villages raise no one; bring grain." : "None idle yet. About one comes of age each day.") : "Free. " + v.I + " idle.", "Take " + Math.max(1, Math.min(5, v.I)), "recruit", "recruit", v.id, "idle", v.I < 1 || room < 1 || v.credit < -3);
+    h += row("Take idle men", v.I < 1 ? (v.starving ? "None idle. Hungry villages raise no one; bring grain." : "None idle yet. About one comes of age each day.") : "Free. " + v.I + " idle.", "Take " + Math.max(1, Math.min(5, v.I)), "recruit", v.id, "idle", v.I < 1 || room < 1 || v.credit < -3);
     h += row("Take men from the fields", v.credit < 0 ? "They will not give you their sons." : "Output falls. " + v.W + " working." + (hollow() >= 2 ? "" : " Costs goodwill."), "Take 5", "recruit", v.id, "work", v.W < 6 || room < 1 || v.credit < 0, "amber");
     if (away) h += row("Send men home", "Back to the fields. " + away + " from here.", "Send 5", "release", v.id, "", false);
     h += '<div class="sec">Buildings</div>';
