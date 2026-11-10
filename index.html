@@ -4871,7 +4871,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
       if (tx >= e.x && tx < e.x + e.w && ty >= e.y && ty < e.y + e.h) {
         var lk = e.lock ? e.lock() : "";
         if (lk) { if (!a.exitMsg || a.t - a.exitMsg > 2.5) { a.exitMsg = a.t; aToast(lk); } if (e.x === 0) p.x += 10; else if (e.x >= a.W - 1) p.x -= 10; if (e.y === 0) p.y += 10; else if (e.y >= a.H - 1) p.y -= 10; if (a.sp.over) p.y += 22; }
-        else if (e.to === "world") { if (OVR.on && !a.sp.over) overBack(); else leaveArea(); return; }
+        else if (e.to === "world") { if (OVR.on && !a.sp.over) overBack(); else if (!a.sp.over && ovOutToLand(a, e)) { } else leaveArea(); return; }
         else { checkClear(); if (a.sp.over) ovLeaving(e); var to = e.to, ttx = e.tx, tty = e.ty; startArea(to, ttx, tty); return; }
       }
     }
@@ -5528,6 +5528,11 @@ var BIMG_SRC={"farm": "data:image/webp;base64,UklGRqyAAABXRUJQVlA4WAoAAAAQAAAAZw
       q.cx = ox + (ts.spawn ? ts.spawn[0] : ts.w >> 1); q.cy = oy + (ts.spawn ? ts.spawn[1] : ts.h >> 1) - 2;
       var kinds = []; try { kinds = ts.hk || ovHKinds(ts); } catch (e) {}
       (ts.houses || []).forEach(function (h, i) { if (!h || h[2] <= 0) return; sp.houses.push([h[0] + ox, h[1] + oy, h[2], h[3]]); sp.hk.push(kinds[i] || ""); sp.hsid.push(q.id); });
+      (ts.exits || []).forEach(function (e) {
+        var to; try { to = e.to; } catch (x) { return; } if (!to || to === "world" || to === "overland" || /^cave\d/.test(to)) return;
+        var ne = { x: e.x + ox, y: e.y + oy, w: e.w, h: e.h, rx: e.x + ox, ry: e.y + oy + 2, tx: e.tx, ty: e.ty, lock: e.lock };
+        Object.defineProperty(ne, "to", { get: function () { try { return e.to; } catch (x) { return to; } }, enumerable: true }); sp.exits.push(ne);
+      });
       (ts.npcs || []).forEach(function (n) {
         if (n.gate || n.chest || n.id === "rvboard" || /chest|stash/.test(String(n.id || ""))) return;
         sp.npcs.push(Object.assign({}, n, { id: aid + ":" + n.id, x: n.x + ox, y: n.y + oy, town: q.id }));
@@ -5744,10 +5749,29 @@ var BIMG_SRC={"farm": "data:image/webp;base64,UklGRqyAAABXRUJQVlA4WAoAAAAQAAAAZw
     var sx, sy; if (o.at) { sx = Math.round(o.at.x / ATS); sy = Math.round(o.at.y / ATS); } else if (o.back && OVR.ret) { sx = OVR.ret.x; sy = OVR.ret.y; } else { sx = Math.round((S.px - cellOrg(curCell())[0]) / OT); sy = Math.round((S.py - cellOrg(curCell())[1]) / OT); }
     startArea("overland", sx, sy);
     var a = AR, f = ovFind(a, sx, sy); a.sp.exits.forEach(function (e) { if (f[0] >= e.x - 1 && f[0] <= e.x + e.w && f[1] >= e.y - 1 && f[1] <= e.y + e.h) f = [e.rx, e.ry + 1]; }); a.p.x = f[0] * ATS + 8; a.p.y = f[1] * ATS + 14; a.spawn = [a.p.x, a.p.y];
+    if (o.site) {
+      var tq = a.sp.byId[o.site];
+      if (tq && tq.stamp) {
+        var ts = tq.stamp.ts, hw = ts.w / 2 + 5, hh = ts.h / 2 + 5, cx2 = tq.stamp.ox + ts.w / 2, cy2 = tq.stamp.oy + ts.h / 2, gx, gy;
+        if (o.edge) { var k2 = Math.min(hw / Math.max(0.01, Math.abs(o.edge.x)), hh / Math.max(0.01, Math.abs(o.edge.y))); gx = Math.round(cx2 + o.edge.x * k2); gy = Math.round(cy2 + o.edge.y * k2); }
+        else { gx = tq.cx; gy = tq.cy + 2; }
+        var f2 = ovFind(a, gx, gy); a.p.x = f2[0] * ATS + 8; a.p.y = f2[1] * ATS + 14; a.spawn = [a.p.x, a.p.y];
+      }
+    }
     ovBuildMini(a);
     if (!cp().f.ovhint) { cp().f.ovhint = 1; setTimeout(function () { if (AR && AR.sp.over) aToast("Walk to a glowing gate to go in. Caves, camps, chests and wayfarers are out here too."); }, 3200); }
   }
   function overBack() { checkClear(); startOverland({ back: 1 }); }
+  // out of a town's edge (when it was entered from the map): into the open world, beside the town, on the side you left by
+  function ovOutToLand(a, e) {
+    if (window.__vhK3 === false) return false; var sid = siteOfArea(a.id), s = sid && site(sid); if (!s || cellAt(s.x, s.y) !== curCell()) return false;
+    var dx = (e.x + e.w / 2) / a.W - 0.5, dy = (e.y + e.h / 2) / a.H - 0.5, L = Math.hypot(dx, dy) || 1;
+    checkClear(); leaveArea(); S.px = s.x; S.py = s.y; startOverland({ site: sid, edge: { x: dx / L, y: dy / L } }); return !!AR;
+  }
+  window.__ovWalkSite = function (sid) {
+    var s = site(sid); if (!s || window.__vhK3 === false || cellAt(s.x, s.y) !== curCell() || AR || B) return false;
+    if (sheet) closeSheet(true); S.px = s.x; S.py = s.y; startOverland({ site: sid }); return !!AR;
+  };
   function ovLeaving(e) {
     OVR.ret = { x: e.rx, y: e.ry }; YRET = null;
     if (e.ovsite) { var c = cp(); c.vis = c.vis || {}; c.vis[e.ovsite] = 1; }
@@ -5803,8 +5827,8 @@ var BIMG_SRC={"farm": "data:image/webp;base64,UklGRqyAAABXRUJQVlA4WAoAAAAQAAAAZw
     g.fillStyle = "#fff"; g.beginPath(); g.moveTo(5.5, 0); g.lineTo(-4, -3.6); g.lineTo(-2.2, 0); g.lineTo(-4, 3.6); g.closePath(); g.fill(); g.restore();
     g.restore();
   }
-  var wkBtn = document.createElement("button"); wkBtn.id = "walkbtn"; wkBtn.textContent = "Walk"; wkBtn.setAttribute("aria-label", "Walk the overland");
-  wkBtn.style.cssText = "position:fixed;right:8px;top:138px;z-index:60;width:34px;height:34px;min-height:0;padding:0;border-radius:50%;background:rgba(12,11,9,.7);border:1px solid #8f8672;color:#e8d8a8;font-size:9px;letter-spacing:0;line-height:1;text-transform:uppercase;display:none";
+  var wkBtn = document.createElement("button"); wkBtn.id = "walkbtn"; wkBtn.textContent = "Walk the land"; wkBtn.setAttribute("aria-label", "Walk the overland");
+  wkBtn.style.cssText = "position:fixed;right:calc(10px + env(safe-area-inset-right,0px));top:calc(132px + env(safe-area-inset-top,0px));z-index:60;min-height:40px;padding:.5rem .9rem;border-radius:20px;background:linear-gradient(#6a4718,#2b1c0b);border:1px solid #e3c27a;color:#f8e6b4;font:700 .72rem 'Cinzel',Georgia,serif;letter-spacing:.1em;text-transform:uppercase;box-shadow:0 0 14px rgba(224,160,70,.35);display:none";
   wkBtn.addEventListener("click", function (e) { e.stopPropagation(); if (AR || B || !S) return; startOverland(); });
   document.body.appendChild(wkBtn);
   setInterval(function () { var ti = document.getElementById("title"), lo = document.getElementById("loading"); wkBtn.style.display = (AR || B || typeof S === "undefined" || !S || sheet || (ti && !ti.hidden) || (lo && !lo.hidden)) ? "none" : "block"; }, 250);
@@ -17470,6 +17494,7 @@ setInterval(function () {
     }
     function startWalk(sid) {
       var s = site(sid); if (!canWalk(s) || cur) return false;
+      try { if (window.__ovWalkSite && window.__ovWalkSite(sid)) return true; } catch (e) {}
       var aid = areaIdFor(sid);
       if (aid && getSpec(aid) && a3ok()) { if (sheet) closeSheet(true); startArea(aid); return !!AR; }
       prepUi();
