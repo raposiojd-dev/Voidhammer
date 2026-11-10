@@ -123,7 +123,7 @@ export function makeArt(track, quality) {
     const t = track(new THREE.CanvasTexture(cv));
     // average brightness in linear light, so materials can undo the darkening and keep the Realm colours true
     { const d = cv.getContext("2d").getImageData(0, 0, cv.width, cv.height).data; let sum = 0, n = 0; for (let i = 0; i < d.length; i += 64) { const l = (d[i] * 0.3 + d[i + 1] * 0.59 + d[i + 2] * 0.11) / 255; sum += Math.pow(l, 2.2); n++; } t.userData.gain = Math.min(2.6, 0.95 / Math.max(0.05, sum / n)); }
-    t.wrapS = t.wrapT = THREE.RepeatWrapping; t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = quality === "low" ? 1 : 4;
+    t.wrapS = t.wrapT = THREE.RepeatWrapping; t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = quality === "low" ? 2 : 8;
     t.userData.size = size; cache[name] = t; return t;
   }
   const mats = {};

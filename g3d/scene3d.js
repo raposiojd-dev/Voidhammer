@@ -175,8 +175,8 @@ function makeStage(loadText, opts) {
   if (coarse || "ontouchstart" in window && navigator.maxTouchPoints > 0 && !matchMedia("(pointer:fine)").matches) root.classList.add("touch");
   const touchDev = coarse || ("ontouchstart" in window && navigator.maxTouchPoints > 0 && !matchMedia("(pointer:fine)").matches);
   let gfx = gfxGet(touchDev);
-  // pixel ratio: 1.5 at most anywhere (phones included), 1.25 on Low; auto-quality lowers it further if frames run long
-  const prCap = () => Math.min(window.devicePixelRatio || 1, gfx === "low" ? 1.25 : 1.5);
+  // pixel ratio: up to 2 on High (crisp on Retina phones), 1.5 on Medium, 1.25 on Low; auto-quality trims it if frames run long
+  const prCap = () => Math.min(window.devicePixelRatio || 1, gfx === "low" ? 1.25 : gfx === "medium" ? 1.5 : 2);
   renderer.setPixelRatio(prCap()); root.classList.toggle("lowfx", gfx === "low");
   renderer.shadowMap.enabled = gfx !== "low"; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.05;
@@ -279,7 +279,15 @@ function makeStage(loadText, opts) {
     if (frameFn) for (let i = 0; i < stage.substeps; i++) frameFn(dt, t / 1000 + i * dt);
     // keep it smooth on slow machines: drop the render resolution step by step if frames run long
     // and if the resolution is already at its floor, High's post-processing switches itself off for this scene
-    if (!firstFrame && raw < 1) { slowAcc += raw; slowN++; if (slowN >= 45) { if (slowAcc / slowN > 1 / 34) { if (pr > 0.6) { pr = Math.max(0.6, pr * 0.8); renderer.setPixelRatio(pr); resize(); } else if (post && !postAuto) postAuto = true; } slowAcc = 0; slowN = 0; } }
+    // (11 Nov) it used to sink as low as 0.6 and never come back, which is what made phones look blocky. Now: drop the
+    // post pass first, keep at least 1:1 pixels unless the frame rate is truly bad, and climb back when frames are quick.
+    if (!firstFrame && raw < 1) { slowAcc += raw; slowN++; if (slowN >= 45) { const av = slowAcc / slowN, cap = prCap();
+      if (av > 1 / 34) {
+        if (post && !postAuto && gfx === "high" && pr <= 1.5) postAuto = true;
+        else if (pr > 1) { pr = Math.max(1, pr * 0.85); renderer.setPixelRatio(pr); resize(); }
+        else if (av > 1 / 24 && pr > 0.8) { pr = Math.max(0.8, pr * 0.9); renderer.setPixelRatio(pr); resize(); }
+      } else if (av < 1 / 55 && pr < cap) { pr = Math.min(cap, pr * 1.1); renderer.setPixelRatio(pr); resize(); }
+      slowAcc = 0; slowN = 0; } }
     VH_TIME.value = t / 1000;
     { let br = 1; try { br = window.__vhBright || 1; } catch (e) {} renderer.toneMappingExposure = 1.05 * br * (grade === "cave" ? 1.2 : 1); } // Brightness setting (Save game sheet); caves get a little extra
     if (gfx === "high" && !postFail && !postAuto) {
