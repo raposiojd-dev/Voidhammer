@@ -1443,6 +1443,9 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
         if (e.fac === "metal" && S.mc && S.day < S.mc.start) { if (e.dest) { tx = e.dest.x; ty = e.dest.y; } }
         else if (S.pwar[e.fac] && !vhSafe(1) && dp < (e.fac === "metal" ? 200 : 160) && es > ps * 0.75 && e.cool <= 0) { tx = S.px; ty = S.py; spd = e.fac === "metal" ? 62 : 58; }
         else if (e.dest) { tx = e.dest.x; ty = e.dest.y; }
+      } else if (e.kind === "hunter") {
+        spd = 54; if (e.cool <= 0 && !vhSafe(0)) { tx = S.px; ty = S.py; } else if (e.dest) { tx = e.dest.x; ty = e.dest.y; }
+      } else if (e.kind === "caravan") { return;
       } else {
         spd = 34;
         if (dp < 90 && e.cool <= 0 && !vhSafe(0)) { tx = S.px; ty = S.py; spd = 50; }
@@ -1456,6 +1459,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
       var dx = tx - e.x, dy = ty - e.y, d = Math.hypot(dx, dy);
       if (d > 8) { var nq = ovNavMove(e, "x", "y", tx, ty, spd * dd); e.x = nq[0]; e.y = nq[1]; }
     });
+    try { ovCaravansMove(dd); } catch (x) {}
   }
 
   /* new players: lords do not hunt you in the first 30 days (or until level 5, up to day 60); after any defeat nobody hunts you for 4 days */
@@ -2313,7 +2317,15 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
     S.enemies.forEach(function (e) {
       var col = e.kind === "void" ? "#9a88c4" : "#b2503c";
       if (e.kind === "lord") { drawLord(e, now); label(e.name + " ~" + Math.round(e.n / 2) * 2, e.x, e.y - 50, FAC[e.fac].col); }
-      else { drawEnemy(e, now); label((e.kind === "void" ? "Void-touched ~" : "Bandits ~") + (Math.round(e.n / 2) * 2), e.x, e.y - 34, col); }
+      else if (e.kind !== "caravan") { drawEnemy(e, now); label((e.title ? e.title + " ~" : e.kind === "void" ? "Void-touched ~" : "Bandits ~") + (Math.round(e.n / 2) * 2), e.x, e.y - 34, col); }
+    });
+    (S.caravans || []).forEach(function (c) {
+      var fc = FAC[c.fac] ? FAC[c.fac].col : "#d8c8a0";
+      ctx.save(); ctx.translate(c.x, c.y); ctx.fillStyle = "rgba(0,0,0,0.35)"; ctx.fillRect(-9, 4, 18, 3);
+      ctx.fillStyle = "#6a4a2a"; ctx.fillRect(-8, -5, 13, 8); ctx.fillStyle = "#e8dcc0"; ctx.beginPath(); ctx.arc(-1.5, -5, 6.5, Math.PI, 0); ctx.fill();
+      ctx.fillStyle = fc; ctx.fillRect(-8, -2, 13, 2); ctx.fillStyle = "#2a1a10"; ctx.beginPath(); ctx.arc(-5, 4, 2.4, 0, 6.283); ctx.arc(3, 4, 2.4, 0, 6.283); ctx.fill();
+      ctx.fillStyle = "#5a3a22"; ctx.fillRect(6, -3, 7, 5); ctx.fillRect(12, -6, 2.5, 4); ctx.restore();
+      label("Caravan ~" + c.n, c.x, c.y - 22, fc);
     });
 
     S.allies.forEach(function (h, hi) {
@@ -4415,6 +4427,16 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
     if (!f["qo_" + q.id]) return 1;
     return f["z_" + q.zone] && (q.kind === "boss" || f["p_" + q.zone]) ? 3 : 2;
   }
+  // follow up to three side quests: each gets a marker on the road and the minimap; the newest one drives the tracker line
+  function trk(id) { var f = cp().f; return f.track === id || (f.tracks || []).indexOf(id) >= 0; }
+  function qTrack(x) {
+    var f = cp().f; f.tracks = (f.tracks || []).filter(function (t) { return t; });
+    if (x === "main") { f.track = null; return; }
+    var i = f.tracks.indexOf(x);
+    if (i >= 0) { f.tracks.splice(i, 1); if (f.track === x) f.track = f.tracks[f.tracks.length - 1] || null; return; }
+    f.tracks.push(x); if (f.tracks.length > 3) { f.tracks.shift(); try { toast("You can follow three side quests at once. The oldest was set aside."); } catch (e) {} }
+    f.track = x;
+  }
   function qObj(q) {
     var f = cp().f, st = qSt(q), hs = HUBSITE[q.hub];
     if (st === 1) return { text: "Speak to " + q.npcName + " in " + HUBNAME[q.hub] + " about " + q.name + ".", site: hs, area: q.hub, npc: q.npc };
@@ -4475,12 +4497,13 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
       if (ex) { var od = ex.d, om = ex.mk; ex.d = function () { return qDlgFor(key, true) || od(); }; ex.mk = function () { return qMk(key) || (om ? om() : 0); }; }
       else { DLG["idle_" + key] = { n: def.name, t: def.idle }; placeOn(o.hub, { id: o.npc, name: def.name, col: def.col, hair: def.hair, small: def.small, d: function () { return qDlgFor(key, false) || "idle_" + key; }, mk: function () { return qMk(key); } }); }
     }
-    var gate = placeGate(o.gateAt || o.hub, o.gpos, { id: "gate_" + o.zone, name: o.zname, gate: o.zone, col: "#222", vis: function () { return qSt(o) >= 1; }, d: function () { return "gate_" + o.zone; }, mk: function () { return qSt(o) === 2 && !cfl("z_" + o.zone) ? 1 : 0; } });
+    var gate = placeGate(o.gateAt || o.hub, o.gpos, { id: "gate_" + o.zone, name: o.zname, gate: o.zone, col: "#222", vis: function () { return qSt(o) >= 1 && window.__vhK3 === false; }, d: function () { return "gate_" + o.zone; }, mk: function () { return qSt(o) === 2 && !cfl("z_" + o.zone) ? 1 : 0; } });
     mkZoneV(o, gate.x, gate.y, o.gateAt || o.hub);
+    try { (AREAS[o.zone].exits || []).forEach(function (zx) { var back = zx.to; if (back !== (o.gateAt || o.hub)) return; Object.defineProperty(zx, "to", { get: function () { return OVR.on && window.__vhK3 !== false ? "world" : back; }, enumerable: true, configurable: true }); }); } catch (e) {}
     var nm = o.npcName;
     DLG["gate_" + o.zone] = { n: o.zname, t: o.gate, c: [{ t: "Go in.", fn: function () { startArea(o.zone); } }, { t: "Not yet." }] };
-    DLG["Q_" + o.id + "_1"] = { n: nm, t: o.intro, c: [{ t: o.yes || "I will do it.", set: (function () { var z = {}; z["qo_" + o.id] = 1; return z; })(), toast: "New quest: " + o.name + ".", go: "Q_" + o.id + "_a" }, { t: "Not now." }] };
-    DLG["Q_" + o.id + "_a"] = { n: nm, t: o.accept || "Good. " + o.zname + " is through the gate. Be careful." };
+    DLG["Q_" + o.id + "_1"] = { n: nm, t: o.intro, c: [{ t: o.yes || "I will do it.", set: (function () { var z = {}; z["qo_" + o.id] = 1; return z; })(), toast: "New quest: " + o.name + ".", fn: function () { try { if (!trk(o.id)) qTrack(o.id); } catch (e) {} }, go: "Q_" + o.id + "_a" }, { t: "Not now." }] };
+    DLG["Q_" + o.id + "_a"] = { n: nm, t: function () { if (window.__vhK3 === false) return o.accept || "Good. " + o.zname + " is through the gate. Be careful."; return (o.accept ? o.accept.replace(/through the (gate|arch|door)[^.]*\./i, "out in the country, not far from here.") + " " : "Good. ") + o.zname + " is out in the country near " + (HUBNAME[o.hub] || "here") + ". Walk out and look for the standing stones and the gold banner. It is on your minimap."; } };
     DLG["Q_" + o.id + "_wait"] = { n: nm, t: o.wait || (o.zname + ". Come back when it is done.") };
     var opts = o.opts || [{ t: "Take the reward.", reward: o.reward }];
     DLG["Q_" + o.id + "_back"] = { n: nm, t: o.turn, c: opts.map(function (op, i) { return { t: op.t, fn: function () { qFinish(o, op, i); }, go: (op.text || o.end) ? "Q_" + o.id + "_end" : undefined }; }) };
@@ -4609,8 +4632,8 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
 
   // ---- build ----
   function buildArea0(id, sx, sy) {
-    var sp = getSpec(id), W = sp.w, H = sp.h, r = arng(sp.seed), g = [], x, y, i;
-    for (y = 0; y < H; y++) { g.push([]); for (x = 0; x < W; x++) g[y].push(0); }
+    var sp = getSpec(id), W = sp.w, H = sp.h, r = arng(sp.seed), g = [], x, y, i, BIG = W * H > 250000;
+    for (y = 0; y < H; y++) { if (BIG) { g.push(new Uint8Array(W)); continue; } g.push([]); for (x = 0; x < W; x++) g[y].push(0); }
     var keep = {};
     function setT(x0, y0, t) { if (x0 >= 0 && y0 >= 0 && x0 < W && y0 < H) g[y0][x0] = t; }
     (sp.water || []).forEach(function (a) { for (y = a[1]; y < a[1] + a[3]; y++) for (x = a[0]; x < a[0] + a[2]; x++) setT(x, y, 3); });
@@ -4642,7 +4665,8 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
     while (n < ((ATH[sp.th].cave || sp.over) ? 0 : 40) && tries++ < 2000) { x = Math.floor(r() * W); y = Math.floor(r() * H); if (g[y][x] === 0) { g[y][x] = 8; n++; } }
     for (y = 0; y < H; y++) for (x = 0; x < W; x++) if ((x === 0 || y === 0 || x === W - 1 || y === H - 1) && (g[y][x] === 0 || g[y][x] === 8)) g[y][x] = 2;
     // map canvas
-    var th = d2Theme(ATH[sp.th], sp.th), mc = document.createElement("canvas"); var MSc = ovMs(W, H); mc.width = W * ATS * MSc; mc.height = H * ATS * MSc; mc._ms = MSc; var m = mc.getContext("2d"); m.scale(MSc, MSc);
+    var th = d2Theme(ATH[sp.th], sp.th), mc = document.createElement("canvas"); var MSc = BIG ? 1 / 64 : ovMs(W, H); mc.width = Math.max(2, Math.round(W * ATS * MSc)); mc.height = Math.max(2, Math.round(H * ATS * MSc)); mc._ms = MSc; var m = mc.getContext("2d"); m.scale(MSc, MSc);
+    if (!BIG) {
     function hs(a, b) { var q = Math.sin(a * 127.1 + b * 311.7 + sp.seed) * 43758.5453; return q - Math.floor(q); }
     for (y = 0; y < H; y++) for (x = 0; x < W; x++) {
       var t = g[y][x], px = x * ATS, py = y * ATS, v = hs(x, y);
@@ -4669,6 +4693,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
     enHousesLate(m, sp);
     m.save(); m.setTransform(1, 0, 0, 1, 0, 0); ovGround(mc, th); m.restore();
     ovShade(m, g, W, H, th);
+    }
     var A = { id: id, sp: sp, W: W, H: H, g: g, mc: mc, th: th, npcs: [], en: [], items: [], proj: [], fx: [], floats: [], t: 0, dlg: null, dch: [] };
     // the open-once key: the overland has a different set of chests in every map cell, so its key carries the cell
     var chid = sp.over ? id + "@" + curCell() : id;
@@ -4704,7 +4729,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
   }
   function leaveArea() {
     if (!AR) return; ovHpSave(); checkClear(true);
-    if (OVR.on) { if (AR.sp.over) { var _co = cellOrg(curCell()); S.px = _co[0] + Math.max(12, Math.min(WORLD - 12, AR.p.x)); S.py = _co[1] + Math.max(12, Math.min(WORLD - 12, AR.p.y)); } else if (OVR.ret) { var _co2 = cellOrg(curCell()); S.px = _co2[0] + OVR.ret.x * OT + 8; S.py = _co2[1] + OVR.ret.y * OT + 8; } OVR.on = false; }
+    if (OVR.on) { if (AR.sp.over) { var _co = cellOrg(curCell()); S.px = _co[0] + Math.max(12, Math.min(WORLD - 12, AR.p.x * OT / ATS)); S.py = _co[1] + Math.max(12, Math.min(WORLD - 12, AR.p.y * OT / ATS)); } else if (OVR.ret) { var _co2 = cellOrg(curCell()); S.px = _co2[0] + OVR.ret.x * OT + 8; S.py = _co2[1] + OVR.ret.y * OT + 8; } OVR.on = false; }
     AR = null; $("area").hidden = true; $("adlg").hidden = true; S.speed = 0; save(); lastHud = "";
   }
   function campKick() { var c = cp(); if (c.on && !c.started) { c.started = 1; startArea("ashford"); } }
@@ -4993,7 +5018,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
   }
   function areaHop(from, to) {
     if (from === to) return null; var q = [[from, null]], seen = {}; seen[from] = 1;
-    while (q.length) { var c = q.shift(), sp = getSpec(c[0]); if (!sp) continue; var nb = (sp.exits || []).map(function (e) { return e.to; }).concat((sp.npcs || []).filter(function (n) { return n.gate; }).map(function (n) { return n.gate; })); for (var i = 0; i < nb.length; i++) { var t = nb[i]; if (t === "world" || seen[t] || !AREAS[t]) continue; seen[t] = 1; var first = c[1] || t; if (t === to) return first; q.push([t, first]); } }
+    while (q.length) { var c = q.shift(), sp = getSpec(c[0]); if (!sp) continue; var nb = (sp.exits || []).map(function (e) { return e.to; }).concat((sp.npcs || []).filter(function (n) { return n.gate && (!n.vis || n.vis()); }).map(function (n) { return n.gate; })); for (var i = 0; i < nb.length; i++) { var t = nb[i]; if (t === "world" || seen[t] || !AREAS[t]) continue; seen[t] = 1; var first = c[1] || t; if (t === to) return first; q.push([t, first]); } }
     return null;
   }
   function targetPos() {
@@ -5059,7 +5084,8 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
     h += "<p><b>" + o.text + "</b></p>";
     var s = o.site ? site(o.site) : null;
     if (s) h += row("Go to " + s.name, "Walk there on the map, then tap Explore to step inside.", "Travel", "qgo", s.id, "", false);
-    if (f.track) h += row("Back to the main story", "Stop tracking this quest.", "Main story", "qtrack", "main", "", false);
+    if (f.track) h += row("Back to the main story", "The tracker line follows the main story again. Your followed side quests keep their markers.", "Main story", "qtrack", "main", "", false);
+    h += '<p class="dim-t">Follow up to three side quests: each gets a gold marker on the road and on your minimap. Tap Tracking to stop following one.</p>';
     var nowN = 0, readyN = 0; QS.forEach(function (q) { var st = qSt(q); if (st === 2) nowN++; if (st === 3) readyN++; });
     h += "<p class=\"dim-t\">" + readyN + " ready to hand in · " + nowN + " in progress · heart containers " + (cp().hearts || 0) + " of 3 · quest hearts " + (cp().qhp || 0) + " · quest skill points " + (cp().qpts || 0) + ".</p>";
     h += tierSection();
@@ -5079,7 +5105,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
         else if (st < 2) { }
         else {
           var loc = q.loc || (q.npcName + ", " + HUBNAME[q.hub]), line = st === 1 ? "New. Speak to " + loc + "." : st === 3 ? "Done. Report to " + loc + "." : (q.obj || "");
-          h += row(q.name + (q.opt ? " (optional)" : ""), line, q.leg ? "Main" : "Track", "qtrack", q.leg ? "main" : q.id, "", !!q.leg);
+          h += row(q.name + (q.opt ? " (optional)" : ""), line, q.leg ? "Main" : trk(q.id) ? "Tracking" : "Track", "qtrack", q.leg ? "main" : q.id, "", !!q.leg);
         }
       });
     });
@@ -5345,7 +5371,17 @@ var BIMG_SRC={"farm": "data:image/webp;base64,UklGRqyAAABXRUJQVlA4WAoAAAAQAAAAZw
       draw: function (g, x, y, t) { if (prp(g, "obj_chest", x, y, 18)) return; RR(g, "rgba(0,0,0,0.3)", x - 8, y - 1, 16, 2); RR(g, "#5a3a1a", x - 8, y - 11, 16, 10); RR(g, "#8a5a2a", x - 7, y - 10, 14, 4); RR(g, "#3a2410", x - 8, y - 6, 16, 1); RR(g, "#e8c75a", x - 1, y - 8, 2, 4); RR(g, "#c8a030", x - 8, y - 11, 16, 1); } });
   }
   // ================= Overland: walk the whole continent =================
-  var OT = 16, ON = 175, OVR = { on: false, ret: null };
+  // the overland is drawn at OVK tiles per old tile: 8 with 3D (a continent is ~1.9 km of walkable ground), 1 for the 2D fallback.
+  // Everything placed on it (caves, camps, chests, wayfarers) is stored in the same tile space and rescaled by ovPoi() when K changes.
+  var OVK = 1, OT = 16, ON = 175, OVR = { on: false, ret: null };
+  function ovWalkK() { return window.__vhK3 === false ? 1 : 8; }
+  function ovBase(fn) { var a = OT, b = ON; OT = 16; ON = 175; try { return fn(); } finally { OT = a; ON = b; } }
+  function ovRescale(P, k) {
+    var f = k / (P.k || 1); if (f === 1) { P.k = k; return; }
+    function sc(o) { if (o && typeof o.x === "number" && typeof o.y === "number") { o.x = Math.round(o.x * f); o.y = Math.round(o.y * f); } }
+    Object.keys(P).forEach(function (key) { var v = P[key]; if (!Array.isArray(v)) return; v.forEach(function (it) { if (!it || typeof it !== "object") return; sc(it); if (it.g) sc(it.g); if (it.a) sc(it.a); }); });
+    P.k = k;
+  }
   var OREG = { ember: 1, stone: 2, storm: 3, light: 3, metal: 4 };
   var RCOL = { ember: "255,110,50", stone: "150,165,190", storm: "110,200,235", light: "255,215,110", metal: "110,90,140", player: "70,200,255" };
   function ovPass(t) { return !(t === 2 || t === 3 || t === 4 || t === 5 || t === 6 || t === 7); }
@@ -5435,7 +5471,7 @@ var BIMG_SRC={"farm": "data:image/webp;base64,UklGRqyAAABXRUJQVlA4WAoAAAAQAAAAZw
     h += '<div class="sec">Wild work · ' + n + " of " + WQ.length + " done</div>";
     function near(q) { var w = ovPoi().wf[wqIdx(q)], bd = 1e9, nm = ""; ovLocalSites().forEach(function (s) { var d = Math.hypot(s.x / OT - w.x, s.y / OT - w.y); if (d < bd) { bd = d; nm = s.name; } }); return nm; }
     function line(q, st) {
-      var tr = f.track === "wq:" + q.id, txt = st === 2 ? "Done. Return to " + q.who + "." : st === 1 ? wqTxt(q, q.hint) : q.who + " is out on the road near " + near(q) + ".";
+      var tr = trk("wq:" + q.id), txt = st === 2 ? "Done. Return to " + q.who + "." : st === 1 ? wqTxt(q, q.hint) : q.who + " is out on the road near " + near(q) + ".";
       return row(q.n + (st === 0 ? " (on offer)" : ""), txt, tr ? "Tracking" : "Track", "qtrack", tr ? "main" : "wq:" + q.id, "", false);
     }
     var any = false;
@@ -5474,16 +5510,27 @@ var BIMG_SRC={"farm": "data:image/webp;base64,UklGRqyAAABXRUJQVlA4WAoAAAAQAAAAZw
       } };
   }
   function makeOverSpec() {
-    var N = ON, P = ovPoi(), c = cp(), SP = [], byId = {}, i, tm = tier();
+    var P = ovPoi(), N = ON, c = cp(), SP = [], byId = {}, i, tm = tier(), KM = OVK > 1 ? 4 : 1;
     var sp = { name: "The Shattered Realms", th: "grass", w: N, h: N, seed: 4242, safe: 0, over: 1, lv: 1, spawn: [N >> 1, N >> 1], trees: 0, rocks: 0, exits: [], npcs: [], enemies: [], chests: [] };
     ovLocalSites().forEach(function (s) { var cx = Math.max(7, Math.min(N - 8, Math.round(s.x / OT))), cy = Math.max(7, Math.min(N - 8, Math.round(s.y / OT))); var q = { s: s, id: s.id, cx: cx, cy: cy }; SP.push(q); byId[s.id] = q; });
     sp.SP = SP; sp.byId = byId; sp.P = P;
     SP.forEach(function (q) {
-      var ex = { x: q.cx - 1, y: q.cy - 1, w: 2, h: 2, rx: q.cx, ry: q.cy + 2, ovsite: q.id, lock: function () { return areaIdFor(q.id) ? "" : q.s.name + " is closed to you for now."; } };
+      var ex = { x: q.cx - 1, y: q.cy - 1, w: 2, h: 2, rx: q.cx, ry: q.cy + 2, ovsite: q.id, lock: function () { var wl = ovWantedLock(q.s); if (wl) return wl; return areaIdFor(q.id) ? "" : q.s.name + " is closed to you for now."; } };
       Object.defineProperty(ex, "to", { get: function () { return areaIdFor(q.id) || "world"; }, enumerable: true }); sp.exits.push(ex);
       if (canBuild(q.s)) sp.exits.push({ x: q.cx + 3, y: q.cy - 1, w: 2, h: 2, rx: q.cx + 3, ry: q.cy + 2, yard: 1, to: "yard:" + q.id });
     });
     P.caves.forEach(function (cv, k) { sp.exits.push({ x: cv.x, y: cv.y, w: 2, h: 1, rx: cv.x, ry: cv.y + 2, cave: k, to: "cave" + k }); });
+    // quest places: no more gates in town squares; each quest's place stands out in the country near the town that sent you
+    sp.qsites = [];
+    if (OVK > 1) QS.forEach(function (q) {
+      if (!q.zone || !AREAS[q.zone] || q.leg) return; var st = qSt(q); if (st !== 2) return;
+      var hq = byId[HUBSITE[q.gateAt || q.hub] || q.gateAt || q.hub] || byId[HUBSITE[q.hub] || q.hub]; if (!hq) return;
+      var a0 = (nhash("qs" + q.id) % 628) / 100, r0 = 55 + nhash("qr" + q.id) % 40;
+      var qx = Math.max(10, Math.min(N - 12, Math.round(hq.cx + Math.cos(a0) * r0))), qy = Math.max(10, Math.min(N - 12, Math.round(hq.cy + Math.sin(a0) * r0)));
+      var o = { q: q, x: qx, y: qy }; sp.qsites.push(o);
+      sp.exits.push({ x: qx, y: qy, w: 2, h: 1, rx: qx, ry: qy + 2, qsite: q.id, qname: q.zname, to: q.zone });
+    });
+    sp.signs = [];
     P.chests.forEach(function (ch) { sp.chests.push([ch.x, ch.y, Math.min(4, ch.lv + (hsh2(ch.x, ch.y) < 0.3 ? 1 : 0))]); });
     WQ.forEach(function (q, k) {
       var w = P.wf[k]; sp.npcs.push({ id: "wf" + k, name: q.who, x: w.x, y: w.y, col: ["#7a5a3a", "#4a6a8a", "#8a4a5a", "#5a7a4a"][k % 4], hair: ["#3a2a18", "#bbbbbb", "#6a3a1a", "#222222"][k % 4], d: function () { return "wq:" + q.id; }, mk: function () { var st = wqState(q); return st === 0 ? 1 : st === 2 ? 2 : 0; } });
@@ -5509,8 +5556,8 @@ var BIMG_SRC={"farm": "data:image/webp;base64,UklGRqyAAABXRUJQVlA4WAoAAAAQAAAAZw
         var wx = x * OT + 8, wy = y * OT + 8, _o = cellOrg(curCell()), e = elevAtW(wx + _o[0], wy + _o[1]), m = moistAt0(wx + _o[0], wy + _o[1]), bd = 1e9, bi = 0;
         for (k = 0; k < n2; k++) { var dx = SP[k].cx - x, dy = SP[k].cy - y, d2 = dx * dx + dy * dy; if (d2 < bd) { bd = d2; bi = k; } }
         var ds = Math.sqrt(bd), q = r(), t = 0;
-        if (e < 0.34 && ds > 5.9) t = 3;
-        else if (ds > 5) { if (e > 0.66) t = q < 0.92 ? 7 : 0; else if (e > 0.6) t = q < 0.22 ? 7 : (q < 0.3 ? 2 : 0); else if (m > 0.58 && e < 0.6) t = q < 0.5 ? 2 : (q < 0.58 ? 8 : 0); else t = q < 0.045 ? 2 : (q < 0.1 ? 8 : (q < 0.112 ? 7 : 0)); }
+        if (e < 0.34 && ds > 5.9 * KM) t = 3;
+        else if (ds > 5 * KM) { if (e > 0.66) t = q < 0.92 ? 7 : 0; else if (e > 0.6) t = q < 0.22 ? 7 : (q < 0.3 ? 2 : 0); else if (m > 0.58 && e < 0.6) t = q < 0.5 ? 2 : (q < 0.58 ? 8 : 0); else t = q < 0.045 ? 2 : (q < 0.1 ? 8 : (q < 0.112 ? 7 : 0)); }
         else t = q < 0.06 ? 8 : 0;
         g[y][x] = t; reg[y * N + x] = n2 ? RN.indexOf(SP[bi].s.owner) + 1 : 0;
       }
@@ -5529,15 +5576,27 @@ var BIMG_SRC={"farm": "data:image/webp;base64,UklGRqyAAABXRUJQVlA4WAoAAAAQAAAAZw
       if (n2 > 1) {
         var used = [], best = [], from = [], j; used[0] = true; for (j = 1; j < n2; j++) { best[j] = dd(0, j); from[j] = 0; }
         for (k = 1; k < n2; k++) { var bj = -1, bv = 1e9; for (j = 1; j < n2; j++) if (!used[j] && best[j] < bv) { bv = best[j]; bj = j; } used[bj] = true; addE(from[bj], bj); for (j = 1; j < n2; j++) if (!used[j]) { var d3 = dd(bj, j); if (d3 < best[j]) { best[j] = d3; from[j] = bj; } } }
-        SP.forEach(function (q, a) { if (q.s.seat && byId[q.s.seat]) addE(a, SP.indexOf(byId[q.s.seat])); var ar = []; SP.forEach(function (o, b) { if (b !== a) ar.push([dd(a, b), b]); }); ar.sort(function (u, v2) { return u[0] - v2[0]; }); addE(a, ar[0][1]); if (ar[1] && ar[1][0] < 20) addE(a, ar[1][1]); });
+        SP.forEach(function (q, a) { if (q.s.seat && byId[q.s.seat]) addE(a, SP.indexOf(byId[q.s.seat])); var ar = []; SP.forEach(function (o, b) { if (b !== a) ar.push([dd(a, b), b]); }); ar.sort(function (u, v2) { return u[0] - v2[0]; }); addE(a, ar[0][1]); if (ar[1] && ar[1][0] < 20 * OVK) addE(a, ar[1][1]); });
       }
       Object.keys(edges).forEach(function (kk) { var e2 = edges[kk], A2 = SP[e2[0]], B2 = SP[e2[1]]; road(A2.cx, A2.cy, B2.cx, B2.cy); });
+      if (OVK > 1) Object.keys(edges).forEach(function (kk) {
+        var e2 = edges[kk];
+        [[SP[e2[0]], SP[e2[1]]], [SP[e2[1]], SP[e2[0]]]].forEach(function (ab) {
+          var A3 = ab[0], B3 = ab[1], L3 = Math.hypot(B3.cx - A3.cx, B3.cy - A3.cy); if (L3 < 30) return;
+          var k3 = Math.min(0.4, 24 / L3), sx = Math.round(A3.cx + (B3.cx - A3.cx) * k3) + 3, sy = Math.round(A3.cy + (B3.cy - A3.cy) * k3);
+          var m3 = Math.round(L3 * 1.35 * 1.6 / 10) * 10; // metres, as you'd walk it: the road wanders
+          sp.signs.push({ x: sx, y: sy, to: B3.s.name, from: A3.s.name, ang: Math.atan2(B3.cx - A3.cx, B3.cy - A3.cy), dist: m3 >= 1000 ? (m3 / 1000).toFixed(1) + " km" : m3 + " m" });
+        });
+      });
+      (sp.signs || []).forEach(function (z) { if (z.x > 0 && z.y > 0 && z.x < N - 1 && z.y < N - 1 && g[z.y][z.x] !== 1) g[z.y][z.x] = 0; });
       // settlements
       SP.forEach(function (q) {
         var town = q.s.type !== "village", rad = town ? 3 : 2, xx, yy;
         for (yy = -4; yy <= 4; yy++) for (xx = -4; xx <= 4; xx++) { if (g[q.cy + yy][q.cx + xx] !== 1) g[q.cy + yy][q.cx + xx] = 0; }
         for (yy = -rad; yy <= rad; yy++) for (xx = -rad; xx <= rad; xx++) g[q.cy + yy][q.cx + xx] = town ? 9 : 1;
         var offs = [[-11, -7], [6, -7], [-11, 4], [6, 4]]; if (town) offs.push([-2, -11], [-2, 8], [-17, -2], [12, -2]);
+        // on the big overland a settlement spreads out: an outer ring of houses and farmsteads (more for towns)
+        if (OVK > 1) { var nr = town ? 12 : 6, rr = town ? 26 : 17; for (var hk = 0; hk < nr; hk++) { var ha = hk / nr * 6.283 + (q.cx % 7) * 0.3; offs.push([Math.round(Math.cos(ha) * rr) - 2, Math.round(Math.sin(ha) * rr * 0.8) - 2]); } }
         offs.forEach(function (o) {
           var hx = q.cx + o[0], hy = q.cy + o[1], w = 5, h = 4, ok = hx > 1 && hy > 1 && hx + w < N - 1 && hy + h + 1 < N - 1;
           for (yy = -1; ok && yy <= h; yy++) for (xx = -1; ok && xx <= w; xx++) { var tt = g[hy + yy][hx + xx]; if (!(tt === 0 || tt === 8 || tt === 2 || tt === 7)) ok = false; }
@@ -5546,6 +5605,7 @@ var BIMG_SRC={"farm": "data:image/webp;base64,UklGRqyAAABXRUJQVlA4WAoAAAAQAAAAZw
       });
       function clearR(cx, cy, rad2) { for (var yy = -rad2; yy <= rad2; yy++) for (var xx = -rad2; xx <= rad2; xx++) { var px2 = cx + xx, py2 = cy + yy; if (px2 > 0 && py2 > 0 && px2 < N - 1 && py2 < N - 1 && g[py2][px2] !== 1) g[py2][px2] = 0; } }
       P.camps.forEach(function (cm) { clearR(cm.x, cm.y, 3); }); P.chests.forEach(function (cm) { clearR(cm.x, cm.y, 1); }); P.wf.forEach(function (cm) { clearR(cm.x, cm.y, 1); }); P.qc.forEach(function (cm) { if (cm) clearR(cm.x, cm.y, 3); }); P.rt.forEach(function (z) { clearR(z.g.x, z.g.y, 1); clearR(z.a.x, z.a.y, 4); });
+      (sp.qsites || []).forEach(function (z) { clearR(z.x, z.y, 4); });
       P.caves.forEach(function (cv) { clearR(cv.x, cv.y, 3); var yy, xx; for (yy = -2; yy <= -1; yy++) for (xx = -1; xx <= 2; xx++) g[cv.y + yy][cv.x + xx] = 7; g[cv.y][cv.x - 1] = 7; g[cv.y][cv.x + 2] = 7; });
       // reachability
       function bfs(sx2, sy2) {
@@ -5553,7 +5613,7 @@ var BIMG_SRC={"farm": "data:image/webp;base64,UklGRqyAAABXRUJQVlA4WAoAAAAQAAAAZw
         while (h2 < t2) { var p2 = qu[h2++], px2 = p2 % N, py2 = (p2 - px2) / N; for (var d4 = 0; d4 < 4; d4++) { var nx = px2 + (d4 === 0 ? 1 : d4 === 1 ? -1 : 0), ny = py2 + (d4 === 2 ? 1 : d4 === 3 ? -1 : 0); if (nx < 1 || ny < 1 || nx >= N - 1 || ny >= N - 1) continue; var ni = ny * N + nx; if (!vis[ni] && ovPass(g[ny][nx])) { vis[ni] = 1; qu[t2++] = ni; } } }
         return vis;
       }
-      var pts = []; SP.forEach(function (q) { pts.push([q.cx, q.cy + 2]); }); P.caves.forEach(function (cv) { pts.push([cv.x, cv.y + 2]); });
+      var pts = []; SP.forEach(function (q) { pts.push([q.cx, q.cy + 2]); }); P.caves.forEach(function (cv) { pts.push([cv.x, cv.y + 2]); }); (sp.qsites || []).forEach(function (z) { pts.push([z.x, z.y + 2]); });
       P.chests.forEach(function (cm) { pts.push([cm.x, cm.y]); }); P.camps.forEach(function (cm) { pts.push([cm.x, cm.y]); }); P.wf.forEach(function (cm) { pts.push([cm.x, cm.y]); }); P.qc.forEach(function (cm) { if (cm) pts.push([cm.x, cm.y]); }); P.rt.forEach(function (z) { pts.push([z.g.x, z.g.y]); pts.push([z.a.x, z.a.y]); });
       var vis = null, guard = 0;
       if (n2) while (guard++ < 6) {
@@ -5615,7 +5675,8 @@ var BIMG_SRC={"farm": "data:image/webp;base64,UklGRqyAAABXRUJQVlA4WAoAAAAQAAAAZw
   function startOverland(o) {
     o = o || {}; Object.keys(AREAS).forEach(function (k) { if (/^cave\d+(f\d)?$/.test(k) || k.indexOf("yard:") === 0) delete AREAS[k]; });
     var sp = makeOverSpec(); AREAS.overland = sp; OVR.on = true;
-    var sx, sy; if (o.back && OVR.ret) { sx = OVR.ret.x; sy = OVR.ret.y; } else { sx = Math.round((S.px - cellOrg(curCell())[0]) / OT); sy = Math.round((S.py - cellOrg(curCell())[1]) / OT); }
+    OVW.cell = curCell(); if (!o.at) OVW.h = (function () { try { return clockH(); } catch (e) { return 12; } })();
+    var sx, sy; if (o.at) { sx = Math.round(o.at.x / ATS); sy = Math.round(o.at.y / ATS); } else if (o.back && OVR.ret) { sx = OVR.ret.x; sy = OVR.ret.y; } else { sx = Math.round((S.px - cellOrg(curCell())[0]) / OT); sy = Math.round((S.py - cellOrg(curCell())[1]) / OT); }
     startArea("overland", sx, sy);
     var a = AR, f = ovFind(a, sx, sy); a.sp.exits.forEach(function (e) { if (f[0] >= e.x - 1 && f[0] <= e.x + e.w && f[1] >= e.y - 1 && f[1] <= e.y + e.h) f = [e.rx, e.ry + 1]; }); a.p.x = f[0] * ATS + 8; a.p.y = f[1] * ATS + 14; a.spawn = [a.p.x, a.p.y];
     ovBuildMini(a);
@@ -5631,26 +5692,51 @@ var BIMG_SRC={"farm": "data:image/webp;base64,UklGRqyAAABXRUJQVlA4WAoAAAAQAAAAZw
     if (e.wq && RTM[e.wq]) rtKill(e); else if (e.wq) { var left = 0; AR.en.forEach(function (o) { if (o !== e && !o.dead && !o.gone && o.wq === e.wq) left++; }); if (!left) { c.wqd = c.wqd || {}; c.wqd[e.wq] = 1; c.wq = c.wq || {}; c.wq[e.wq] = 2; aToast("Done. Go back to " + WQM[e.wq].who + "."); } }
   }
   function ovBuildMini(a) {
-    var mm = document.createElement("canvas"); mm.width = mm.height = 140; var mg = mm.getContext("2d"), img = mg.createImageData(140, 140), d = img.data, N = ON, x, y;
+    var mm = document.createElement("canvas"); mm.width = mm.height = 140; var mg = mm.getContext("2d"), img = mg.createImageData(140, 140), d = img.data, W = a.W, H = a.H, M = Math.max(W, H), x, y;
     for (y = 0; y < 140; y++) for (x = 0; x < 140; x++) {
-      var tx = Math.floor(x * N / 140), ty = Math.floor(y * N / 140), t = a.g[ty][tx], c3 = [74, 120, 62], ri = a.sp.reg[ty * N + tx];
-      if (t === 3) c3 = [40, 90, 140]; else if (t === 2) c3 = [30, 80, 48]; else if (t === 7) c3 = [125, 125, 132]; else if (t === 1) c3 = [205, 175, 110]; else if (t === 4 || t === 5 || t === 6 || t === 9) c3 = [225, 205, 160];
-      else if (ri) { var rc = RCOL[a.sp.RN[ri - 1]].split(","); c3 = [c3[0] * 0.7 + rc[0] * 0.3, c3[1] * 0.7 + rc[1] * 0.3, c3[2] * 0.7 + rc[2] * 0.3]; }
-      var i = (y * 140 + x) * 4; d[i] = c3[0]; d[i + 1] = c3[1]; d[i + 2] = c3[2]; d[i + 3] = 255;
+      var tx = Math.floor(x * M / 140), ty = Math.floor(y * M / 140), i = (y * 140 + x) * 4;
+      if (tx >= W || ty >= H) { d[i] = 12; d[i + 1] = 10; d[i + 2] = 8; d[i + 3] = 255; continue; }
+      var t = a.g[ty][tx], c3 = [74, 120, 62], ri = a.sp.reg ? a.sp.reg[ty * W + tx] : 0;
+      if (t === 3) c3 = [40, 90, 140]; else if (t === 2) c3 = [30, 80, 48]; else if (t === 7) c3 = [125, 125, 132]; else if (t === 1) c3 = [205, 175, 110]; else if (t === 4 || t === 5 || t === 6) c3 = [150, 110, 80]; else if (t === 9) c3 = [225, 205, 160];
+      else if (ri && a.sp.RN) { var rc = RCOL[a.sp.RN[ri - 1]].split(","); c3 = [c3[0] * 0.7 + rc[0] * 0.3, c3[1] * 0.7 + rc[1] * 0.3, c3[2] * 0.7 + rc[2] * 0.3]; }
+      d[i] = c3[0]; d[i + 1] = c3[1]; d[i + 2] = c3[2]; d[i + 3] = 255;
     }
-    mg.putImageData(img, 0, 0); a.mm = mm;
+    mg.putImageData(img, 0, 0); a.mm = mm; a.mmM = M;
   }
   var omEl = null;
   function ovMiniTick(a) {
-    if (!omEl) { omEl = document.createElement("canvas"); omEl.id = "omini"; omEl.width = omEl.height = 140; omEl.style.cssText = "position:absolute;left:8px;bottom:calc(10px + env(safe-area-inset-bottom,0px));width:104px;height:104px;border:2px solid #8a5a2a;background:#000;pointer-events:none;z-index:3;image-rendering:pixelated;opacity:.92"; $("area").appendChild(omEl); }
-    var show = !!(a.sp.over && a.mm && !a.dlg); if (omEl.hidden !== !show) omEl.hidden = !show; if (!show) return;
-    var g = omEl.getContext("2d"), k = 140 / ON; g.drawImage(a.mm, 0, 0);
-    a.sp.SP.forEach(function (q) { var s2 = q.s.type === "village" ? 3 : 5; g.fillStyle = "#000"; g.fillRect(q.cx * k - s2 / 2 - 1, q.cy * k - s2 / 2 - 1, s2 + 2, s2 + 2); g.fillStyle = FAC[q.s.owner] ? FAC[q.s.owner].col : "#ccc"; g.fillRect(q.cx * k - s2 / 2, q.cy * k - s2 / 2, s2, s2); });
-    a.sp.P.caves.forEach(function (cv) { g.fillStyle = "#1a1020"; g.fillRect(cv.x * k - 2, cv.y * k - 2, 4, 4); g.fillStyle = cv.lair ? "#ff7a2a" : "#b8a8e0"; g.fillRect(cv.x * k - 1, cv.y * k - 1, 2, 2); });
-    var pulse = Math.floor(a.t * 3) % 2;
-    a.npcs.forEach(function (n) { if (n.mk) { var mq = n.mk(); if (mq && pulse) { g.fillStyle = mq === 1 ? "#ffd84a" : "#9fd8ff"; g.fillRect(n.x * k - 2, n.y * k - 2, 4, 4); } } });
-    var o = objective(), tq = o.site && a.sp.byId[o.site]; if (tq && pulse) { g.fillStyle = "#fff"; g.fillRect(tq.cx * k - 4, tq.cy * k - 4, 8, 2); g.fillRect(tq.cx * k - 4, tq.cy * k + 3, 8, 2); }
-    g.fillStyle = "#000"; g.fillRect(a.p.x / ATS * k - 3, a.p.y / ATS * k - 3, 6, 6); g.fillStyle = pulse ? "#fff" : "#ff4a4a"; g.fillRect(a.p.x / ATS * k - 2, a.p.y / ATS * k - 2, 4, 4);
+    if (!omEl) {
+      omEl = document.createElement("canvas"); omEl.id = "omini"; omEl.width = omEl.height = 140;
+      omEl.style.cssText = "position:absolute;right:calc(.6rem + env(safe-area-inset-right,0px));top:calc(3.4rem + env(safe-area-inset-top,0px));width:96px;height:96px;border:2px solid #8a6a30;border-radius:50%;background:#000;pointer-events:none;z-index:3;opacity:.94;box-shadow:0 2px 10px #000a";
+      $("area").appendChild(omEl);
+    }
+    if (!a.mm && a.g && !a.sp.over) try { ovBuildMini(a); } catch (e) {}
+    var show = !!(a.mm && !a.dlg && !(a.sp.th && ATH[a.sp.th] && ATH[a.sp.th].cave)); if (omEl.hidden !== !show) omEl.hidden = !show; if (!show) return;
+    var g = omEl.getContext("2d"), over = !!a.sp.over, M = a.mmM || Math.max(a.W, a.H), Z = over ? 5 : 1, k = 140 / M * Z, px = a.p.x / ATS, py = a.p.y / ATS, pulse = Math.floor(a.t * 3) % 2;
+    // the big overland shows the country around you (zoomed); towns and dungeons show all of themselves
+    var ox = over ? 70 - px * k : 0, oy = over ? 70 - py * k : 0;
+    function P(xx, yy) { return [ox + xx * k, oy + yy * k]; }
+    g.save(); g.fillStyle = "#0c0a08"; g.fillRect(0, 0, 140, 140); g.beginPath(); g.arc(70, 70, 70, 0, 6.283); g.clip();
+    g.imageSmoothingEnabled = false; g.drawImage(a.mm, ox, oy, 140 * Z, 140 * Z);
+    if (over) {
+      a.sp.SP.forEach(function (q) { var s2 = q.s.type === "village" ? 5 : 8, p = P(q.cx, q.cy); g.fillStyle = "#000"; g.fillRect(p[0] - s2 / 2 - 1, p[1] - s2 / 2 - 1, s2 + 2, s2 + 2); g.fillStyle = FAC[q.s.owner] ? FAC[q.s.owner].col : "#ccc"; g.fillRect(p[0] - s2 / 2, p[1] - s2 / 2, s2, s2); });
+      a.sp.P.caves.forEach(function (cv) { var p = P(cv.x, cv.y); g.fillStyle = cv.lair ? "#ff7a2a" : "#b8a8e0"; g.fillRect(p[0] - 2, p[1] - 2, 4, 4); });
+      (a.sp.qsites || []).forEach(function (z) { var p = P(z.x, z.y); g.fillStyle = "#ffd060"; g.beginPath(); g.arc(p[0], p[1], 3, 0, 6.283); g.fill(); });
+      try { (window.__ovParties ? window.__ovParties() : []).forEach(function (q) { var p = P(q.x / ATS, q.y / ATS); g.fillStyle = "#000"; g.beginPath(); g.arc(p[0], p[1], 3.6, 0, 6.283); g.fill(); g.fillStyle = q.hostile ? "#ff4a3a" : q.kind === "caravan" ? "#f0d080" : q.col; g.beginPath(); g.arc(p[0], p[1], 2.6, 0, 6.283); g.fill(); }); } catch (e) {}
+    }
+    a.npcs.forEach(function (n) { if (n.mk && (!n.vis || n.vis())) { var mq = n.mk(); if (mq && pulse) { var p = P(n.x, n.y); g.fillStyle = mq === 1 ? "#ffd84a" : "#9fd8ff"; g.fillRect(p[0] - 2.5, p[1] - 2.5, 5, 5); } } });
+    // followed quests and the main objective: a gold diamond (an arrow on the rim when it is off this map)
+    var marks = []; try { marks = (window.__ovTargets ? window.__ovTargets() : []).map(function (q) { return [q.x / ATS, q.y / ATS, "#ffc860"]; }); var tp = targetPos(); if (tp) marks.push([tp.x / ATS, tp.y / ATS, "#ffffff"]); } catch (e) {}
+    marks.forEach(function (m) {
+      var p = P(m[0], m[1]), dx = p[0] - 70, dy = p[1] - 70, dd = Math.hypot(dx, dy);
+      if (dd > 62) { p = [70 + dx / dd * 62, 70 + dy / dd * 62]; }
+      g.save(); g.translate(p[0], p[1]); g.rotate(0.785); g.fillStyle = "#000"; g.fillRect(-4.5, -4.5, 9, 9); g.fillStyle = m[2]; g.fillRect(-3.5, -3.5, 7, 7); g.restore();
+    });
+    // you: an arrow along your heading
+    var me = P(px, py), f = a.p.face || { x: 0, y: 1 }, an = Math.atan2(f.y, f.x);
+    g.save(); g.translate(me[0], me[1]); g.rotate(an); g.fillStyle = "#000"; g.beginPath(); g.moveTo(7, 0); g.lineTo(-5, -5); g.lineTo(-3, 0); g.lineTo(-5, 5); g.closePath(); g.fill();
+    g.fillStyle = "#fff"; g.beginPath(); g.moveTo(5.5, 0); g.lineTo(-4, -3.6); g.lineTo(-2.2, 0); g.lineTo(-4, 3.6); g.closePath(); g.fill(); g.restore();
+    g.restore();
   }
   var wkBtn = document.createElement("button"); wkBtn.id = "walkbtn"; wkBtn.textContent = "Walk"; wkBtn.setAttribute("aria-label", "Walk the overland");
   wkBtn.style.cssText = "position:fixed;right:8px;top:138px;z-index:60;width:34px;height:34px;min-height:0;padding:0;border-radius:50%;background:rgba(12,11,9,.7);border:1px solid #8f8672;color:#e8d8a8;font-size:9px;letter-spacing:0;line-height:1;text-transform:uppercase;display:none";
@@ -5658,6 +5744,183 @@ var BIMG_SRC={"farm": "data:image/webp;base64,UklGRqyAAABXRUJQVlA4WAoAAAAQAAAAZw
   document.body.appendChild(wkBtn);
   setInterval(function () { var ti = document.getElementById("title"), lo = document.getElementById("loading"); wkBtn.style.display = (AR || B || typeof S === "undefined" || !S || sheet || (ti && !ti.hidden) || (lo && !lo.hidden)) ? "none" : "block"; }, 250);
   window.__walk = function () { startOverland(); };
+  // ================= The living overland (John, 11 Nov): walk the whole map as one open world =================
+  // While you walk, the world map runs: time passes about as fast as it would on the map for the same distance, armies,
+  // bandits, hunters and caravans move, and touching a hostile party starts the map battle. When it ends you are back on
+  // the road where you stood. Caravans travel between each Realm's towns and villages; you can trade with them, ask
+  // the news, or raid them, and raiding makes you Wanted by that Realm: suspicion, then bounty riders, then war.
+  var OVW = { h: 12, resume: null, cell: -1, lastDay: -1, crime: {} };
+  function ovLive() { return !!(AR && AR.sp && AR.sp.over && OVR.on && S); }
+  window.__ovHour = function () { return ovLive() ? OVW.h : null; };
+  function ovSyncPos() { var co = cellOrg(OVW.cell); S.px = co[0] + AR.p.x * OT / ATS; S.py = co[1] + AR.p.y * OT / ATS; }
+  var ovAuOld = aUpdate;
+  aUpdate = function (dt) {
+    ovAuOld(dt);
+    if (!ovLive()) return;
+    if (AR.dlg || sheet || B) { S.speed = 0; return; }
+    ovSyncPos();
+    var v = aInput(), mv = Math.min(1, Math.hypot(v[0] || 0, v[1] || 0));
+    // map units per second at a walk, as a share of the map's own travel speed: the world keeps the map's pace
+    S.speed = (54 * 1.35 * OT / ATS) / SPEED / DAY_RATE * (0.2 + 0.8 * mv);
+    OVW.h = (OVW.h + dt / 60) % 24; // the sky turns slowly while you walk: an hour a minute
+  };
+  // contact with a hostile party: step off the road into the battle, and come back to the same spot after
+  var sbOld = startBattle;
+  startBattle = function (e) {
+    if (ovLive()) { ovSyncPos(); OVW.resume = { x: AR.p.x, y: AR.p.y, cell: OVW.cell, px: S.px, py: S.py }; OVR.ret = null; leaveArea(); }
+    return sbOld.apply(this, arguments);
+  };
+  setInterval(function () {
+    try {
+      if (!S) return;
+      if (OVW.resume && !B && !AR && !sheet && !S.ended) {
+        var r = OVW.resume; OVW.resume = null;
+        if (curCell() === r.cell && Math.hypot(S.px - r.px, S.py - r.py) < 70) startOverland({ at: r });
+      }
+      if (B && B.kind === "caravan" && B.won !== null && B.won !== undefined && !B._carDone) { B._carDone = 1; ovRaidAfter(B); }
+      if (B && B.stage === "result" && B.kind === "caravan" && B.won === null && !B._carDone) { B._carDone = 1; ovRaidAfter(B); }
+    } catch (e) { if (window.console) console.log("ovw", e && e.message); }
+  }, 400);
+
+  // ---- caravans ----
+  function cvName(c) { var a = site(c.from), b = site(c.to); return (a ? a.name : "?") + " to " + (b ? b.name : "?"); }
+  function ovCaravanDaily() {
+    if (!S.caravans) S.caravans = [];
+    var by = {}; S.caravans.forEach(function (c) { by[c.cell] = (by[c.cell] || 0) + 1; });
+    for (var cell = 0; cell < 8; cell++) {
+      var f = cellFac(cell); if (!f || !FAC[f] || (by[cell] || 0) >= 3 || Math.random() > 0.45) continue;
+      var here = S.sites.filter(function (s) { return cellAt(s.x, s.y) === cell && s.owner === f; }); if (here.length < 2) continue;
+      var a = here[Math.floor(Math.random() * here.length)], b = here[Math.floor(Math.random() * here.length)], tries = 0;
+      while ((b === a || Math.hypot(a.x - b.x, a.y - b.y) < 260) && tries++ < 12) b = here[Math.floor(Math.random() * here.length)];
+      if (b === a) continue;
+      S.caravans.push({ id: S.eid++, fac: f, cell: cell, from: a.id, to: b.id, x: a.x + 18, y: a.y + 18, n: 6 + Math.floor(Math.random() * 10), goods: 60 + Math.floor(Math.random() * 120), cool: 0 });
+    }
+  }
+  function ovCaravansMove(dd) {
+    if (!S.caravans || !S.caravans.length) return;
+    S.caravans = S.caravans.filter(function (c) {
+      var t = site(c.to); if (!t) return false;
+      var d = Math.hypot(t.x - c.x, t.y - c.y);
+      if (d < 16) { t.stock = Math.min(t.cap || 200, (t.stock || 0) + Math.round(c.goods / 8)); bump(t, 2); return false; }
+      var q = ovNavMove(c, "x", "y", t.x, t.y, 40 * dd); c.x = q[0]; c.y = q[1]; return true;
+    });
+  }
+  function carById(id) { return (S.caravans || []).filter(function (c) { return c.id === id; })[0] || null; }
+  function grainPrice(f) { return 1 + (wanted(f) >= 20 ? 1 : 0); }
+
+  // ---- Wanted: per Realm, 0-100 ----
+  function wanted(f) { return (S.wanted && S.wanted[f]) || 0; }
+  function wantedWord(n) { return n >= 80 ? "at war over it" : n >= 50 ? "hunted" : n >= 20 ? "an outlaw" : n > 0 ? "under suspicion" : "clean"; }
+  function ovCrime(f, amt, why) {
+    if (!FAC[f]) return; S.wanted = S.wanted || {}; var was = wanted(f), now = Math.min(100, was + amt); S.wanted[f] = now; OVW.crime[f] = S.day;
+    var R = FAC[f].name;
+    try { opAdd(f, -Math.round(amt / 2), why); } catch (e) {}
+    if (was < 20 && now >= 20) { news(R + " has posted your description at every gate."); toast(R + ": you are an outlaw. Bounty " + bountyOf(f) + " crowns."); }
+    if (was < 50 && now >= 50) { ovHunters(f); news(R + " has sent bounty riders after you."); toast(R + " has sent bounty riders after you."); }
+    if (was < 80 && now >= 80 && !S.pwar[f]) { S.pwar[f] = true; S.wantWar = S.wantWar || {}; S.wantWar[f] = 1; news(R + " has declared war on you, for " + why + "."); toast(R + " declares war on you."); log(R + " declared war on me, for " + why + ".", "e"); }
+    else if (now < 20 && was < 20) toast(R + " will remember that. (Wanted " + now + ")");
+  }
+  function bountyOf(f) { return Math.round(wanted(f) * 6 + 20); }
+  function ovHunters(f) {
+    var cap = site(FAC[f].cap) || S.sites.filter(function (s) { return s.owner === f; })[0]; if (!cap) return;
+    if (S.enemies.some(function (e) { return e.kind === "hunter" && e.fac === f; })) return;
+    S.enemies.push({ id: S.eid++, kind: "hunter", fac: f, title: FAC[f].name + " bounty riders", name: FAC[f].name + " bounty riders", x: cap.x + 30, y: cap.y + 30, n: Math.round((18 + 3 * lvl()) * DF.en), q: 1.2, cool: 0, dest: null });
+  }
+  function ovWantedDaily() {
+    if (!S.wanted) return;
+    Object.keys(S.wanted).forEach(function (f) {
+      var w = S.wanted[f]; if (!w) return;
+      if (S.day - (OVW.crime[f] || -99) > 3) S.wanted[f] = Math.max(0, w - 1);
+      if (S.wanted[f] < 40) S.enemies = S.enemies.filter(function (e) { return !(e.kind === "hunter" && e.fac === f); });
+    });
+  }
+  function payBounty(f) {
+    var c = bountyOf(f); if (!wanted(f)) return "";
+    if (S.crowns < c) return "You need " + c + " crowns.";
+    S.crowns -= c; S.wanted[f] = 0; S.enemies = S.enemies.filter(function (e) { return !(e.kind === "hunter" && e.fac === f); });
+    if (S.wantWar && S.wantWar[f]) { S.wantWar[f] = 0; S.pwar[f] = false; news(FAC[f].name + " took your bounty and called off the war."); }
+    news("You paid your bounty to " + FAC[f].name + "."); return "Paid " + c + " crowns. " + FAC[f].name + " has struck your name off its boards.";
+  }
+  function ovWantedLock(s) { var f = s && s.owner; return f && wanted(f) >= 50 ? "The gate is shut to you. " + FAC[f].name + " is hunting you. Pay your bounty first." : ""; }
+
+  // ---- talking to a party on the road ----
+  function ovRaid(c) {
+    var e = { id: S.eid++, kind: "caravan", fac: c.fac, n: c.n, q: 0.95, x: c.x, y: c.y, cool: 0, dest: null, title: "The " + cvName(c) + " caravan", carId: c.id };
+    S.enemies.push(e); startBattle(e); if (B) B.carId = c.id;
+  }
+  function ovRaidAfter(b) {
+    var c = carById(b.carId); S.enemies = S.enemies.filter(function (e) { return !(e.kind === "caravan" && e.carId === b.carId); });
+    if (!c) return;
+    if (b.won) {
+      S.crowns += c.goods; S.grain += Math.round(c.goods / 5); S.caravans = S.caravans.filter(function (x) { return x !== c; });
+      b.out.push("The wagons were yours: " + c.goods + " crowns of goods and " + Math.round(c.goods / 5) + " grain.");
+      var t = site(c.to); if (t) { t.stock = Math.max(0, (t.stock || 0) - 10); bump(t, -4); }
+      ovCrime(c.fac, 30, "the raid on the " + cvName(c) + " caravan");
+    } else { c.n = Math.max(3, c.n - 2); ovCrime(c.fac, b.won === false ? 15 : 10, "an attack on the " + cvName(c) + " caravan"); }
+    try { renderSheet(); } catch (e) {}
+  }
+  var gdOld2 = getDlg;
+  getDlg = function (id) {
+    if (id && id.indexOf("car:") === 0) {
+      var c = carById(+id.slice(4)); if (!c) return { n: "The road", t: "The wagons have moved on.", c: [{ t: "Go." }] };
+      var f = c.fac, R = FAC[f].name, to = site(c.to), from = site(c.from), L = window.VHPLACELORE || {}, rum = (to && L[to.id] && L[to.id].rumour) || (from && L[from.id] && L[from.id].rumour) || "", w = wanted(f), gp = grainPrice(f);
+      return { n: "Caravan master, " + R, t: "“" + (w >= 20 ? "Keep your hands where I can see them. I know your face from the boards." : "Road's long and the wagons are slow. Buying, or just walking?") + "”<br><span style=\"opacity:.75\">" + c.n + " guards, wagons bound " + cvName(c) + ".</span>",
+        c: function () {
+          var out = [];
+          out.push({ t: "Buy 20 grain (" + 20 * gp + " crowns)", fn: function () { if (S.crowns < 20 * gp) { aToast("Not enough crowns."); return; } S.crowns -= 20 * gp; S.grain += 20; aToast("+20 grain."); } });
+          if (rum) out.push({ t: "Any news from the road?", fn: function () { setTimeout(function () { aToast(rum.length > 150 ? rum.slice(0, 147) + "…" : rum); }, 50); } });
+          if (w > 0) out.push({ t: "Pay your " + R + " bounty (" + bountyOf(f) + " crowns)", fn: function () { var m = payBounty(f); setTimeout(function () { aToast(m); }, 50); } });
+          out.push({ t: "Raid the wagons (" + R + " will want you for it)", fn: function () { setTimeout(function () { ovRaid(c); }, 60); } });
+          out.push({ t: "Safe travels." });
+          return out;
+        } };
+    }
+    if (id && id.indexOf("lordtalk:") === 0) {
+      var e = S.enemies.filter(function (q) { return q.id === +id.slice(9); })[0]; if (!e) return { n: "The road", t: "They have marched on.", c: [{ t: "Go." }] };
+      return { n: e.name || "A column", t: "“" + (e.fac && FAC[e.fac] ? FAC[e.fac].name + " marches on its own business. " : "") + "Keep to the side of the road and we'll keep to ours.”<br><span style=\"opacity:.75\">About " + Math.round(e.n / 2) * 2 + " men.</span>", c: [{ t: "Go well." }] };
+    }
+    return gdOld2.apply(this, arguments);
+  };
+  // the parties the 3D overland draws: everything on the map within sight of you, in area pixels
+  window.__ovParties = function () {
+    if (!ovLive()) return [];
+    var co = cellOrg(OVW.cell), k = ATS / OT, R = 230, out = [];
+    function near(o) { return cellAt(o.x, o.y) === OVW.cell && Math.hypot(o.x - S.px, o.y - S.py) < R; }
+    S.enemies.forEach(function (e) {
+      if (!near(e) || e.kind === "caravan") return;
+      var hostile = e.kind !== "lord" || !!S.pwar[e.fac];
+      var nm = e.kind === "lord" ? (e.name || "A column") : e.kind === "void" ? "Void-touched" : e.kind === "hunter" ? e.title : "Bandits";
+      out.push({ k: "e" + e.id, x: (e.x - co[0]) * k, y: (e.y - co[1]) * k, n: e.n, kind: e.kind, col: e.fac && FAC[e.fac] ? FAC[e.fac].col : e.kind === "void" ? "#9a88c4" : "#b2503c", name: nm, hostile: hostile, talk: !hostile && e.kind === "lord" ? "lordtalk:" + e.id : "" });
+    });
+    (S.caravans || []).forEach(function (c) { if (!near(c)) return; out.push({ k: "c" + c.id, x: (c.x - co[0]) * k, y: (c.y - co[1]) * k, n: c.n, kind: "caravan", col: FAC[c.fac].col, name: "Caravan · " + cvName(c), hostile: false, talk: "car:" + c.id }); });
+    (S.allies || []).forEach(function (h, i) { if (h.away || !near(h)) return; out.push({ k: "h" + i, x: (h.x - co[0]) * k, y: (h.y - co[1]) * k, n: h.n, kind: "ally", col: "#f0d060", name: String(h.name || "Ally").split(",")[0], hostile: false, talk: "" }); });
+    return out;
+  };
+  // the followed side quests, as places on this stretch of road (area pixels), for the 3D markers and the minimap
+  window.__ovTargets = function () {
+    if (!ovLive()) return [];
+    var f = cp().f, out = [], sp = AR.sp;
+    (f.tracks || []).forEach(function (id) {
+      try {
+        if (id.indexOf("wq:") === 0 || id.indexOf("rt:") === 0) { var w = id[0] === "w" ? wildObj(id.slice(3)) : rtObj(id.slice(3)); if (w && typeof w.x === "number") out.push({ id: id, x: w.x * ATS + 8, y: w.y * ATS + 8, lab: w.lab || "Your quest" }); return; }
+        var q = QMAP[id]; if (!q) return; var st = qSt(q);
+        if (st === 2) { var z = (sp.qsites || []).filter(function (o) { return o.q === q; })[0]; if (z) out.push({ id: id, x: (z.x + 1) * ATS, y: z.y * ATS, lab: q.zname }); return; }
+        if (st === 1 || st === 3) { var hq = sp.byId[HUBSITE[q.hub] || q.hub]; if (hq) out.push({ id: id, x: hq.cx * ATS + 8, y: hq.cy * ATS, lab: (st === 3 ? "Report: " : "") + (HUBNAME[q.hub] || q.hub) }); }
+      } catch (e) {}
+    });
+    return out.slice(0, 3);
+  };
+  // in any town of a Realm that wants you: the bounty, and a way to pay it
+  var ssOldW = siteSheet;
+  siteSheet = function (s) {
+    var h = ssOldW(s), f = s && s.owner, w = f && FAC[f] ? wanted(f) : 0; if (!w) return h;
+    return '<div class="sec">Wanted</div>' + row("Wanted in " + FAC[f].name + ": " + w + " (" + wantedWord(w) + ")", "Bounty " + bountyOf(f) + " crowns. Pay it and " + FAC[f].name + " strikes your name off its boards" + (S.wantWar && S.wantWar[f] ? " and calls off the war." : ".") + " It also fades a point a day if you keep your hands clean.", "Pay", "paybounty", f, "", S.crowns < bountyOf(f)) + h;
+  };
+  window.__ovPartyUse = function (key) { if (!ovLive() || !key) return; ovSyncPos(); dlgOpen(key); };
+  // a once-a-day pass: new caravans, bounties cooling
+  setInterval(function () { try { if (!S || S.tickDay === OVW.lastDay) return; OVW.lastDay = S.tickDay; ovCaravanDaily(); ovWantedDaily(); } catch (e) {} }, 500);
+  window.__ovw = { qs: function () { return QS.map(function (q) { return [q.id, qSt(q), q.hub, q.zone]; }); }, live: function () { return { live: ovLive(), dlg: !!(AR && AR.dlg), sheet: !!sheet, B: !!B, spd: S.speed }; }, wanted: wanted, crime: ovCrime, pay: payBounty, raid: function (id) { var c = carById(id); if (c) ovRaid(c); }, daily: ovCaravanDaily, OVW: OVW };
+
   function ovBuildBtn() {
     if (!AR || AR.dlg) return;
     if (AR.sp.yard) { aToast("You are in the builder's yard. Walk to an empty plot and talk to its sign."); return; }
@@ -6584,7 +6847,7 @@ var BIMG_SRC={"farm": "data:image/webp;base64,UklGRqyAAABXRUJQVlA4WAoAAAAQAAAAZw
       var st = rtSt(q), lk = rtLocked(q);
       if (st === 3) { h += '<p class="dim-t"><span style="color:' + RAR[5].c + '">' + q.wn + "</span> · claimed.</p>"; return; }
       if (st === 0 && lk) { h += '<p class="dim-t">' + q.n + " · sealed. " + lk + "</p>"; return; }
-      var tr = f.track === "rt:" + q.id, txt = st === 2 ? "Done. Return to " + q.who + "." : st === 1 ? q.hint : q.who + " offers a relic trial (" + q.fee + " crowns). Very hard.";
+      var tr = trk("rt:" + q.id), txt = st === 2 ? "Done. Return to " + q.who + "." : st === 1 ? q.hint : q.who + " offers a relic trial (" + q.fee + " crowns). Very hard.";
       h += row(q.n + (st === 0 ? " (on offer)" : ""), txt, tr ? "Tracking" : "Track", "qtrack", tr ? "main" : "rt:" + q.id, "", false);
     });
     return h;
@@ -7090,7 +7353,7 @@ var BIMG_SRC={"farm": "data:image/webp;base64,UklGRqyAAABXRUJQVlA4WAoAAAAQAAAAZw
       if (st === 3) { done++; return; }
       if (st === 0 && !seen) return;
       if (st === 0 && lk) { lines += '<p class="dim-t">' + q.n + " · sealed. " + lk + "</p>"; return; }
-      var tr = f.track === "rt:" + q.id, txt = st === 2 ? "Done. Return to " + q.who + "." : st === 1 ? q.hint : q.who + " offers a relic trial (" + q.fee + " crowns). Very hard.";
+      var tr = trk("rt:" + q.id), txt = st === 2 ? "Done. Return to " + q.who + "." : st === 1 ? q.hint : q.who + " offers a relic trial (" + q.fee + " crowns). Very hard.";
       lines += row(q.n + (st === 0 ? " (on offer)" : ""), txt, tr ? "Tracking" : "Track", "qtrack", tr ? "main" : "rt:" + q.id, "", false);
     });
     if (lines || done) h += '<div class="sec">Relic trials' + (done ? " · " + done + " claimed" : "") + "</div>" + lines;
@@ -7100,7 +7363,7 @@ var BIMG_SRC={"farm": "data:image/webp;base64,UklGRqyAAABXRUJQVlA4WAoAAAAQAAAAZw
     var c = cp(), h = "", n = 0, f = c.f, lines = ""; c.wq = c.wq || {}; c.wqseen = c.wqseen || {};
     function near(q) { var w = ovPoi().wf[wqIdx(q)], bd = 1e9, nm = ""; ovLocalSites().forEach(function (s) { var d = Math.hypot(s.x / OT - w.x, s.y / OT - w.y); if (d < bd) { bd = d; nm = s.name; } }); return nm; }
     function line(q, st) {
-      var tr = f.track === "wq:" + q.id, txt = st === 2 ? "Done. Return to " + q.who + "." : st === 1 ? wqTxt(q, q.hint) : q.who + " is out on the road near " + near(q) + ".";
+      var tr = trk("wq:" + q.id), txt = st === 2 ? "Done. Return to " + q.who + "." : st === 1 ? wqTxt(q, q.hint) : q.who + " is out on the road near " + near(q) + ".";
       return row(q.n + (st === 0 ? " (on offer)" : ""), txt, tr ? "Tracking" : "Track", "qtrack", tr ? "main" : "wq:" + q.id, "", false);
     }
     WQ.forEach(function (q) { var st = wqState(q); if (st === 3) n++; else if (st === 1 || st === 2) lines += line(q, st); else if (st === 0 && c.wqseen[q.id]) lines += line(q, 0); });
@@ -13772,7 +14035,7 @@ function ovContApply(NS) {
   try { if (NS.camp && NS.camp.f) { var c0 = NS.camp; Object.keys(c0).forEach(function (k) { if (/^ovpoi/.test(k)) delete c0[k]; }); } } catch (x) {}
   try { OVLS.k = ""; NV.g = null; TERR = null; TERRDIRTY = true; } catch (x) {}
 }
-function fresh() { var NS = fresh0(); ovContApply(NS); return NS; }
+function fresh() { var NS = fresh0(); ovContApply(NS); try { ovFillGaps(NS); } catch (e) {} return NS; }
 function extraSites0b() { }
 // every realm is always in the world now
 function extraSites() { var keep = OPT.map; OPT.map = "shattered"; try { return extraSites0(); } finally { OPT.map = keep; } }
@@ -14031,6 +14294,51 @@ function skWhy(it) {
   return skWhy0(it);
 }
 try { if (S && !S.contV) { ovContApply(S); save(); } } catch (e) { if (window.console) console.log("cont", e); }
+// ---- no empty country: every Realm's island gets settlements where the map had wide blank land (Stonehold's north was 900 strides of nothing).
+// Runs once on new games and once on old saves (S.gapV). Highlands count as land for Stonehold and Frostgrave, which build in the mountains.
+var GAPN = {
+  stone: ["Slatefell", "Burdenmoor", "Cairnholt", "Weighbridge", "Chiselby", "Greyshoulder", "Lintel Down", "Hallowstair"],
+  ember: ["Kilnfold", "Ashwick", "Coalpit Green", "Glowmere", "Brandmoor", "Sootwell", "Emberleigh", "Slagford"],
+  storm: ["Gullreach", "Chainhollow", "Squallmoor", "High Tether", "Windle", "Rafter's Rest", "Gustwick", "Linkhallow"],
+  light: ["Lampwick", "Whitecross", "Paleford", "Noonfield", "Clearbrook", "Gleamwick", "Brasswell", "Daymere"],
+  frost: ["Rimeholt", "Knotwell", "Hoarstead", "Coldharbour", "Silverfen", "Stillmere", "Thawbridge", "Cordwick"],
+  spirit: ["Willowmere", "Mistfold", "Quillbrook", "Paleglade", "Wickstead", "Lampsend", "Greywillow", "Copyist's Rest"],
+  shadow: ["Murmur", "Inkhollow", "Stillstair", "Undercliff", "Blindwater", "Ledger's Foot", "Gloamwell", "Shuttered Row"],
+  metal: ["Clinker Row", "Smeltway", "Ashpipe", "Boltmoor", "Gauge Hill", "Valve End", "Sparkholm", "Plate Hollow"]
+};
+function ovFillGaps(NS) {
+  if (!NS || !NS.sites || NS.contV !== 1 || NS.gapV) return 0;
+  NS.gapV = 1; var made = 0, used = {}; NS.sites.forEach(function (s) { used[s.name] = 1; });
+  var marks = []; Object.keys(NS.gates || {}).forEach(function (k) { marks.push(NS.gates[k]); }); Object.keys(NS.tunnels || {}).forEach(function (k) { marks.push(NS.tunnels[k]); });
+  for (var c = 0; c < 8; c++) {
+    var f = cellFac(c); if (!f || !FAC[f] || !GAPN[f]) continue; if (f === "metal" && !NS.sites.some(function (s) { return s.owner === "metal"; })) continue;
+    var o = cellOrg(c), hi = (f === "stone" || f === "frost") ? 0.76 : 0.66, names = GAPN[f].filter(function (n) { return !used[n]; }), k = 0;
+    var mine = function () { return NS.sites.filter(function (s) { return cellAt(s.x, s.y) === c; }); };
+    while (k < 8 && names.length) {
+      var best = null, bd = 0, here = mine();
+      for (var y = o[1] + 200; y < o[1] + WORLD - 200; y += 60) for (var x = o[0] + 200; x < o[0] + WORLD - 200; x += 60) {
+        if (!inIsland(x, y, 170)) continue; var e = elevAtW(x, y); if (e < 0.42 || e > hi) continue;
+        var md = 1e9; for (var i = 0; i < here.length; i++) { var d = Math.hypot(here[i].x - x, here[i].y - y); if (d < md) md = d; }
+        for (i = 0; i < marks.length; i++) { var d2 = Math.hypot(marks[i].x - x, marks[i].y - y) + 120; if (d2 < md) md = d2; }
+        if (md > bd) { bd = md; best = [x, y]; }
+      }
+      if (!best || bd < 380) break;
+      var towns = here.filter(function (s) { return s.type !== "village" && s.owner === f; }), nm = names.shift(), id = "gf_" + f + "_" + k, q;
+      used[nm] = 1;
+      if (bd > 560 && towns.length < 5) { q = mkT(id, nm, best[0], best[1], 50, 3.0, 4.0, f, "town"); }
+      else {
+        var seat = null, sd = 1e9; towns.forEach(function (t) { var d3 = Math.hypot(t.x - best[0], t.y - best[1]); if (d3 < sd) { sd = d3; seat = t; } });
+        if (!seat) break;
+        q = mkV(id, nm, best[0], best[1], 58, 22, 36, 58, 32, "", seat.id); q.owner = seat.owner;
+      }
+      q.home = f; q.cell = c; NS.sites.push(q); made++; k++;
+    }
+  }
+  NS.total = NS.sites.length;
+  try { OVLS.k = ""; NV.g = null; TERR = null; TERRDIRTY = true; } catch (x) {}
+  return made;
+}
+try { if (S && S.contV === 1 && !S.gapV && ovFillGaps(S)) save(); } catch (e) { if (window.console) console.log("gaps", e); }
 // painted icons for every kind of loot and kit, and the mill
 try { Object.assign(UIPNG, { blades: "ui_blades", mail: "ui_mail", bows: "ui_bows", kit: "ui_kit", steel: "ui_steel", plate: "ui_plate", longbows: "ui_longbows", shards: "ui_shards", spears: "ui_spears", shields: "ui_shields", axes: "ui_axes", javelins: "ui_javelins", pikes: "ui_pikes", horses: "ui_horses", lances: "ui_lances", destriers: "ui_destriers", mill: "ui_mill" }); } catch (e) {}
 
@@ -14236,9 +14544,11 @@ var LAIRS = {
 };
 var oldPoi = null;
 function ovPoi() {
-  var P = ovPoi0();
+  var k = ovWalkK(); if (OVK !== k) { OVK = k; OT = 16 / k; ON = 175 * k; }
+  var P = ovBase(ovPoi0);
   try { (P.caves || []).forEach(function (q) { if (q && q.boss === "The Name-Eater") q.boss = "The Whisper-Broker"; }); } catch (e) {}
-  if (!P.lz) { P.lz = 1; try { ovPlaceLairs(P); } catch (e) { if (window.console) console.error(e); } }
+  if (!P.lz) { P.lz = 1; ovRescale(P, 1); try { ovBase(function () { ovPlaceLairs(P); }); } catch (e) { if (window.console) console.error(e); } }
+  ovRescale(P, OVK);
   return P;
 }
 function ovPlaceLairs(P) {
@@ -16284,7 +16594,8 @@ setInterval(function () {
         Object.keys(c.f).forEach(function (k) { var m = /^chest:([^:]+):/.exec(k); if (/^(qo|qd|qe|z|p)_/.test(k) || (m && zs[m[1]])) delete c.f[k]; });
         c.f.track = null; c.cleared = {}; c.bdown = {}; c.tier = t; toast((t === 1 ? "Nightmare" : "Ashfall") + " begins. The roads are the same. The things on them are not.");
       })(); break;
-      case "qtrack": cp().f.track = x === "main" ? null : x; break;
+      case "qtrack": qTrack(x); break;
+      case "paybounty": toast(payBounty(x) || "Nothing owed."); break;
       case "qgo": { var qs = site(x); if (qs) { S.target = { t: "p", x: qs.x, y: qs.y, site: qs.id }; closeSheet(true); S.speed = 3; pausedSpeed = 3; } return; }
       case "aenter": { var aid = areaIdFor(x); if (aid) startArea(aid); return; }
       case "abuild": ovBuildBtn(); return;
@@ -17207,13 +17518,17 @@ setInterval(function () {
     // The 2D area view is kept only as a silent fallback when WebGL or the module fails.
     var A3 = null, a3busy = false, a3fail = false, a3on = false, mv3 = { x: 0, y: 0, k: 1 }, amod = null;
     function a3ok() { return glOk() && !a3fail; }
+    try { window.__vhK3 = !!glOk(); } catch (e) { window.__vhK3 = false; }
     function loadArea() { if (amod) return Promise.resolve(amod); return import("./g3d/area3d.js").then(function (m) { amod = m; return m; }); }
     var a3api = {
       host: function () { return $("area"); },
       AR: function () { return AR; },
       on: function (v) { a3on = !!v; var el = $("area"); if (el) el.classList.toggle("v3on", a3on); mv3.x = mv3.y = 0; },
       fail: function (e) { api.fail(e); }, sfx: function (n) { api.sfx(n); },
-      tod: function () { try { return clockH(); } catch (e) { return 12; } },
+      tod: function () { try { var oh = window.__ovHour && window.__ovHour(); return oh !== null && oh !== undefined ? oh : clockH(); } catch (e) { return 12; } },
+      parties: function () { try { return window.__ovParties ? window.__ovParties() : []; } catch (e) { return []; } },
+      partyUse: function (k) { try { if (window.__ovPartyUse) window.__ovPartyUse(k); } catch (e) {} },
+      targets: function () { try { return window.__ovTargets ? window.__ovTargets() : []; } catch (e) { return []; } },
       sheetOpen: function () { return !!sheet; },
       inDlg: function () { return !!(AR && AR.dlg); },
       closeDlg: function () { try { dlgClose(); } catch (e) {} },
@@ -17240,7 +17555,7 @@ setInterval(function () {
       a3busy = true; prepUi(); a3api.on(true);
       loadArea().then(function (m) {
         a3busy = false; if (!AR || A3) { if (!A3) a3api.on(false); return; }
-        A3 = m.area(a3api, function (how) { A3 = null; a3api.on(false); if (how === "fail") a3fail = true; });
+        A3 = m.area(a3api, function (how) { A3 = null; a3api.on(false); if (how === "fail") { a3fail = true; window.__vhK3 = false; if (AR && AR.sp && AR.sp.over && AR.W > 400) leaveArea(); } });
       }, function (e) { a3busy = false; a3fail = true; a3api.on(false); api.fail(e); });
     }
     // the sim reads its move vector, facing and draw call through these; in 3D they come from the camera-relative stick
@@ -17414,6 +17729,7 @@ setInterval(function () {
     }
     // test and debug hooks (read-only views plus the two entry points)
     window.__vh = { S: function () { return S; }, useLabel: function (tk) { return useLabel(tk); }, B: function () { return B; }, sheet: function () { return sheet; }, site: site, T: T, startWalk: startWalk, startFight: startFight, scene: function () { return cur || (A3 ? { kind: "area", ctl: A3 } : null); },
+      ovw: function () { return { cellOrg: cellOrg, inIsland: inIsland, elevAtW: elevAtW, landOk: landOk, cellAt: cellAt }; },
       AR: function () { return AR; }, spec: function (id) { return getSpec(id); }, caveTo: caveTo, caves: function () { try { return ovPoi().caves.map(function (c, k) { return { id: "cave" + k, name: c.name }; }); } catch (e) { return []; } }, writs: function (sid) { return vqOpen(sid); }, area3d: function () { return A3; }, a3on: function () { return a3on; }, startArea: function (id) { startArea(id); return !!AR; }, dlg: function () { return AR && AR.dlg; }, cp: function () { return cp(); },
       battleWith: function (n, kind) { var e = kind ? null : (S.enemies.filter(function (x) { return x.kind === "bandit"; })[0] || S.enemies[0]); if (kind) { e = { id: 990000 + Math.floor(Math.random() * 9999), kind: kind, n: n || 10, q: 1, x: S.px + 40, y: S.py, cool: 0 }; S.enemies.push(e); } if (!e) return false; if (n) e.n = n; startBattle(e); return true; },
       give: function (n) { S.from.merc = (S.from.merc || 0) + n; return T(); }, pref: pref,

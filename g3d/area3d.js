@@ -151,10 +151,16 @@ function buildArea(st, api, A) {
   const lanternFill = cave ? new THREE.PointLight(0xffd8a8, 11, 12, 1) : null; if (lanternFill) scene.add(lanternFill); // a softer light just ahead and above, so the hero's face and the next few strides show
 
   // ---------- ground: one vertex per tile corner, coloured by tile ----------
-  const gg = new THREE.PlaneGeometry(W * T, H * T, W, H); gg.rotateX(-Math.PI / 2); gg.translate(W * T / 2, 0, H * T / 2);
-  { const pos = gg.attributes.position, uv = gg.attributes.uv, n = pos.count, col = new Float32Array(n * 3), bl = new Float32Array(n), c = new THREE.Color(), tmp = new THREE.Color();
+  // On the big overland (a whole continent, ~1.9 km) the ground, water, trees and rocks are built in chunks around the hero
+  // as you walk and dropped again far behind; every other area is built once, as before.
+  const big = over && W * H > 250000;
+  const GT = cave ? "dirt" : (GROUND_TEX[info.realm] === "plaster" ? "plaster" : "grass");
+  const gMat = groundMat(art, GT, cave ? "stone" : info.type && info.type !== "village" ? "cobble" : "dirt", !cave && info.realm !== "frost" && info.realm !== "light");
+  function groundGeo(x0, y0, nx, ny) {
+    const gg = new THREE.PlaneGeometry(nx * T, ny * T, nx, ny); gg.rotateX(-Math.PI / 2); gg.translate(x0 * T + nx * T / 2, 0, y0 * T + ny * T / 2);
+    const pos = gg.attributes.position, uv = gg.attributes.uv, n = pos.count, col = new Float32Array(n * 3), bl = new Float32Array(n), c = new THREE.Color(), tmp = new THREE.Color();
     for (let i = 0; i < n; i++) {
-      const ix = i % (W + 1), j = Math.floor(i / (W + 1)); let r = 0, gr = 0, b = 0, k = 0, blend = 0, wet = 0;
+      const ix = x0 + i % (nx + 1), j = y0 + Math.floor(i / (nx + 1)); let r = 0, gr = 0, b = 0, k = 0, blend = 0, wet = 0;
       for (let dy = -1; dy <= 0; dy++) for (let dx = -1; dx <= 0; dx++) {
         const tx = ix + dx, ty = j + dy; if (tx < 0 || ty < 0 || tx >= W || ty >= H) continue;
         const t = g[ty][tx], v = vnoise(tx * 0.7, ty * 0.7);
@@ -168,12 +174,12 @@ function buildArea(st, api, A) {
       if (wet === k && k > 0) pos.setY(i, -0.35);
       uv.setXY(i, pos.getX(i) / 3.5, pos.getZ(i) / 3.5);
     }
-    gg.setAttribute("color", new THREE.BufferAttribute(col, 3)); gg.setAttribute("aBlend", new THREE.BufferAttribute(bl, 1)); gg.computeVertexNormals(); }
-  const GT = cave ? "dirt" : (GROUND_TEX[info.realm] === "plaster" ? "plaster" : "grass");
-  const ground = new THREE.Mesh(gg, groundMat(art, GT, cave ? "stone" : info.type && info.type !== "village" ? "cobble" : "dirt", !cave && info.realm !== "frost" && info.realm !== "light")); ground.receiveShadow = true; scene.add(ground);
-  st.track(gg);
+    gg.setAttribute("color", new THREE.BufferAttribute(col, 3)); gg.setAttribute("aBlend", new THREE.BufferAttribute(bl, 1)); gg.computeVertexNormals();
+    return gg;
+  }
+  const ground = big ? null : new THREE.Mesh(st.track(groundGeo(0, 0, W, H)), gMat); if (ground) { ground.receiveShadow = true; scene.add(ground); }
   // the land beyond the edge: low hills, so the horizon is never empty
-  if (!cave) {
+  if (!cave && !big) {
     const S2 = Math.max(W, H) * T + 220, sg = new THREE.PlaneGeometry(S2, S2, 70, 70); sg.rotateX(-Math.PI / 2); sg.translate(W * T / 2, -0.06, H * T / 2);
     const pos = sg.attributes.position, uv = sg.attributes.uv, col = [], c = new THREE.Color();
     for (let i = 0; i < pos.count; i++) {
@@ -182,7 +188,7 @@ function buildArea(st, api, A) {
       c.copy(cG0).lerp(cTree, 0.25).multiplyScalar(0.8 + vnoise(x * 0.05, z * 0.05) * 0.3); col.push(c.r, c.g, c.b); uv.setXY(i, x / 6, z / 6);
     }
     sg.setAttribute("color", new THREE.Float32BufferAttribute(col, 3)); sg.setAttribute("aBlend", new THREE.BufferAttribute(new Float32Array(pos.count), 1)); sg.computeVertexNormals();
-    const skirt = new THREE.Mesh(sg, ground.material); skirt.receiveShadow = true; scene.add(skirt); st.track(sg);
+    const skirt = new THREE.Mesh(sg, gMat); skirt.receiveShadow = true; scene.add(skirt); st.track(sg);
     // a far ring of forest on the hills
     const B0 = new Batch(kit);
     for (let i = 0; i < 90; i++) { const a = rand() * Math.PI * 2, R = Math.max(W, H) * T * 0.5 + 14 + rand() * 50, x = W * T / 2 + Math.cos(a) * R, z = H * T / 2 + Math.sin(a) * R; if (x > -2 && x < W * T + 2 && z > -2 && z < H * T + 2) continue; const o = Math.hypot(Math.max(-x, x - W * T, 0), Math.max(-z, z - H * T, 0)); tree(B0, white, x, (vnoise(x * 0.025, z * 0.025) * 0.8 + 0.2) * Math.min(18, o * 0.22) - 0.2, z, 4 + rand() * 5, cTree.getHex(), rand); }
@@ -190,13 +196,15 @@ function buildArea(st, api, A) {
   }
 
   // ---------- water ----------
-  { const v = []; for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (g[y][x] === 3) { const x0 = x * T, z0 = y * T, x1 = x0 + T, z1 = z0 + T; v.push(x0, 0, z0, x0, 0, z1, x1, 0, z0, x1, 0, z0, x0, 0, z1, x1, 0, z1); }
-    if (v.length) {
-      const wg = st.track(new THREE.BufferGeometry()); wg.setAttribute("position", new THREE.Float32BufferAttribute(v, 3)); wg.computeVertexNormals();
-      const wm = new THREE.MeshStandardMaterial({ color: cWater.clone().multiplyScalar(cave ? 0.6 : 0.85), roughness: 0.12, metalness: 0.35, transparent: true, opacity: 0.86, emissive: cWater, emissiveIntensity: cave ? 0.15 : 0.05 });
-      const water = new THREE.Mesh(wg, wm); water.position.y = -0.12; water.receiveShadow = true; scene.add(water);
-      st.onFrame = (t) => { wm.emissiveIntensity = (cave ? 0.15 : 0.05) + 0.03 * Math.sin(t * 1.3); };
-    } }
+  const wm = st.track(new THREE.MeshStandardMaterial({ color: cWater.clone().multiplyScalar(cave ? 0.6 : 0.85), roughness: 0.12, metalness: 0.35, transparent: true, opacity: 0.86, emissive: cWater, emissiveIntensity: cave ? 0.15 : 0.05 }));
+  function waterMesh(xa, ya, xb, yb) {
+    const v = []; for (let y = ya; y < yb; y++) for (let x = xa; x < xb; x++) if (g[y][x] === 3) { const x0 = x * T, z0 = y * T, x1 = x0 + T, z1 = z0 + T; v.push(x0, 0, z0, x0, 0, z1, x1, 0, z0, x1, 0, z0, x0, 0, z1, x1, 0, z1); }
+    if (!v.length) return null;
+    const wg = new THREE.BufferGeometry(); wg.setAttribute("position", new THREE.Float32BufferAttribute(v, 3)); wg.computeVertexNormals();
+    const water = new THREE.Mesh(wg, wm); water.position.y = -0.12; water.receiveShadow = true; return water;
+  }
+  if (!big) { const w0 = waterMesh(0, 0, W, H); if (w0) { st.track(w0.geometry); scene.add(w0); } }
+  st.onFrame = (t) => { wm.emissiveIntensity = (cave ? 0.15 : 0.05) + 0.03 * Math.sin(t * 1.3); };
 
   // ---------- chunks: trees, rocks, cave walls, flowers (culled by distance) ----------
   const chunks = [], solidH = new Float32Array(W * H); // tile heights for the camera
@@ -204,9 +212,10 @@ function buildArea(st, api, A) {
   const mStone = art.mat("stone"), mPlank = art.mat("planks", { roughness: 0.85 }), mBeam = art.mat("beam", { roughness: 0.85 });
   const mm = kit.mm; // model materials on Medium and High (null on Low or if the packs did not load)
   const kitS = Object.assign({}, kit, { mm: null }); // the same kit, drawing the simple shapes (far chunks)
-  for (let cz = 0; cz < nCZ; cz++) for (let cx = 0; cx < nCX; cx++) {
+  if (big) for (let y = 0; y < H; y++) { const row = g[y]; for (let x = 0; x < W; x++) if (row[x] === 2) solidH[y * W + x] = 7; }
+  function buildChunk(cx, cz, rand) {
     // with models, each chunk also gets a cheap twin (the old cone trees and plain rocks), shown when the chunk is far away
-    const grp = new THREE.Group(), B = new Batch(kit), M = new Merge(), Bs = mm ? new Batch(kitS) : null; let any = false;
+    const grp = new THREE.Group(), B = new Batch(kit), M = new Merge(), Bs = mm ? new Batch(kitS) : null; let any = big;
     for (let y = cz * CH; y < Math.min(H, (cz + 1) * CH); y++) for (let x = cx * CH; x < Math.min(W, (cx + 1) * CH); x++) {
       const t = g[y][x], wx = (x + 0.5) * T, wz = (y + 0.5) * T, r1 = rand(), r2 = rand();
       if (t === 2) {
@@ -244,12 +253,33 @@ function buildArea(st, api, A) {
       // open ground (Medium/High): the odd grass clump or wild flowers, never on paths, plazas or water
       else if (mm && !cave && t === 0 && r1 < 0.05) { any = true; const bo = biomeOf(); modelProp(B, r2 < 0.6 ? "grass" : "flowers", mm.sway, wx + (r2 - 0.5) * T, 0, wz + (r1 * 10 - 0.25) * T, 0.3 + r2 * 0.25, r2 * 6, r2 < 0.6 ? shade(bo.tint, 0.85) : [0xffe070, 0xffffff, 0xc8a0ff][Math.floor(r2 * 3)]); }
     }
-    if (!any) continue;
+    if (!any) return null;
     let near = null, far = null;
     if (Bs) { near = new THREE.Group(); far = new THREE.Group(); B.build(near); Bs.build(far); far.visible = false; grp.add(near, far); } else B.build(grp);
-    M.build(grp, (x) => st.track(x)); scene.add(grp);
-    chunks.push({ grp, near, far, x: (cx + 0.5) * CH * T, z: (cz + 0.5) * CH * T });
+    const own = [];
+    if (big) {
+      const x0 = cx * CH, y0 = cz * CH, nx = Math.min(CH, W - x0), ny = Math.min(CH, H - y0);
+      const gm = new THREE.Mesh(groundGeo(x0, y0, nx, ny), gMat); gm.receiveShadow = true; grp.add(gm); own.push(gm.geometry);
+      const wt = waterMesh(x0, y0, x0 + nx, y0 + ny); if (wt) { grp.add(wt); own.push(wt.geometry); }
+      M.build(grp, (x) => { own.push(x); return x; });
+    } else M.build(grp, (x) => st.track(x));
+    scene.add(grp);
+    return { grp, near, far, own, cx, cz, x: (cx + 0.5) * CH * T, z: (cz + 0.5) * CH * T };
   }
+  function dropChunk(c) {
+    scene.remove(c.grp); c.grp.traverse((o) => { if (o.isInstancedMesh) o.dispose(); }); c.own.forEach((x) => { try { x.dispose(); } catch (e) {} });
+  }
+  // big overland: chunks within R of the hero are built (a couple per frame), those well behind are dropped
+  const live = new Map();
+  function streamChunks(hx, hz, maxNew) {
+    const ccx = Math.floor(hx / (CH * T)), ccz = Math.floor(hz / (CH * T)), R = 3, want = []; let made = 0;
+    for (let dz = -R; dz <= R; dz++) for (let dx = -R; dx <= R; dx++) { const cx = ccx + dx, cz = ccz + dz; if (cx < 0 || cz < 0 || cx >= nCX || cz >= nCZ) continue; const d = Math.hypot(dx, dz); if (d <= R + 0.3) want.push([d, cx, cz]); }
+    want.sort((a, b) => a[0] - b[0]);
+    for (const w of want) { if (made >= maxNew) break; const k = w[1] + "," + w[2]; if (live.has(k)) continue; const c = buildChunk(w[1], w[2], rng((A.id || "a") + "|" + k)); if (c) { live.set(k, c); chunks.push(c); } made++; }
+    for (const [k, c] of live) if (Math.hypot(c.cx - ccx, c.cz - ccz) > R + 2.2) { dropChunk(c); live.delete(k); const i = chunks.indexOf(c); if (i >= 0) chunks.splice(i, 1); }
+  }
+  if (big) streamChunks(A.p.x * PX, A.p.y * PX, 99);
+  else for (let cz = 0; cz < nCZ; cz++) for (let cx = 0; cx < nCX; cx++) { const c = buildChunk(cx, cz, rand); if (c) chunks.push(c); }
 
   // ---------- buildings: the 2D town's houses, raised in the Realm's style ----------
   const MH = new Merge(), BH = new Batch(kit), VB = new Batch(kit);
@@ -373,6 +403,7 @@ function buildArea(st, api, A) {
     const o = { e, x, z, parts: [] };
     if (over && e.ovsite) siteMarker(o, api.siteLook(e.ovsite));
     else if (over && e.cave !== undefined) caveMouth(o);
+    else if (over && e.qsite) questSite(o, e);
     else if (over && e.yard) { const s = labelSprite(st, "Builders' Yard", "raise a building"); s.scale.set(3, 0.75, 1); s.position.set(x, 3, z); scene.add(s); o.sign = s; signpost(x, z - 0.6); }
     else gatePosts(o, nm);
     exits.push(o);
@@ -453,6 +484,17 @@ function buildArea(st, api, A) {
     const s = labelSprite(st, (look && look.name) || "A settlement", look && look.sub || "walk in"); s.position.set(x, 7.5, z); scene.add(s); o.sign = s;
     o.pool = pool(kit, scene, x, z, 0xffd890, 5, 0.4);
   }
+  // a quest's place out in the country: a ring of old standing stones, a banner, a warm light, and its name
+  function questSite(o, e) {
+    const { x, z } = o, M = new Merge();
+    for (let i = 0; i < 7; i++) { const a = i / 7 * Math.PI * 2, r = 3.4, h = 1.6 + rand() * 1.8; M.box(mStone, x + Math.cos(a) * r, h / 2, z - 1 + Math.sin(a) * r, 0.7, h, 0.5, a, shade(P.stone, 0.7 + rand() * 0.3)); }
+    M.box(mStone, x, 0.15, z - 1, 2.4, 0.3, 2.4, 0.3, shade(P.stone, 0.6));
+    M.build(scene, (q) => st.track(q));
+    const pole = new THREE.Mesh(kit.g.cyl, kit.mat(0x4a3420)); pole.scale.set(0.1, 5, 0.1); pole.position.set(x + 1.6, 2.5, z - 2.4); scene.add(pole);
+    const fl = new THREE.Mesh(kit.g.box, kit.mat(0xe0b050, { side: THREE.DoubleSide })); fl.scale.set(1.1, 0.7, 0.04); fl.position.set(x + 2.2, 4.5, z - 2.4); scene.add(fl); o.flag = fl;
+    const s = labelSprite(st, e.qname || "A quest", "your quest · go in"); s.position.set(x, 6, z); scene.add(s); o.sign = s;
+    o.pool = pool(kit, scene, x, z, 0xffd070, 6, 0.5);
+  }
   function caveMouth(o) {
     const { x, z } = o, M = new Merge();
     M.add("cone", mStone, x - 1.6, 1.3, z - 0.6, 2.2, 2.6, 1.8, 0.3, shade(P.stone, 0.6)); M.add("cone", mStone, x + 1.6, 1.3, z - 0.6, 2.2, 2.6, 1.8, 1.2, shade(P.stone, 0.6)); M.box(mStone, x, 2.5, z - 0.8, 3.6, 1.0, 1.6, 0.05, shade(P.stone, 0.55));
@@ -462,6 +504,45 @@ function buildArea(st, api, A) {
     o.pool = pool(kit, scene, x, z + 0.5, 0xb8a8ff, 3.5, 0.35);
   }
 
+  // ---------- road signs (big overland): a post where each road leaves a settlement, naming the place at the other end ----------
+  const roadSigns = [];
+  if (over && sp.signs && sp.signs.length) {
+    const MS = new Merge();
+    for (const z of sp.signs) {
+      const x = (z.x + 0.5) * T, zz = (z.y + 0.5) * T;
+      MS.box(mBeam, x, 1.1, zz, 0.16, 2.2, 0.16, 0, beamC);
+      // the arm points down the road it names
+      const ax = Math.sin(z.ang), az = Math.cos(z.ang);
+      MS.add("box", mPlank, x + ax * 0.55, 1.85, zz + az * 0.55, 1.2, 0.32, 0.06, z.ang + Math.PI / 2, 0xa8865a);
+      MS.add("box", mPlank, x + ax * 1.2, 1.85, zz + az * 1.2, 0.3, 0.22, 0.06, z.ang + Math.PI / 2 + 0.785, 0xa8865a);
+      roadSigns.push({ z, x, zz, lab: null });
+    }
+    MS.build(scene, (q) => st.track(q));
+  }
+  function syncSigns(hx, hz) {
+    for (const r of roadSigns) {
+      const d = Math.hypot(r.x - hx, r.zz - hz);
+      if (d < 26 && !r.lab) { r.lab = labelSprite(st, r.z.to + " →", r.z.dist + " · from " + r.z.from); r.lab.scale.set(3.6, 0.9, 1); r.lab.position.set(r.x, 3.0, r.zz); scene.add(r.lab); }
+      else if (d > 34 && r.lab) { scene.remove(r.lab); try { r.lab.material.map.dispose(); r.lab.material.dispose(); } catch (e) {} r.lab = null; }
+      if (r.lab) { r.lab.material.opacity = clamp(1.4 - d / 22, 0, 1); r.lab.visible = r.lab.material.opacity > 0.02; }
+    }
+  }
+  // ---------- followed side quests: up to three gold markers on the road ----------
+  const qBeams = [];
+  for (let i = 0; i < 3; i++) {
+    const m = new THREE.Mesh(st.track(new THREE.CylinderGeometry(0.35, 0.6, 26, 10, 1, true)), new THREE.MeshBasicMaterial({ color: 0xffc860, transparent: true, opacity: 0.12, depthWrite: false, side: THREE.DoubleSide, blending: THREE.AdditiveBlending }));
+    m.position.y = 13; m.visible = false; scene.add(m); qBeams.push({ m, lab: null, txt: "" });
+  }
+  function syncQuestBeams(hx, hz) {
+    const L = (over && api.targets) ? api.targets() : [];
+    qBeams.forEach((b, i) => {
+      const q = L[i]; if (!q) { b.m.visible = false; if (b.lab) b.lab.visible = false; return; }
+      const x = q.x * PX, z = q.y * PX, d = Math.hypot(x - hx, z - hz);
+      b.m.position.set(x, 13, z); b.m.visible = d > 6; b.m.material.opacity = 0.16 * clamp((d - 6) / 20, 0, 1);
+      if (q.lab !== b.txt) { b.txt = q.lab; if (b.lab) scene.remove(b.lab); b.lab = labelSprite(st, q.lab, "followed quest"); scene.add(b.lab); }
+      b.lab.position.set(x, 4.8, z); b.lab.visible = d > 4;
+    });
+  }
   // ---------- people: NPCs, chests, gates and cells ----------
   const markTex = [null, markerTex("!", "#ffd84a"), markerTex("?", "#9fd8ff")];
   function markerTex(ch, col) {
@@ -629,7 +710,7 @@ function buildArea(st, api, A) {
   const fx = cave ? particles(st, "dust", 120, 40, 6) : particles(st, P.fx, info.realm === "frost" ? 400 : 200, 70, info.realm === "storm" ? 18 : 12, P.fxc); scene.add(fx);
   if (!cave && info.voidNear > 0.15) { const vs = new THREE.Sprite(new THREE.SpriteMaterial({ map: kit.coldTex, color: VOIDC, transparent: true, opacity: 0.5 * info.voidNear, depthWrite: false, blending: THREE.AdditiveBlending, fog: false })); vs.scale.set(120, 60, 1); vs.position.set(W * T / 2 - 40, 20, -150); scene.add(vs); }
   // grass tufts on High
-  if (!cave && st.gfx !== "low") {
+  if (!cave && st.gfx !== "low" && !big) {
     const tint = GRASS_TINT[info.realm] || [0x6a8a3a, 0x9aa84a];
     const n = Math.min(over ? 5000 : 2600, Math.round(W * H * (st.coarse ? 0.9 : 1.6)));
     const gf = grassField((x) => st.track(x), n, () => { const x = Math.floor(rand() * W), y = Math.floor(rand() * H), t = g[y][x]; if (t !== 0 && t !== 8) return null; return [(x + rand()) * T, 0, (y + rand()) * T]; }, tint[0], tint[1]);
@@ -667,6 +748,7 @@ function buildArea(st, api, A) {
   let objKey = "", objT = 0, toastK = "", toastT = 0;
   const toastEl = document.getElementById("atoast");
   if (toastEl) st.track({ dispose: () => toastEl.classList.remove("v3-tfade") });
+  if (big) st.track({ dispose: () => { for (const c of live.values()) dropChunk(c); live.clear(); } });
   const objShow = (secs) => { objT = performance.now() + (secs || 6) * 1000; if (objEl) objEl.classList.add("v3-objon"); };
   const objPoke = (e) => { e.stopPropagation(); objShow(6); };
   if (objEl) { st.listen(objEl, "pointerdown", objPoke); st.listen(heartsEl, "pointerdown", objPoke); st.track({ dispose: () => objEl.classList.remove("v3-objon") }); }
@@ -683,13 +765,13 @@ function buildArea(st, api, A) {
   function refreshUse(hx, hz) {
     const u = api.useInfo(); nearDoor = null;
     if (!u && doors.length) { let bd = 9; for (const dr of doors) { const d = Math.hypot(dr.x - hx, dr.z - hz); if (d < dr.r && d < bd) { bd = d; nearDoor = dr; } } }
-    const act = u ? { l: u.l, n: u.n } : nearDoor ? { l: "Go in", n: nearDoor.label, door: nearDoor } : null;
+    const act = u ? { l: u.l, n: u.n } : nearDoor ? { l: "Go in", n: nearDoor.label, door: nearDoor } : nearParty ? { l: "Talk", n: nearParty.q.name.split(" · ")[0], party: nearParty.q.talk } : null;
     const key = act ? act.l + "|" + act.n : "";
     if (key !== (useBtn._k || "")) { useBtn._k = key; useBtn.innerHTML = act ? esc(act.l) + (act.n ? "<small>" + esc(act.n) + "</small>" : "") : ""; }
     useAct = act;
   }
   // E / the button: re-check first, so a press right after arriving (or on a slow frame) still acts on what is here now
-  function doUse() { refreshUse(A.p.x * PX, A.p.y * PX); if (!useAct) return; if (useAct.door) { api.sfx("door"); inp.keys = {}; api.openPlace(useAct.door.key); } else api.use(); }
+  function doUse() { refreshUse(A.p.x * PX, A.p.y * PX); if (!useAct) return; if (useAct.door) { api.sfx("door"); inp.keys = {}; api.openPlace(useAct.door.key); } else if (useAct.party) { inp.keys = {}; api.partyUse(useAct.party); } else api.use(); }
   inp.blocked = () => api.sheetOpen();
   inp.onKey = (k) => {
     if (k === "e" || k === "f") doUse();
@@ -779,6 +861,78 @@ function buildArea(st, api, A) {
     for (; k < hbEls.length; k++) hbEls[k].hidden = true;
     if (A.wave) { waveRing.visible = true; const s = (1 - A.wave.t / 0.5) * 66 * PX + 0.5; waveRing.scale.setScalar(s); waveRing.position.set(A.wave.x * PX, 0.2, (A.wave.y + 6) * PX); waveRing.material.opacity = A.wave.t * 1.4; } else waveRing.visible = false;
   }
+
+  // ---------- the living overland: the map's armies, bandits, hunters and caravans, walking the same roads ----------
+  const parties = new Map();
+  function partyMember(q, i) {
+    const col = hex(q.col, 0x8a6a4a);
+    let o;
+    if (q.kind === "bandit") o = { cloth: [0x6a4a2a, 0x4a3a2a, 0x5a5040][i % 3], cloth2: 0x2a2018, skin: [0xc89a78, 0x9a6a48, 0xd8b090][i % 3], helm: i % 2 ? "hood" : "bare", hoodc: 0x3a2a1a, weapon: i % 3 === 2 ? "spear" : "sword" };
+    else if (q.kind === "void") o = { cloth: 0x2a2234, cloth2: 0x141018, skin: 0x3a2a4a, helm: "hood", hoodc: 0x16121e, eyes: VOIDC, weapon: "sword", cloak: 0x241a34 };
+    else if (q.kind === "caravan") o = i < 2 ? { cloth: [0x8a6a3a, 0x6a5a7a][i], cloth2: 0x3a2a1a, skin: 0xc8a080, helm: "bare", weapon: null } : { cloth: col, cloth2: 0x2a2420, armour: true, metal: 0x6a6a70, tabard: col, helm: "cap", weapon: "spear" };
+    else o = { cloth: col, cloth2: 0x2a2420, armour: true, metal: q.kind === "hunter" ? 0x3a3a40 : 0x7a7a84, tabard: col, helm: q.kind === "hunter" ? "spike" : "cap", weapon: i % 3 === 1 ? "spear" : "sword", shield: i % 2 ? shade(col, 0.7).getHex() : undefined };
+    return figure(kit, o);
+  }
+  function wagon(col) {
+    const grp = new THREE.Group(), wood = kit.mat(0x6a4a2a), canvas = kit.mat(0xe8dcc0), dark = kit.mat(0x2a1a10);
+    const bed = new THREE.Mesh(kit.g.box, wood); bed.scale.set(1.5, 0.5, 2.6); bed.position.y = 0.85; grp.add(bed);
+    const cov = new THREE.Mesh(kit.g.cyl, canvas); cov.scale.set(1.45, 2.4, 1.45); cov.rotation.x = Math.PI / 2; cov.position.y = 1.25; grp.add(cov);
+    const stripe = new THREE.Mesh(kit.g.box, kit.mat(hex(col, 0xc8873a))); stripe.scale.set(1.52, 0.18, 2.62); stripe.position.y = 1.02; grp.add(stripe);
+    for (const sx of [-0.8, 0.8]) for (const sz of [-0.85, 0.85]) { const w = new THREE.Mesh(kit.g.cyl, dark); w.scale.set(0.9, 0.12, 0.9); w.rotation.z = Math.PI / 2; w.position.set(sx, 0.45, sz); grp.add(w); }
+    // the horse: a body, a neck and a head, on four legs
+    const hc = kit.mat(0x5a3a22), h = new THREE.Group(); h.position.set(0, 0, 2.3); grp.add(h);
+    const body = new THREE.Mesh(kit.g.box, hc); body.scale.set(0.55, 0.6, 1.5); body.position.y = 1.25; h.add(body);
+    const neck = new THREE.Mesh(kit.g.box, hc); neck.scale.set(0.3, 0.75, 0.35); neck.position.set(0, 1.7, 0.75); neck.rotation.x = -0.5; h.add(neck);
+    const head = new THREE.Mesh(kit.g.box, hc); head.scale.set(0.28, 0.3, 0.6); head.position.set(0, 2.0, 1.05); h.add(head);
+    const legs = []; for (const lx of [-0.2, 0.2]) for (const lz of [-0.6, 0.6]) { const l = new THREE.Mesh(kit.g.box, hc); l.scale.set(0.14, 0.95, 0.14); l.position.set(lx, 0.48, lz); h.add(l); legs.push(l); }
+    grp.traverse((m) => { if (m.isMesh) m.castShadow = true; });
+    grp.userData.legs = legs; return grp;
+  }
+  function makeParty(q) {
+    const grp = new THREE.Group(), n = Math.max(2, Math.min(q.kind === "caravan" ? 4 : 7, Math.round(q.n / 5))), mem = [];
+    let cart = null; if (q.kind === "caravan") { cart = wagon(q.col); grp.add(cart); }
+    for (let i = 0; i < n; i++) {
+      const f = partyMember(q, i), row = Math.floor(i / 2), side = i % 2 ? 1 : -1;
+      const ox = cart ? side * 1.6 : (i === 0 ? 0 : side * 0.9), oz = cart ? 1.2 - row * 2.4 : -row * 1.3;
+      f.position.set(ox, 0, oz); grp.add(f); mem.push({ f, ox, oz, ph: i * 0.7 });
+    }
+    // a banner on a pole, in the party's colours
+    const pole = new THREE.Mesh(kit.g.cyl, kit.mat(0x4a3420)); pole.scale.set(0.08, 3.6, 0.08); pole.position.set(cart ? -0.9 : 0.5, 1.8, cart ? -1.4 : 0.3); grp.add(pole);
+    const flag = new THREE.Mesh(kit.g.box, kit.mat(hex(q.col, 0xb2503c), { side: THREE.DoubleSide })); flag.scale.set(0.8, 0.55, 0.03); flag.position.set(pole.position.x + 0.42, 3.25, pole.position.z); grp.add(flag);
+    const lab = labelSprite(st, q.name, (q.hostile ? "hostile · " : "") + "about " + Math.max(2, Math.round(q.n / 2) * 2) + (q.kind === "caravan" ? " guards" : " men")); lab.scale.set(4.2, 1.05, 1); lab.position.set(0, 4.6, 0); grp.add(lab);
+    if (q.hostile) { const ring = new THREE.Mesh(st.track(new THREE.RingGeometry(2.4, 2.7, 32)), new THREE.MeshBasicMaterial({ color: 0xd84a3a, transparent: true, opacity: 0.35, depthWrite: false, side: THREE.DoubleSide })); ring.rotation.x = -Math.PI / 2; ring.position.y = 0.06; grp.add(ring); }
+    scene.add(grp);
+    return { grp, mem, cart, flag, lab, q, yaw: 0, mv: 0, init: false };
+  }
+  let nearParty = null;
+  function syncParties(dt, t, hx, hz) {
+    if (!over || !api.parties) return;
+    if (frameN % 3 === 0) {
+      const list = api.parties(), seen = new Set();
+      for (const q of list) {
+        seen.add(q.k); let o = parties.get(q.k);
+        if (o && (o.q.hostile !== q.hostile || o.q.name !== q.name)) { scene.remove(o.grp); parties.delete(q.k); o = null; }
+        if (!o) { o = makeParty(q); parties.set(q.k, o); }
+        o.q = q; o.tx = q.x * PX; o.tz = q.y * PX; if (!o.init) { o.init = true; o.grp.position.set(o.tx, 0, o.tz); }
+      }
+      for (const [k, o] of parties) if (!seen.has(k)) { scene.remove(o.grp); parties.delete(k); }
+    }
+    nearParty = null; let nd = 5;
+    for (const o of parties.values()) {
+      const p = o.grp.position, dx = o.tx - p.x, dz = o.tz - p.z, d = Math.hypot(dx, dz);
+      if (d > 30) { p.set(o.tx, 0, o.tz); } else { const k = 1 - Math.exp(-dt * 3); p.x += dx * k; p.z += dz * k; }
+      const sp = d / Math.max(0.3, 0.33); o.mv = lerp(o.mv, Math.min(1.4, sp / 3), 0.1);
+      if (d > 0.05) o.yaw = angLerp(o.yaw, Math.atan2(dx, dz), 1 - Math.exp(-dt * 4));
+      o.grp.rotation.y = o.yaw;
+      const dh = Math.hypot(p.x - hx, p.z - hz), close = dh < 45;
+      for (const m of o.mem) if (close || frameN % 4 === 0) animFigure(m.f, t + m.ph, o.mv, 0, false, close ? dt : dt * 4, dh > 30 ? 2 : 0);
+      if (o.cart && o.mv > 0.05) for (const [i, l] of o.cart.userData.legs.entries()) l.rotation.x = Math.sin(t * 8 + i * 1.6) * 0.5 * Math.min(1, o.mv);
+      o.flag.rotation.y = Math.sin(t * 1.7 + p.x) * 0.3;
+      o.lab.material.opacity = clamp(1.5 - dh / 50, 0, 1); o.lab.visible = o.lab.material.opacity > 0.02;
+      if (o.q.talk && dh < nd) { nd = dh; nearParty = o; }
+    }
+  }
+  st.track({ dispose: () => { for (const o of parties.values()) scene.remove(o.grp); parties.clear(); } });
 
   // the Realm Arts' effects (g3d/skills2.js): the sim casts, these pooled meshes draw it
   let K2v = null;
@@ -884,7 +1038,7 @@ function buildArea(st, api, A) {
       else if (performance.now() - toastT > 3000) toastEl.classList.add("v3-tfade");
     }
     // foes (create lazily near the player), items, missiles, effects
-    syncFoes(dt, t, hx, hz);
+    syncFoes(dt, t, hx, hz); syncParties(dt, t, hx, hz); if (frameN % 10 === 0) { syncSigns(hx, hz); syncQuestBeams(hx, hz); }
     syncItems(t); syncProj(); syncFx();
     // exits: soft pulse; locked ones dim
     if (frameN % 15 === 0) for (const o of exits) { let lk = ""; try { lk = o.e.lock ? o.e.lock() : ""; } catch (e) {} o.locked = !!lk; if (o.veil) o.veil.material.color.set(lk ? 0xff6a5a : 0xfff0c0); if (o.sign) o.sign.material.opacity = lk ? 0.45 : 1; }
@@ -907,6 +1061,7 @@ function buildArea(st, api, A) {
     if (beacon.visible) { const d = Math.hypot(beacon.position.x - hx, beacon.position.z - hz); beacon.material.opacity = 0.08 * clamp((d - 7) / 12, 0, 1); beacon.visible = beacon.material.opacity > 0.003; beaconLab.material.opacity = clamp((d - 3) / 4, 0, 1); }
 
     // culling: far chunks off
+    if (big && frameN % 6 === 0) streamChunks(hx, hz, 2);
     if (frameN % 8 === 0) for (const c of chunks) { const d = Math.hypot(c.x - hx, c.z - hz); if (!small) c.grp.visible = d < 72; if (c.near) { const nv = d < LODR; c.near.visible = nv; c.far.visible = !nv; } }
 
     // camera: over the shoulder; in a conversation, frame the speaker; never through a wall
