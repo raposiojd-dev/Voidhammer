@@ -5532,7 +5532,19 @@ var BIMG_SRC={"farm": "data:image/webp;base64,UklGRqyAAABXRUJQVlA4WAoAAAAQAAAAZw
         if (n.gate || n.chest || n.id === "rvboard" || /chest|stash/.test(String(n.id || ""))) return;
         sp.npcs.push(Object.assign({}, n, { id: aid + ":" + n.id, x: n.x + ox, y: n.y + oy, town: q.id }));
       });
-      sp.tnames.push({ x: q.cx, y: oy - 2, name: q.s.name, sub: (q.s.type === "village" ? "village" : q.s.type) + (FAC[q.s.owner] ? " · " + FAC[q.s.owner].name : ""), sid: q.id });
+      var walled = q.s.type !== "village", shut = walled && (hostileSite(q.s) || wanted(q.s.owner) >= 50);
+      if (walled) {
+        var wl = { sid: q.id, q: q, x0: ox - 2, y0: oy - 2, x1: ox + ts.w + 1, y1: oy + ts.h + 1, shut: shut, gates: [] }; (sp.walls = sp.walls || []).push(wl); q.wall = wl;
+        if (shut) {
+          // inside: three things worth spoiling before a siege, near the gate, the granary and the barracks
+          var hs0 = (ts.houses || []).filter(function (h) { return h && h[2] > 0; }), spots = [];
+          spots.push(["winch", "The gate winch", [ox + (ts.spawn ? ts.spawn[0] : 2), oy + 1]]);
+          if (hs0[0]) spots.push(["granary", "The granary", [ox + hs0[0][0] + (hs0[0][2] >> 1) + 2, oy + hs0[0][1] + hs0[0][3]]]);
+          if (hs0[1]) spots.push(["armoury", "The armoury", [ox + hs0[1][0] + (hs0[1][2] >> 1) + 2, oy + hs0[1][1] + hs0[1][3]]]);
+          spots.forEach(function (z) { sp.npcs.push({ id: "sabo_" + q.id + "_" + z[0], name: z[1], x: z[2][0], y: z[2][1], draw: function () {}, small: 1, town: q.id, d: function () { return "sabo:" + q.id + ":" + z[0]; }, mk: function () { return ovSabDone(q.s, z[0]) ? 0 : 1; } }); });
+        }
+      }
+      sp.tnames.push({ x: q.cx, y: oy - 3, name: q.s.name, sub: (q.s.type === "village" ? "village" : q.s.type) + (FAC[q.s.owner] ? " · " + FAC[q.s.owner].name : "") + (shut ? " · gates shut to you" : ""), sid: q.id });
     });
     // the Realm Bridge and the Shadowdeep tunnel of this shard stand on the ground too
     try {
@@ -5630,6 +5642,17 @@ var BIMG_SRC={"farm": "data:image/webp;base64,UklGRqyAAABXRUJQVlA4WAoAAAAQAAAAZw
           (ts.paths || []).forEach(function (p2) { var x1 = p2[0], y1 = p2[1], x2 = p2[2], y2 = p2[3]; if (y1 === y2) for (X = Math.min(x1, x2); X <= Math.max(x1, x2); X++) { T2(X, y1, 1); T2(X, y1 + 1, 1); } else for (Y = Math.min(y1, y2); Y <= Math.max(y1, y2); Y++) { T2(x1, Y, 1); T2(x1 + 1, Y, 1); } });
           if (ts.plaza) { var pz = ts.plaza; for (Y = pz[1]; Y < pz[1] + pz[3]; Y++) for (X = pz[0]; X < pz[0] + pz[2]; X++) T2(X, Y, 9); }
           (ts.houses || []).forEach(function (h) { for (Y = h[1]; Y < h[1] + h[3]; Y++) for (X = h[0]; X < h[0] + h[2]; X++) T2(X, Y, Y === h[1] + h[3] - 1 ? 5 : 4); T2(h[0] + (h[2] >> 1), h[1] + h[3] - 1, 6); });
+          if (q.wall) {
+            var w = q.wall, gx2, gy2;
+            for (gy2 = w.y0; gy2 <= w.y1; gy2++) for (gx2 = w.x0; gx2 <= w.x1; gx2++) {
+              if (gx2 !== w.x0 && gx2 !== w.x1 && gy2 !== w.y0 && gy2 !== w.y1) continue; if (gx2 < 1 || gy2 < 1 || gx2 >= N - 1 || gy2 >= N - 1) continue;
+              // a gate where a street leaves the town: the tile just inside is street
+              var ix = Math.max(tq.ox, Math.min(tq.ox + ts.w - 1, gx2)), iy = Math.max(tq.oy, Math.min(tq.oy + ts.h - 1, gy2)), inner = g[iy] ? g[iy][ix] : 0;
+              var gate = (inner === 1 || inner === 9) && !(gx2 === w.x0 && gy2 === w.y0) && !(gx2 === w.x1 && gy2 === w.y1) && !(gx2 === w.x0 && gy2 === w.y1) && !(gx2 === w.x1 && gy2 === w.y0);
+              if (gate) { w.gates.push([gx2, gy2]); g[gy2][gx2] = w.shut ? 6 : 1; var mx2 = gx2 === w.x0 ? -1 : gx2 === w.x1 ? 1 : 0, my2 = gy2 === w.y0 ? -1 : gy2 === w.y1 ? 1 : 0; if (!w.shut) for (var st2 = 1; st2 <= 2; st2++) { var ax = gx2 - mx2 * st2, ay = gy2 - my2 * st2; if (g[ay] && g[ay][ax] === 0) g[ay][ax] = 1; } }
+              else g[gy2][gx2] = 5;
+            }
+          }
           return;
         }
         var town = q.s.type !== "village", rad = town ? 3 : 2, xx, yy;
@@ -5654,14 +5677,15 @@ var BIMG_SRC={"farm": "data:image/webp;base64,UklGRqyAAABXRUJQVlA4WAoAAAAQAAAAZw
         while (h2 < t2) { var p2 = qu[h2++], px2 = p2 % N, py2 = (p2 - px2) / N; for (var d4 = 0; d4 < 4; d4++) { var nx = px2 + (d4 === 0 ? 1 : d4 === 1 ? -1 : 0), ny = py2 + (d4 === 2 ? 1 : d4 === 3 ? -1 : 0); if (nx < 1 || ny < 1 || nx >= N - 1 || ny >= N - 1) continue; var ni = ny * N + nx; if (!vis[ni] && ovPass(g[ny][nx])) { vis[ni] = 1; qu[t2++] = ni; } } }
         return vis;
       }
-      var pts = []; SP.forEach(function (q) { pts.push([q.cx, q.cy + 2]); }); P.caves.forEach(function (cv) { pts.push([cv.x, cv.y + 2]); }); (sp.qsites || []).forEach(function (z) { pts.push([z.x, z.y + 2]); }); (sp.portals || []).forEach(function (z) { pts.push([z.x, z.y + 2]); });
+      var OPN = SP.filter(function (q) { return !(q.wall && q.wall.shut); }); if (!OPN.length) OPN = SP;
+      var pts = []; OPN.forEach(function (q) { pts.push([q.cx, q.cy + 2]); }); P.caves.forEach(function (cv) { pts.push([cv.x, cv.y + 2]); }); (sp.qsites || []).forEach(function (z) { pts.push([z.x, z.y + 2]); }); (sp.portals || []).forEach(function (z) { pts.push([z.x, z.y + 2]); });
       P.chests.forEach(function (cm) { pts.push([cm.x, cm.y]); }); P.camps.forEach(function (cm) { pts.push([cm.x, cm.y]); }); P.wf.forEach(function (cm) { pts.push([cm.x, cm.y]); }); P.qc.forEach(function (cm) { if (cm) pts.push([cm.x, cm.y]); }); P.rt.forEach(function (z) { pts.push([z.g.x, z.g.y]); pts.push([z.a.x, z.a.y]); });
       var vis = null, guard = 0;
       if (n2) while (guard++ < 6) {
-        vis = bfs(SP[0].cx, SP[0].cy + 2); var fixed = false;
+        vis = bfs(OPN[0].cx, OPN[0].cy + 2); var fixed = false;
         pts.forEach(function (p3) {
           if (vis[p3[1] * N + p3[0]]) return; var bs = null, bdist = 1e9;
-          SP.forEach(function (q) { if (vis[(q.cy + 2) * N + q.cx]) { var d5 = Math.hypot(q.cx - p3[0], q.cy - p3[1]); if (d5 < bdist) { bdist = d5; bs = q; } } });
+          OPN.forEach(function (q) { if (vis[(q.cy + 2) * N + q.cx]) { var d5 = Math.hypot(q.cx - p3[0], q.cy - p3[1]); if (d5 < bdist) { bdist = d5; bs = q; } } });
           if (bs) { road(p3[0], p3[1], bs.cx, bs.cy + 2); fixed = true; }
         });
         if (!fixed) break;
@@ -5911,12 +5935,19 @@ var BIMG_SRC={"farm": "data:image/webp;base64,UklGRqyAAABXRUJQVlA4WAoAAAAQAAAAZw
         c: function () {
           var out = [];
           out.push({ t: "Buy 20 grain (" + 20 * gp + " crowns)", fn: function () { if (S.crowns < 20 * gp) { aToast("Not enough crowns."); return; } S.crowns -= 20 * gp; S.grain += 20; aToast("+20 grain."); } });
+          out.push({ t: "Buy climbing rope (40 crowns)" + (S.rope ? " · you have " + S.rope : ""), fn: function () { if (S.crowns < 40) { aToast("Not enough crowns."); return; } S.crowns -= 40; S.rope = (S.rope || 0) + 1; aToast("A coil of knotted rope and a grapnel. Good for one wall."); } });
           if (rum) out.push({ t: "Any news from the road?", fn: function () { setTimeout(function () { aToast(rum.length > 150 ? rum.slice(0, 147) + "…" : rum); }, 50); } });
           if (w > 0) out.push({ t: "Pay your " + R + " bounty (" + bountyOf(f) + " crowns)", fn: function () { var m = payBounty(f); setTimeout(function () { aToast(m); }, 50); } });
           out.push({ t: "Raid the wagons (" + R + " will want you for it)", fn: function () { setTimeout(function () { ovRaid(c); }, 60); } });
           out.push({ t: "Safe travels." });
           return out;
         } };
+    }
+    if (id && id.indexOf("sabo:") === 0) {
+      var pz = id.split(":"), ss = site(pz[1]), kk = pz[2]; if (!ss) return null;
+      var what = kk === "winch" ? "The gate winch: a great drum of rope and iron pins, and one bored guard's stool." : kk === "granary" ? "The granary door, barred but not locked. It smells of a whole winter's bread." : "The armoury: racks of spears and a barrel of bowstrings by the door.";
+      if (ovSabDone(ss, kk)) return { n: ss.name, t: what + "<br><span style=\"opacity:.75\">You have already spoiled this. It will take them about ten days to put right.</span>", c: [{ t: "Leave it." }] };
+      return { n: ss.name, t: what, c: [{ t: kk === "winch" ? "Pull the pins and cut the rope." : kk === "granary" ? "Spoil the grain." : "Cut the strings, foul the spears.", fn: function () { var m = ovSabotage(ss, kk); setTimeout(function () { aToast(m); }, 50); } }, { t: "Not now." }] };
     }
     if (id && id.indexOf("ovportal:") === 0) {
       var kind = id.slice(9), cc = OVW.cell, open = kind === "gate" ? ovGateOpen() : (ovTunnelsOpen() || cc === 7), P2 = kind === "gate" ? S.gates : S.tunnels;
@@ -5964,6 +5995,49 @@ var BIMG_SRC={"farm": "data:image/webp;base64,UklGRqyAAABXRUJQVlA4WAoAAAAQAAAAZw
     });
     return out.slice(0, 3);
   };
+  // ---- walls, rope and sabotage: a town or castle at war with you shuts its gates; a merchant's rope gets you over ----
+  function ovSabDone(s, k) { return !!(s && s.sab && s.sab.until > S.day && s.sab[k]); }
+  function ovWallNear() {
+    if (!ovLive() || !AR.sp.walls) return null; var tx = AR.p.x / ATS, ty = AR.p.y / ATS, best = null, bd = 2.6;
+    AR.sp.walls.forEach(function (w) {
+      if (!w.shut) return; var inside = tx > w.x0 && tx < w.x1 + 1 && ty > w.y0 && ty < w.y1 + 1;
+      var d = inside ? Math.min(tx - w.x0 - 1, w.x1 - tx, ty - w.y0 - 1, w.y1 - ty) : Math.hypot(Math.max(w.x0 - tx, 0, tx - (w.x1 + 1)), Math.max(w.y0 - ty, 0, ty - (w.y1 + 1)));
+      if (d < bd) { bd = d; best = { w: w, inside: inside }; }
+    });
+    return best;
+  }
+  window.__ovClimbInfo = function () {
+    var n = ovWallNear(); if (!n) return null; var nm = n.w.q.s.name;
+    if (n.inside) return { l: "Climb out", n: "over the wall of " + nm };
+    return (S.rope || 0) > 0 ? { l: "Climb the wall", n: nm + " · uses a rope (" + S.rope + ")" } : { l: "Wall", n: "too high: buy rope from a caravan" };
+  };
+  window.__ovClimb = function () {
+    var n = ovWallNear(); if (!n) return; var w = n.w, a = AR, tx = a.p.x / ATS, ty = a.p.y / ATS;
+    if (!n.inside && !(S.rope > 0)) { aToast("The wall is too high to climb bare-handed. Caravan masters sell climbing rope."); return; }
+    // over the nearest stretch of wall, landing three strides beyond it
+    var dl = Math.abs(tx - w.x0), dr = Math.abs(tx - (w.x1 + 1)), du = Math.abs(ty - w.y0), dd = Math.abs(ty - (w.y1 + 1)), m = Math.min(dl, dr, du, dd), nx = tx, ny = ty, k = n.inside ? -1 : 1;
+    if (m === dl) nx = w.x0 + 0.5 + 3 * k; else if (m === dr) nx = w.x1 + 0.5 - 3 * k; else if (m === du) ny = w.y0 + 0.5 + 3 * k; else ny = w.y1 + 0.5 - 3 * k;
+    var px = nx * ATS, py = ny * ATS + 6, tries = 0;
+    while (!boxFree(a, px, py) && tries++ < 40) { px += (Math.random() - 0.5) * 24; py += (Math.random() - 0.5) * 24; }
+    if (!boxFree(a, px, py)) { aToast("No footing on the other side here. Try another stretch of wall."); return; }
+    a.p.x = px; a.p.y = py; try { sfx("door"); } catch (e) {}
+    if (!n.inside) {
+      S.rope--; var s = w.q.s;
+      if (!w.guards) { w.guards = 1; var f = s.owner; for (var i = 0; i < 5; i++) { var before = a.en.length; ovWarSpawn(a, f, 6); var g = a.en[a.en.length - 1]; if (a.en.length > before && g) { g.aggro = false; g.hx = g.x; g.hy = g.y; } } }
+      aToast("You are over the wall of " + s.name + ". Keep to the shadows: sneak, and find the gate winch, the granary and the armoury.");
+    } else aToast("Down the rope and out. " + w.q.s.name + " is behind you.");
+  };
+  function ovSabotage(s, k) {
+    s.sab = s.sab && s.sab.until > S.day ? s.sab : { until: S.day + 10 }; if (s.sab[k]) return "Already done.";
+    s.sab[k] = 1; var t;
+    if (k === "winch") { s.sab.wall0 = s.sab.wall0 || s.wall; s.wall = Math.max(1, Math.round(s.wall * 0.55 * 100) / 100); t = "You knock the pins out of the winch and cut the counterweight rope. The gate will not hold a ram for days."; }
+    else if (k === "granary") { s.stock = 0; s.gar = Math.round(s.gar * 0.85); t = "Lamp oil in the grain. They will be hungry long before you knock."; }
+    else { s.gar = Math.round(s.gar * 0.7); t = "Bowstrings cut, spearheads down the well. A third of the garrison will fight with what is left."; }
+    try { log("Sabotaged " + s.name + ": " + (k === "winch" ? "the gate winch" : k === "granary" ? "the granary" : "the armoury") + ".", "e"); } catch (e) {}
+    // somebody may have heard
+    if (Math.random() < 0.4 && AR) { AR.en.forEach(function (e) { if (!e.dead && Math.hypot(e.x - AR.p.x, e.y - AR.p.y) < 260) e.aggro = true; }); t += " A shout goes up behind you."; }
+    return t;
+  }
   // in any town of a Realm that wants you: the bounty, and a way to pay it
   var ssOldW = siteSheet;
   siteSheet = function (s) {
@@ -5972,7 +6046,7 @@ var BIMG_SRC={"farm": "data:image/webp;base64,UklGRqyAAABXRUJQVlA4WAoAAAAQAAAAZw
   };
   window.__ovPartyUse = function (key) { if (!ovLive() || !key) return; ovSyncPos(); dlgOpen(key); };
   // a once-a-day pass: new caravans, bounties cooling
-  setInterval(function () { try { if (!S || S.tickDay === OVW.lastDay) return; OVW.lastDay = S.tickDay; ovCaravanDaily(); ovWantedDaily(); } catch (e) {} }, 500);
+  setInterval(function () { try { if (!S || S.tickDay === OVW.lastDay) return; OVW.lastDay = S.tickDay; ovCaravanDaily(); ovWantedDaily(); S.sites.forEach(function (q) { if (q.sab && q.sab.until <= S.day) { if (q.sab.wall0) q.wall = q.sab.wall0; delete q.sab; } }); } catch (e) {} }, 500);
   window.__ovw = { qs: function () { return QS.map(function (q) { return [q.id, qSt(q), q.hub, q.zone]; }); }, live: function () { return { live: ovLive(), dlg: !!(AR && AR.dlg), sheet: !!sheet, B: !!B, spd: S.speed }; }, wanted: wanted, crime: ovCrime, pay: payBounty, raid: function (id) { var c = carById(id); if (c) ovRaid(c); }, daily: ovCaravanDaily, OVW: OVW };
 
   function ovBuildBtn() {
@@ -17583,6 +17657,8 @@ setInterval(function () {
       parties: function () { try { return window.__ovParties ? window.__ovParties() : []; } catch (e) { return []; } },
       partyUse: function (k) { try { if (window.__ovPartyUse) window.__ovPartyUse(k); } catch (e) {} },
       targets: function () { try { return window.__ovTargets ? window.__ovTargets() : []; } catch (e) { return []; } },
+      climbInfo: function () { try { return window.__ovClimbInfo ? window.__ovClimbInfo() : null; } catch (e) { return null; } },
+      climb: function () { try { if (window.__ovClimb) window.__ovClimb(); } catch (e) {} },
       sheetOpen: function () { return !!sheet; },
       inDlg: function () { return !!(AR && AR.dlg); },
       closeDlg: function () { try { dlgClose(); } catch (e) {} },

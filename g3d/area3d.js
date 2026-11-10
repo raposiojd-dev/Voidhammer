@@ -780,12 +780,13 @@ function buildArea(st, api, A) {
     const u = api.useInfo(); nearDoor = null;
     if (!u && doors.length) { let bd = 9; for (const dr of doors) { const d = Math.hypot(dr.x - hx, dr.z - hz); if (d < dr.r && d < bd) { bd = d; nearDoor = dr; } } }
     const act = u ? { l: u.l, n: u.n } : nearDoor ? { l: "Go in", n: nearDoor.label, door: nearDoor } : nearParty ? { l: "Talk", n: nearParty.q.name.split(" · ")[0], party: nearParty.q.talk } : null;
+    if (!act && over && api.climbInfo) { const c = api.climbInfo(); if (c) { useAct = { l: c.l, n: c.n, climb: 1 }; const k2 = c.l + "|" + c.n; if (k2 !== (useBtn._k || "")) { useBtn._k = k2; useBtn.innerHTML = esc(c.l) + "<small>" + esc(c.n) + "</small>"; } return; } }
     const key = act ? act.l + "|" + act.n : "";
     if (key !== (useBtn._k || "")) { useBtn._k = key; useBtn.innerHTML = act ? esc(act.l) + (act.n ? "<small>" + esc(act.n) + "</small>" : "") : ""; }
     useAct = act;
   }
   // E / the button: re-check first, so a press right after arriving (or on a slow frame) still acts on what is here now
-  function doUse() { refreshUse(A.p.x * PX, A.p.y * PX); if (!useAct) return; if (useAct.door) { api.sfx("door"); inp.keys = {}; api.openPlace(useAct.door.key, useAct.door.sid); } else if (useAct.party) { inp.keys = {}; api.partyUse(useAct.party); } else api.use(); }
+  function doUse() { refreshUse(A.p.x * PX, A.p.y * PX); if (!useAct) return; if (useAct.door) { api.sfx("door"); inp.keys = {}; api.openPlace(useAct.door.key, useAct.door.sid); } else if (useAct.party) { inp.keys = {}; api.partyUse(useAct.party); } else if (useAct.climb) { inp.keys = {}; api.climb(); } else api.use(); }
   inp.blocked = () => api.sheetOpen();
   inp.onKey = (k) => {
     if (k === "e" || k === "f") doUse();
