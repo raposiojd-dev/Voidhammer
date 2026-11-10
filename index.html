@@ -17255,10 +17255,13 @@ setInterval(function () {
     setInterval(function () { try { if (S && S.sites) S.sites.forEach(function (q) { var c = CAPN[q.id]; if (c && q.name === c[0]) q.name = c[1]; }); } catch (e) {} }, 1500);
     // ---- caves are their own places on the world map, never a door inside a settlement (John, 1 Nov) ----
     function caveTo(e) { try { var to = e && e.to; if (typeof to !== "string") return false; if (/^cave\d+(f\d)?$/.test(to)) return true; var sp = to !== "world" && to !== "overland" && to.indexOf("writ:") !== 0 ? getSpec(to) : null; return !!(sp && ATH[sp.th] && ATH[sp.th].cave); } catch (x) { return false; } }
+    var STORYDOOR = { archive: 1, undercroft: 1 };
     function settlementArea(id, sp) { return !!(sp && sp.safe && !sp.over && siteOfArea(id)); }
     var baOld = buildArea; buildArea = function (id) {
       var sp = getSpec(id);
-      if (settlementArea(id, sp) && sp.exits) sp.exits = sp.exits.filter(function (e) { return !caveTo(e); });
+      // story dungeons built under a city (Meridian's lower stacks and undercroft) keep their doors: they are rooms of the
+      // city, not caves, and the main quest goes through them (the 1 Nov filter had sealed the Lantern Page quest)
+      if (settlementArea(id, sp) && sp.exits) sp.exits = sp.exits.filter(function (e) { return STORYDOOR[e.to] || !caveTo(e); });
       return baOld.apply(this, arguments);
     };
     // ---- every village, town and castle has a local quest giver with a "!" (the week's writs, posted and paid locally) ----
