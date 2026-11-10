@@ -1057,6 +1057,10 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
       } else if (v.stock > cons(v) * 3) v.starving = false;
       if (v.stock > capOf(v) * 0.3 && v.W + v.I + v.D < v.pop0 * 1.25 && Math.random() < 0.15) v.D++;
       if (v.D > 10 && Math.random() < 0.12) { v.D--; v.I++; }
+      // young men come of age: a fed village refills its idle men steadily (about 1-1.5 a day) up to a fifth of its people,
+      // so taking 5 at a time from a village you look after never leaves it empty for long
+      var iCap = Math.round((v.pop0 || (v.W + v.I + v.D)) * 0.2);
+      if (!v.starving && v.I < iCap) { v.ig = (v.ig || 0) + 0.7 + (v.stock > capOf(v) * 0.3 ? 0.4 : 0) + (v.m || 0) / 250; while (v.ig >= 1 && v.I < iCap) { v.ig -= 1; v.I++; if (v.D > 8 && Math.random() < 0.5) v.D--; } }
       v.m = Math.max(0, Math.min(100, v.m - 1 + (v.stock > capOf(v) * 0.4 ? 0.5 : 0)));
     });
     S.sites.forEach(function (s) { if (s.type !== "village") { s.m = Math.max(0, Math.min(100, s.m - 0.3)); s.sat = (s.sat || 0) * 0.985; s.ssat = (s.ssat || 0) * 0.985; } });
@@ -2658,7 +2662,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
     h += '<div class="sec">Work</div>';
     h += row("Work the fields", "Two days for 14 crowns. You eat with them.", "Work", "labour", v.id, "", false);
     h += '<div class="sec">Men</div>';
-    h += row("Take idle men", "Free. " + v.I + " idle.", "Take 5", "recruit", v.id, "idle", v.I < 1 || room < 1 || v.credit < -3);
+    h += row("Take idle men", v.I < 1 ? (v.starving ? "None idle. Hungry villages raise no one; bring grain." : "None idle yet. About one comes of age each day.") : "Free. " + v.I + " idle.", "Take " + Math.max(1, Math.min(5, v.I)), "recruit", "recruit", v.id, "idle", v.I < 1 || room < 1 || v.credit < -3);
     h += row("Take men from the fields", v.credit < 0 ? "They will not give you their sons." : "Output falls. " + v.W + " working." + (hollow() >= 2 ? "" : " Costs goodwill."), "Take 5", "recruit", v.id, "work", v.W < 6 || room < 1 || v.credit < 0, "amber");
     if (away) h += row("Send men home", "Back to the fields. " + away + " from here.", "Send 5", "release", v.id, "", false);
     h += '<div class="sec">Buildings</div>';
