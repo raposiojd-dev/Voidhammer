@@ -298,10 +298,10 @@ function buildArea(st, api, A) {
     const mh = useModels ? modelHouse(x, z, w, d, kinds[i], i) : 0;
     if (!mh) house(x, z, w, d, ht, kinds[i]);
     for (let y = hy; y < hy + hd; y++) for (let xx = hx; xx < hx + hw; xx++) if (xx >= 0 && y >= 0 && xx < W && y < H) solidH[y * W + xx] = (mh || ht) + 1.5;
-    const kd = KIND[kinds[i]];
-    if (kd && info.siteId) {
+    const kd = KIND[kinds[i]], dsid = (sp.hsid && sp.hsid[i]) || info.siteId;
+    if (kd && dsid) {
       const dx = x, dz = (hy + hd) * T + 1.0;
-      doors.push({ key: kd[0], label: kd[1], x: dx, z: dz, r: 2.2 });
+      doors.push({ key: kd[0], label: kd[1], x: dx, z: dz, r: 2.2, sid: dsid });
       const sg = labelSprite(st, kd[1], "go in"); sg.scale.set(3.2, 0.8, 1); sg.position.set(dx, ht + 0.9, dz - 1.2); scene.add(sg); signs.push(sg);
       if (torches.length < 5) torches.push(torch(kit, scene, dx + 1.2, 2.1, (hy + hd) * T + 0.25, P.torch, torches.length < 3 && st.gfx !== "low"));
     }
@@ -552,10 +552,10 @@ function buildArea(st, api, A) {
     const t = st.track(new THREE.CanvasTexture(c)); t.colorSpace = THREE.SRGBColorSpace; return t;
   }
   const npcs = [];
-  A.npcs.forEach((n) => {
-    const x = n.px * PX, z = n.py * PX, o = { n, x, z, obj: null, mark: null, mk: -1, label: null };
+  function npcObj(o) {
+    const n = o.n, x = o.x, z = o.z;
     if (n.chest || /chest|stash/.test(String(n.id || ""))) o.obj = chest(x, z);
-    else if (n.gate) o.obj = portal(x, z);
+    else if (n.gate || n.portal) o.obj = portal(x, z);
     else if (n.cell) o.obj = cage(x, z);
     else if (n.id === "rvboard" && A._rv) o.obj = rvBoard3D(x, z);
     else if (n.draw) o.obj = signpost(x, z);
@@ -566,10 +566,24 @@ function buildArea(st, api, A) {
       if (/kaelren/i.test(nm)) ch = kaelLook(false);
       else if (/elyndra/i.test(nm)) ch = { base: "woman", hood: 0xd8d8e0, cloth: 0xc8c8d0, cloth2: 0x8a90a8, legs: 0x4a4a58, skin: 0xe0c8b0, hair: 0xd8d0c0, lantern: 0xc8e0ff };
       else ch = { base: female ? "woman" : /smith|guard|captain|sergeant|warden|marshal|knight/i.test(nm) ? "soldier" : "man", cloth, cloth2: shade(cloth, 0.6).getHex(), hood: shade(cloth, 0.75).getHex(), legs: 0x3a2e24, hair, skin: [0xd8b090, 0xb88a68, 0x8a5a3a, 0xc89a78][Math.floor(rand() * 4)], metal: 0x8a8e94, weapon: /smith/i.test(nm) ? "axe" : null, scale: n.small ? 0.68 : 0.94 + rand() * 0.1 };
-      const f = figure(kit, { ch, cloth: ch.cloth, cloth2: ch.cloth2, skin: ch.skin }); f.position.set(x, 0, z); f.rotation.y = rand() * 0.6 - 0.3; scene.add(f); o.obj = f; o.fig = f;
+      const f = figure(kit, { ch, cloth: ch.cloth, cloth2: ch.cloth2, skin: ch.skin }); f.position.set(x, 0, z); f.rotation.y = Math.random() * 0.6 - 0.3; scene.add(f); o.obj = f; o.fig = f;
     }
+  }
+  A.npcs.forEach((n) => {
+    const o = { n, x: n.px * PX, z: n.py * PX, obj: null, mark: null, mk: -1, label: null };
+    if (!big || n.portal || Math.hypot(o.x - A.p.x * PX, o.z - A.p.y * PX) < 70) npcObj(o);
     npcs.push(o);
   });
+  function lazyNpcs(hx, hz) {
+    for (const o of npcs) {
+      if (o.n.portal) continue; const d = Math.hypot(o.x - hx, o.z - hz);
+      if (!o.obj && d < 70) npcObj(o);
+      else if (o.obj && d > 95) { scene.remove(o.obj); o.obj = null; o.fig = null; if (o.mark) { scene.remove(o.mark); o.mark = null; o.mk = -1; } }
+    }
+  }
+  // the names of towns and villages built into the open world, high over their squares
+  const townNames = [];
+  if (big && sp.tnames) for (const tn of sp.tnames) { const l = labelSprite(st, tn.name, tn.sub); l.scale.set(6, 1.5, 1); l.position.set((tn.x + 0.5) * T, 9, (tn.y + 0.5) * T); scene.add(l); townNames.push(l); }
   // ---------- Realm Vision (November event): poster boards, the stage, the band and the lights ----------
   function rvCanvasTex(w, h, draw) { const c = document.createElement("canvas"); c.width = w; c.height = h; draw(c.getContext("2d"), w, h); const t = st.track(new THREE.CanvasTexture(c)); t.colorSpace = THREE.SRGBColorSpace; return t; }
   function rvBoard3D(x, z) {
@@ -771,7 +785,7 @@ function buildArea(st, api, A) {
     useAct = act;
   }
   // E / the button: re-check first, so a press right after arriving (or on a slow frame) still acts on what is here now
-  function doUse() { refreshUse(A.p.x * PX, A.p.y * PX); if (!useAct) return; if (useAct.door) { api.sfx("door"); inp.keys = {}; api.openPlace(useAct.door.key); } else if (useAct.party) { inp.keys = {}; api.partyUse(useAct.party); } else api.use(); }
+  function doUse() { refreshUse(A.p.x * PX, A.p.y * PX); if (!useAct) return; if (useAct.door) { api.sfx("door"); inp.keys = {}; api.openPlace(useAct.door.key, useAct.door.sid); } else if (useAct.party) { inp.keys = {}; api.partyUse(useAct.party); } else api.use(); }
   inp.blocked = () => api.sheetOpen();
   inp.onKey = (k) => {
     if (k === "e" || k === "f") doUse();
@@ -1038,7 +1052,7 @@ function buildArea(st, api, A) {
       else if (performance.now() - toastT > 3000) toastEl.classList.add("v3-tfade");
     }
     // foes (create lazily near the player), items, missiles, effects
-    syncFoes(dt, t, hx, hz); syncParties(dt, t, hx, hz); if (frameN % 10 === 0) { syncSigns(hx, hz); syncQuestBeams(hx, hz); }
+    syncFoes(dt, t, hx, hz); syncParties(dt, t, hx, hz); if (frameN % 10 === 0) { syncSigns(hx, hz); syncQuestBeams(hx, hz); if (big) lazyNpcs(hx, hz); for (const l of townNames) { const d = Math.hypot(l.position.x - hx, l.position.z - hz); l.material.opacity = clamp((110 - d) / 40, 0, 1) * clamp((d - 8) / 10, 0, 1); l.visible = l.material.opacity > 0.02; } }
     syncItems(t); syncProj(); syncFx();
     // exits: soft pulse; locked ones dim
     if (frameN % 15 === 0) for (const o of exits) { let lk = ""; try { lk = o.e.lock ? o.e.lock() : ""; } catch (e) {} o.locked = !!lk; if (o.veil) o.veil.material.color.set(lk ? 0xff6a5a : 0xfff0c0); if (o.sign) o.sign.material.opacity = lk ? 0.45 : 1; }

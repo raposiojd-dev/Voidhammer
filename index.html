@@ -5029,6 +5029,8 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
       if (!best && o.en) a.en.forEach(function (e) { if (e.dead || e.gone) return; if (o.en !== "*" && e.type !== o.en) return; var d = Math.hypot(e.x - a.p.x, e.y - a.p.y); if (d < bd) { bd = d; best = { x: e.x, y: e.y - 8, lab: e.d.name }; } });
       return best;
     }
+    if (a.sp.over && o.area) { var on = o.npc ? a.npcs.filter(function (n) { return n.id === o.area + ":" + o.npc; })[0] : null; if (on) return { x: on.px, y: on.py - 8, lab: on.name };
+      var hs2 = HUBSITE[o.area] || o.site, tq2 = hs2 && a.sp.byId[hs2]; if (tq2 && tq2.stamp) return { x: tq2.cx * ATS + 8, y: tq2.cy * ATS, lab: tq2.s.name }; }
     var hop = areaHop(a.id, o.area), ex = null;
     var gt = hop && a.npcs.filter(function (n) { return n.gate === hop && (!n.vis || n.vis()); })[0]; if (gt) return { x: gt.px, y: gt.py - 8, lab: getSpec(hop).name };
     var exd = 1e9; (a.sp.exits || []).forEach(function (e) { if (hop ? e.to === hop : e.to === "world") { var dd2 = Math.hypot((e.x + e.w / 2) * ATS - a.p.x, (e.y + e.h / 2) * ATS - a.p.y); if (dd2 < exd) { exd = dd2; ex = e; } } });
@@ -5514,7 +5516,36 @@ var BIMG_SRC={"farm": "data:image/webp;base64,UklGRqyAAABXRUJQVlA4WAoAAAAQAAAAZw
     var sp = { name: "The Shattered Realms", th: "grass", w: N, h: N, seed: 4242, safe: 0, over: 1, lv: 1, spawn: [N >> 1, N >> 1], trees: 0, rocks: 0, exits: [], npcs: [], enemies: [], chests: [] };
     ovLocalSites().forEach(function (s) { var cx = Math.max(7, Math.min(N - 8, Math.round(s.x / OT))), cy = Math.max(7, Math.min(N - 8, Math.round(s.y / OT))); var q = { s: s, id: s.id, cx: cx, cy: cy }; SP.push(q); byId[s.id] = q; });
     sp.SP = SP; sp.byId = byId; sp.P = P;
+    // towns and villages are built right into the open world (big overland): their streets, houses, doors and people,
+    // so you walk in from the road with no gate. A settlement that is closed to you keeps its gate and its message.
+    sp.houses = []; sp.hk = []; sp.hsid = []; sp.tnames = []; sp.stamps = [];
+    if (OVK > 1) SP.forEach(function (q) {
+      var aid = null; try { aid = areaIdFor(q.id); } catch (e) {} if (!aid) return;
+      var ts = null; try { ts = getSpec(aid); } catch (e) {} if (!ts || !ts.safe || ts.over || !ts.w || ts.w > 80 || ts.h > 80) return;
+      var ox = Math.max(4, Math.min(N - ts.w - 4, q.cx - (ts.w >> 1))), oy = Math.max(4, Math.min(N - ts.h - 4, q.cy - (ts.h >> 1)));
+      q.stamp = { aid: aid, ts: ts, ox: ox, oy: oy }; sp.stamps.push(q.stamp);
+      // roads and the minimap aim at the town's own square, which is always open ground
+      q.cx = ox + (ts.spawn ? ts.spawn[0] : ts.w >> 1); q.cy = oy + (ts.spawn ? ts.spawn[1] : ts.h >> 1) - 2;
+      var kinds = []; try { kinds = ts.hk || ovHKinds(ts); } catch (e) {}
+      (ts.houses || []).forEach(function (h, i) { if (!h || h[2] <= 0) return; sp.houses.push([h[0] + ox, h[1] + oy, h[2], h[3]]); sp.hk.push(kinds[i] || ""); sp.hsid.push(q.id); });
+      (ts.npcs || []).forEach(function (n) {
+        if (n.gate || n.chest || n.id === "rvboard" || /chest|stash/.test(String(n.id || ""))) return;
+        sp.npcs.push(Object.assign({}, n, { id: aid + ":" + n.id, x: n.x + ox, y: n.y + oy, town: q.id }));
+      });
+      sp.tnames.push({ x: q.cx, y: oy - 2, name: q.s.name, sub: (q.s.type === "village" ? "village" : q.s.type) + (FAC[q.s.owner] ? " · " + FAC[q.s.owner].name : ""), sid: q.id });
+    });
+    // the Realm Bridge and the Shadowdeep tunnel of this shard stand on the ground too
+    try {
+      var cc = OVW.cell >= 0 ? OVW.cell : curCell(), co = cellOrg(cc);
+      [["gate", S.gates && S.gates[cc]], ["tunnel", S.tunnels && S.tunnels[cc]]].forEach(function (pp) {
+        var p = pp[1]; if (!p || OVK <= 1) return; if (pp[0] === "tunnel" && !(ovTunnelsOpen() || cc === 7)) return;
+        var px = Math.max(8, Math.min(N - 9, Math.round((p.x - co[0]) / OT))), py = Math.max(8, Math.min(N - 9, Math.round((p.y - co[1]) / OT)));
+        sp.npcs.push({ id: "portal_" + pp[0], name: pp[0] === "gate" ? (ovConts()[cc].f ? ovConts()[cc].n + " Gate" : "The Silent Gate") : "Shadow tunnel", x: px, y: py, portal: pp[0], col: "#222", d: function () { return "ovportal:" + pp[0]; } });
+        (sp.portals = sp.portals || []).push({ x: px, y: py });
+      });
+    } catch (e) {}
     SP.forEach(function (q) {
+      if (q.stamp) { if (canBuild(q.s)) sp.exits.push({ x: q.stamp.ox + q.stamp.ts.w + 2, y: q.cy - 1, w: 2, h: 2, rx: q.stamp.ox + q.stamp.ts.w + 2, ry: q.cy + 2, yard: 1, to: "yard:" + q.id }); return; }
       var ex = { x: q.cx - 1, y: q.cy - 1, w: 2, h: 2, rx: q.cx, ry: q.cy + 2, ovsite: q.id, lock: function () { var wl = ovWantedLock(q.s); if (wl) return wl; return areaIdFor(q.id) ? "" : q.s.name + " is closed to you for now."; } };
       Object.defineProperty(ex, "to", { get: function () { return areaIdFor(q.id) || "world"; }, enumerable: true }); sp.exits.push(ex);
       if (canBuild(q.s)) sp.exits.push({ x: q.cx + 3, y: q.cy - 1, w: 2, h: 2, rx: q.cx + 3, ry: q.cy + 2, yard: 1, to: "yard:" + q.id });
@@ -5591,6 +5622,16 @@ var BIMG_SRC={"farm": "data:image/webp;base64,UklGRqyAAABXRUJQVlA4WAoAAAAQAAAAZw
       (sp.signs || []).forEach(function (z) { if (z.x > 0 && z.y > 0 && z.x < N - 1 && z.y < N - 1 && g[z.y][z.x] !== 1) g[z.y][z.x] = 0; });
       // settlements
       SP.forEach(function (q) {
+        if (q.stamp) {
+          var tq = q.stamp, ts = tq.ts, X, Y;
+          for (Y = -6; Y < ts.h + 6; Y++) for (X = -6; X < ts.w + 6; X++) { var gx = tq.ox + X, gy = tq.oy + Y; if (gx < 1 || gy < 1 || gx >= N - 1 || gy >= N - 1) continue; if (g[gy][gx] !== 1 || (X >= 0 && Y >= 0 && X < ts.w && Y < ts.h)) g[gy][gx] = 0; }
+          function T2(x2, y2, t2) { var gx = tq.ox + x2, gy = tq.oy + y2; if (gx > 0 && gy > 0 && gx < N - 1 && gy < N - 1) g[gy][gx] = t2; }
+          (ts.water || []).forEach(function (a) { for (Y = a[1]; Y < a[1] + a[3]; Y++) for (X = a[0]; X < a[0] + a[2]; X++) T2(X, Y, 3); });
+          (ts.paths || []).forEach(function (p2) { var x1 = p2[0], y1 = p2[1], x2 = p2[2], y2 = p2[3]; if (y1 === y2) for (X = Math.min(x1, x2); X <= Math.max(x1, x2); X++) { T2(X, y1, 1); T2(X, y1 + 1, 1); } else for (Y = Math.min(y1, y2); Y <= Math.max(y1, y2); Y++) { T2(x1, Y, 1); T2(x1 + 1, Y, 1); } });
+          if (ts.plaza) { var pz = ts.plaza; for (Y = pz[1]; Y < pz[1] + pz[3]; Y++) for (X = pz[0]; X < pz[0] + pz[2]; X++) T2(X, Y, 9); }
+          (ts.houses || []).forEach(function (h) { for (Y = h[1]; Y < h[1] + h[3]; Y++) for (X = h[0]; X < h[0] + h[2]; X++) T2(X, Y, Y === h[1] + h[3] - 1 ? 5 : 4); T2(h[0] + (h[2] >> 1), h[1] + h[3] - 1, 6); });
+          return;
+        }
         var town = q.s.type !== "village", rad = town ? 3 : 2, xx, yy;
         for (yy = -4; yy <= 4; yy++) for (xx = -4; xx <= 4; xx++) { if (g[q.cy + yy][q.cx + xx] !== 1) g[q.cy + yy][q.cx + xx] = 0; }
         for (yy = -rad; yy <= rad; yy++) for (xx = -rad; xx <= rad; xx++) g[q.cy + yy][q.cx + xx] = town ? 9 : 1;
@@ -5605,7 +5646,7 @@ var BIMG_SRC={"farm": "data:image/webp;base64,UklGRqyAAABXRUJQVlA4WAoAAAAQAAAAZw
       });
       function clearR(cx, cy, rad2) { for (var yy = -rad2; yy <= rad2; yy++) for (var xx = -rad2; xx <= rad2; xx++) { var px2 = cx + xx, py2 = cy + yy; if (px2 > 0 && py2 > 0 && px2 < N - 1 && py2 < N - 1 && g[py2][px2] !== 1) g[py2][px2] = 0; } }
       P.camps.forEach(function (cm) { clearR(cm.x, cm.y, 3); }); P.chests.forEach(function (cm) { clearR(cm.x, cm.y, 1); }); P.wf.forEach(function (cm) { clearR(cm.x, cm.y, 1); }); P.qc.forEach(function (cm) { if (cm) clearR(cm.x, cm.y, 3); }); P.rt.forEach(function (z) { clearR(z.g.x, z.g.y, 1); clearR(z.a.x, z.a.y, 4); });
-      (sp.qsites || []).forEach(function (z) { clearR(z.x, z.y, 4); });
+      (sp.qsites || []).forEach(function (z) { clearR(z.x, z.y, 4); }); (sp.portals || []).forEach(function (z) { clearR(z.x, z.y, 4); });
       P.caves.forEach(function (cv) { clearR(cv.x, cv.y, 3); var yy, xx; for (yy = -2; yy <= -1; yy++) for (xx = -1; xx <= 2; xx++) g[cv.y + yy][cv.x + xx] = 7; g[cv.y][cv.x - 1] = 7; g[cv.y][cv.x + 2] = 7; });
       // reachability
       function bfs(sx2, sy2) {
@@ -5613,7 +5654,7 @@ var BIMG_SRC={"farm": "data:image/webp;base64,UklGRqyAAABXRUJQVlA4WAoAAAAQAAAAZw
         while (h2 < t2) { var p2 = qu[h2++], px2 = p2 % N, py2 = (p2 - px2) / N; for (var d4 = 0; d4 < 4; d4++) { var nx = px2 + (d4 === 0 ? 1 : d4 === 1 ? -1 : 0), ny = py2 + (d4 === 2 ? 1 : d4 === 3 ? -1 : 0); if (nx < 1 || ny < 1 || nx >= N - 1 || ny >= N - 1) continue; var ni = ny * N + nx; if (!vis[ni] && ovPass(g[ny][nx])) { vis[ni] = 1; qu[t2++] = ni; } } }
         return vis;
       }
-      var pts = []; SP.forEach(function (q) { pts.push([q.cx, q.cy + 2]); }); P.caves.forEach(function (cv) { pts.push([cv.x, cv.y + 2]); }); (sp.qsites || []).forEach(function (z) { pts.push([z.x, z.y + 2]); });
+      var pts = []; SP.forEach(function (q) { pts.push([q.cx, q.cy + 2]); }); P.caves.forEach(function (cv) { pts.push([cv.x, cv.y + 2]); }); (sp.qsites || []).forEach(function (z) { pts.push([z.x, z.y + 2]); }); (sp.portals || []).forEach(function (z) { pts.push([z.x, z.y + 2]); });
       P.chests.forEach(function (cm) { pts.push([cm.x, cm.y]); }); P.camps.forEach(function (cm) { pts.push([cm.x, cm.y]); }); P.wf.forEach(function (cm) { pts.push([cm.x, cm.y]); }); P.qc.forEach(function (cm) { if (cm) pts.push([cm.x, cm.y]); }); P.rt.forEach(function (z) { pts.push([z.g.x, z.g.y]); pts.push([z.a.x, z.a.y]); });
       var vis = null, guard = 0;
       if (n2) while (guard++ < 6) {
@@ -5773,6 +5814,8 @@ var BIMG_SRC={"farm": "data:image/webp;base64,UklGRqyAAABXRUJQVlA4WAoAAAAQAAAAZw
   setInterval(function () {
     try {
       if (!S) return;
+      if (OVW.walkOn && !B && !AR && !sheet && !S.ended) { OVW.walkOn = 0; startOverland(); }
+      else if (OVW.walkOn && S.day > OVW.walkOn) OVW.walkOn = 0;
       if (OVW.resume && !B && !AR && !sheet && !S.ended) {
         var r = OVW.resume; OVW.resume = null;
         if (curCell() === r.cell && Math.hypot(S.px - r.px, S.py - r.py) < 70) startOverland({ at: r });
@@ -5873,6 +5916,17 @@ var BIMG_SRC={"farm": "data:image/webp;base64,UklGRqyAAABXRUJQVlA4WAoAAAAQAAAAZw
           out.push({ t: "Raid the wagons (" + R + " will want you for it)", fn: function () { setTimeout(function () { ovRaid(c); }, 60); } });
           out.push({ t: "Safe travels." });
           return out;
+        } };
+    }
+    if (id && id.indexOf("ovportal:") === 0) {
+      var kind = id.slice(9), cc = OVW.cell, open = kind === "gate" ? ovGateOpen() : (ovTunnelsOpen() || cc === 7), P2 = kind === "gate" ? S.gates : S.tunnels;
+      var nm = kind === "gate" ? (ovConts()[cc].f ? ovConts()[cc].n + " Gate" : "The Silent Gate") : "The Shadow Tunnels";
+      if (!open) return { n: nm, t: kind === "gate" ? "The arch hums when you touch it, and nothing else. Someone carrying the Grey Writ, who has learned to show it, could pass. Learn Gatewalker in Memory and Spark." : "A black mouth in the hillside, and a cold draught that smells of nothing. Do Shadowdeep a service at Hush and they may show you the way.", c: [{ t: "Leave it." }] };
+      return { n: nm, t: kind === "gate" ? "The old gate remembers every Realm. Each passage costs " + ovGateToll() + " crowns and a day, and you walk out onto the other shore." : "No toll, no light. Two days underground, and one in five of your men come up Void-touched.",
+        c: function () {
+          var out = [];
+          for (var j = 0; j < 9; j++) { if (j === cc || !P2 || !P2[j]) continue; (function (j2) { out.push({ t: ovConts()[j2].n + (kind === "gate" ? " (" + ovGateToll() + " crowns)" : ""), fn: function () { if (kind === "gate" && S.crowns < ovGateToll()) { aToast("You need " + ovGateToll() + " crowns."); return; } setTimeout(function () { leaveArea(); ovGoCell(j2, kind); OVW.walkOn = S.day + 3; }, 60); } }); })(j); }
+          out.push({ t: "Not today." }); return out;
         } };
     }
     if (id && id.indexOf("lordtalk:") === 0) {
@@ -17543,7 +17597,7 @@ setInterval(function () {
       regTint: function (ri) { try { if (!ri || !AR.sp.RN) return null; var rc = RCOL[AR.sp.RN[ri - 1]]; return rc ? "rgb(" + rc + ")" : null; } catch (e) { return null; } },
       rarCol: function (it) { try { return RAR[it.item.rar].c; } catch (e) { return "#e8e8e8"; } },
       itemName: function (it) { try { return it.item.name; } catch (e) { return ""; } },
-      openPlace: function (key) { var sid = AR && siteOfArea(AR.id); if (!sid || !site(sid)) return; if (!key) openSheet("site", sid); else openPlace(sid, key); },
+      openPlace: function (key, sid2) { var sid = sid2 || (AR && siteOfArea(AR.id)); if (!sid || !site(sid)) return; if (!key) openSheet("site", sid); else openPlace(sid, key); },
       info: function (A) {
         var sid = siteOfArea(A.id), s = sid && site(sid), th = ATH[A.sp.th] || {};
         return { realm: s ? realmOf(s) : realmAt(S.px, S.py), type: s ? s.type : (A.sp.over ? "over" : ""), cave: !!th.cave, siteId: s && A.sp.safe && canWalk(s) ? sid : null,
