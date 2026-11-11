@@ -5130,7 +5130,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
     if (f.tempered) h += "<p class=\"dim-t\">Blade tempered.</p>";
     return h;
   }
-  function areaIdFor(sid) { var hid = SITEAREA[sid]; if (hid && cp().on) return areaUnlocked(hid) ? hid : null; return "g:" + sid; }
+  function areaIdFor(sid) { var hid = SITEAREA[sid]; if (hid && cp().on) return (OVW.auditAll || areaUnlocked(hid)) ? hid : null; return "g:" + sid; }
   function areaRows(s) {
     var id = areaIdFor(s.id); if (!id) return "";
     return row("Explore " + getSpec(id).name, "Step inside. Talk to people, shop, and upgrade your gear at the smithy" + (SITEAREA[s.id] && cp().on ? ", and see what trouble is brewing." : "."), "Explore", "aenter", s.id, "", false, "amber");
@@ -5521,9 +5521,14 @@ var BIMG_SRC={"farm": "data:image/webp;base64,UklGRqyAAABXRUJQVlA4WAoAAAAQAAAAZw
     sp.houses = []; sp.hk = []; sp.hsid = []; sp.tnames = []; sp.stamps = [];
     if (OVK > 1) SP.forEach(function (q) {
       var aid = null; try { aid = areaIdFor(q.id); } catch (e) {} if (!aid) return;
-      var ts = null; try { ts = getSpec(aid); } catch (e) {} if (!ts || !ts.safe || ts.over || !ts.w || ts.w > 80 || ts.h > 80) return;
+      var ts = null; try { ts = getSpec(aid); } catch (e) {}
+      // a settlement whose walk-in is a story place (Millbrook's road, Redbank's Hollow, Ironwatch's yard...): build the town itself
+      // into the land, and put the story place's gate just outside it
+      var story = null; if (ts && (!ts.safe || ts.w > 80 || ts.h > 80) && !ts.over) { story = aid; aid = "g:" + q.id; try { ts = getSpec(aid); } catch (e) { ts = null; } }
+      if (!ts || !ts.safe || ts.over || !ts.w || ts.w > 80 || ts.h > 80) return;
       var ox = Math.max(4, Math.min(N - ts.w - 4, q.cx - (ts.w >> 1))), oy = Math.max(4, Math.min(N - ts.h - 4, q.cy - (ts.h >> 1)));
-      q.stamp = { aid: aid, ts: ts, ox: ox, oy: oy }; sp.stamps.push(q.stamp);
+      q.stamp = { aid: aid, ts: ts, ox: ox, oy: oy, story: story }; sp.stamps.push(q.stamp);
+      if (story) { var stx = ox + (ts.w >> 1), sty = Math.max(3, oy - 5); sp.exits.push({ x: stx, y: sty, w: 2, h: 1, rx: stx, ry: sty + 2, to: story, story: 1 }); }
       // roads and the minimap aim at the town's own square, which is always open ground
       q.cx = ox + (ts.spawn ? ts.spawn[0] : ts.w >> 1); q.cy = oy + (ts.spawn ? ts.spawn[1] : ts.h >> 1) - 2;
       var kinds = []; try { kinds = ts.hk || ovHKinds(ts); } catch (e) {}
@@ -6099,7 +6104,42 @@ var BIMG_SRC={"farm": "data:image/webp;base64,UklGRqyAAABXRUJQVlA4WAoAAAAQAAAAZw
   window.__ovPartyUse = function (key) { if (!ovLive() || !key) return; ovSyncPos(); dlgOpen(key); };
   // a once-a-day pass: new caravans, bounties cooling
   setInterval(function () { try { if (!S || S.tickDay === OVW.lastDay) return; OVW.lastDay = S.tickDay; ovCaravanDaily(); ovWantedDaily(); S.sites.forEach(function (q) { if (q.sab && q.sab.until <= S.day) { if (q.sab.wall0) q.wall = q.sab.wall0; delete q.sab; } }); } catch (e) {} }, 500);
-  window.__ovw = { qs: function () { return QS.map(function (q) { return [q.id, qSt(q), q.hub, q.zone]; }); }, live: function () { return { live: ovLive(), dlg: !!(AR && AR.dlg), sheet: !!sheet, B: !!B, spd: S.speed }; }, wanted: wanted, crime: ovCrime, pay: payBounty, raid: function (id) { var c = carById(id); if (c) ovRaid(c); }, daily: ovCaravanDaily, OVW: OVW };
+  // audit: build each Realm's open world off-screen and check every settlement on it can be walked into
+  function ovAudit(cell, all) {
+    var sv = [S.px, S.py], svc = OVW.cell, out = [], cs = S.sites.filter(function (s) { return cellAt(s.x, s.y) === cell; });
+    if (!cs.length) return { cell: cell, none: 1 };
+    OVW.auditAll = !!all; OVW.cell = cell; OVW.tc = null; S.px = cs[0].x; S.py = cs[0].y;
+    try {
+      var svA = AREAS.overland; AREAS.overland = makeOverSpec(); var A = buildArea0("overland"), N = A.W, g = A.g, sol = function (t) { return t === 2 || t === 3 || t === 4 || t === 5 || t === 6 || t === 7; };
+      var vis = new Uint8Array(N * N), qu = new Int32Array(N * N), h = 0, t = 0, sx = Math.floor(A.p.x / ATS), sy = Math.floor(A.p.y / ATS); vis[sy * N + sx] = 1; qu[t++] = sy * N + sx;
+      while (h < t) { var k = qu[h++], x = k % N, y = (k / N) | 0; [[1, 0], [-1, 0], [0, 1], [0, -1]].forEach(function (d) { var nx = x + d[0], ny = y + d[1]; if (nx < 0 || ny < 0 || nx >= N || ny >= N) return; var kk = ny * N + nx; if (vis[kk] || sol(g[ny][nx])) return; vis[kk] = 1; qu[t++] = kk; }); }
+      function reach(x, y) { for (var dy = -3; dy <= 3; dy++) for (var dx = -3; dx <= 3; dx++) { var X = Math.round(x) + dx, Y = Math.round(y) + dy; if (X >= 0 && Y >= 0 && X < N && Y < N && vis[Y * N + X]) return true; } return false; }
+      cs.forEach(function (s) {
+        var q = A.sp.byId[s.id], r = { id: s.id, name: s.name, type: s.type, owner: s.owner };
+        if (!q) { r.problem = "not on this Realm's open world"; out.push(r); return; }
+        var co = cellOrg(cell), mx = (s.x - co[0]) / OT, my = (s.y - co[1]) / OT; r.off = Math.round(Math.hypot((q.stamp ? q.stamp.ox + q.stamp.ts.w / 2 : q.cx) - mx, (q.stamp ? q.stamp.oy + q.stamp.ts.h / 2 : q.cy) - my));
+        if (q.stamp) {
+          r.how = "built in (" + q.stamp.aid + ")"; var ts = q.stamp.ts;
+          // its streets: the town square is reachable, and so is every door
+          r.square = reach(q.cx, q.cy + 2); var dd = 0, dok = 0; (ts.houses || []).forEach(function (hh) { if (!hh || hh[2] <= 0) return; dd++; if (reach(q.stamp.ox + hh[0] + (hh[2] >> 1), q.stamp.oy + hh[1] + hh[3] + 1)) dok++; }); r.doors = dok + "/" + dd;
+          if (q.wall) r.walls = q.wall.shut ? "shut" : "open, " + q.wall.gates.length + " gate tiles";
+          if (q.stamp.story) { var se = A.sp.exits.filter(function (e) { return e.story && e.to === q.stamp.story; })[0]; r.story = q.stamp.story + (se && reach(se.x, se.y + 1) ? " (gate reachable)" : " (GATE NOT REACHABLE)"); if (!se || !reach(se.x, se.y + 1)) r.problem = "story gate can't be reached"; }
+          if (!r.square && !(q.wall && q.wall.shut)) r.problem = "town square can't be reached on foot";
+        } else {
+          var ex = A.sp.exits.filter(function (e) { return e.ovsite === s.id; })[0];
+          if (!ex) { r.problem = "no way in"; }
+          else { var lk = ex.lock ? ex.lock() : ""; r.how = "gate to " + (function () { try { return ex.to; } catch (e) { return "?"; } })(); if (lk) r.locked = lk; if (!reach(ex.x, ex.y + 1)) r.problem = "gate can't be reached on foot"; }
+          var aid = null; try { aid = areaIdFor(s.id); } catch (e) {} var ts2 = aid ? getSpec(aid) : null;
+          r.why = !aid ? "area closed" : !ts2 ? "no area spec" : !ts2.safe ? "area is not a safe town (" + aid + ")" : ts2.w > 80 || ts2.h > 80 ? "too big to build in (" + ts2.w + "x" + ts2.h + ")" : "?";
+        }
+        out.push(r);
+      });
+      var stray = Object.keys(A.sp.byId).filter(function (id) { var s2 = site(id); return !s2 || cellAt(s2.x, s2.y) !== cell; });
+      return { cell: cell, realm: (FAC[cellFac(cell)] || {}).name, sites: out, stray: stray, reachPct: Math.round(t / N / N * 100) };
+    } catch (e) { return { cell: cell, err: String(e && e.stack || e).slice(0, 300) }; }
+    finally { OVW.auditAll = false; OVW.cell = svc; OVW.tc = null; S.px = sv[0]; S.py = sv[1]; if (typeof svA !== "undefined") AREAS.overland = svA; }
+  }
+  window.__ovw = { audit: ovAudit, qs: function () { return QS.map(function (q) { return [q.id, qSt(q), q.hub, q.zone]; }); }, live: function () { return { live: ovLive(), dlg: !!(AR && AR.dlg), sheet: !!sheet, B: !!B, spd: S.speed }; }, wanted: wanted, crime: ovCrime, pay: payBounty, raid: function (id) { var c = carById(id); if (c) ovRaid(c); }, daily: ovCaravanDaily, OVW: OVW };
 
   function ovBuildBtn() {
     if (!AR || AR.dlg) return;
