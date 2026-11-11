@@ -165,7 +165,7 @@ function buildArea(st, api, A) {
         const tx = ix + dx, ty = j + dy; if (tx < 0 || ty < 0 || tx >= W || ty >= H) continue;
         const t = g[ty][tx], v = vnoise(tx * 0.7, ty * 0.7);
         if (t === 1) { tmp.copy(cPath); blend += 1; } else if (t === 9) { tmp.copy(cPlaza); blend += 1; } else if (t === 3) { tmp.copy(cWater).multiplyScalar(0.35); wet++; }
-        else if (t === 2 && cave) tmp.copy(cTree2).multiplyScalar(0.8); else if (t === 2) tmp.copy(cG0).lerp(cTree, 0.35); else tmp.copy(v > 0.5 ? cG1 : cG0);
+        else if (t === 2 && cave) tmp.copy(cTree2).multiplyScalar(0.8); else if (t === 2 || t === 10) tmp.copy(cG0).lerp(cTree, 0.35 + v * 0.15); else if (t === 11) tmp.copy(cG0).lerp(cRock, 0.45 + v * 0.2); else tmp.copy(v > 0.5 ? cG1 : cG0);
         if (over && sp.reg && api.regTint) { const rt = api.regTint(sp.reg[ty * W + tx]); if (rt !== null && rt !== undefined) tmp.lerp(c.set(rt), 0.22); }
         r += tmp.r; gr += tmp.g; b += tmp.b; k++;
       }
@@ -244,6 +244,17 @@ function buildArea(st, api, A) {
         if (Bs) Bs.add("rock", white, wx, s * 0.3, wz, s * 1.2, s * 0.9, s * 1.1, r2 * 6, shade(cRock.getHex(), 0.75 + r2 * 0.3));
         if (mm) { const bo = biomeOf(); modelProp(B, pickW(bo.rock, null, r2), mm.solid, wx, -0.05, wz, s * 1.25, r2 * 6, shade(cRock.getHex(), 1.5 + r2 * 0.4)); if (r1 < 0.4) modelProp(B, "grass", mm.sway, wx + 0.5, 0, wz + 0.4, 0.45, r1 * 6, shade(bo.tint, 0.9)); }
         else B.add("rock", white, wx, s * 0.3, wz, s * 1.2, s * 0.9, s * 1.1, r2 * 6, shade(cRock.getHex(), 0.75 + r2 * 0.3));
+      }
+      // open-world forest floor: ferns, bushes and fallen wood you walk through; rocky highland: stones and tufts
+      else if (t === 10) {
+        if (r1 < 0.16 && st.gfx !== "low") { any = true; const ex = wx + (r2 - 0.5) * T, ez = wz + (rand() - 0.5) * T;
+          if (mm) { const bo = biomeOf(), k = rand(); if (k < 0.5) modelProp(B, pickW(bo.bush, null, rand()), mm.sway, ex, 0, ez, 0.7 + rand() * 0.6, rand() * 6, shade(bo.tint, 0.8 + rand() * 0.25)); else if (k < 0.85 && info.realm !== "frost") modelProp(B, "fern", mm.sway, ex, 0, ez, 0.5 + rand() * 0.4, rand() * 6, shade(bo.tint, 0.8 + rand() * 0.3)); else modelProp(B, "grass", mm.sway, ex, 0, ez, 0.4 + rand() * 0.3, rand() * 6, shade(bo.tint, 0.9)); }
+          else B.add("cone", white, ex, 0.3, ez, 0.5, 0.6, 0.5, 0, shade(cTree2.getHex(), 0.9)); }
+      }
+      else if (t === 11) {
+        if (r1 < 0.12) { any = true; const s2 = 0.3 + r2 * 0.4, ex = wx + (r2 - 0.5) * T, ez = wz + (rand() - 0.5) * T;
+          if (mm) { const bo = biomeOf(); if (r2 < 0.6) modelProp(B, pickW(bo.rock, null, r2), mm.solid, ex, -0.05, ez, s2, r2 * 6, shade(cRock.getHex(), 1.5 + r2 * 0.4)); else modelProp(B, "grass", mm.sway, ex, 0, ez, 0.35, r2 * 6, shade(biomeOf().tint, 0.85)); }
+          else B.add("rock", white, ex, s2 * 0.2, ez, s2, s2 * 0.6, s2, r2 * 6, shade(cRock.getHex(), 0.8)); }
       }
       else if (t === 8 && st.gfx !== "low") {
         any = true;

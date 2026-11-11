@@ -5696,6 +5696,14 @@ var BIMG_SRC={"farm": "data:image/webp;base64,UklGRqyAAABXRUJQVlA4WAoAAAAQAAAAZw
         if (!fixed) break;
       }
       sp.reach = vis || new Uint8Array(N * N).fill(1);
+      // the open world is open: woods are trees you walk between (forest floor, 10), highlands are rocky ground you climb
+      // over (11) with the odd boulder in the way. Only water, walls and buildings stop you.
+      if (OVK > 1) for (var yy2 = 1; yy2 < N - 1; yy2++) { var row2 = g[yy2]; for (var xx2 = 1; xx2 < N - 1; xx2++) {
+        var t3 = row2[xx2]; if (t3 !== 2 && t3 !== 7) continue; var hsh = ((xx2 * 73856093) ^ (yy2 * 19349663)) >>> 0;
+        if (t3 === 2) row2[xx2] = (hsh % 100) < 13 && row2[xx2 - 1] !== 2 && g[yy2 - 1][xx2] !== 2 ? 2 : 10;
+        else row2[xx2] = (hsh % 100) < 9 ? 7 : 11;
+      } }
+      if (OVK > 1) sp.reach = new Uint8Array(N * N).fill(1);
     };
     sp.paint = function (m, g) {
       var RN = sp.RN, reg = sp.reg, x, y, ri, run;
@@ -5786,7 +5794,7 @@ var BIMG_SRC={"farm": "data:image/webp;base64,UklGRqyAAABXRUJQVlA4WAoAAAAQAAAAZw
       var tx = Math.floor(x * M / 140), ty = Math.floor(y * M / 140), i = (y * 140 + x) * 4;
       if (tx >= W || ty >= H) { d[i] = 12; d[i + 1] = 10; d[i + 2] = 8; d[i + 3] = 255; continue; }
       var t = a.g[ty][tx], c3 = [74, 120, 62], ri = a.sp.reg ? a.sp.reg[ty * W + tx] : 0;
-      if (t === 3) c3 = [40, 90, 140]; else if (t === 2) c3 = [30, 80, 48]; else if (t === 7) c3 = [125, 125, 132]; else if (t === 1) c3 = [205, 175, 110]; else if (t === 4 || t === 5 || t === 6) c3 = [150, 110, 80]; else if (t === 9) c3 = [225, 205, 160];
+      if (t === 3) c3 = [40, 90, 140]; else if (t === 2 || t === 10) c3 = [30, 80, 48]; else if (t === 7 || t === 11) c3 = [125, 125, 132]; else if (t === 1) c3 = [205, 175, 110]; else if (t === 4 || t === 5 || t === 6) c3 = [150, 110, 80]; else if (t === 9) c3 = [225, 205, 160];
       else if (ri && a.sp.RN) { var rc = RCOL[a.sp.RN[ri - 1]].split(","); c3 = [c3[0] * 0.7 + rc[0] * 0.3, c3[1] * 0.7 + rc[1] * 0.3, c3[2] * 0.7 + rc[2] * 0.3]; }
       d[i] = c3[0]; d[i + 1] = c3[1]; d[i + 2] = c3[2]; d[i + 3] = 255;
     }
