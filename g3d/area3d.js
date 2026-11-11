@@ -894,6 +894,7 @@ function buildArea(st, api, A) {
     const col = hex(q.col, 0x8a6a4a);
     let o;
     if (q.kind === "bandit") o = { cloth: [0x6a4a2a, 0x4a3a2a, 0x5a5040][i % 3], cloth2: 0x2a2018, skin: [0xc89a78, 0x9a6a48, 0xd8b090][i % 3], helm: i % 2 ? "hood" : "bare", hoodc: 0x3a2a1a, weapon: i % 3 === 2 ? "spear" : "sword" };
+    else if (q.kind === "folk") o = { cloth: [0x7a6a4a, 0x5a6a7a, 0x8a5a4a, 0x6a7a5a][i % 4], cloth2: 0x3a2e22, skin: [0xc89a78, 0xe0b898, 0x9a6a48][i % 3], helm: i % 3 === 0 ? "hood" : "bare", hoodc: 0x5a4a3a, weapon: null };
     else if (q.kind === "void") o = { cloth: 0x2a2234, cloth2: 0x141018, skin: 0x3a2a4a, helm: "hood", hoodc: 0x16121e, eyes: VOIDC, weapon: "sword", cloak: 0x241a34 };
     else if (q.kind === "caravan") o = i < 2 ? { cloth: [0x8a6a3a, 0x6a5a7a][i], cloth2: 0x3a2a1a, skin: 0xc8a080, helm: "bare", weapon: null } : { cloth: col, cloth2: 0x2a2420, armour: true, metal: 0x6a6a70, tabard: col, helm: "cap", weapon: "spear" };
     else o = { cloth: col, cloth2: 0x2a2420, armour: true, metal: q.kind === "hunter" ? 0x3a3a40 : 0x7a7a84, tabard: col, helm: q.kind === "hunter" ? "spike" : "cap", weapon: i % 3 === 1 ? "spear" : "sword", shield: i % 2 ? shade(col, 0.7).getHex() : undefined };

@@ -5844,6 +5844,8 @@ var BIMG_SRC={"farm": "data:image/webp;base64,UklGRqyAAABXRUJQVlA4WAoAAAAQAAAAZw
       a.sp.SP.forEach(function (q) { var s2 = q.s.type === "village" ? 5 : 8, p = P(q.cx, q.cy); g.fillStyle = "#000"; g.fillRect(p[0] - s2 / 2 - 1, p[1] - s2 / 2 - 1, s2 + 2, s2 + 2); g.fillStyle = FAC[q.s.owner] ? FAC[q.s.owner].col : "#ccc"; g.fillRect(p[0] - s2 / 2, p[1] - s2 / 2, s2, s2); });
       a.sp.P.caves.forEach(function (cv) { var p = P(cv.x, cv.y); g.fillStyle = cv.lair ? "#ff7a2a" : "#b8a8e0"; g.fillRect(p[0] - 2, p[1] - 2, 4, 4); });
       (a.sp.qsites || []).forEach(function (z) { var p = P(z.x, z.y); g.fillStyle = "#ffd060"; g.beginPath(); g.arc(p[0], p[1], 3, 0, 6.283); g.fill(); });
+      a.sp.P.camps.forEach(function (cm) { if (cm.done) return; var p = P(cm.x, cm.y); g.strokeStyle = "#e0503a"; g.lineWidth = 1.6; g.beginPath(); g.moveTo(p[0] - 2.5, p[1] - 2.5); g.lineTo(p[0] + 2.5, p[1] + 2.5); g.moveTo(p[0] + 2.5, p[1] - 2.5); g.lineTo(p[0] - 2.5, p[1] + 2.5); g.stroke(); });
+      if (OVW.tip) { var tp2 = P(OVW.tip.x, OVW.tip.y); if (pulse) { g.strokeStyle = "#fff"; g.lineWidth = 1.5; g.beginPath(); g.arc(tp2[0], tp2[1], 5, 0, 6.283); g.stroke(); } }
       try { (window.__ovParties ? window.__ovParties() : []).forEach(function (q) { var p = P(q.x / ATS, q.y / ATS); g.fillStyle = "#000"; g.beginPath(); g.arc(p[0], p[1], 3.6, 0, 6.283); g.fill(); g.fillStyle = q.hostile ? "#ff4a3a" : q.kind === "caravan" ? "#f0d080" : q.col; g.beginPath(); g.arc(p[0], p[1], 2.6, 0, 6.283); g.fill(); }); } catch (e) {}
     }
     a.npcs.forEach(function (n) { if (n.mk && (!n.vis || n.vis())) { var mq = n.mk(); if (mq && pulse) { var p = P(n.x, n.y); g.fillStyle = mq === 1 ? "#ffd84a" : "#9fd8ff"; g.fillRect(p[0] - 2.5, p[1] - 2.5, 5, 5); } } });
@@ -5884,6 +5886,7 @@ var BIMG_SRC={"farm": "data:image/webp;base64,UklGRqyAAABXRUJQVlA4WAoAAAAQAAAAZw
     var v = aInput(), mv = Math.min(1, Math.hypot(v[0] || 0, v[1] || 0));
     // map units per second at a walk, as a share of the map's own travel speed: the world keeps the map's pace
     S.speed = (54 * 1.35 * OT / ATS) / SPEED / DAY_RATE * (0.2 + 0.8 * mv);
+    try { ovLocalsTick(dt, mv > 0.2); OVW.busy = (OVW.busy || 0) - dt; if (OVW.busy <= 0) { OVW.busy = 20; ovKeepBusy(); } } catch (e) {}
     OVW.h = (OVW.h + dt / 60) % 24; // the sky turns slowly while you walk: an hour a minute
   };
   // contact with a hostile party: step off the road into the battle, and come back to the same spot after
@@ -5908,11 +5911,12 @@ var BIMG_SRC={"farm": "data:image/webp;base64,UklGRqyAAABXRUJQVlA4WAoAAAAQAAAAZw
 
   // ---- caravans ----
   function cvName(c) { var a = site(c.from), b = site(c.to); return (a ? a.name : "?") + " to " + (b ? b.name : "?"); }
-  function ovCaravanDaily() {
+  function ovCaravanDaily(only) {
     if (!S.caravans) S.caravans = [];
     var by = {}; S.caravans.forEach(function (c) { by[c.cell] = (by[c.cell] || 0) + 1; });
     for (var cell = 0; cell < 8; cell++) {
-      var f = cellFac(cell); if (!f || !FAC[f] || (by[cell] || 0) >= 5 || Math.random() > 0.6) continue;
+      if (only !== undefined && cell !== only) continue;
+      var f = cellFac(cell); if (!f || !FAC[f] || (by[cell] || 0) >= 8 || (only === undefined && Math.random() > 0.75)) continue;
       var here = S.sites.filter(function (s) { return cellAt(s.x, s.y) === cell && s.owner === f; }); if (here.length < 2) continue;
       var a = here[Math.floor(Math.random() * here.length)], b = here[Math.floor(Math.random() * here.length)], tries = 0;
       while ((b === a || Math.hypot(a.x - b.x, a.y - b.y) < 260) && tries++ < 12) b = here[Math.floor(Math.random() * here.length)];
@@ -6000,6 +6004,7 @@ var BIMG_SRC={"farm": "data:image/webp;base64,UklGRqyAAABXRUJQVlA4WAoAAAAQAAAAZw
           return out;
         } };
     }
+    if (id && id.indexOf("ovev:") === 0) { var lo = OVW.ev.locals.filter(function (l) { return l.id === +id.slice(5); })[0]; if (!lo) return { n: "The road", t: "They've gone on.", c: [{ t: "Go." }] }; return ovEvDlg(lo); }
     if (id && id.indexOf("sabo:") === 0) {
       var pz = id.split(":"), ss = site(pz[1]), kk = pz[2]; if (!ss) return null;
       var what = kk === "winch" ? "The gate winch: a great drum of rope and iron pins, and one bored guard's stool." : kk === "granary" ? "The granary door, barred but not locked. It smells of a whole winter's bread." : "The armoury: racks of spears and a barrel of bowstrings by the door.";
@@ -6035,6 +6040,7 @@ var BIMG_SRC={"farm": "data:image/webp;base64,UklGRqyAAABXRUJQVlA4WAoAAAAQAAAAZw
       out.push({ k: "e" + e.id, x: (e.x - co[0]) * k, y: (e.y - co[1]) * k, n: e.n, kind: e.kind, col: e.fac && FAC[e.fac] ? FAC[e.fac].col : e.kind === "void" ? "#9a88c4" : "#b2503c", name: nm, hostile: hostile, talk: !hostile && e.kind === "lord" ? "lordtalk:" + e.id : "" });
     });
     (S.caravans || []).forEach(function (c) { if (!near(c)) return; out.push({ k: "c" + c.id, x: (c.x - co[0]) * k, y: (c.y - co[1]) * k, n: c.n, kind: "caravan", col: FAC[c.fac].col, name: "Caravan · " + cvName(c), hostile: false, talk: "car:" + c.id }); });
+    OVW.ev.locals.forEach(function (l) { out.push({ k: "l" + l.id, x: l.x, y: l.y, n: l.n, kind: l.kind === "patrol" ? "lord" : "folk", sub: l.kind, col: l.kind === "patrol" && FAC[l.fac] ? FAC[l.fac].col : "#8a7a5a", name: l.name, hostile: false, talk: "ovev:" + l.id }); });
     (S.allies || []).forEach(function (h, i) { if (h.away || !near(h)) return; out.push({ k: "h" + i, x: (h.x - co[0]) * k, y: (h.y - co[1]) * k, n: h.n, kind: "ally", col: "#f0d060", name: String(h.name || "Ally").split(",")[0], hostile: false, talk: "" }); });
     return out;
   };
@@ -6094,6 +6100,84 @@ var BIMG_SRC={"farm": "data:image/webp;base64,UklGRqyAAABXRUJQVlA4WAoAAAAQAAAAZw
     // somebody may have heard
     if (Math.random() < 0.4 && AR) { AR.en.forEach(function (e) { if (!e.dead && Math.hypot(e.x - AR.p.x, e.y - AR.p.y) < 260) e.aggro = true; }); t += " A shout goes up behind you."; }
     return t;
+  }
+  // ================= Roadside life: something happening every minute or so of walking =================
+  // Ambushes from the trees, Void-touched stragglers, pilgrims with news, a cart in a ditch, pedlars, refugees, a Realm patrol
+  // with a tip about the nearest camp. They appear ahead of you, last while you're near, and are gone when you've walked on.
+  OVW.ev = { t: 25, n: 0, locals: [] };
+  var EVN = {
+    pilgrim: ["A pilgrim on the road", "A copyist walking home", "Two pilgrims and a goat", "A tinker with a handcart", "A shepherd and her dog"],
+    cart: ["A cart in the ditch", "A farmer with a broken wheel"],
+    trader: ["A pedlar with a heavy pack", "A rope-seller and her mule"],
+    refugees: ["Refugees from the grey", "A family with everything on their backs"],
+    patrol: ["A road patrol"]
+  };
+  function ovSpotAhead(min, max) {
+    var a = AR, f = a.p.face || { x: 0, y: 1 }, L = Math.hypot(f.x, f.y) || 1, tries = 0;
+    while (tries++ < 30) {
+      var ang = Math.atan2(f.y / L, f.x / L) + (Math.random() - 0.5) * 1.6, d = (min + Math.random() * (max - min)) * ATS, x = a.p.x + Math.cos(ang) * d, y = a.p.y + Math.sin(ang) * d;
+      if (x > 40 && y > 40 && x < a.W * ATS - 40 && y < a.H * ATS - 40 && boxFree(a, x, y)) return [x, y];
+    }
+    return null;
+  }
+  function ovEvent() {
+    var a = AR, f = cellFac(OVW.cell), R = FAC[f] ? FAC[f].name : "the Realm", roll = Math.random(), spot = ovSpotAhead(22, 34); if (!spot) return;
+    var id = ++OVW.ev.n, kind;
+    if (roll < 0.26) kind = "ambush"; else if (roll < 0.34 && lvl() >= 3) kind = "void"; else if (roll < 0.52) kind = "pilgrim"; else if (roll < 0.63) kind = "cart"; else if (roll < 0.75) kind = "trader"; else if (roll < 0.85) kind = "refugees"; else kind = "patrol";
+    if (kind === "ambush" || kind === "void") {
+      var n = 3 + Math.floor(Math.random() * 3), tm = (1 + 0.8 * tier()) * lvScale();
+      for (var i = 0; i < n; i++) {
+        var ty = kind === "void" ? (i % 2 ? "inkspit" : "inkling") : (Math.random() < 0.3 ? "slinger" : "bandit"), d = ET[ty]; if (!d) continue;
+        var x = spot[0] + (Math.random() - 0.5) * 70, y = spot[1] + (Math.random() - 0.5) * 70; if (!boxFree(a, x, y)) { x = spot[0]; y = spot[1]; }
+        a.en.push({ type: ty, d: d, x: x, y: y, hx: x, hy: y, hp: d.hp * tm, hpm: d.hp * tm, cd: 0.8, kx: 0, ky: 0, flash: 0, dead: false, aggro: false, shot: 1 + Math.random(), rp: undefined, amb: id });
+      }
+      if (kind === "void") aToast("The air goes cold and grey ahead.");
+      return;
+    }
+    var names = EVN[kind], nm = names[Math.floor(Math.random() * names.length)];
+    OVW.ev.locals.push({ id: id, kind: kind, x: spot[0], y: spot[1], name: nm, n: kind === "refugees" ? 6 : kind === "patrol" ? 8 : kind === "pilgrim" ? 2 : 3, fac: f, done: 0 });
+  }
+  function ovLocalsTick(dt, moving) {
+    if (moving) { OVW.ev.t -= dt; if (OVW.ev.t <= 0) { OVW.ev.t = 40 + Math.random() * 45; try { ovEvent(); } catch (e) {} } }
+    // people walked past are left behind; ambushers you outran give up
+    var a = AR; OVW.ev.locals = OVW.ev.locals.filter(function (l) { return Math.hypot(l.x - a.p.x, l.y - a.p.y) < 170 * ATS; });
+    if (Math.random() < dt * 0.2) a.en = a.en.filter(function (e) { return !e.amb || e.dead || e.aggro || Math.hypot(e.x - a.p.x, e.y - a.p.y) < 160 * ATS; });
+  }
+  function ovNearest(list) { var co = cellOrg(OVW.cell), bd = 1e9, b = null; list.forEach(function (o) { var d = Math.hypot(o.x * OT + co[0] - S.px, o.y * OT + co[1] - S.py); if (d < bd) { bd = d; b = o; } }); return b; }
+  function ovDir(o) { var co = cellOrg(OVW.cell), dx = o.x * OT + co[0] - S.px, dy = o.y * OT + co[1] - S.py, an = Math.atan2(dy, dx), dirs = ["east", "south-east", "south", "south-west", "west", "north-west", "north", "north-east"]; return dirs[(Math.round(an / 0.785) + 8) % 8] + ", about " + (Math.round(Math.hypot(dx, dy) / OT * 1.35 / 50) * 50 || 50) + " m"; }
+  function ovEvDlg(l) {
+    var R = FAC[l.fac] ? FAC[l.fac].name : "the Realm", P = AR.sp.P, Lr = window.VHPLACELORE || {}, near = AR.sp.SP.slice().sort(function (p1, p2) { return Math.hypot(p1.cx * ATS - AR.p.x, p1.cy * ATS - AR.p.y) - Math.hypot(p2.cx * ATS - AR.p.x, p2.cy * ATS - AR.p.y); })[0];
+    var rum = near && Lr[near.id] && Lr[near.id].rumour;
+    if (l.kind === "pilgrim") {
+      var cv = ovNearest(P.caves.filter(function (c) { return !c.lair; })), camp = ovNearest(P.camps);
+      return { n: l.name, t: "“" + (rum ? String(rum).replace(/^[“"\s]+|[”"\s]+$/g, "") : "Long road. Mind yourself after dark.") + "”", c: [
+        { t: "Seen anything out here?", fn: function () { var o = Math.random() < 0.5 ? cv : camp; if (o) { OVW.tip = o; setTimeout(function () { aToast((o === cv ? "“There's a cave, " + (o.name || "an old one") + ", " : "“Bandits camped ") + ovDir(o) + ". It's on your minimap now.”"); }, 50); } } },
+        { t: "Safe road." }] };
+    }
+    if (l.kind === "cart") return { n: l.name, t: l.done ? "“That'll get us home. Bless your back.”" : "“Wheel's off and the axle's in the mud. I can't lift it alone, and the light's going.”", c: l.done ? [{ t: "Go well." }] : [
+      { t: "Put your shoulder to it", fn: function () { l.done = 1; var c2 = 15 + Math.floor(Math.random() * 25); S.crowns += c2; try { opAdd(l.fac, 2, "helping on the road"); } catch (e) {} setTimeout(function () { aToast("The wheel goes back on. They press " + c2 + " crowns on you and won't hear no."); }, 50); } },
+      { t: "Help yourself to the load (" + R + " will hear of it)", fn: function () { l.done = 1; var c3 = 30 + Math.floor(Math.random() * 30); S.crowns += c3; S.grain += 10; ovCrime(l.fac, 12, "robbing a stuck cart"); setTimeout(function () { aToast("+" + c3 + " crowns and 10 grain. Someone will remember your face."); }, 50); } },
+      { t: "Walk on." }] };
+    if (l.kind === "trader") return { n: l.name, t: "“Rope, salve, bread, a little of everything. Better prices than the caravans and twice the walking.”", c: [
+      { t: "Climbing rope (35 crowns)" + (S.rope ? " · you have " + S.rope : ""), fn: function () { if (S.crowns < 35) { aToast("Not enough crowns."); return; } S.crowns -= 35; S.rope = (S.rope || 0) + 1; aToast("A coil of rope and a grapnel."); } },
+      { t: "Healing salve (15 crowns)", fn: function () { if (S.crowns < 15) { aToast("Not enough crowns."); return; } S.crowns -= 15; AR.p.hp = AR.p.max; aToast("It stings, then it doesn't. You're whole."); } },
+      { t: "Bread for the road (10 grain, 12 crowns)", fn: function () { if (S.crowns < 12) { aToast("Not enough crowns."); return; } S.crowns -= 12; S.grain += 10; aToast("+10 grain."); } },
+      { t: "Not today." }] };
+    if (l.kind === "refugees") return { n: l.name, t: l.done ? "“We'll make the next town by dark now.”" : "“The grey came over the fields at the back end of the year. We took what we could carry.” The youngest is asleep on a bundle of pans.", c: l.done ? [{ t: "Go well." }] : [
+      { t: "Give them 10 grain", fn: function () { if (S.grain < 10) { aToast("You don't have 10 grain."); return; } S.grain -= 10; l.done = 1; try { opAdd(l.fac, 4, "feeding refugees"); } catch (e) {} aToast("They'll tell the next town who fed them."); } },
+      { t: "Point them to the nearest town", fn: function () { setTimeout(function () { aToast(near ? "“" + near.s.name + ". Thank you.”" : "They nod and walk on."); }, 50); } },
+      { t: "Walk on." }] };
+    var camp2 = ovNearest(P.camps);
+    return { n: l.name + " of " + R, t: "“Road's ours to keep. If you're armed and not a bandit, you're welcome on it.”", c: [
+      { t: "Anything I should know?", fn: function () { if (camp2) { OVW.tip = camp2; setTimeout(function () { aToast("“Bandit camp " + ovDir(camp2) + ". We haven't the men to clear it. You might.” It's on your minimap."); }, 50); } } },
+      { t: "Carry on." }] };
+  }
+  // more warbands and caravans in the Realm you're walking: the roads should never be empty
+  function ovKeepBusy() {
+    var cell = OVW.cell, P = AR.sp.P, co = cellOrg(cell);
+    var bands = S.enemies.filter(function (e) { return e.kind === "bandit" && cellAt(e.x, e.y) === cell; }).length;
+    if (bands < 4 && P.camps.length) { var cmp = P.camps[Math.floor(Math.random() * P.camps.length)], x = cmp.x * OT + co[0], y = cmp.y * OT + co[1]; if (Math.hypot(x - S.px, y - S.py) > 120) S.enemies.push({ id: S.eid++, kind: "bandit", x: x, y: y, n: Math.round((8 + 2 * lvl() + Math.random() * 10) * DF.en), q: 0.9, cool: 0, dest: null }); }
+    var cars = (S.caravans || []).filter(function (c) { return c.cell === cell; }).length; if (cars < 6) ovCaravanDaily(cell);
   }
   // in any town of a Realm that wants you: the bounty, and a way to pay it
   var ssOldW = siteSheet;
@@ -14776,12 +14860,28 @@ function ovMore(P) {
   function put(arr, n, mind, msite) { var t = 0, m = 0; while (m < n && t++ < 6000) { var tx = 8 + Math.floor(r() * (ON - 16)), ty = 8 + Math.floor(r() * (ON - 16)); if (ok(tx, ty, mind, msite)) { var o = { x: tx, y: ty, lv: ovLv(tx, ty) }; arr.push(o); all.push([tx, ty]); m++; } } }
   put(P.camps, 20, 10, 12); put(P.chests, 30, 6, 6);
 }
+// the busier open world (16:00, 11 Nov): twenty-four more camps, eight more caves and thirty more caches per Realm
+var CAVEN2 = ["The Lantern Pit", "Saltjaw Hollow", "Greywhisper Cave", "The Kiln Mouth", "Rimefang Grotto", "Moth Cave", "Old Knuckle Mine", "The Quiet Throat"];
+function ovMore2(P) {
+  var r = arng(nhash("ovmore2") + curCell() * 173), co = cellOrg(curCell()), all = [];
+  Object.keys(P).forEach(function (k) { if (Array.isArray(P[k])) P[k].forEach(function (o) { if (o && typeof o.x === "number") all.push([o.x, o.y]); }); });
+  var st = ovLocalSites().map(function (s) { return [(s.x - co[0]) / OT, (s.y - co[1]) / OT]; });
+  function ok(tx, ty, mind, msite) {
+    if (tx < 8 || ty < 8 || tx > ON - 9 || ty > ON - 9) return false; var e = elevAtW(tx * OT + 8 + co[0], ty * OT + 8 + co[1]); if (e < 0.375 || e > 0.66) return false;
+    for (var i = 0; i < st.length; i++) if (Math.hypot(st[i][0] - tx, st[i][1] - ty) < msite) return false;
+    for (i = 0; i < all.length; i++) if (Math.hypot(all[i][0] - tx, all[i][1] - ty) < mind) return false; return true;
+  }
+  function put(arr, n, mind, msite, nm) { var t = 0, m = 0; while (m < n && t++ < 8000) { var tx = 8 + Math.floor(r() * (ON - 16)), ty = 8 + Math.floor(r() * (ON - 16)); if (ok(tx, ty, mind, msite)) { var o = { x: tx, y: ty, lv: ovLv(tx, ty) }; if (nm) o.name = nm[m % nm.length]; arr.push(o); all.push([tx, ty]); m++; } } }
+  // top each Realm up to 68 camps, 17 caves and 104 caches (distances here are in the coarse base grid: 1 = 16 map units)
+  put(P.camps, Math.max(0, 68 - P.camps.length), 3.2, 4.5); put(P.caves, Math.max(0, 17 - P.caves.length), 5, 5, CAVEN2.slice(Math.max(0, P.caves.length - 9))); put(P.chests, Math.max(0, 104 - P.chests.length), 2.2, 2.5);
+}
 function ovPoi() {
   var k = ovWalkK(); if (OVK !== k) { OVK = k; OT = 16 / k; ON = 175 * k; }
   var P = ovBase(ovPoi0);
   try { (P.caves || []).forEach(function (q) { if (q && q.boss === "The Name-Eater") q.boss = "The Whisper-Broker"; }); } catch (e) {}
   if (!P.lz) { P.lz = 1; ovRescale(P, 1); try { ovBase(function () { ovPlaceLairs(P); }); } catch (e) { if (window.console) console.error(e); } }
   if (!P.more && OVK >= 16) { P.more = 1; ovRescale(P, 1); try { ovBase(function () { ovMore(P); }); } catch (e) { if (window.console) console.error(e); } }
+  if (!P.more3 && OVK >= 16) { P.more3 = P.more2 = P.more = 1; ovRescale(P, 1); try { ovBase(function () { ovMore2(P); }); } catch (e) { if (window.console) console.error(e); } }
   ovRescale(P, OVK);
   return P;
 }
