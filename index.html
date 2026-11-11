@@ -5376,7 +5376,7 @@ var BIMG_SRC={"farm": "data:image/webp;base64,UklGRqyAAABXRUJQVlA4WAoAAAAQAAAAZw
   // the overland is drawn at OVK tiles per old tile: 8 with 3D (a continent is ~1.9 km of walkable ground), 1 for the 2D fallback.
   // Everything placed on it (caves, camps, chests, wayfarers) is stored in the same tile space and rescaled by ovPoi() when K changes.
   var OVK = 1, OT = 16, ON = 175, OVR = { on: false, ret: null };
-  function ovWalkK() { return window.__vhK3 === false ? 1 : 8; }
+  function ovWalkK() { return window.__vhK3 === false ? 1 : 16; }
   function ovBase(fn) { var a = OT, b = ON; OT = 16; ON = 175; try { return fn(); } finally { OT = a; ON = b; } }
   function ovRescale(P, k) {
     var f = k / (P.k || 1); if (f === 1) { P.k = k; return; }
@@ -5598,21 +5598,34 @@ var BIMG_SRC={"farm": "data:image/webp;base64,UklGRqyAAABXRUJQVlA4WAoAAAAQAAAAZw
     });
     rtEnemies(sp, c, P);
     sp.pre = function (g, keep, r) {
+      var sig = curCell() + "|" + N + "|" + SP.map(function (q) { return q.id + (q.stamp ? "s" : "") + (q.wall && q.wall.shut ? "x" : ""); }).join(",") + "|" + (sp.qsites || []).map(function (z) { return z.q.id; }).join(",") + "|" + (sp.portals || []).length;
+      if (OVW.tc && OVW.tc.sig === sig) {
+        var TC = OVW.tc; for (var cy3 = 0; cy3 < N; cy3++) g[cy3].set(TC.g[cy3]); sp.RN = TC.RN; sp.reg = TC.reg; sp.reach = TC.reach; sp.signs = TC.signs.slice();
+        (sp.walls || []).forEach(function (w) { w.gates = (TC.gates[w.sid] || []).slice(); }); return;
+      }
+      sp._pre(g, keep, r);
+      var gates = {}; (sp.walls || []).forEach(function (w) { gates[w.sid] = w.gates.slice(); });
+      if (N * N > 250000) OVW.tc = { sig: sig, g: g.map(function (row) { return row.slice(); }), RN: sp.RN, reg: sp.reg, reach: sp.reach, signs: (sp.signs || []).slice(), gates: gates };
+    };
+    sp._pre = function (g, keep, r) {
       var x, y, k, RN = Object.keys(RCOL), reg = new Uint8Array(N * N), n2 = SP.length;
       sp.RN = RN; sp.reg = reg;
+      var _o = cellOrg(curCell()), OWN = SP.map(function (q) { return RN.indexOf(q.s.owner) + 1; }), ST = OVK > 4 ? 2 : 1, eR = new Float32Array(N + 2), mR = new Float32Array(N + 2), e, m;
       for (y = 0; y < N; y++) for (x = 0; x < N; x++) {
-        var wx = x * OT + 8, wy = y * OT + 8, _o = cellOrg(curCell()), e = elevAtW(wx + _o[0], wy + _o[1]), m = moistAt0(wx + _o[0], wy + _o[1]), bd = 1e9, bi = 0;
+        var wx = x * OT + 8, wy = y * OT + 8, bd = 1e9, bi = 0;
+        if (y % ST === 0 && x % ST === 0) { eR[x] = elevAtW(wx + _o[0], wy + _o[1]); mR[x] = moistAt0(wx + _o[0], wy + _o[1]); }
+        e = eR[x - x % ST]; m = mR[x - x % ST];
         for (k = 0; k < n2; k++) { var dx = SP[k].cx - x, dy = SP[k].cy - y, d2 = dx * dx + dy * dy; if (d2 < bd) { bd = d2; bi = k; } }
         var ds = Math.sqrt(bd), q = r(), t = 0;
         if (e < 0.34 && ds > 5.9 * KM) t = 3;
         else if (ds > 5 * KM) { if (e > 0.66) t = q < 0.92 ? 7 : 0; else if (e > 0.6) t = q < 0.22 ? 7 : (q < 0.3 ? 2 : 0); else if (m > 0.58 && e < 0.6) t = q < 0.5 ? 2 : (q < 0.58 ? 8 : 0); else t = q < 0.045 ? 2 : (q < 0.1 ? 8 : (q < 0.112 ? 7 : 0)); }
         else t = q < 0.06 ? 8 : 0;
-        g[y][x] = t; reg[y * N + x] = n2 ? RN.indexOf(SP[bi].s.owner) + 1 : 0;
+        g[y][x] = t; reg[y * N + x] = n2 ? OWN[bi] : 0;
       }
       function put(x2, y2, t2) { if (x2 > 0 && y2 > 0 && x2 < N - 1 && y2 < N - 1) g[y2][x2] = t2; }
       function seg(x0, y0, x1, y1) {
         var dx = Math.abs(x1 - x0), dy = Math.abs(y1 - y0), sx = x0 < x1 ? 1 : -1, sy = y0 < y1 ? 1 : -1, er = dx - dy, guard = 0;
-        while (guard++ < 800) { put(x0, y0, 1); put(x0 + 1, y0, 1); put(x0, y0 + 1, 1); put(x0 + 1, y0 + 1, 1); if (x0 === x1 && y0 === y1) break; var e2 = 2 * er; if (e2 > -dy) { er -= dy; x0 += sx; } if (e2 < dx) { er += dx; y0 += sy; } }
+        while (guard++ < 6000) { put(x0, y0, 1); put(x0 + 1, y0, 1); put(x0, y0 + 1, 1); put(x0 + 1, y0 + 1, 1); if (x0 === x1 && y0 === y1) break; var e2 = 2 * er; if (e2 > -dy) { er -= dy; x0 += sx; } if (e2 < dx) { er += dx; y0 += sy; } }
       }
       function road(ax, ay, bx, by) {
         var L = Math.hypot(bx - ax, by - ay) || 1, mx = (ax + bx) / 2, my = (ay + by) / 2, off = (hsh2(ax * 7 + bx, ay * 5 + by) - 0.5) * 0.3 * L;
@@ -5682,6 +5695,13 @@ var BIMG_SRC={"farm": "data:image/webp;base64,UklGRqyAAABXRUJQVlA4WAoAAAAQAAAAZw
         while (h2 < t2) { var p2 = qu[h2++], px2 = p2 % N, py2 = (p2 - px2) / N; for (var d4 = 0; d4 < 4; d4++) { var nx = px2 + (d4 === 0 ? 1 : d4 === 1 ? -1 : 0), ny = py2 + (d4 === 2 ? 1 : d4 === 3 ? -1 : 0); if (nx < 1 || ny < 1 || nx >= N - 1 || ny >= N - 1) continue; var ni = ny * N + nx; if (!vis[ni] && ovPass(g[ny][nx])) { vis[ni] = 1; qu[t2++] = ni; } } }
         return vis;
       }
+      // the open world is open: woods are trees you walk between (forest floor, 10), highlands are rocky ground you climb
+      // over (11) with the odd boulder in the way. Only water, walls and buildings stop you.
+      if (OVK > 1) for (var yy2 = 1; yy2 < N - 1; yy2++) { var row2 = g[yy2], rowU = g[yy2 - 1]; for (var xx2 = 1; xx2 < N - 1; xx2++) {
+        var t3 = row2[xx2]; if (t3 !== 2 && t3 !== 7) continue; var hsh = ((xx2 * 73856093) ^ (yy2 * 19349663)) >>> 0;
+        if (t3 === 2) row2[xx2] = (hsh % 100) < 13 && row2[xx2 - 1] !== 2 && rowU[xx2] !== 2 ? 2 : 10;
+        else row2[xx2] = (hsh % 100) < 9 ? 7 : 11;
+      } }
       var OPN = SP.filter(function (q) { return !(q.wall && q.wall.shut); }); if (!OPN.length) OPN = SP;
       var pts = []; OPN.forEach(function (q) { pts.push([q.cx, q.cy + 2]); }); P.caves.forEach(function (cv) { pts.push([cv.x, cv.y + 2]); }); (sp.qsites || []).forEach(function (z) { pts.push([z.x, z.y + 2]); }); (sp.portals || []).forEach(function (z) { pts.push([z.x, z.y + 2]); });
       P.chests.forEach(function (cm) { pts.push([cm.x, cm.y]); }); P.camps.forEach(function (cm) { pts.push([cm.x, cm.y]); }); P.wf.forEach(function (cm) { pts.push([cm.x, cm.y]); }); P.qc.forEach(function (cm) { if (cm) pts.push([cm.x, cm.y]); }); P.rt.forEach(function (z) { pts.push([z.g.x, z.g.y]); pts.push([z.a.x, z.a.y]); });
@@ -5696,13 +5716,6 @@ var BIMG_SRC={"farm": "data:image/webp;base64,UklGRqyAAABXRUJQVlA4WAoAAAAQAAAAZw
         if (!fixed) break;
       }
       sp.reach = vis || new Uint8Array(N * N).fill(1);
-      // the open world is open: woods are trees you walk between (forest floor, 10), highlands are rocky ground you climb
-      // over (11) with the odd boulder in the way. Only water, walls and buildings stop you.
-      if (OVK > 1) for (var yy2 = 1; yy2 < N - 1; yy2++) { var row2 = g[yy2]; for (var xx2 = 1; xx2 < N - 1; xx2++) {
-        var t3 = row2[xx2]; if (t3 !== 2 && t3 !== 7) continue; var hsh = ((xx2 * 73856093) ^ (yy2 * 19349663)) >>> 0;
-        if (t3 === 2) row2[xx2] = (hsh % 100) < 13 && row2[xx2 - 1] !== 2 && g[yy2 - 1][xx2] !== 2 ? 2 : 10;
-        else row2[xx2] = (hsh % 100) < 9 ? 7 : 11;
-      } }
       if (OVK > 1) sp.reach = new Uint8Array(N * N).fill(1);
     };
     sp.paint = function (m, g) {
@@ -5771,14 +5784,21 @@ var BIMG_SRC={"farm": "data:image/webp;base64,UklGRqyAAABXRUJQVlA4WAoAAAAQAAAAZw
   }
   function overBack() { checkClear(); startOverland({ back: 1 }); }
   // out of a town's edge (when it was entered from the map): into the open world, beside the town, on the side you left by
+  // the first walk out into a Realm builds ~3 km of land: say so, and let the screen paint before the work starts
+  function ovLoading(fn) {
+    var d = document.getElementById("ovload");
+    if (!d) { d = document.createElement("div"); d.id = "ovload"; d.style.cssText = "position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;background:rgba(8,7,6,.82);color:#f0dca8;font:600 1rem 'Cinzel',Georgia,serif;letter-spacing:.12em;text-transform:uppercase;pointer-events:none"; document.body.appendChild(d); }
+    var f = FAC[cellFac(curCell())]; d.textContent = "The land opens" + (f ? ": " + f.name : "") + "…"; d.hidden = false;
+    requestAnimationFrame(function () { requestAnimationFrame(function () { try { fn(); } finally { d.hidden = true; } }); });
+  }
   function ovOutToLand(a, e) {
     if (window.__vhK3 === false) return false; var sid = siteOfArea(a.id), s = sid && site(sid); if (!s || cellAt(s.x, s.y) !== curCell()) return false;
     var dx = (e.x + e.w / 2) / a.W - 0.5, dy = (e.y + e.h / 2) / a.H - 0.5, L = Math.hypot(dx, dy) || 1;
-    checkClear(); leaveArea(); S.px = s.x; S.py = s.y; startOverland({ site: sid, edge: { x: dx / L, y: dy / L } }); return !!AR;
+    checkClear(); leaveArea(); S.px = s.x; S.py = s.y; ovLoading(function () { startOverland({ site: sid, edge: { x: dx / L, y: dy / L } }); }); return true;
   }
   window.__ovWalkSite = function (sid) {
     var s = site(sid); if (!s || window.__vhK3 === false || cellAt(s.x, s.y) !== curCell() || AR || B) return false;
-    if (sheet) closeSheet(true); S.px = s.x; S.py = s.y; startOverland({ site: sid }); return !!AR;
+    if (sheet) closeSheet(true); S.px = s.x; S.py = s.y; ovLoading(function () { startOverland({ site: sid }); }); return true;
   };
   function ovLeaving(e) {
     OVR.ret = { x: e.rx, y: e.ry }; YRET = null;
@@ -5837,10 +5857,10 @@ var BIMG_SRC={"farm": "data:image/webp;base64,UklGRqyAAABXRUJQVlA4WAoAAAAQAAAAZw
   }
   var wkBtn = document.createElement("button"); wkBtn.id = "walkbtn"; wkBtn.textContent = "Walk the land"; wkBtn.setAttribute("aria-label", "Walk the overland");
   wkBtn.style.cssText = "position:fixed;right:calc(10px + env(safe-area-inset-right,0px));top:calc(132px + env(safe-area-inset-top,0px));z-index:60;min-height:40px;padding:.5rem .9rem;border-radius:20px;background:linear-gradient(#6a4718,#2b1c0b);border:1px solid #e3c27a;color:#f8e6b4;font:700 .72rem 'Cinzel',Georgia,serif;letter-spacing:.1em;text-transform:uppercase;box-shadow:0 0 14px rgba(224,160,70,.35);display:none";
-  wkBtn.addEventListener("click", function (e) { e.stopPropagation(); if (AR || B || !S) return; startOverland(); });
+  wkBtn.addEventListener("click", function (e) { e.stopPropagation(); if (AR || B || !S) return; window.__walk(); });
   document.body.appendChild(wkBtn);
   setInterval(function () { var ti = document.getElementById("title"), lo = document.getElementById("loading"); wkBtn.style.display = (AR || B || typeof S === "undefined" || !S || sheet || (ti && !ti.hidden) || (lo && !lo.hidden)) ? "none" : "block"; }, 250);
-  window.__walk = function () { startOverland(); };
+  window.__walk = function () { ovLoading(function () { startOverland(); }); };
   // ================= The living overland (John, 11 Nov): walk the whole map as one open world =================
   // While you walk, the world map runs: time passes about as fast as it would on the map for the same distance, armies,
   // bandits, hunters and caravans move, and touching a hostile party starts the map battle. When it ends you are back on
@@ -5887,7 +5907,7 @@ var BIMG_SRC={"farm": "data:image/webp;base64,UklGRqyAAABXRUJQVlA4WAoAAAAQAAAAZw
     if (!S.caravans) S.caravans = [];
     var by = {}; S.caravans.forEach(function (c) { by[c.cell] = (by[c.cell] || 0) + 1; });
     for (var cell = 0; cell < 8; cell++) {
-      var f = cellFac(cell); if (!f || !FAC[f] || (by[cell] || 0) >= 3 || Math.random() > 0.45) continue;
+      var f = cellFac(cell); if (!f || !FAC[f] || (by[cell] || 0) >= 5 || Math.random() > 0.6) continue;
       var here = S.sites.filter(function (s) { return cellAt(s.x, s.y) === cell && s.owner === f; }); if (here.length < 2) continue;
       var a = here[Math.floor(Math.random() * here.length)], b = here[Math.floor(Math.random() * here.length)], tries = 0;
       while ((b === a || Math.hypot(a.x - b.x, a.y - b.y) < 260) && tries++ < 12) b = here[Math.floor(Math.random() * here.length)];
@@ -14467,8 +14487,8 @@ var GAPN = {
   metal: ["Clinker Row", "Smeltway", "Ashpipe", "Boltmoor", "Gauge Hill", "Valve End", "Sparkholm", "Plate Hollow"]
 };
 function ovFillGaps(NS) {
-  if (!NS || !NS.sites || NS.contV !== 1 || NS.gapV) return 0;
-  NS.gapV = 1; var made = 0, used = {}; NS.sites.forEach(function (s) { used[s.name] = 1; });
+  if (!NS || !NS.sites || NS.contV !== 1 || NS.gapV >= 2) return 0;
+  var GAPD = 300; NS.gapV = 2; var made = 0, used = {}; NS.sites.forEach(function (s) { used[s.name] = 1; });
   var marks = []; Object.keys(NS.gates || {}).forEach(function (k) { marks.push(NS.gates[k]); }); Object.keys(NS.tunnels || {}).forEach(function (k) { marks.push(NS.tunnels[k]); });
   for (var c = 0; c < 8; c++) {
     var f = cellFac(c); if (!f || !FAC[f] || !GAPN[f]) continue; if (f === "metal" && !NS.sites.some(function (s) { return s.owner === "metal"; })) continue;
@@ -14482,8 +14502,8 @@ function ovFillGaps(NS) {
         for (i = 0; i < marks.length; i++) { var d2 = Math.hypot(marks[i].x - x, marks[i].y - y) + 120; if (d2 < md) md = d2; }
         if (md > bd) { bd = md; best = [x, y]; }
       }
-      if (!best || bd < 380) break;
-      var towns = here.filter(function (s) { return s.type !== "village" && s.owner === f; }), nm = names.shift(), id = "gf_" + f + "_" + k, q;
+      if (!best || bd < GAPD) break;
+      var towns = here.filter(function (s) { return s.type !== "village" && s.owner === f; }), nm = names.shift(), id = "gf_" + f + "_" + GAPN[f].indexOf(nm), q;
       used[nm] = 1;
       if (bd > 560 && towns.length < 5) { q = mkT(id, nm, best[0], best[1], 50, 3.0, 4.0, f, "town"); }
       else {
@@ -14498,7 +14518,7 @@ function ovFillGaps(NS) {
   try { OVLS.k = ""; NV.g = null; TERR = null; TERRDIRTY = true; } catch (x) {}
   return made;
 }
-try { if (S && S.contV === 1 && !S.gapV && ovFillGaps(S)) save(); } catch (e) { if (window.console) console.log("gaps", e); }
+try { if (S && S.contV === 1 && (S.gapV || 0) < 2 && ovFillGaps(S)) save(); } catch (e) { if (window.console) console.log("gaps", e); }
 // painted icons for every kind of loot and kit, and the mill
 try { Object.assign(UIPNG, { blades: "ui_blades", mail: "ui_mail", bows: "ui_bows", kit: "ui_kit", steel: "ui_steel", plate: "ui_plate", longbows: "ui_longbows", shards: "ui_shards", spears: "ui_spears", shields: "ui_shields", axes: "ui_axes", javelins: "ui_javelins", pikes: "ui_pikes", horses: "ui_horses", lances: "ui_lances", destriers: "ui_destriers", mill: "ui_mill" }); } catch (e) {}
 
@@ -14703,11 +14723,25 @@ var LAIRS = {
   metal: [{ n: "The Slag Cathedral", b: "Overseer Prime" }, { n: "Iron Warren", b: "The Engine That Wept" }]
 };
 var oldPoi = null;
+// the 2x open world: twenty more bandit camps and thirty more caches across each Realm, away from the towns
+function ovMore(P) {
+  var r = arng(nhash("ovmore") + curCell() * 131), co = cellOrg(curCell()), all = [];
+  Object.keys(P).forEach(function (k) { if (Array.isArray(P[k])) P[k].forEach(function (o) { if (o && typeof o.x === "number") all.push([o.x, o.y]); }); });
+  var st = ovLocalSites().map(function (s) { return [(s.x - co[0]) / OT, (s.y - co[1]) / OT]; });
+  function ok(tx, ty, mind, msite) {
+    if (tx < 8 || ty < 8 || tx > ON - 9 || ty > ON - 9) return false; var e = elevAtW(tx * OT + 8 + co[0], ty * OT + 8 + co[1]); if (e < 0.375 || e > 0.64) return false;
+    for (var i = 0; i < st.length; i++) if (Math.hypot(st[i][0] - tx, st[i][1] - ty) < msite) return false;
+    for (i = 0; i < all.length; i++) if (Math.hypot(all[i][0] - tx, all[i][1] - ty) < mind) return false; return true;
+  }
+  function put(arr, n, mind, msite) { var t = 0, m = 0; while (m < n && t++ < 6000) { var tx = 8 + Math.floor(r() * (ON - 16)), ty = 8 + Math.floor(r() * (ON - 16)); if (ok(tx, ty, mind, msite)) { var o = { x: tx, y: ty, lv: ovLv(tx, ty) }; arr.push(o); all.push([tx, ty]); m++; } } }
+  put(P.camps, 20, 10, 12); put(P.chests, 30, 6, 6);
+}
 function ovPoi() {
   var k = ovWalkK(); if (OVK !== k) { OVK = k; OT = 16 / k; ON = 175 * k; }
   var P = ovBase(ovPoi0);
   try { (P.caves || []).forEach(function (q) { if (q && q.boss === "The Name-Eater") q.boss = "The Whisper-Broker"; }); } catch (e) {}
   if (!P.lz) { P.lz = 1; ovRescale(P, 1); try { ovBase(function () { ovPlaceLairs(P); }); } catch (e) { if (window.console) console.error(e); } }
+  if (!P.more && OVK >= 16) { P.more = 1; ovRescale(P, 1); try { ovBase(function () { ovMore(P); }); } catch (e) { if (window.console) console.error(e); } }
   ovRescale(P, OVK);
   return P;
 }
