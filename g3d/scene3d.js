@@ -428,7 +428,7 @@ function makeKit(stage) {
   const mat = (hex, o) => {
     const key = (typeof hex === "number" ? hex : new THREE.Color(hex).getHex()) + "|" + JSON.stringify(o || {});
     if (mats.has(key)) return mats.get(key);
-    const m = new THREE.MeshStandardMaterial(Object.assign({ color: hex, roughness: 0.86, metalness: 0.04, flatShading: true }, o || {}));
+    const m = new THREE.MeshStandardMaterial(Object.assign({ color: hex, roughness: 0.86, metalness: 0.04, flatShading: false }, o || {}));
     mats.set(key, m); return m;
   };
   const glow = (hex) => mat(hex, { emissive: hex, emissiveIntensity: 1.6, roughness: 1, metalness: 0 });

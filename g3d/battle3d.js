@@ -173,7 +173,7 @@ function buildBattle(st, api, info, done) {
   // Medium/High: the Quaternius rigged horse (Idle, Walk, Gallop, Death), four coats from one vertex-coloured mesh
   const HP = kit.mm ? mpack("horse") : null, horseProto = HP ? HP.gltf.scene : null;
   let horseK = 1, horseLift = 0;
-  const horseCoats = horseProto ? [1, 0.62, 1.35, 0.38].map((k) => { const m = st.track(new THREE.MeshStandardMaterial({ vertexColors: true, flatShading: true, roughness: 0.8, metalness: 0, color: new THREE.Color(k, k * 0.97, k * 0.94) })); m.userData.vhEnv = 1; return m; }) : null;
+  const horseCoats = horseProto ? [1, 0.62, 1.35, 0.38].map((k) => { const m = st.track(new THREE.MeshStandardMaterial({ vertexColors: true, flatShading: false, roughness: 0.8, metalness: 0, color: new THREE.Color(k, k * 0.97, k * 0.94) })); m.userData.vhEnv = 1; return m; }) : null;
   if (horseProto) { horseProto.updateMatrixWorld(true); const bb = new THREE.Box3().setFromObject(horseProto); const hgt = bb.max.y - bb.min.y; if (hgt > 0.01) { horseK = 2.15 / hgt; horseLift = -bb.min.y * horseK; } }
   function modelHorse(col) {
     const g = new THREE.Group(), o = skClone(horseProto), mat = horseCoats[col % horseCoats.length];

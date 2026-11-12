@@ -18,6 +18,8 @@ import { MeshoptSimplifier, MeshoptEncoder } from 'meshoptimizer';
 import { readFileSync } from 'fs';
 await MeshoptSimplifier.ready; await MeshoptEncoder.ready;
 const [SRC, OUT] = process.argv.slice(2);
+// 13 Nov 2026: twice the triangles of the first build (smooth shading shows the extra detail); DETAIL=1 for the old budget
+const DETAIL = +(process.env.DETAIL || 2);
 const io = new NodeIO().registerExtensions(ALL_EXTENSIONS).registerDependencies({ 'meshopt.encoder': MeshoptEncoder });
 
 // [key, pack/file, target triangles, kind]   kind: 'plant' (1 m tall) or 'prop' (footprint 1 m)
@@ -129,7 +131,7 @@ async function buildStatic(name, list) {
   let report = [];
   for (const [key, file, target, kind] of list) {
     const src = await io.read(SRC + '/' + file + '.glb');
-    let g = compact(simplify(weldTris(bake(src)), target));
+    let g = compact(simplify(weldTris(bake(src)), Math.round(target * DETAIL)));
     const dims = normalise(g, kind);
     const prim = doc.createPrimitive().setMaterial(mat)
       .setAttribute('POSITION', doc.createAccessor().setType('VEC3').setArray(g.pos).setBuffer(buf))

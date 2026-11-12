@@ -7,7 +7,8 @@
 import { K3 } from "./scene3d.js";
 import { Merge, paintedSky, grassField, groundMat, horizonBand, loadArt, useSkyEnv } from "./art.js";
 import { BARKS } from "./barks.js";
-import { setBiome, modelProp, pickW, biomeOf, recoloured, pack, FIRE } from "./models.js";
+import { setBiome, modelProp, pickW, biomeOf, recoloured, pack, FIRE, loadPack } from "./models.js";
+import { clone as skClone } from "./lib/SkeletonUtils.js";
 const { THREE, REALMS, townTone, VOIDC, GROUND_TEX, GRASS_TINT, CLOUD, COLD, tree, rng, vnoise, clamp, lerp, angLerp, shade, mix,
   makeStage, makeKit, whenChars, heroLook, kaelLook, figure, animFigure, Batch, lights, particles, pool, torch, followCam, moveIntent, labelSprite, radialTex, esc } = K3;
 
@@ -155,7 +156,7 @@ function buildArea(st, api, A) {
   // as you walk and dropped again far behind; every other area is built once, as before.
   const big = over && W * H > 250000;
   const GT = cave ? "dirt" : (GROUND_TEX[info.realm] === "plaster" ? "plaster" : "grass");
-  const gMat = groundMat(art, GT, cave ? "stone" : info.type && info.type !== "village" ? "cobble" : "dirt", !cave && info.realm !== "frost" && info.realm !== "light");
+  const gMat = groundMat(art, GT, cave ? "stone" : over ? "dirt" : info.type && info.type !== "village" ? "cobble" : "dirt", !cave && info.realm !== "frost" && info.realm !== "light");
   function groundGeo(x0, y0, nx, ny) {
     const gg = new THREE.PlaneGeometry(nx * T, ny * T, nx, ny); gg.rotateX(-Math.PI / 2); gg.translate(x0 * T + nx * T / 2, 0, y0 * T + ny * T / 2);
     const pos = gg.attributes.position, uv = gg.attributes.uv, n = pos.count, col = new Float32Array(n * 3), bl = new Float32Array(n), c = new THREE.Color(), tmp = new THREE.Color();
@@ -485,6 +486,23 @@ function buildArea(st, api, A) {
     cand.sort((p, q) => p[2] - q[2]);
     const picked = []; for (const c of cand) { if (picked.length >= 18) break; if (picked.every((p) => Math.hypot(p[0] - c[0], p[1] - c[1]) > 7)) picked.push(c); }
     picked.forEach((c, i) => fires.push(torch(kit, scene, (c[0] + 0.5) * T, 1.9, (c[1] + 0.5) * T, 0xffa452, i < 5 && st.gfx !== "low")));
+    // dungeon dressing (Medium/High): skulls, pots, cobwebs in the corners, old coins, columns set into the walls, wall torches
+    if (kit.mm && kit.g["m:skull"]) {
+      const DB = new Batch(kit), wallDir = (x, y) => { for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) if (at(x + dx, y + dy) === 2) return [dx, dy]; return [0, 1]; };
+      const isTorch = (c) => picked.some((p) => p[0] === c[0] && p[1] === c[1]);
+      for (const c of cand) {
+        const [dx, dy] = wallDir(c[0], c[1]), wx = (c[0] + 0.5 + dx * 0.3) * T, wz = (c[1] + 0.5 + dy * 0.3) * T, face = Math.atan2(-dx, -dy), r = rand();
+        if (isTorch(c)) { modelProp(DB, "dtorch", kit.mm.solid, (c[0] + 0.5 + dx * 0.42) * T, 1.3, (c[1] + 0.5 + dy * 0.42) * T, 0.45, face); continue; }
+        if (r < 0.05) modelProp(DB, "skull", kit.mm.solid, wx, 0, wz, 0.32, rand() * 6);
+        else if (r < 0.09) modelProp(DB, rand() < 0.5 ? "vase" : "barrel2", kit.mm.solid, wx, 0, wz, 0.55 + rand() * 0.2, rand() * 6);
+        else if (r < 0.13) modelProp(DB, rand() < 0.5 ? "cobweb" : "cobweb2", kit.mm.solid, (c[0] + 0.5 + dx * 0.45) * T, 1.0 + rand() * 0.8, (c[1] + 0.5 + dy * 0.45) * T, 1.0, face);
+        else if (r < 0.145) modelProp(DB, "coins", kit.mm.solid, wx, 0, wz, 0.5, rand() * 6);
+        else if (r < 0.16) modelProp(DB, "coinbag", kit.mm.solid, wx, 0, wz, 0.4, rand() * 6);
+      }
+      // columns stand in the wall line (half in the rock), so you never walk through one
+      for (const c of cand) { if (rand() > 0.035 || isTorch(c)) continue; const [dx, dy] = wallDir(c[0], c[1]); modelProp(DB, rand() < 0.5 ? "column" : "column2", kit.mm.solid, (c[0] + 0.5 + dx * 0.55) * T, 0, (c[1] + 0.5 + dy * 0.55) * T, 0.9, Math.atan2(-dx, -dy), shade(cRock.getHex(), 1.3)); }
+      DB.build(scene);
+    }
   }
   function gatePosts(o, nm) {
     const { e, x, z } = o, horiz = e.w >= e.h, half = (horiz ? e.w : e.h) * T / 2 + 0.4;
@@ -577,13 +595,15 @@ function buildArea(st, api, A) {
   const tentCol = [0xb8a682, 0x8a6a4a, 0x9a8a6a, 0x7a5a40], stakeM = kit.mat(0x4a3420), dirtM = kit.mat(0x4a3a2c), redM = kit.mat(0x8a2a22, { side: THREE.DoubleSide });
   function campBuild(c) {
     const grp = new THREE.Group(), { x, z } = c, bigC = !!c.cm.big, rr = rng("camp" + c.cm.x + "," + c.cm.y);
+    const MT = !!(kit.mm && kit.g["m:tent"]), MP = (k, px, pz, sc, ry) => { if (kit.mm && kit.g["m:" + k]) mesh(kit.g["m:" + k], kit.mm.solid, px, 0, pz, sc, sc, sc, ry || 0); };
     const mesh = (geo, mat, px, py, pz, sx, sy, sz, ry) => { const m = new THREE.Mesh(geo, mat); m.position.set(px, py, pz); m.scale.set(sx, sy, sz); m.rotation.y = ry || 0; m.castShadow = true; grp.add(m); return m; };
     // tents around the fire
     const nt = bigC ? 5 : 2 + Math.floor(rr() * 2);
     for (let i = 0; i < nt; i++) {
       const a = i / nt * Math.PI * 2 + rr() * 0.5, R = bigC ? 4.6 + rr() * 1.4 : 2.6 + rr() * 0.6, tx = x + Math.cos(a) * R, tz = z + Math.sin(a) * R, s2 = bigC ? 1.25 : 1.0;
-      mesh(kit.g.cone, kit.mat(tentCol[Math.floor(rr() * tentCol.length)]), tx, 1.05 * s2, tz, 2.2 * s2, 2.1 * s2, 2.2 * s2, rr() * 6);
-      mesh(kit.g.box, kit.mat(0x1a120c), tx + Math.cos(a) * -0.9 * s2, 0.45, tz + Math.sin(a) * -0.9 * s2, 0.5, 0.9, 0.08, -a + Math.PI / 2);
+      if (MT) { const m = mesh(kit.g["m:tent"], kit.mm.solid, tx, 0, tz, 2.6 * s2, 2.6 * s2, 2.6 * s2, -a - Math.PI / 2); m.receiveShadow = true; }
+      else { mesh(kit.g.cone, kit.mat(tentCol[Math.floor(rr() * tentCol.length)]), tx, 1.05 * s2, tz, 2.2 * s2, 2.1 * s2, 2.2 * s2, rr() * 6);
+        mesh(kit.g.box, kit.mat(0x1a120c), tx + Math.cos(a) * -0.9 * s2, 0.45, tz + Math.sin(a) * -0.9 * s2, 0.5, 0.9, 0.08, -a + Math.PI / 2); }
     }
     // the fire: stones, logs, a flame, a warm ring of light on the ground
     for (let i = 0; i < 7; i++) { const a = i / 7 * Math.PI * 2; mesh(kit.g.box, kit.mat(0x6a6460), x + Math.cos(a) * 0.75, 0.12, z + Math.sin(a) * 0.75, 0.32, 0.24, 0.28, a); }
@@ -591,6 +611,8 @@ function buildArea(st, api, A) {
     if (kit.g.flame) { c.fl = new THREE.Mesh(kit.g.flame, kit.glow(0xff8a3a)); c.fl.position.set(x, 0.35, z); c.fl.scale.setScalar(3); grp.add(c.fl); }
     const glow = new THREE.Mesh(kit.g.pool || (kit.g.pool = new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2)), new THREE.MeshBasicMaterial({ map: kit.glowTex, color: 0xff9a40, transparent: true, opacity: 0.45, depthWrite: false, blending: THREE.AdditiveBlending }));
     glow.scale.setScalar(bigC ? 9 : 6); glow.position.set(x, 0.06, z); glow.renderOrder = 2; grp.add(glow); c.glow = glow;
+    MP("campfire", x, z, 1.5, rr() * 6); MP("woodlog", x + 1.6, z + 0.9, 1.3, 0.4); MP("woodlog", x - 1.5, z + 1.1, 1.3, 2.6);
+    if (bigC) { MP("beartrap", x + 6.4, z + 0.5, 0.8, rr() * 6); MP("beartrap", x - 6.2, z - 1.2, 0.8, rr() * 6); MP("chestgold", x + 1.8, z - 3.2, 1.0, rr() * 6); MP("coins", x + 2.6, z - 3.0, 0.7, 0); MP("wtorch", x + 7.6, z + 1.2, 0.5, 0); MP("wtorch", x - 7.6, z - 1.2, 0.5, 0); }
     // crates and sacks of what they've taken
     for (let i = 0; i < (bigC ? 6 : 2); i++) { const a = rr() * 6.28, R = 1.6 + rr() * (bigC ? 2.6 : 0.8); mesh(kit.g.box, kit.mat(rr() < 0.5 ? 0x7a5a34 : 0x8a7a5a), x + Math.cos(a) * R, 0.3, z + Math.sin(a) * R, 0.6, 0.6, 0.6, rr() * 6); }
     if (bigC) {
@@ -624,6 +646,51 @@ function buildArea(st, api, A) {
       if (c.smoke) c.smoke.forEach((s, i) => { s.position.x = c.x + Math.sin(t * 0.3 + c.ph + i) * (0.6 + i * 0.5); s.position.y = 3 + i * 3.4 + Math.sin(t * 0.5 + i) * 0.4; });
       if (c.fl) { const k = 0.85 + 0.15 * Math.sin(t * 11 + c.ph) * Math.sin(t * 7.3 + c.ph * 2); c.fl.scale.set(3, 3.4 * k, 3); c.glow.material.opacity = 0.38 + 0.1 * k; }
       if (c.flag) c.flag.rotation.y = Math.sin(t * 1.7 + c.ph) * 0.25;
+    }
+  }
+  // ---------- wildlife (big overland, Medium/High): herds that graze, wander and bolt when you come close ----------
+  const WILD = { ember: ["deer", "fox"], stone: ["stag", "wolf"], storm: ["deer", "cow"], light: ["deer", "cow"], frost: ["stag", "wolf", "fox"], spirit: ["deer", "stag"], shadow: ["wolf", "fox"], metal: ["wolf", "fox"] };
+  const WH = { deer: 1.45, stag: 1.85, wolf: 0.95, fox: 0.55, cow: 1.5 }, WN = { deer: [3, 5], stag: [1, 3], wolf: [3, 4], fox: [1, 2], cow: [3, 6] }, WFLEE = { deer: 18, stag: 16, wolf: 12, fox: 14, cow: 7 };
+  const herds = [], wildP = {}; let wildOn = false, wildT = 0; window.__vhWild = herds;
+  if (big && kit.mm) { const ks = WILD[info.realm] || ["deer", "cow"]; Promise.all(ks.map((k) => loadPack(k).then((p) => { if (p && p.gltf) wildP[k] = p; }, () => {}))).then(() => { wildOn = Object.keys(wildP).length > 0; }); }
+  const wildMat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.85, metalness: 0 }); st.track(wildMat); wildMat.userData.vhEnv = 1;
+  const openTile = (x, z) => { const tx = Math.floor(x / T), ty = Math.floor(z / T); if (tx < 1 || ty < 1 || tx >= W - 1 || ty >= H - 1) return false; const q = g[ty][tx]; return q === 0 || q === 8 || q === 10 || q === 11; };
+  function wildOne(k) {
+    const P = wildP[k], o = skClone(P.gltf.scene); o.traverse((m) => { if (m.isMesh) { m.material = wildMat; m.castShadow = true; m.frustumCulled = false; } });
+    o.updateMatrixWorld(true); const bb = new THREE.Box3().setFromObject(o), h = bb.max.y - bb.min.y, sc = h > 0.01 ? WH[k] * (0.9 + Math.random() * 0.2) / h : 1;
+    const g2 = new THREE.Group(); o.scale.multiplyScalar(sc); o.position.y = -bb.min.y * sc; g2.add(o);
+    const mixer = new THREE.AnimationMixer(o), acts = {}; P.gltf.animations.forEach((c) => { acts[c.name] = mixer.clipAction(c); });
+    const a0 = acts.Eating || acts.Idle; if (a0) { a0.play(); a0.time = Math.random() * 3; }
+    return { g: g2, mixer, acts, cur: acts.Eating ? "Eating" : "Idle", k, vx: 0, vz: 0, t: Math.random() * 6, flee: 0 };
+  }
+  function wildPlay(a, want) { if (want === a.cur || !a.acts[want]) return; a.acts[want].reset().fadeIn(0.3).play(); if (a.acts[a.cur]) a.acts[a.cur].fadeOut(0.3); a.cur = want; }
+  function wildSpawn(hx, hz) {
+    const ks = Object.keys(wildP); if (!ks.length) return;
+    for (let tries = 0; tries < 12; tries++) {
+      const ang = Math.random() * Math.PI * 2, d = 55 + Math.random() * 60, x = hx + Math.cos(ang) * d, z = hz + Math.sin(ang) * d;
+      if (!openTile(x, z) || herds.some((h) => Math.hypot(h.x - x, h.z - z) < 40)) continue;
+      const k = ks[Math.floor(Math.random() * ks.length)], [n0, n1] = WN[k], n = n0 + Math.floor(Math.random() * (n1 - n0 + 1)), h = { k, x, z, a: [] };
+      for (let i = 0; i < n; i++) { const an = wildOne(k), px = x + (Math.random() - 0.5) * 6, pz = z + (Math.random() - 0.5) * 6; an.g.position.set(openTile(px, pz) ? px : x, 0, openTile(px, pz) ? pz : z); an.g.rotation.y = Math.random() * 6.28; scene.add(an.g); h.a.push(an); }
+      herds.push(h); return;
+    }
+  }
+  function syncWild(dt, hx, hz, spawn) {
+    if (spawn) {
+      for (let i = herds.length - 1; i >= 0; i--) { const h = herds[i]; if (Math.hypot(h.x - hx, h.z - hz) > 170) { h.a.forEach((a) => { scene.remove(a.g); a.mixer.stopAllAction(); }); herds.splice(i, 1); } }
+      if (herds.length < 6) wildSpawn(hx, hz);
+    }
+    for (const h of herds) {
+      let cx = 0, cz = 0; for (const a of h.a) { cx += a.g.position.x; cz += a.g.position.z; } h.x = cx / h.a.length; h.z = cz / h.a.length;
+      for (const a of h.a) {
+        const p = a.g.position, dh = Math.hypot(p.x - hx, p.z - hz);
+        if (dh < WFLEE[a.k]) a.flee = 4 + Math.random() * 2;
+        let sp = 0;
+        if (a.flee > 0) { a.flee -= dt; const ux = (p.x - hx) / (dh || 1), uz = (p.z - hz) / (dh || 1); a.vx = ux; a.vz = uz; sp = a.k === "cow" ? 2.6 : 8.5; wildPlay(a, sp > 3 ? "Gallop" : "Walk"); }
+        else { a.t -= dt; if (a.t <= 0) { a.t = 3 + Math.random() * 6; if (Math.random() < 0.45) { const an = Math.random() * 6.28, back = Math.hypot(h.x - p.x, h.z - p.z) > 6; a.vx = back ? (h.x - p.x) : Math.cos(an); a.vz = back ? (h.z - p.z) : Math.sin(an); const L = Math.hypot(a.vx, a.vz) || 1; a.vx /= L; a.vz /= L; a.walk = 1; } else a.walk = 0; }
+          if (a.walk) { sp = 1.1; wildPlay(a, "Walk"); } else if (a.cur === "Walk" || a.cur === "Gallop") wildPlay(a, a.acts.Eating && Math.random() < 0.6 ? "Eating" : "Idle"); }
+        if (sp > 0) { const nx = p.x + a.vx * sp * dt, nz = p.z + a.vz * sp * dt; if (openTile(nx, nz)) { p.x = nx; p.z = nz; } else { const ox = a.vx; a.vx = -a.vz; a.vz = ox; a.t = 0; } const want = Math.atan2(a.vx, a.vz); let dr = want - a.g.rotation.y; dr = Math.atan2(Math.sin(dr), Math.cos(dr)); a.g.rotation.y += dr * Math.min(1, dt * 6); }
+        if (dh < 90) a.mixer.update(dt * (a.cur === "Walk" ? 0.9 : 1));
+      }
     }
   }
   // ---------- people: NPCs, chests, gates and cells ----------
@@ -1137,7 +1204,7 @@ function buildArea(st, api, A) {
       else if (performance.now() - toastT > 3000) toastEl.classList.add("v3-tfade");
     }
     // foes (create lazily near the player), items, missiles, effects
-    syncFoes(dt, t, hx, hz); syncParties(dt, t, hx, hz); if (camps3.length) tickCamps(t); if (frameN % 10 === 0) { syncSigns(hx, hz); syncQuestBeams(hx, hz); if (camps3.length) syncCamps(hx, hz); if (big) lazyNpcs(hx, hz); for (const l of townNames) { const d = Math.hypot(l.position.x - hx, l.position.z - hz); l.material.opacity = clamp((110 - d) / 40, 0, 1) * clamp((d - 8) / 10, 0, 1); l.visible = l.material.opacity > 0.02; } }
+    syncFoes(dt, t, hx, hz); syncParties(dt, t, hx, hz); if (camps3.length) tickCamps(t); if (wildOn) { wildT -= dt; syncWild(Math.min(dt, 0.1), hx, hz, wildT <= 0); if (wildT <= 0) wildT = 1.5; } if (frameN % 10 === 0) { syncSigns(hx, hz); syncQuestBeams(hx, hz); if (camps3.length) syncCamps(hx, hz); if (big) lazyNpcs(hx, hz); for (const l of townNames) { const d = Math.hypot(l.position.x - hx, l.position.z - hz); l.material.opacity = clamp((110 - d) / 40, 0, 1) * clamp((d - 8) / 10, 0, 1); l.visible = l.material.opacity > 0.02; } }
     syncItems(t); syncProj(); syncFx();
     // exits: soft pulse; locked ones dim
     if (frameN % 15 === 0) for (const o of exits) { let lk = ""; try { lk = o.e.lock ? o.e.lock() : ""; } catch (e) {} o.locked = !!lk; if (o.veil) o.veil.material.color.set(lk ? 0xff6a5a : 0xfff0c0); if (o.sign) o.sign.material.opacity = lk ? 0.45 : 1; }

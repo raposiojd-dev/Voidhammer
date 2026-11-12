@@ -37,7 +37,7 @@ export function loadPack(name) {
         // flames (the fire role) are white in the source: make them hot, so they glow under the bloom
         const ro = s.attributes._role; for (let i = 0; i < p.count; i++) if (ro.getX(i) === 8) { const k = 0.8 + cf[i * 3] * 0.6; cf[i * 3] = 1.9 * k; cf[i * 3 + 1] = 0.85 * k; cf[i * 3 + 2] = 0.25 * k; }
       }
-      out.setIndex(s.index); out.applyMatrix4(o.matrixWorld); out.computeVertexNormals(); out.computeBoundingSphere(); out.computeBoundingBox();
+      out.setIndex(s.index); out.applyMatrix4(o.matrixWorld); out.computeVertexNormals(); fixNormals(out); out.computeBoundingSphere(); out.computeBoundingBox();
       const k = o.name; geo[k] = out; info[k] = Object.assign({}, o.userData || {});
     });
     LIB[name] = { geo, info, gltf: g };
@@ -45,6 +45,13 @@ export function loadPack(name) {
   });
   LOAD[name].catch((e) => { if (window.console) console.log("vh3d: model pack " + name + " unavailable", e && e.message); });
   return LOAD[name];
+}
+// smooth shading reads the stored normals: a degenerate corner gives a zero or NaN normal, which turns black under the
+// bloom; point those up instead
+function fixNormals(g) {
+  const n = g.attributes.normal; if (!n) return; const a = n.array;
+  for (let i = 0; i < a.length; i += 3) { const L = Math.hypot(a[i], a[i + 1], a[i + 2]); if (!(L > 1e-6) || !isFinite(L)) { a[i] = 0; a[i + 1] = 1; a[i + 2] = 0; } }
+  n.needsUpdate = true;
 }
 export function packReady(name) { return !!LIB[name]; }
 export function pack(name) { return LIB[name] || null; }
@@ -80,7 +87,7 @@ export const FIRE = 0xff8a2a;
 // ---------- materials ----------
 // one vertex-coloured material per scene; trees and plants get a gentle sway (tips move, roots stay), driven by VH_TIME
 export function modelMats(track, gfx) {
-  const base = { vertexColors: true, flatShading: true, roughness: 0.9, metalness: 0 };
+  const base = { vertexColors: true, flatShading: false, roughness: 0.9, metalness: 0 };
   const solid = track(new THREE.MeshStandardMaterial(base)); solid.defines = { VH_MACRO: "" };
   const sway = track(new THREE.MeshStandardMaterial(base)); sway.defines = { VH_MACRO: "" };
   if (gfx !== "low") {
