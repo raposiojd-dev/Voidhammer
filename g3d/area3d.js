@@ -220,7 +220,18 @@ function buildArea(st, api, A) {
       const t = g[y][x], wx = (x + 0.5) * T, wz = (y + 0.5) * T, r1 = rand(), r2 = rand();
       if (t === 2) {
         any = true;
-        if (cave) {
+        if (cave && mm) {
+          // rock walls (Medium/High): heaped boulders, not blocks; edge tiles get a big face, deep rock a lower filler
+          const edge = at(x - 1, y) !== 2 || at(x + 1, y) !== 2 || at(x, y - 1) !== 2 || at(x, y + 1) !== 2, h = edge ? 2.2 + r1 * 1.0 : 1.5 + r1 * 0.6; solidH[y * W + x] = h;
+          const rk = ["rock1", "rock2", "rockmoss"], tint = shade(cRock.getHex(), 0.8 + r2 * 0.35);
+          modelProp(B, rk[Math.floor(r1 * 3)], mm.solid, wx + (r2 - 0.5) * 0.5, -0.3, wz + (r1 - 0.5) * 0.5, (edge ? 1.75 : 1.45) + r2 * 0.55, r1 * 6.28, tint);
+          if (Bs) Bs.add("rock", white, wx, h * 0.45, wz, T * 1.3, h, T * 1.3, r2 * 6, shade(cRock.getHex(), 0.6));
+          if (edge) { modelProp(B, rk[Math.floor(r2 * 3)], mm.solid, wx + (r1 - 0.5) * 0.6, h * 0.35, wz + (r2 - 0.5) * 0.6, 1.1 + r1 * 0.5, r2 * 6.28, shade(cRock.getHex(), 0.65 + r1 * 0.3));
+            // a crystal seam or a stalagmite at the foot of some walls, in the Realm's light
+            const k = rand(); if (k < 0.12) { for (let c = 0; c < 3; c++) { const cr = new THREE.Mesh(kit.g.cone, kit.glow(info.realm === "frost" ? 0x9ad8ff : info.realm === "ember" ? 0xff7a3a : info.realm === "shadow" ? 0xb69cff : 0x8ae0d0)); cr.scale.set(0.22, 0.9 + rand() * 0.7, 0.22); cr.position.set(wx + (rand() - 0.5) * 1.1, 0.4, wz + (rand() - 0.5) * 1.1); cr.rotation.set((rand() - 0.5) * 0.6, 0, (rand() - 0.5) * 0.6); grp.add(cr); } }
+            else if (k < 0.3) B.add("cone", white, wx + (r2 - 0.5) * T, 0.6, wz + (r1 - 0.5) * T, 0.45, 1.2 + r1, 0.45, 0, shade(cRock.getHex(), 0.7)); }
+          else M.box(mStone, wx, h / 2 - 0.2, wz, T * 0.9, h, T * 0.9, r2 * 0.6, shade(cTree2.getHex(), 0.45 + r1 * 0.2));
+        } else if (cave) {
           const h = 1.7 + r1 * 1.1; solidH[y * W + x] = h;
           M.box(mStone, wx, h / 2, wz, T * 1.04, h, T * 1.04, r2 * 0.3, shade(cTree2.getHex(), 0.55 + r1 * 0.3));
           if (r2 < 0.35) B.add("rock", white, wx + (r1 - 0.5) * 0.6, h, wz, 0.9, 0.7, 0.9, r2 * 6, shade(cRock.getHex(), 0.6));
@@ -261,6 +272,8 @@ function buildArea(st, api, A) {
         if (mm) { for (let k = 0; k < 2; k++) modelProp(B, rand() < 0.65 ? "flowers" : "grass", mm.sway, wx + (rand() - 0.5) * T * 0.8, 0, wz + (rand() - 0.5) * T * 0.8, 0.32 + rand() * 0.2, rand() * 6, [0xffe070, 0xffffff, 0xff8080, 0xc8a0ff, 0x9ad8ff][Math.floor(rand() * 5)]); }
         else for (let k = 0; k < 3; k++) B.add("cone", white, wx + (rand() - 0.5) * T * 0.8, 0.12, wz + (rand() - 0.5) * T * 0.8, 0.12, 0.24, 0.12, 0, [0xd8b040, 0xe8e0d0, 0xb04040, 0x9a70d0][Math.floor(rand() * 4)]);
       }
+      // cave floor (Medium/High): loose stones, bones of old fires, the odd pale mushroom
+      else if (mm && cave && t === 0 && r1 < 0.09) { any = true; if (r2 < 0.75) modelProp(B, ["rock1", "rock2"][Math.floor(r2 * 2)], mm.solid, wx + (r2 - 0.5) * T, -0.05, wz + (r1 * 10 - 0.45) * T, 0.25 + r2 * 0.35, r2 * 6, shade(cRock.getHex(), 0.9)); else { for (let m = 0; m < 3; m++) B.add("cone", white, wx + (rand() - 0.5) * 0.8, 0.12, wz + (rand() - 0.5) * 0.8, 0.14, 0.24, 0.14, 0, 0xd8d0b8); } }
       // open ground (Medium/High): the odd grass clump or wild flowers, never on paths, plazas or water
       else if (mm && !cave && t === 0 && r1 < 0.05) { any = true; const bo = biomeOf(); modelProp(B, r2 < 0.6 ? "grass" : "flowers", mm.sway, wx + (r2 - 0.5) * T, 0, wz + (r1 * 10 - 0.25) * T, 0.3 + r2 * 0.25, r2 * 6, r2 < 0.6 ? shade(bo.tint, 0.85) : [0xffe070, 0xffffff, 0xc8a0ff][Math.floor(r2 * 3)]); }
     }
