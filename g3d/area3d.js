@@ -79,7 +79,7 @@ export function area(api, done) {
       if (ctl.off || ctl.st !== st || api.AR() !== A) return;
       try { ctl.w = buildArea(st, api, A); ctl.ready = true; }
       catch (e) { api.fail(e); finish("fail"); }
-    }, ["nature", "village"]);
+    }, ["nature", "village", "dungeon"]);
   }
   function finish(how) { if (ctl.off) return; ctl.off = true; clearInterval(watch); teardown(); api.on(false); done(how || "left"); }
   // follow the sim: a new AR object means a new place; no AR means we are back on the map

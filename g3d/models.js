@@ -116,7 +116,7 @@ export function kitModels(kit, gfx, track) {
   if (gfx === "low" || kit.mm) return !!kit.mm;
   const N = LIB.nature; if (!N) return false;
   kit.mm = modelMats(track || ((x) => x), gfx);
-  for (const pk of ["nature", "village", "castle"]) if (LIB[pk]) for (const k in LIB[pk].geo) kit.g["m:" + k] = LIB[pk].geo[k];
+  for (const pk of ["nature", "village", "castle", "dungeon"]) if (LIB[pk]) for (const k in LIB[pk].geo) kit.g["m:" + k] = LIB[pk].geo[k];
   return true;
 }
 

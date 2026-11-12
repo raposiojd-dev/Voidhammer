@@ -5,7 +5,9 @@
 // game recolour roofs, walls and leaves to each Realm's canon palette. Each model is normalised: base at y = 0, centred
 // on x/z. Trees and plants are scaled to 1 m tall (the game scales by the height it wants); buildings and props keep
 // their proportions, scaled so the larger footprint side is 1 m. Positions are quantised and the files meshopt-compressed.
-// The horse keeps its rig and four clips (Idle, Walk, Gallop, Death); its parts are joined into one skinned primitive.
+// The animals (horse, deer, stag, wolf, fox, cow) keep their rigs and the clips the game uses (Idle, Walk, Gallop, Eating,
+// Death, Attack); each animal's parts are joined into one skinned primitive. dungeon.glb holds the Modular Dungeon and
+// Survival props (columns, arches, skulls, cobwebs, torches, gold, tents, campfires, traps).
 // Usage (needs @gltf-transform/core, extensions, functions 4.x and meshoptimizer 0.21):
 //   node build-models.mjs <quaternius-showcase/public/glb> <out dir>
 // Debug: NOSIMP=1 skips simplification, RAW=1 writes uncompressed files (to compare against the sources).
@@ -41,6 +43,15 @@ const BUNDLES = {
     ['cart', 'medieval_village_pack/Cart', 900, 'prop'], ['barrel', 'medieval_village_pack/Barrel', 300, 'prop'], ['crate', 'medieval_village_pack/Crate', 200, 'prop'],
     ['fence', 'medieval_village_pack/Fence', 200, 'prop'], ['bonfire', 'medieval_village_pack/Bonfire_Lit', 500, 'prop'], ['hay', 'medieval_village_pack/Hay', 200, 'prop'],
     ['bench', 'medieval_village_pack/Bench_1', 200, 'prop'], ['bags', 'medieval_village_pack/Bags', 300, 'prop'], ['cauldron', 'medieval_village_pack/Cauldron', 400, 'prop']
+  ],
+  dungeon: [
+    ['column', 'modular_dungeon_1/Column', 600, 'prop'], ['column2', 'modular_dungeon_1/Column2', 600, 'prop'], ['arch', 'modular_dungeon_1/Arch', 900, 'prop'],
+    ['skull', 'modular_dungeon_1/Skull', 200, 'prop'], ['cobweb', 'modular_dungeon_1/Cobweb', 120, 'prop'], ['cobweb2', 'modular_dungeon_1/Cobweb2', 120, 'prop'],
+    ['dtorch', 'modular_dungeon_1/Torch', 200, 'prop'], ['chestgold', 'modular_dungeon_1/Chest_Gold', 500, 'prop'], ['coins', 'modular_dungeon_1/Coin_Pile', 300, 'prop'],
+    ['barrel2', 'modular_dungeon_1/Barrel2', 300, 'prop'], ['vase', 'modular_dungeon_1/Vase', 250, 'prop'], ['spikes', 'modular_dungeon_1/Spikes', 300, 'prop'],
+    ['wbanner', 'modular_dungeon_1/Banner_wall', 200, 'prop'], ['woodfire', 'modular_dungeon_1/Woodfire', 400, 'prop'], ['coinbag', 'modular_dungeon_1/Bag_Coins', 200, 'prop'],
+    ['tent', 'survival_pack/Tent', 700, 'prop'], ['campfire', 'survival_pack/Bonfire_Fire', 500, 'prop'], ['woodlog', 'survival_pack/WoodLog', 160, 'prop'],
+    ['beartrap', 'survival_pack/BearTrap_Open', 300, 'prop'], ['wtorch', 'survival_pack/WoodenTorch_Fire', 200, 'prop'], ['axe', 'survival_pack/Axe', 160, 'prop']
   ],
   castle: [
     ['wall', 'modular_medieval_buildings_pack/WallBricks', 900, 'prop'], ['wallgate', 'modular_medieval_buildings_pack/WallEntranceBricks', 1400, 'prop'],
@@ -133,18 +144,33 @@ async function buildStatic(name, list) {
   console.log(name + ': ' + report.join(', '));
 }
 
-async function buildHorse() {
-  const doc = await io.read(SRC + '/animals_pack/Horse.glb'), root = doc.getRoot();
-  const keep = /\|(Idle|Walk|Gallop|Death)$/;
+function mul(a, b) { const o = new Array(16); for (let c = 0; c < 4; c++) for (let r = 0; r < 4; r++) { let v = 0; for (let k = 0; k < 4; k++) v += a[k * 4 + r] * b[c * 4 + k]; o[c * 4 + r] = v; } return o; }
+function invert(m) { const [a00,a01,a02,a03,a10,a11,a12,a13,a20,a21,a22,a23,a30,a31,a32,a33] = m;
+  const b00=a00*a11-a01*a10,b01=a00*a12-a02*a10,b02=a00*a13-a03*a10,b03=a01*a12-a02*a11,b04=a01*a13-a03*a11,b05=a02*a13-a03*a12,b06=a20*a31-a21*a30,b07=a20*a32-a22*a30,b08=a20*a33-a23*a30,b09=a21*a32-a22*a31,b10=a21*a33-a23*a31,b11=a22*a33-a23*a32;
+  let d=b00*b11-b01*b10+b02*b09+b03*b08-b04*b07+b05*b06; d = d ? 1 / d : 0;
+  return [(a11*b11-a12*b10+a13*b09)*d,(a02*b10-a01*b11-a03*b09)*d,(a31*b05-a32*b04+a33*b03)*d,(a22*b04-a21*b05-a23*b03)*d,(a12*b08-a10*b11-a13*b07)*d,(a00*b11-a02*b08+a03*b07)*d,(a32*b02-a30*b05-a33*b01)*d,(a20*b05-a22*b02+a23*b01)*d,(a10*b10-a11*b08+a13*b06)*d,(a01*b08-a00*b10-a03*b06)*d,(a30*b04-a31*b02+a33*b00)*d,(a21*b02-a20*b04-a23*b00)*d,(a11*b07-a10*b09-a12*b06)*d,(a00*b09-a01*b07+a02*b06)*d,(a31*b01-a30*b03-a32*b00)*d,(a20*b03-a21*b01+a22*b00)*d]; }
+async function buildAnimal(name, file) {
+  const doc = await io.read(SRC + '/animals_pack/' + file + '.glb'), root = doc.getRoot();
+  const keep = /\|(Idle|Walk|Gallop|Death|Eating|Attack|Attack_Headbutt)$/;
   for (const a of root.listAnimations()) { if (!keep.test(a.getName())) a.dispose(); else a.setName(a.getName().split('|')[1]); }
-  // join the parts by hand into one skinned primitive with vertex colours (the source has 8 parts, one per material)
+  // join every part of every mesh by hand into one skinned primitive with vertex colours
   const one = doc.createMaterial('vc').setBaseColorFactor([1, 1, 1, 1]).setRoughnessFactor(0.85).setMetallicFactor(0);
-  const buf = root.listBuffers()[0], mesh = root.listMeshes()[0], prims = mesh.listPrimitives();
+  const buf = root.listBuffers()[0], meshes = root.listMeshes(), mesh = meshes[0];
   const SEM = ['POSITION', 'NORMAL', 'JOINTS_0', 'WEIGHTS_0'], acc = { POSITION: [], NORMAL: [], JOINTS_0: [], WEIGHTS_0: [], COLOR_0: [] }, ind = [];
   let base = 0; const e = [0, 0, 0, 0];
-  for (const prim of prims) {
+  // rigid parts (e.g. the stag's antlers) hang off a bone: bake them into the skinned mesh's space, bound to that bone
+  const skin = root.listSkins()[0], joints = skin.listJoints(), nodeOf = (ms) => root.listNodes().find((nd) => nd.getMesh() === ms);
+  const skNode = root.listNodes().find((nd) => nd.getSkin && nd.getSkin()), inv = invert(skNode ? skNode.getWorldMatrix() : [1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1]);
+  for (const ms of meshes) for (const prim of ms.listPrimitives()) {
     const m = prim.getMaterial(), bc = m ? m.getBaseColorFactor() : [1, 1, 1, 1], n = prim.getAttribute('POSITION').getCount();
-    for (const sm of SEM) { const a = prim.getAttribute(sm), w = a.getElementSize(); for (let i = 0; i < n; i++) { a.getElement(i, e); for (let k = 0; k < w; k++) acc[sm].push(e[k]); } }
+    if (!prim.getAttribute('JOINTS_0')) {
+      const nd = nodeOf(ms); let par = nd && nd.getParentNode ? nd.getParentNode() : null; let ji = 0;
+      while (par && joints.indexOf(par) < 0) par = par.getParentNode ? par.getParentNode() : null; if (par) ji = joints.indexOf(par);
+      const M = mul(inv, nd.getWorldMatrix()), pa = prim.getAttribute('POSITION'), na = prim.getAttribute('NORMAL');
+      for (let i = 0; i < n; i++) { pa.getElement(i, e); acc.POSITION.push(M[0]*e[0]+M[4]*e[1]+M[8]*e[2]+M[12], M[1]*e[0]+M[5]*e[1]+M[9]*e[2]+M[13], M[2]*e[0]+M[6]*e[1]+M[10]*e[2]+M[14]);
+        if (na) { na.getElement(i, e); const x = M[0]*e[0]+M[4]*e[1]+M[8]*e[2], y = M[1]*e[0]+M[5]*e[1]+M[9]*e[2], z = M[2]*e[0]+M[6]*e[1]+M[10]*e[2], L = Math.hypot(x, y, z) || 1; acc.NORMAL.push(x / L, y / L, z / L); } else acc.NORMAL.push(0, 1, 0);
+        acc.JOINTS_0.push(ji, 0, 0, 0); acc.WEIGHTS_0.push(1, 0, 0, 0); }
+    } else for (const sm of SEM) { const a = prim.getAttribute(sm), w = a.getElementSize(); for (let i = 0; i < n; i++) { a.getElement(i, e); for (let k = 0; k < w; k++) acc[sm].push(e[k]); } }
     for (let i = 0; i < n; i++) acc.COLOR_0.push(bc[0], bc[1], bc[2]);
     const ix = prim.getIndices(); for (let i = 0; i < ix.getCount(); i++) ind.push(ix.getScalar(i) + base);
     base += n;
@@ -155,10 +181,14 @@ async function buildHorse() {
     .setAttribute('JOINTS_0', doc.createAccessor().setType('VEC4').setArray(new Uint16Array(acc.JOINTS_0)).setBuffer(buf))
     .setAttribute('WEIGHTS_0', doc.createAccessor().setType('VEC4').setArray(new Float32Array(acc.WEIGHTS_0)).setBuffer(buf))
     .setAttribute('COLOR_0', doc.createAccessor().setType('VEC3').setArray(new Float32Array(acc.COLOR_0)).setBuffer(buf))
-    .setIndices(doc.createAccessor().setType('SCALAR').setArray(new Uint16Array(ind)).setBuffer(buf));
-  prims.forEach((p) => { mesh.removePrimitive(p); p.dispose(); }); mesh.addPrimitive(np);
-  await finish(doc, 'horse');
-  console.log('horse: ' + root.listMeshes().map((m) => m.listPrimitives().length + ' prim').join(',') + ', clips ' + root.listAnimations().map((a) => a.getName()).join(','));
+    .setIndices(doc.createAccessor().setType('SCALAR').setArray(base > 65535 ? new Uint32Array(ind) : new Uint16Array(ind)).setBuffer(buf));
+  for (const ms of meshes) ms.listPrimitives().forEach((p) => { ms.removePrimitive(p); p.dispose(); });
+  mesh.addPrimitive(np);
+  // the other meshes are now empty: drop their nodes
+  for (const node of root.listNodes()) { const m2 = node.getMesh(); if (m2 && m2 !== mesh) { node.setMesh(null); } }
+  for (const m2 of meshes.slice(1)) m2.dispose();
+  await finish(doc, name);
+  console.log(name + ': ' + base + ' verts, clips ' + root.listAnimations().map((a) => a.getName()).join(','));
 }
 
 async function finish(doc, name) {
@@ -168,5 +198,6 @@ async function finish(doc, name) {
   await io.write(OUT + '/' + name + '.glb', doc);
 }
 
-for (const [name, list] of Object.entries(BUNDLES)) await buildStatic(name, list);
-await buildHorse();
+for (const [name, list] of Object.entries(BUNDLES)) if (!process.env.ONLY || process.env.ONLY.split(',').includes(name)) await buildStatic(name, list);
+const ONLY = process.env.ONLY ? process.env.ONLY.split(',') : null;
+for (const [name, file] of [['horse', 'Horse'], ['deer', 'Deer'], ['stag', 'Stag'], ['wolf', 'Wolf'], ['fox', 'Fox'], ['cow', 'Cow']]) if (!ONLY || ONLY.includes(name)) await buildAnimal(name, file);
