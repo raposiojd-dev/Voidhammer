@@ -554,6 +554,65 @@ function buildArea(st, api, A) {
       b.lab.position.set(x, 4.8, z); b.lab.visible = d > 4;
     });
   }
+  // ---------- bandit camps and holds (big overland): smoke you can see from far off, then tents, a fire and a stockade ----------
+  const camps3 = [];
+  let smokeMat = null;
+  if (big && sp.P && sp.P.camps) {
+    smokeMat = new THREE.SpriteMaterial({ map: st.track(radialTex("rgba(96,90,84,0.9)", "rgba(80,76,72,0)")), transparent: true, depthWrite: false, fog: false, opacity: 0.6 });
+    sp.P.camps.forEach((cm) => camps3.push({ cm, x: (cm.x + 0.5) * T, z: (cm.y + 0.5) * T, grp: null, smoke: null, lab: null, fl: null, ph: rand() * 10 }));
+  }
+  const tentCol = [0xb8a682, 0x8a6a4a, 0x9a8a6a, 0x7a5a40], stakeM = kit.mat(0x4a3420), dirtM = kit.mat(0x4a3a2c), redM = kit.mat(0x8a2a22, { side: THREE.DoubleSide });
+  function campBuild(c) {
+    const grp = new THREE.Group(), { x, z } = c, bigC = !!c.cm.big, rr = rng("camp" + c.cm.x + "," + c.cm.y);
+    const mesh = (geo, mat, px, py, pz, sx, sy, sz, ry) => { const m = new THREE.Mesh(geo, mat); m.position.set(px, py, pz); m.scale.set(sx, sy, sz); m.rotation.y = ry || 0; m.castShadow = true; grp.add(m); return m; };
+    // tents around the fire
+    const nt = bigC ? 5 : 2 + Math.floor(rr() * 2);
+    for (let i = 0; i < nt; i++) {
+      const a = i / nt * Math.PI * 2 + rr() * 0.5, R = bigC ? 4.6 + rr() * 1.4 : 2.6 + rr() * 0.6, tx = x + Math.cos(a) * R, tz = z + Math.sin(a) * R, s2 = bigC ? 1.25 : 1.0;
+      mesh(kit.g.cone, kit.mat(tentCol[Math.floor(rr() * tentCol.length)]), tx, 1.05 * s2, tz, 2.2 * s2, 2.1 * s2, 2.2 * s2, rr() * 6);
+      mesh(kit.g.box, kit.mat(0x1a120c), tx + Math.cos(a) * -0.9 * s2, 0.45, tz + Math.sin(a) * -0.9 * s2, 0.5, 0.9, 0.08, -a + Math.PI / 2);
+    }
+    // the fire: stones, logs, a flame, a warm ring of light on the ground
+    for (let i = 0; i < 7; i++) { const a = i / 7 * Math.PI * 2; mesh(kit.g.box, kit.mat(0x6a6460), x + Math.cos(a) * 0.75, 0.12, z + Math.sin(a) * 0.75, 0.32, 0.24, 0.28, a); }
+    mesh(kit.g.cyl, kit.mat(0x3a2414), x, 0.15, z, 0.12, 1.1, 0.12, 0).rotation.z = 1.4;
+    if (kit.g.flame) { c.fl = new THREE.Mesh(kit.g.flame, kit.glow(0xff8a3a)); c.fl.position.set(x, 0.35, z); c.fl.scale.setScalar(3); grp.add(c.fl); }
+    const glow = new THREE.Mesh(kit.g.pool || (kit.g.pool = new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2)), new THREE.MeshBasicMaterial({ map: kit.glowTex, color: 0xff9a40, transparent: true, opacity: 0.45, depthWrite: false, blending: THREE.AdditiveBlending }));
+    glow.scale.setScalar(bigC ? 9 : 6); glow.position.set(x, 0.06, z); glow.renderOrder = 2; grp.add(glow); c.glow = glow;
+    // crates and sacks of what they've taken
+    for (let i = 0; i < (bigC ? 6 : 2); i++) { const a = rr() * 6.28, R = 1.6 + rr() * (bigC ? 2.6 : 0.8); mesh(kit.g.box, kit.mat(rr() < 0.5 ? 0x7a5a34 : 0x8a7a5a), x + Math.cos(a) * R, 0.3, z + Math.sin(a) * R, 0.6, 0.6, 0.6, rr() * 6); }
+    if (bigC) {
+      // a stockade of sharpened stakes with two gaps, a lookout platform and the chief's red banner
+      const R = 8.6, n = 44;
+      for (let i = 0; i < n; i++) { const a = i / n * Math.PI * 2; if (Math.abs(Math.sin(a)) < 0.12) continue; const h = 2.2 + rr() * 0.8; mesh(kit.g.cone, stakeM, x + Math.cos(a) * R, h / 2, z + Math.sin(a) * R, 0.34, h, 0.34, 0); }
+      const lx = x + 5.2, lz = z - 5.2;
+      for (const [dx, dz] of [[-0.8, -0.8], [0.8, -0.8], [-0.8, 0.8], [0.8, 0.8]]) mesh(kit.g.cyl, stakeM, lx + dx, 2, lz + dz, 0.14, 4, 0.14, 0);
+      mesh(kit.g.box, kit.mat(0x5a4028), lx, 4.05, lz, 2.0, 0.16, 2.0, 0);
+      mesh(kit.g.cyl, stakeM, x - 1.6, 3.2, z - 1.6, 0.1, 6.4, 0.1, 0);
+      c.flag = mesh(kit.g.box, redM, x - 1.0, 5.8, z - 1.6, 1.2, 0.8, 0.04, 0);
+      mesh(kit.g.box, dirtM, x, 0.02, z, 13, 0.04, 13, 0.3).castShadow = false;
+    }
+    scene.add(grp); return grp;
+  }
+  function campDrop(c) { if (!c.grp) return; scene.remove(c.grp); try { c.glow.material.dispose(); } catch (e) {} c.grp = null; c.fl = null; c.flag = null; }
+  function syncCamps(hx, hz) {
+    for (const c of camps3) {
+      const d = Math.hypot(c.x - hx, c.z - hz), live = !c.cm.done;
+      // smoke over every live camp within a few hundred strides: the thing you walk toward
+      if (live && d < 260 && !c.smoke) { c.smoke = []; for (let i = 0; i < 4; i++) { const s = new THREE.Sprite(smokeMat); s.scale.setScalar(4 + i * 3); s.position.set(c.x, 3 + i * 3.4, c.z); s.renderOrder = 3; scene.add(s); c.smoke.push(s); } }
+      else if ((!live || d > 290) && c.smoke) { c.smoke.forEach((s) => scene.remove(s)); c.smoke = null; }
+      if (d < 80 && !c.grp) c.grp = campBuild(c); else if (d > 100 && c.grp) campDrop(c);
+      if (c.cm.big && d < 60 && !c.lab) { c.lab = labelSprite(st, c.cm.name, (c.cm.chief ? c.cm.chief + "'s hold" : "bandit hold") + " · Lv " + c.cm.lv); c.lab.scale.set(4.6, 1.15, 1); c.lab.position.set(c.x, 7.2, c.z); scene.add(c.lab); }
+      else if (c.lab && (d > 70 || !live)) { scene.remove(c.lab); try { c.lab.material.map.dispose(); c.lab.material.dispose(); } catch (e) {} c.lab = null; }
+      if (c.lab) { c.lab.material.opacity = clamp((60 - d) / 18, 0, 1) * clamp((d - 6) / 8, 0, 1); c.lab.visible = c.lab.material.opacity > 0.02; }
+    }
+  }
+  function tickCamps(t) {
+    for (const c of camps3) {
+      if (c.smoke) c.smoke.forEach((s, i) => { s.position.x = c.x + Math.sin(t * 0.3 + c.ph + i) * (0.6 + i * 0.5); s.position.y = 3 + i * 3.4 + Math.sin(t * 0.5 + i) * 0.4; });
+      if (c.fl) { const k = 0.85 + 0.15 * Math.sin(t * 11 + c.ph) * Math.sin(t * 7.3 + c.ph * 2); c.fl.scale.set(3, 3.4 * k, 3); c.glow.material.opacity = 0.38 + 0.1 * k; }
+      if (c.flag) c.flag.rotation.y = Math.sin(t * 1.7 + c.ph) * 0.25;
+    }
+  }
   // ---------- people: NPCs, chests, gates and cells ----------
   const markTex = [null, markerTex("!", "#ffd84a"), markerTex("?", "#9fd8ff")];
   function markerTex(ch, col) {
@@ -1065,7 +1124,7 @@ function buildArea(st, api, A) {
       else if (performance.now() - toastT > 3000) toastEl.classList.add("v3-tfade");
     }
     // foes (create lazily near the player), items, missiles, effects
-    syncFoes(dt, t, hx, hz); syncParties(dt, t, hx, hz); if (frameN % 10 === 0) { syncSigns(hx, hz); syncQuestBeams(hx, hz); if (big) lazyNpcs(hx, hz); for (const l of townNames) { const d = Math.hypot(l.position.x - hx, l.position.z - hz); l.material.opacity = clamp((110 - d) / 40, 0, 1) * clamp((d - 8) / 10, 0, 1); l.visible = l.material.opacity > 0.02; } }
+    syncFoes(dt, t, hx, hz); syncParties(dt, t, hx, hz); if (camps3.length) tickCamps(t); if (frameN % 10 === 0) { syncSigns(hx, hz); syncQuestBeams(hx, hz); if (camps3.length) syncCamps(hx, hz); if (big) lazyNpcs(hx, hz); for (const l of townNames) { const d = Math.hypot(l.position.x - hx, l.position.z - hz); l.material.opacity = clamp((110 - d) / 40, 0, 1) * clamp((d - 8) / 10, 0, 1); l.visible = l.material.opacity > 0.02; } }
     syncItems(t); syncProj(); syncFx();
     // exits: soft pulse; locked ones dim
     if (frameN % 15 === 0) for (const o of exits) { let lk = ""; try { lk = o.e.lock ? o.e.lock() : ""; } catch (e) {} o.locked = !!lk; if (o.veil) o.veil.material.color.set(lk ? 0xff6a5a : 0xfff0c0); if (o.sign) o.sign.material.opacity = lk ? 0.45 : 1; }

@@ -5591,9 +5591,9 @@ var BIMG_SRC={"farm": "data:image/webp;base64,UklGRqyAAABXRUJQVlA4WAoAAAAQAAAAZw
     RT.forEach(function (q, k) { var w = P.rt[k].g; sp.npcs.push({ id: "rt" + k, name: q.who, x: w.x, y: w.y, col: "#5a3a7a", hair: "#d8d0ff", d: function () { return "rt:" + q.id; }, mk: function () { var st = rtSt(q); return st === 2 ? 2 : st === 0 && !rtLocked(q) ? 1 : 0; } }); });
     var od = c.ovd || {};
     P.camps.forEach(function (cm, k) {
-      var n = 3 + (k % 3) + (tm > 0 ? 1 : 0), tp = cm.lv <= 2 ? ["bandit", "slinger"] : cm.lv === 3 ? ["bandit", "slinger", "scout"] : ["scout", "wraith", "wraithgun"], j;
-      for (j = 0; j < n; j++) { var key = k + "_" + j; if (od[key] !== undefined && S.day - od[key] < 8) continue; var an = j * 6.283 / n; sp.enemies.push([tp[(j + k) % tp.length], cm.x + Math.round(Math.cos(an) * 1.6), cm.y + Math.round(Math.sin(an) * 1.6), cm.lv, key]); }
-      if (k % 6 === 0 && !(od["b" + k] !== undefined && S.day - od["b" + k] < 8)) sp.enemies.push([BTIER[Math.min(3, cm.lv - 1)][k % BTIER[Math.min(3, cm.lv - 1)].length], cm.x, cm.y, cm.lv, "b" + k]);
+      var n = cm.big ? Math.min(12, 7 + cm.lv + (tm > 0 ? 1 : 0)) : 3 + (k % 3) + (tm > 0 ? 1 : 0), tp = cm.lv <= 2 ? ["bandit", "slinger"] : cm.lv === 3 ? ["bandit", "slinger", "scout"] : ["scout", "wraith", "wraithgun"], j;
+      for (j = 0; j < n; j++) { var key = k + "_" + j; if (od[key] !== undefined && S.day - od[key] < 8) continue; var an = j * 6.283 / n, rr = cm.big ? 2.2 + (j % 3) * 1.4 : 1.6; sp.enemies.push([tp[(j + k) % tp.length], cm.x + Math.round(Math.cos(an) * rr), cm.y + Math.round(Math.sin(an) * rr), cm.lv, key]); }
+      if ((cm.big || k % 6 === 0) && !(od["b" + k] !== undefined && S.day - od["b" + k] < 8)) sp.enemies.push([BTIER[Math.min(3, cm.lv - 1)][k % BTIER[Math.min(3, cm.lv - 1)].length], cm.x, cm.y, cm.lv, "b" + k]);
     });
     c.wq = c.wq || {};
     WQ.forEach(function (q, k) {
@@ -5691,7 +5691,7 @@ var BIMG_SRC={"farm": "data:image/webp;base64,UklGRqyAAABXRUJQVlA4WAoAAAAQAAAAZw
         });
       });
       function clearR(cx, cy, rad2) { for (var yy = -rad2; yy <= rad2; yy++) for (var xx = -rad2; xx <= rad2; xx++) { var px2 = cx + xx, py2 = cy + yy; if (px2 > 0 && py2 > 0 && px2 < N - 1 && py2 < N - 1 && g[py2][px2] !== 1) g[py2][px2] = 0; } }
-      P.camps.forEach(function (cm) { clearR(cm.x, cm.y, 3); }); P.chests.forEach(function (cm) { clearR(cm.x, cm.y, 1); }); P.wf.forEach(function (cm) { clearR(cm.x, cm.y, 1); }); P.qc.forEach(function (cm) { if (cm) clearR(cm.x, cm.y, 3); }); P.rt.forEach(function (z) { clearR(z.g.x, z.g.y, 1); clearR(z.a.x, z.a.y, 4); });
+      P.camps.forEach(function (cm) { clearR(cm.x, cm.y, cm.big ? 7 : 3); }); P.chests.forEach(function (cm) { clearR(cm.x, cm.y, 1); }); P.wf.forEach(function (cm) { clearR(cm.x, cm.y, 1); }); P.qc.forEach(function (cm) { if (cm) clearR(cm.x, cm.y, 3); }); P.rt.forEach(function (z) { clearR(z.g.x, z.g.y, 1); clearR(z.a.x, z.a.y, 4); });
       (sp.qsites || []).forEach(function (z) { clearR(z.x, z.y, 4); }); (sp.portals || []).forEach(function (z) { clearR(z.x, z.y, 4); });
       P.caves.forEach(function (cv) { clearR(cv.x, cv.y, 3); var yy, xx; for (yy = -2; yy <= -1; yy++) for (xx = -1; xx <= 2; xx++) g[cv.y + yy][cv.x + xx] = 7; g[cv.y][cv.x - 1] = 7; g[cv.y][cv.x + 2] = 7; });
       // reachability
@@ -5757,6 +5757,7 @@ var BIMG_SRC={"farm": "data:image/webp;base64,UklGRqyAAABXRUJQVlA4WAoAAAAQAAAAZw
         }
       });
       P.caves.forEach(function (cv) { lab(cv.name + (cv.lair ? " · Lair Lv " + cv.lv : ""), cv.x * ATS + 16, (cv.y - 2) * ATS - 2, cv.lair ? "#ff9a3c" : "#b8a8e0"); });
+      P.camps.forEach(function (cm) { if (cm.big) lab(cm.name + " · bandit hold Lv " + cm.lv, cm.x * ATS + 8, (cm.y - 4) * ATS, "#ff8a5a"); });
     };
     return sp;
   }
@@ -5844,7 +5845,7 @@ var BIMG_SRC={"farm": "data:image/webp;base64,UklGRqyAAABXRUJQVlA4WAoAAAAQAAAAZw
       a.sp.SP.forEach(function (q) { var s2 = q.s.type === "village" ? 5 : 8, p = P(q.cx, q.cy); g.fillStyle = "#000"; g.fillRect(p[0] - s2 / 2 - 1, p[1] - s2 / 2 - 1, s2 + 2, s2 + 2); g.fillStyle = FAC[q.s.owner] ? FAC[q.s.owner].col : "#ccc"; g.fillRect(p[0] - s2 / 2, p[1] - s2 / 2, s2, s2); });
       a.sp.P.caves.forEach(function (cv) { var p = P(cv.x, cv.y); g.fillStyle = cv.lair ? "#ff7a2a" : "#b8a8e0"; g.fillRect(p[0] - 2, p[1] - 2, 4, 4); });
       (a.sp.qsites || []).forEach(function (z) { var p = P(z.x, z.y); g.fillStyle = "#ffd060"; g.beginPath(); g.arc(p[0], p[1], 3, 0, 6.283); g.fill(); });
-      a.sp.P.camps.forEach(function (cm) { if (cm.done) return; var p = P(cm.x, cm.y); g.strokeStyle = "#e0503a"; g.lineWidth = 1.6; g.beginPath(); g.moveTo(p[0] - 2.5, p[1] - 2.5); g.lineTo(p[0] + 2.5, p[1] + 2.5); g.moveTo(p[0] + 2.5, p[1] - 2.5); g.lineTo(p[0] - 2.5, p[1] + 2.5); g.stroke(); });
+      a.sp.P.camps.forEach(function (cm) { if (cm.done) return; var p = P(cm.x, cm.y); if (cm.big) { g.fillStyle = "rgba(0,0,0,0.6)"; g.beginPath(); g.arc(p[0], p[1], 5, 0, 6.283); g.fill(); g.strokeStyle = "#ff6a3a"; g.lineWidth = 1.4; g.beginPath(); g.arc(p[0], p[1], 5, 0, 6.283); g.stroke(); } g.strokeStyle = "#e0503a"; g.lineWidth = 1.6; g.beginPath(); g.moveTo(p[0] - 2.5, p[1] - 2.5); g.lineTo(p[0] + 2.5, p[1] + 2.5); g.moveTo(p[0] + 2.5, p[1] - 2.5); g.lineTo(p[0] - 2.5, p[1] + 2.5); g.stroke(); });
       if (OVW.tip) { var tp2 = P(OVW.tip.x, OVW.tip.y); if (pulse) { g.strokeStyle = "#fff"; g.lineWidth = 1.5; g.beginPath(); g.arc(tp2[0], tp2[1], 5, 0, 6.283); g.stroke(); } }
       try { (window.__ovParties ? window.__ovParties() : []).forEach(function (q) { var p = P(q.x / ATS, q.y / ATS); g.fillStyle = "#000"; g.beginPath(); g.arc(p[0], p[1], 3.6, 0, 6.283); g.fill(); g.fillStyle = q.hostile ? "#ff4a3a" : q.kind === "caravan" ? "#f0d080" : q.col; g.beginPath(); g.arc(p[0], p[1], 2.6, 0, 6.283); g.fill(); }); } catch (e) {}
     }
@@ -6123,22 +6124,22 @@ var BIMG_SRC={"farm": "data:image/webp;base64,UklGRqyAAABXRUJQVlA4WAoAAAAQAAAAZw
   function ovEvent() {
     var a = AR, f = cellFac(OVW.cell), R = FAC[f] ? FAC[f].name : "the Realm", roll = Math.random(), spot = ovSpotAhead(22, 34); if (!spot) return;
     var id = ++OVW.ev.n, kind;
-    if (roll < 0.26) kind = "ambush"; else if (roll < 0.34 && lvl() >= 3) kind = "void"; else if (roll < 0.52) kind = "pilgrim"; else if (roll < 0.63) kind = "cart"; else if (roll < 0.75) kind = "trader"; else if (roll < 0.85) kind = "refugees"; else kind = "patrol";
-    if (kind === "ambush" || kind === "void") {
-      var n = 3 + Math.floor(Math.random() * 3), tm = (1 + 0.8 * tier()) * lvScale();
+    if (roll < 0.22) kind = "ambush"; else if (roll < 0.3) kind = "wolves"; else if (roll < 0.36 && lvl() >= 3) kind = "void"; else if (roll < 0.52) kind = "pilgrim"; else if (roll < 0.63) kind = "cart"; else if (roll < 0.75) kind = "trader"; else if (roll < 0.85) kind = "refugees"; else kind = "patrol";
+    if (kind === "ambush" || kind === "void" || kind === "wolves") {
+      var n = (kind === "wolves" ? 4 : 3) + Math.floor(Math.random() * 3), tm = (1 + 0.8 * tier()) * lvScale();
       for (var i = 0; i < n; i++) {
-        var ty = kind === "void" ? (i % 2 ? "inkspit" : "inkling") : (Math.random() < 0.3 ? "slinger" : "bandit"), d = ET[ty]; if (!d) continue;
+        var ty = kind === "void" ? (i % 2 ? "inkspit" : "inkling") : kind === "wolves" ? "hound" : (Math.random() < 0.3 ? "slinger" : "bandit"), d = ET[ty]; if (!d) continue;
         var x = spot[0] + (Math.random() - 0.5) * 70, y = spot[1] + (Math.random() - 0.5) * 70; if (!boxFree(a, x, y)) { x = spot[0]; y = spot[1]; }
         a.en.push({ type: ty, d: d, x: x, y: y, hx: x, hy: y, hp: d.hp * tm, hpm: d.hp * tm, cd: 0.8, kx: 0, ky: 0, flash: 0, dead: false, aggro: false, shot: 1 + Math.random(), rp: undefined, amb: id });
       }
-      if (kind === "void") aToast("The air goes cold and grey ahead.");
+      if (kind === "void") aToast("The air goes cold and grey ahead."); else if (kind === "wolves") aToast("Howling, close. Something's hunting along the road.");
       return;
     }
     var names = EVN[kind], nm = names[Math.floor(Math.random() * names.length)];
     OVW.ev.locals.push({ id: id, kind: kind, x: spot[0], y: spot[1], name: nm, n: kind === "refugees" ? 6 : kind === "patrol" ? 8 : kind === "pilgrim" ? 2 : 3, fac: f, done: 0 });
   }
   function ovLocalsTick(dt, moving) {
-    if (moving) { OVW.ev.t -= dt; if (OVW.ev.t <= 0) { OVW.ev.t = 40 + Math.random() * 45; try { ovEvent(); } catch (e) {} } }
+    if (moving) { OVW.ev.t -= dt; if (OVW.ev.t <= 0) { OVW.ev.t = 18 + Math.random() * 22; try { ovEvent(); } catch (e) {} } }
     // people walked past are left behind; ambushers you outran give up
     var a = AR; OVW.ev.locals = OVW.ev.locals.filter(function (l) { return Math.hypot(l.x - a.p.x, l.y - a.p.y) < 170 * ATS; });
     if (Math.random() < dt * 0.2) a.en = a.en.filter(function (e) { return !e.amb || e.dead || e.aggro || Math.hypot(e.x - a.p.x, e.y - a.p.y) < 160 * ATS; });
@@ -6176,8 +6177,8 @@ var BIMG_SRC={"farm": "data:image/webp;base64,UklGRqyAAABXRUJQVlA4WAoAAAAQAAAAZw
   function ovKeepBusy() {
     var cell = OVW.cell, P = AR.sp.P, co = cellOrg(cell);
     var bands = S.enemies.filter(function (e) { return e.kind === "bandit" && cellAt(e.x, e.y) === cell; }).length;
-    if (bands < 4 && P.camps.length) { var cmp = P.camps[Math.floor(Math.random() * P.camps.length)], x = cmp.x * OT + co[0], y = cmp.y * OT + co[1]; if (Math.hypot(x - S.px, y - S.py) > 120) S.enemies.push({ id: S.eid++, kind: "bandit", x: x, y: y, n: Math.round((8 + 2 * lvl() + Math.random() * 10) * DF.en), q: 0.9, cool: 0, dest: null }); }
-    var cars = (S.caravans || []).filter(function (c) { return c.cell === cell; }).length; if (cars < 6) ovCaravanDaily(cell);
+    if (bands < 7 && P.camps.length) { var cmp = P.camps[Math.floor(Math.random() * P.camps.length)], x = cmp.x * OT + co[0], y = cmp.y * OT + co[1]; if (Math.hypot(x - S.px, y - S.py) > 120) S.enemies.push({ id: S.eid++, kind: "bandit", x: x, y: y, n: Math.round((8 + 2 * lvl() + Math.random() * 10) * DF.en), q: 0.9, cool: 0, dest: null }); }
+    var cars = (S.caravans || []).filter(function (c) { return c.cell === cell; }).length; if (cars < 8) ovCaravanDaily(cell);
   }
   // in any town of a Realm that wants you: the bounty, and a way to pay it
   var ssOldW = siteSheet;
@@ -14875,6 +14876,30 @@ function ovMore2(P) {
   // top each Realm up to 68 camps, 17 caves and 104 caches (distances here are in the coarse base grid: 1 = 16 map units)
   put(P.camps, Math.max(0, 68 - P.camps.length), 3.2, 4.5); put(P.caves, Math.max(0, 17 - P.caves.length), 5, 5, CAVEN2.slice(Math.max(0, P.caves.length - 9))); put(P.chests, Math.max(0, 104 - P.chests.length), 2.2, 2.5);
 }
+// bandit holds (13 Nov): a dozen stockades per Realm, each a short walk off a road, with a full crew and a named chief
+var HOLDN = ["Redhand Hold", "The Crows' Stockade", "Gallows Rise", "Cutpurse Keep", "The Rat King's Fence", "Broken Wheel Hold", "Blackbriar Stockade", "The Toll-Takers' Camp", "Mudwater Hold", "The Hanged Man's Rest", "Scavengers' Ring", "Ditchmoor Stockade"];
+var HOLDC = ["Mother Gutter", "Hask the Toll", "One-Boot Pell", "Sorrel Knuckles", "Grey Agna", "Ketch Ninefingers", "Bram the Lender", "Old Lantern-Thief", "Widow Crake", "Tallow Jon", "Rook Halfprice", "Marl the Patient"];
+function ovMore4(P) {
+  var cell = curCell(), r = arng(nhash("ovholds") + cell * 197), co = cellOrg(cell), all = [];
+  Object.keys(P).forEach(function (k) { if (Array.isArray(P[k])) P[k].forEach(function (o) { if (o && typeof o.x === "number") all.push([o.x, o.y]); }); });
+  var st = ovLocalSites().map(function (s) { return [s.x / OT, s.y / OT]; }), made = 0, t = 0, off = Math.floor(r() * HOLDN.length);
+  function ok(tx, ty) {
+    if (tx < 8 || ty < 8 || tx > ON - 9 || ty > ON - 9) return false; var e = elevAtW(tx * OT + 8 + co[0], ty * OT + 8 + co[1]); if (e < 0.38 || e > 0.64) return false;
+    for (var i = 0; i < st.length; i++) if (Math.hypot(st[i][0] - tx, st[i][1] - ty) < 6) return false;
+    for (i = 0; i < all.length; i++) if (Math.hypot(all[i][0] - tx, all[i][1] - ty) < 2.6) return false; return true;
+  }
+  while (made < 12 && t++ < 4000 && st.length > 1) {
+    // between two neighbouring places (where the roads run), a short way off the line
+    var a = st[Math.floor(r() * st.length)], b = null, bd = 1e9;
+    st.forEach(function (q) { var d = Math.hypot(q[0] - a[0], q[1] - a[1]); if (d > 8 && d < bd && r() < 0.8) { bd = d; b = q; } });
+    if (!b || bd > 60) continue;
+    var f = 0.3 + r() * 0.4, sd = r() < 0.5 ? -1 : 1, nx = -(b[1] - a[1]) / bd, ny = (b[0] - a[0]) / bd, o = 3 + r() * 3;
+    var tx = Math.round(a[0] + (b[0] - a[0]) * f + nx * o * sd), ty = Math.round(a[1] + (b[1] - a[1]) * f + ny * o * sd);
+    if (!ok(tx, ty)) continue;
+    var lv = Math.min(4, ovLv(tx, ty) + (made % 4 === 3 ? 1 : 0)), i2 = (off + made) % HOLDN.length;
+    P.camps.push({ x: tx, y: ty, lv: lv, big: 1, name: HOLDN[i2], chief: HOLDC[(i2 * 5 + cell) % HOLDC.length] }); all.push([tx, ty]); made++;
+  }
+}
 function ovPoi() {
   var k = ovWalkK(); if (OVK !== k) { OVK = k; OT = 16 / k; ON = 175 * k; }
   var P = ovBase(ovPoi0);
@@ -14882,6 +14907,7 @@ function ovPoi() {
   if (!P.lz) { P.lz = 1; ovRescale(P, 1); try { ovBase(function () { ovPlaceLairs(P); }); } catch (e) { if (window.console) console.error(e); } }
   if (!P.more && OVK >= 16) { P.more = 1; ovRescale(P, 1); try { ovBase(function () { ovMore(P); }); } catch (e) { if (window.console) console.error(e); } }
   if (!P.more3 && OVK >= 16) { P.more3 = P.more2 = P.more = 1; ovRescale(P, 1); try { ovBase(function () { ovMore2(P); }); } catch (e) { if (window.console) console.error(e); } }
+  if (!P.more4 && OVK >= 16) { P.more4 = 1; ovRescale(P, 1); try { ovBase(function () { ovMore4(P); }); } catch (e) { if (window.console) console.error(e); } }
   ovRescale(P, OVK);
   return P;
 }
