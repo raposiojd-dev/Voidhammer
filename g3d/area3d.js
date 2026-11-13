@@ -659,8 +659,10 @@ function buildArea(st, api, A) {
   // ---------- wildlife (big overland, Medium/High): herds that graze, wander and bolt when you come close ----------
   const WILD = { ember: ["deer", "fox"], stone: ["stag", "wolf"], storm: ["deer", "cow"], light: ["deer", "cow"], frost: ["stag", "wolf", "fox"], spirit: ["deer", "stag"], shadow: ["wolf", "fox"], metal: ["wolf", "fox"] };
   const WH = { deer: 1.45, stag: 1.85, wolf: 0.95, fox: 0.55, cow: 1.5 }, WN = { deer: [3, 5], stag: [1, 3], wolf: [3, 4], fox: [1, 2], cow: [3, 6] }, WFLEE = { deer: 18, stag: 16, wolf: 12, fox: 14, cow: 7 };
+  const WHP = { deer: 2, stag: 3, wolf: 3, fox: 1, cow: 4 }, WNAME = { deer: "deer", stag: "stag", wolf: "wolf", fox: "fox", cow: "wild cow" };
   const herds = [], wildP = {}; let wildOn = false, wildT = 0; window.__vhWild = herds;
-  if (big && kit.mm) { const ks = WILD[info.realm] || ["deer", "cow"]; Promise.all(ks.map((k) => loadPack(k).then((p) => { if (p && p.gltf) wildP[k] = p; }, () => {}))).then(() => { wildOn = Object.keys(wildP).length > 0; }); }
+  const wildNight = () => { let h = 12; try { h = api.tod(); } catch (e) {} return h >= 20 || h < 5; };
+  if (big && kit.mm) { const ks = (WILD[info.realm] || ["deer", "cow"]).slice(); if (ks.indexOf("wolf") < 0) ks.push("wolf"); Promise.all(ks.map((k) => loadPack(k).then((p) => { if (p && p.gltf) wildP[k] = p; }, () => {}))).then(() => { wildOn = Object.keys(wildP).length > 0; }); }
   const wildMat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.85, metalness: 0 }); st.track(wildMat); wildMat.userData.vhEnv = 1;
   const openTile = (x, z) => { const tx = Math.floor(x / T), ty = Math.floor(z / T); if (tx < 1 || ty < 1 || tx >= W - 1 || ty >= H - 1) return false; const q = g[ty][tx]; return q === 0 || q === 8 || q === 10 || q === 11; };
   function wildOne(k) {
@@ -669,31 +671,65 @@ function buildArea(st, api, A) {
     const g2 = new THREE.Group(); o.scale.multiplyScalar(sc); o.position.y = -bb.min.y * sc; g2.add(o);
     const mixer = new THREE.AnimationMixer(o), acts = {}; P.gltf.animations.forEach((c) => { acts[c.name] = mixer.clipAction(c); });
     const a0 = acts.Eating || acts.Idle; if (a0) { a0.play(); a0.time = Math.random() * 3; }
-    return { g: g2, mixer, acts, cur: acts.Eating ? "Eating" : "Idle", k, vx: 0, vz: 0, t: Math.random() * 6, flee: 0 };
+    if (acts.Death) { acts.Death.setLoop(THREE.LoopOnce, 1); acts.Death.clampWhenFinished = true; }
+    return { g: g2, mixer, acts, cur: acts.Eating ? "Eating" : "Idle", k, vx: 0, vz: 0, t: Math.random() * 6, flee: 0, hp: WHP[k] || 2, bite: 0.8 };
   }
   function wildPlay(a, want) { if (want === a.cur || !a.acts[want]) return; a.acts[want].reset().fadeIn(0.3).play(); if (a.acts[a.cur]) a.acts[a.cur].fadeOut(0.3); a.cur = want; }
+  // hunting (13 Nov): your sword or your bow can bring an animal down; walk up and butcher it for meat and hides.
+  // At night wolves hunt you back, and a wolf you've hurt comes for you any time of day.
+  window.__vh3dHunt = (how, fx, fz) => {
+    if (!wildOn || ctlGone()) return null; const hx = A.p.x * PX, hz = A.p.y * PX, L = Math.hypot(fx, fz) || 1; fx /= L; fz /= L;
+    let best = null, bd = 1e9;
+    for (const h of herds) for (const a of h.a) {
+      if (a.dead) continue; const p = a.g.position, dx = p.x - hx, dz = p.z - hz, d = Math.hypot(dx, dz), dot = (dx * fx + dz * fz) / (d || 1);
+      const ok = how === "shot" ? d < 38 && dot > 0.88 : d < 3 && (d < 1.4 || dot > 0.2); if (ok && d < bd) { bd = d; best = { a, h, d }; }
+    }
+    if (!best) return null; const a = best.a;
+    if (how === "shot" && Math.random() > Math.max(0.3, 0.97 - best.d / 55 - (a.flee > 0 ? 0.15 : 0))) { a.flee = 5; return { miss: 1, k: a.k }; }
+    a.hp -= how === "shot" ? 2 : 1; spark(a.g.position.x, 0.9, a.g.position.z, 0xd04a3a); try { api.sfx("hit"); } catch (e) {}
+    if (a.k === "wolf") a.angry = 1;
+    if (a.hp <= 0) {
+      a.dead = 1; a.deadT = 0; wildPlay(a, "Death"); for (const o of best.h.a) if (o !== a && o.k !== "wolf") o.flee = 6;
+      try { api.hunt({ ev: "kill", k: a.k, n: WNAME[a.k] }); } catch (e) {} return { kill: 1, k: a.k };
+    }
+    if (a.k !== "wolf") for (const o of best.h.a) if (o.k !== "wolf") o.flee = 6;
+    return { hit: 1, k: a.k };
+  };
+  function wildCarcass(hx, hz) { let best = null, bd = 3.2; for (const h of herds) for (const a of h.a) { if (!a.dead || a.cut) continue; const d = Math.hypot(a.g.position.x - hx, a.g.position.z - hz); if (d < bd) { bd = d; best = a; } } return best; }
+  function wildButcher(a) { if (!a || a.cut) return; a.cut = 1; a.deadT = 999; scene.remove(a.g); a.mixer.stopAllAction(); try { api.hunt({ ev: "butcher", k: a.k, n: WNAME[a.k] }); } catch (e) {} }
   function wildSpawn(hx, hz) {
     const ks = Object.keys(wildP); if (!ks.length) return;
     for (let tries = 0; tries < 12; tries++) {
       const ang = Math.random() * Math.PI * 2, d = 55 + Math.random() * 60, x = hx + Math.cos(ang) * d, z = hz + Math.sin(ang) * d;
       if (!openTile(x, z) || herds.some((h) => Math.hypot(h.x - x, h.z - z) < 40)) continue;
-      const k = ks[Math.floor(Math.random() * ks.length)], [n0, n1] = WN[k], n = n0 + Math.floor(Math.random() * (n1 - n0 + 1)), h = { k, x, z, a: [] };
+      const day = ks.filter((q) => q !== "wolf" || (WILD[info.realm] || []).indexOf("wolf") >= 0), night = wildNight() && wildP.wolf && Math.random() < 0.6;
+      const k = night ? "wolf" : day.length ? day[Math.floor(Math.random() * day.length)] : ks[0], [n0, n1] = WN[k], n = n0 + Math.floor(Math.random() * (n1 - n0 + 1)), h = { k, x, z, a: [] };
       for (let i = 0; i < n; i++) { const an = wildOne(k), px = x + (Math.random() - 0.5) * 6, pz = z + (Math.random() - 0.5) * 6; an.g.position.set(openTile(px, pz) ? px : x, 0, openTile(px, pz) ? pz : z); an.g.rotation.y = Math.random() * 6.28; scene.add(an.g); h.a.push(an); }
       herds.push(h); return;
     }
   }
   function syncWild(dt, hx, hz, spawn) {
     if (spawn) {
-      for (let i = herds.length - 1; i >= 0; i--) { const h = herds[i]; if (Math.hypot(h.x - hx, h.z - hz) > 170) { h.a.forEach((a) => { scene.remove(a.g); a.mixer.stopAllAction(); }); herds.splice(i, 1); } }
+      for (const h of herds) for (let j = h.a.length - 1; j >= 0; j--) { const a = h.a[j]; if (a.dead && (a.cut || a.deadT > 120)) { if (!a.cut) { scene.remove(a.g); a.mixer.stopAllAction(); } h.a.splice(j, 1); } }
+      for (let i = herds.length - 1; i >= 0; i--) { const h = herds[i]; if (!h.a.length || Math.hypot(h.x - hx, h.z - hz) > 170) { h.a.forEach((a) => { scene.remove(a.g); a.mixer.stopAllAction(); }); herds.splice(i, 1); } }
       if (herds.length < 6) wildSpawn(hx, hz);
     }
+    const night = wildNight(), busy = api.inDlg() || api.sheetOpen();
     for (const h of herds) {
-      let cx = 0, cz = 0; for (const a of h.a) { cx += a.g.position.x; cz += a.g.position.z; } h.x = cx / h.a.length; h.z = cz / h.a.length;
+      if (!h.a.length) continue; let cx = 0, cz = 0; for (const a of h.a) { cx += a.g.position.x; cz += a.g.position.z; } h.x = cx / h.a.length; h.z = cz / h.a.length;
       for (const a of h.a) {
         const p = a.g.position, dh = Math.hypot(p.x - hx, p.z - hz);
-        if (dh < WFLEE[a.k]) a.flee = 4 + Math.random() * 2;
+        if (a.dead) { a.deadT += dt; if (dh < 90 && a.deadT < 4) a.mixer.update(dt); continue; }
+        const hunt = a.k === "wolf" && (night || a.angry) && dh < 45 && !busy;
+        if (!hunt && dh < WFLEE[a.k]) a.flee = 4 + Math.random() * 2;
         let sp = 0;
-        if (a.flee > 0) { a.flee -= dt; const ux = (p.x - hx) / (dh || 1), uz = (p.z - hz) / (dh || 1); a.vx = ux; a.vz = uz; sp = a.k === "cow" ? 2.6 : 8.5; wildPlay(a, sp > 3 ? "Gallop" : "Walk"); }
+        if (hunt) {
+          a.flee = 0; const ux = (hx - p.x) / (dh || 1), uz = (hz - p.z) / (dh || 1); a.vx = ux; a.vz = uz;
+          if (dh > 1.6) { sp = dh > 8 ? 8 : 4.5; wildPlay(a, "Gallop"); a.bite = Math.min(a.bite, 0.6); }
+          else { wildPlay(a, "Attack"); a.bite -= dt; if (a.bite <= 0) { a.bite = 1.2 + Math.random() * 0.5; try { api.bite(1); } catch (e) {} } const want = Math.atan2(ux, uz); let dr = want - a.g.rotation.y; dr = Math.atan2(Math.sin(dr), Math.cos(dr)); a.g.rotation.y += dr * Math.min(1, dt * 8); }
+          if (!a.howl && dh < 40) { a.howl = 1; try { api.hunt({ ev: "wolves", n: night }); } catch (e) {} }
+        }
+        else if (a.flee > 0) { a.flee -= dt; const ux = (p.x - hx) / (dh || 1), uz = (p.z - hz) / (dh || 1); a.vx = ux; a.vz = uz; sp = a.k === "cow" ? 2.6 : 8.5; wildPlay(a, sp > 3 ? "Gallop" : "Walk"); }
         else { a.t -= dt; if (a.t <= 0) { a.t = 3 + Math.random() * 6; if (Math.random() < 0.45) { const an = Math.random() * 6.28, back = Math.hypot(h.x - p.x, h.z - p.z) > 6; a.vx = back ? (h.x - p.x) : Math.cos(an); a.vz = back ? (h.z - p.z) : Math.sin(an); const L = Math.hypot(a.vx, a.vz) || 1; a.vx /= L; a.vz /= L; a.walk = 1; } else a.walk = 0; }
           if (a.walk) { sp = 1.1; wildPlay(a, "Walk"); } else if (a.cur === "Walk" || a.cur === "Gallop") wildPlay(a, a.acts.Eating && Math.random() < 0.6 ? "Eating" : "Idle"); }
         if (sp > 0) { const nx = p.x + a.vx * sp * dt, nz = p.z + a.vz * sp * dt; if (openTile(nx, nz)) { p.x = nx; p.z = nz; } else { const ox = a.vx; a.vx = -a.vz; a.vz = ox; a.t = 0; } const want = Math.atan2(a.vx, a.vz); let dr = want - a.g.rotation.y; dr = Math.atan2(Math.sin(dr), Math.cos(dr)); a.g.rotation.y += dr * Math.min(1, dt * 6); }
@@ -969,6 +1005,7 @@ function buildArea(st, api, A) {
     const u = api.useInfo(); nearDoor = null;
     if (!u && doors.length) { let bd = 9; for (const dr of doors) { const d = Math.hypot(dr.x - hx, dr.z - hz); if (d < dr.r && d < bd) { bd = d; nearDoor = dr; } } }
     const act = u ? { l: u.l, n: u.n } : nearDoor ? { l: "Go in", n: nearDoor.label, door: nearDoor } : nearParty ? { l: "Talk", n: nearParty.q.name.split(" · ")[0], party: nearParty.q.talk } : null;
+    if (!act && over && wildOn) { const c = wildCarcass(hx, hz); if (c) { useAct = { l: "Butcher", n: WNAME[c.k], butcher: c }; const k2 = "B|" + c.k; if (k2 !== (useBtn._k || "")) { useBtn._k = k2; useBtn.innerHTML = "Butcher<small>" + esc(WNAME[c.k]) + "</small>"; } return; } }
     if (!act && over && api.gatherInfo) { const c = api.gatherInfo(); if (c) { useAct = { l: c.l, n: c.n, gather: 1 }; const k2 = c.l + "|" + c.n; if (k2 !== (useBtn._k || "")) { useBtn._k = k2; useBtn.innerHTML = esc(c.l) + "<small>" + esc(c.n) + "</small>"; } return; } }
     if (!act && over && api.climbInfo) { const c = api.climbInfo(); if (c) { useAct = { l: c.l, n: c.n, climb: 1 }; const k2 = c.l + "|" + c.n; if (k2 !== (useBtn._k || "")) { useBtn._k = k2; useBtn.innerHTML = esc(c.l) + "<small>" + esc(c.n) + "</small>"; } return; } }
     const key = act ? act.l + "|" + act.n : "";
@@ -976,7 +1013,7 @@ function buildArea(st, api, A) {
     useAct = act;
   }
   // E / the button: re-check first, so a press right after arriving (or on a slow frame) still acts on what is here now
-  function doUse() { refreshUse(A.p.x * PX, A.p.y * PX); if (!useAct) return; if (useAct.door) { api.sfx("door"); inp.keys = {}; api.openPlace(useAct.door.key, useAct.door.sid); } else if (useAct.party) { inp.keys = {}; api.partyUse(useAct.party); } else if (useAct.climb) { inp.keys = {}; api.climb(); } else if (useAct.gather) { api.gather(); refreshUse(A.p.x * PX, A.p.y * PX); } else api.use(); }
+  function doUse() { refreshUse(A.p.x * PX, A.p.y * PX); if (!useAct) return; if (useAct.door) { api.sfx("door"); inp.keys = {}; api.openPlace(useAct.door.key, useAct.door.sid); } else if (useAct.party) { inp.keys = {}; api.partyUse(useAct.party); } else if (useAct.climb) { inp.keys = {}; api.climb(); } else if (useAct.butcher) { wildButcher(useAct.butcher); refreshUse(A.p.x * PX, A.p.y * PX); } else if (useAct.gather) { api.gather(); refreshUse(A.p.x * PX, A.p.y * PX); } else api.use(); }
   inp.blocked = () => api.sheetOpen();
   inp.onKey = (k) => {
     if (k === "e" || k === "f") doUse();
