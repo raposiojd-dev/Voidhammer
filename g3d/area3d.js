@@ -183,6 +183,9 @@ function buildArea(st, api, A) {
     }
   }
   if (big) window.__vhHgt = hgt;
+  // tiles inside a town or village built into the open world: no regional tint there, so the town's ground is its own colour
+  let inTownT = null;
+  if (big && sp.stamps && sp.stamps.length) { inTownT = new Uint8Array(W * H); for (const z of sp.stamps) { const w = (z.ts && z.ts.w) || 0, h = (z.ts && z.ts.h) || 0; for (let y = Math.max(0, z.oy); y < Math.min(H, z.oy + h); y++) for (let x = Math.max(0, z.ox); x < Math.min(W, z.ox + w); x++) inTownT[y * W + x] = 1; } }
   // bake a freshly built chunk onto the hills: instanced props and plain meshes ride the ground under them
   const m4 = new THREE.Matrix4(), v3h = new THREE.Vector3();
   function hillBake(grp, skip) {
@@ -207,7 +210,7 @@ function buildArea(st, api, A) {
         const t = g[ty][tx], v = vnoise(tx * 0.7, ty * 0.7);
         if (t === 1) { tmp.copy(cPath); blend += 1; } else if (t === 9) { tmp.copy(cPlaza); blend += 1; } else if (t === 3) { tmp.copy(cWater).multiplyScalar(0.35); wet++; }
         else if (t === 2 && cave) tmp.copy(cTree2).multiplyScalar(0.8); else if (t === 2 || t === 10) tmp.copy(cG0).lerp(cTree, 0.35 + v * 0.15); else if (t === 11) tmp.copy(cG0).lerp(cRock, 0.45 + v * 0.2); else tmp.copy(v > 0.5 ? cG1 : cG0);
-        if (over && sp.reg && api.regTint) { const rt = api.regTint(sp.reg[ty * W + tx]); if (rt !== null && rt !== undefined) tmp.lerp(c.set(rt), 0.22); }
+        if (over && sp.reg && api.regTint && !(inTownT && inTownT[ty * W + tx])) { const rt = api.regTint(sp.reg[ty * W + tx]); if (rt !== null && rt !== undefined) tmp.lerp(c.set(rt), 0.22); }
         r += tmp.r; gr += tmp.g; b += tmp.b; k++;
       }
       k = k || 1; const nz = 0.86 + vnoise(ix * 0.31, j * 0.31) * 0.28;
@@ -998,6 +1001,33 @@ function buildArea(st, api, A) {
     if (gf) { scene.add(gf); st.onGfx.push((q) => { gf.visible = q !== "low"; }); }
   }
 
+  // ---------- towns built into the open world look as they do when you enter them from the map (14 Nov) ----------
+  // same trees and flower beds (the grid carries them), grass underfoot, cobbled streets in towns and castles, and the
+  // clearer town air once you're inside
+  const townBox = [];
+  if (big && sp.SP) {
+    for (const q of sp.SP) { const z = q.stamp; if (!z || !z.ts) continue; townBox.push({ x0: z.ox, y0: z.oy, x1: z.ox + z.ts.w, y1: z.oy + z.ts.h, town: !!(q.s && q.s.type && q.s.type !== "village") }); }
+    if (!cave && st.gfx !== "low" && townBox.length) {
+      const spots = []; for (const b of townBox) for (let y = b.y0; y < b.y1; y++) for (let x = b.x0; x < b.x1; x++) { const t = g[y] && g[y][x]; if (t === 0 || t === 8) spots.push(x, y); }
+      const tint = GRASS_TINT[info.realm] || [0x6a8a3a, 0x9aa84a], n = Math.min(7000, Math.round(spots.length / 2 * 1.6));
+      const gf = n > 0 ? grassField((x) => st.track(x), n, () => { const k = Math.floor(rand() * (spots.length / 2)) * 2; return [(spots[k] + rand()) * T, 0, (spots[k + 1] + rand()) * T]; }, tint[0], tint[1]) : null;
+      if (gf) { gf.frustumCulled = false; gf.userData.hillBaked = 1; scene.add(gf); st.onGfx.push((q) => { gf.visible = q !== "low"; }); }
+    }
+    if (!cave && townBox.some((b) => b.town)) {
+      const cMat = st.track(groundMat(art, GT, "cobble", info.realm !== "frost" && info.realm !== "light")); cMat.polygonOffset = true; cMat.polygonOffsetFactor = -1; cMat.polygonOffsetUnits = -2;
+      for (const b of townBox) if (b.town) { const m = new THREE.Mesh(st.track(groundGeo(b.x0, b.y0, b.x1 - b.x0, b.y1 - b.y0)), cMat); m.position.y = 0.012; m.receiveShadow = true; m.userData.hillBaked = 1; scene.add(m); }
+    }
+  }
+  const fogBase = scene.fog ? scene.fog.color.clone() : null, fogTown = scene.fog ? new THREE.Color(townTone(P, info.realm).fog) : null; let townK = 0, gradeTown = false;
+  function townAir(dt, hx, hz) {
+    if (!townBox.length || !scene.fog) return; const tx = hx / T, tz = hz / T; let k = 0, tn = false;
+    for (const b of townBox) { const d = Math.max(b.x0 - tx, tx - b.x1, b.y0 - tz, tz - b.y1), kk = clamp(1 - d / 10, 0, 1); if (kk > k) { k = kk; tn = b.town; } }
+    townK = lerp(townK, k, Math.min(1, dt * 1.5));
+    scene.fog.density = lerp(0.02, tn ? 0.011 : 0.014, townK);
+    if (fogBase) scene.fog.color.copy(fogBase).lerp(tn ? fogTown : fogBase, townK);
+    const want = tn && townK > 0.6 ? true : townK < 0.4 ? false : gradeTown; if (want !== gradeTown) { gradeTown = want; st.setGrade(info.realm, { town: want }); }
+  }
+
   // ---------- DOM overlays: damage numbers, health bars, item names, the Use button, the hurt flash ----------
   const root = st.root, flEls = [], hbEls = [];
   for (let i = 0; i < 14; i++) { const d = document.createElement("div"); d.className = "v3-fl"; d.hidden = true; root.appendChild(d); flEls.push(d); }
@@ -1367,6 +1397,7 @@ function buildArea(st, api, A) {
 
     // culling: far chunks off
     if (big && frameN % 6 === 0) streamChunks(hx, hz, 2);
+    if (big) townAir(dt, hx, hz);
     if (frameN % 8 === 0) for (const c of chunks) { const d = Math.hypot(c.x - hx, c.z - hz); if (!small) c.grp.visible = d < 72; if (c.near) { const nv = d < LODR; c.near.visible = nv; c.far.visible = !nv; } }
 
     // camera: over the shoulder; in a conversation, frame the speaker; never through a wall

@@ -5553,7 +5553,7 @@ var BIMG_SRC={"farm": "data:image/webp;base64,UklGRqyAAABXRUJQVlA4WAoAAAAQAAAAZw
       });
       // the town's own chests and your home chest, exactly where they stand when you enter from the map (same keys, same loot)
       try {
-        OVW.tb = OVW.tb || {}; var TB = OVW.tb[aid]; if (!TB) { var TBa = buildArea0(aid); TB = OVW.tb[aid] = (TBa.npcs || []).filter(function (n) { return n.chest || n.id === "homechest"; }); }
+        OVW.tb = OVW.tb || {}; OVW.tg = OVW.tg || {}; var TB = OVW.tb[aid]; if (!TB || !OVW.tg[aid]) { var TBa = buildArea0(aid); TB = OVW.tb[aid] = (TBa.npcs || []).filter(function (n) { return n.chest || n.id === "homechest"; }); OVW.tg[aid] = (TBa.g || []).map(function (r) { return r.slice(); }); }
         TB.forEach(function (n) { sp.npcs.push(Object.assign({}, n, { id: aid + ":" + n.id, x: n.x + ox, y: n.y + oy, town: q.id })); });
       } catch (e) {}
       var walled = q.s.type !== "village", shut = walled && (hostileSite(q.s) || wanted(q.s.owner) >= 50);
@@ -5724,6 +5724,11 @@ var BIMG_SRC={"farm": "data:image/webp;base64,UklGRqyAAABXRUJQVlA4WAoAAAAQAAAAZw
         if (t3 === 2) row2[xx2] = (hsh % 100) < 13 && row2[xx2 - 1] !== 2 && rowU[xx2] !== 2 ? 2 : 10;
         else row2[xx2] = (hsh % 100) < 9 ? 7 : 11;
       } }
+      // the towns' own trees and flower beds, exactly where they grow when you enter one from the map (14 Nov)
+      if (OVK > 1) SP.forEach(function (q) {
+        var tq = q.stamp, TGg = tq && (OVW.tg || {})[tq.aid]; if (!TGg) return;
+        for (var Y = 0; Y < tq.ts.h; Y++) for (var X = 0; X < tq.ts.w; X++) { var tt = TGg[Y] && TGg[Y][X], gy = tq.oy + Y, gx = tq.ox + X; if ((tt === 2 || tt === 8) && g[gy] && (g[gy][gx] === 0 || g[gy][gx] === 10)) g[gy][gx] = tt; }
+      });
       var OPN = SP.filter(function (q) { return !(q.wall && q.wall.shut); }); if (!OPN.length) OPN = SP;
       var pts = []; OPN.forEach(function (q) { pts.push([q.cx, q.cy + 2]); }); P.caves.forEach(function (cv) { pts.push([cv.x, cv.y + 2]); }); (sp.qsites || []).forEach(function (z) { pts.push([z.x, z.y + 2]); }); (sp.portals || []).forEach(function (z) { pts.push([z.x, z.y + 2]); });
       P.chests.forEach(function (cm) { pts.push([cm.x, cm.y]); }); P.camps.forEach(function (cm) { pts.push([cm.x, cm.y]); }); P.wf.forEach(function (cm) { pts.push([cm.x, cm.y]); }); P.qc.forEach(function (cm) { if (cm) pts.push([cm.x, cm.y]); }); P.rt.forEach(function (z) { pts.push([z.g.x, z.g.y]); pts.push([z.a.x, z.a.y]); });
