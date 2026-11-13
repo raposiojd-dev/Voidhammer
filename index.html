@@ -5561,6 +5561,8 @@ var BIMG_SRC={"farm": "data:image/webp;base64,UklGRqyAAABXRUJQVlA4WAoAAAAQAAAAZw
       }
       sp.tnames.push({ x: q.cx, y: oy - 3, name: q.s.name, sub: (q.s.type === "village" ? "village" : q.s.type) + (FAC[q.s.owner] ? " · " + FAC[q.s.owner].name : "") + (shut ? " · gates shut to you" : ""), sid: q.id });
     });
+    // camps you made (survival): a tent and a fire you can come back to
+    try { var mcl = (S.mycamps || {})[curCell()] || []; mcl.forEach(function (m, i) { if (OVK > 1) sp.npcs.push(ovCampNpc(curCell(), i, m)); }); } catch (e) {}
     // the Realm Bridge and the Shadowdeep tunnel of this shard stand on the ground too
     try {
       var cc = OVW.cell >= 0 ? OVW.cell : curCell(), co = cellOrg(cc);
@@ -5607,7 +5609,8 @@ var BIMG_SRC={"farm": "data:image/webp;base64,UklGRqyAAABXRUJQVlA4WAoAAAAQAAAAZw
       else { var bt = BTIER[Math.min(3, lv - 1 + (q.boss ? 1 : 0))]; sp.enemies.push([bt[q.boss % bt.length], qc.x, qc.y, lv, "", q.id]); for (j = 0; j < 2; j++) sp.enemies.push([ETIER[Math.min(3, lv - 1)][j], qc.x + (j ? 2 : -2), qc.y + 1, lv, "", q.id]); }
     });
     rtEnemies(sp, c, P);
-    sp.pre = function (g, keep, r) {
+    sp.pre = function (g, keep, r) { sp.pre0(g, keep, r); try { ovApplyFelled(g); } catch (e) {} };
+    sp.pre0 = function (g, keep, r) {
       var sig = curCell() + "|" + N + "|" + SP.map(function (q) { return q.id + (q.stamp ? "s" : "") + (q.wall && q.wall.shut ? "x" : ""); }).join(",") + "|" + (sp.qsites || []).map(function (z) { return z.q.id; }).join(",") + "|" + (sp.portals || []).length;
       if (OVW.tc && OVW.tc.sig === sig) {
         var TC = OVW.tc; for (var cy3 = 0; cy3 < N; cy3++) g[cy3].set(TC.g[cy3]); sp.RN = TC.RN; sp.reg = TC.reg; sp.reach = TC.reach; sp.signs = TC.signs.slice();
@@ -5897,6 +5900,75 @@ var BIMG_SRC={"farm": "data:image/webp;base64,UklGRqyAAABXRUJQVlA4WAoAAAAQAAAAZw
     try { ovLocalsTick(dt, mv > 0.2); OVW.busy = (OVW.busy || 0) - dt; if (OVW.busy <= 0) { OVW.busy = 20; ovKeepBusy(); } } catch (e) {}
     OVW.h = (OVW.h + dt / 60) % 24; // the sky turns slowly while you walk: an hour a minute
   };
+  // ================= Survival, part 1 (13 Nov): fell trees, break rocks, make camp =================
+  // Timber and stone go in your pack (S.wood, S.stone); felled trees and broken rocks stay gone for about 24 days, then
+  // grow back. Eight timber makes a camp anywhere in the open: rest the night through, cook, or pack it up again.
+  function ovApplyFelled(g) {
+    var F = (S.felled || {})[curCell()]; if (!F) return;
+    Object.keys(F).forEach(function (k) { var v = F[k]; if (S.day - v[0] > 24) { delete F[k]; return; } var xy = k.split(","), x = +xy[0], y = +xy[1]; if (g[y] && g[y][x] === v[1]) g[y][x] = v[1] === 2 ? 10 : 11; });
+  }
+  function ovInTown(x, y) { var st = (AR && AR.sp.stamps) || []; for (var i = 0; i < st.length; i++) { var z = st[i]; if (x >= z.ox - 3 && y >= z.oy - 3 && x <= z.ox + z.ts.w + 3 && y <= z.oy + z.ts.h + 3) return true; } return false; }
+  function ovGatherSpot() {
+    if (!ovLive() || AR.dlg) return null; var a = AR, fx = a.p.x / ATS, fy = (a.p.y - 6) / ATS, tx = Math.floor(fx), ty = Math.floor(fy), best = null, bd = 1.9;
+    for (var dy = -2; dy <= 2; dy++) for (var dx = -2; dx <= 2; dx++) {
+      var x = tx + dx, y = ty + dy; if (x < 1 || y < 1 || x >= a.W - 1 || y >= a.H - 1) continue; var t = a.g[y][x]; if (t !== 2 && t !== 7) continue;
+      var d = Math.hypot(x + 0.5 - fx, y + 0.5 - fy); if (d < bd && !ovInTown(x, y)) { bd = d; best = { x: x, y: y, t: t }; }
+    }
+    return best;
+  }
+  window.__ovGatherInfo = function () { var s = ovGatherSpot(); if (!s) return null; return s.t === 2 ? { l: "Fell the tree", n: "timber " + (S.wood || 0) } : { l: "Break the rock", n: "stone " + (S.stone || 0) }; };
+  window.__ovGather = function () {
+    var s = ovGatherSpot(); if (!s) return; var now = performance.now(); if (OVW.gT && now - OVW.gT < 700) return; OVW.gT = now;
+    var cell = OVW.cell; S.felled = S.felled || {}; var F = S.felled[cell] = S.felled[cell] || {}; F[s.x + "," + s.y] = [S.day, s.t];
+    AR.g[s.y][s.x] = s.t === 2 ? 10 : 11; try { if (window.__vh3dTile) window.__vh3dTile(s.x, s.y); } catch (e) {}
+    var n, msg;
+    if (s.t === 2) { n = 2 + Math.floor(Math.random() * 3); S.wood = (S.wood || 0) + n; msg = "Timber! +" + n + " timber (" + S.wood + ")."; if (Math.random() < 0.08) { var c = cp(); c.bread = Math.min(9, (c.bread || 0) + 1); msg += " A forager's bundle in the roots: +1 bread."; } }
+    else { n = 1 + Math.floor(Math.random() * 3); S.stone = (S.stone || 0) + n; msg = "The rock splits. +" + n + " stone (" + S.stone + ")."; if (Math.random() < 0.1) { var cr = 10 + Math.floor(Math.random() * 20); S.crowns += cr; msg += " A seam of copper: +" + cr + " crowns."; } }
+    AR.floats.push({ x: AR.p.x, y: AR.p.y - 28, t: 1.3, s: s.t === 2 ? "+" + n + " timber" : "+" + n + " stone", col: "#e8d08a" }); aToast(msg); try { sfx("hit"); } catch (e) {}
+  };
+  function ovCampNpc(cell, i, m) { return { id: "mycamp" + i, name: "Your camp", x: m.x, y: m.y, mycamp: 1, small: 1, col: "#c8873a", d: function () { return "mycamp:" + cell + ":" + i; } }; }
+  var campB = document.createElement("button"); campB.id = "acamp"; campB.hidden = true;
+  campB.style.cssText = "position:absolute;right:calc(11.4rem + env(safe-area-inset-right,0px));bottom:calc(7.6rem + env(safe-area-inset-bottom,0px));z-index:3;padding:.4rem .8rem;border-radius:16px;background:linear-gradient(#5a3e18,#2a1a0a);border:1px solid #c8873a;color:#f4e2b8;font-family:Cinzel,Georgia,serif;font-weight:700;font-size:.7rem;letter-spacing:.05em;box-shadow:0 2px 8px rgba(0,0,0,.6);touch-action:manipulation";
+  function ovMakeCamp() {
+    if (!ovLive() || (S.wood || 0) < 8) return; var a = AR, tx = Math.floor(a.p.x / ATS), ty = Math.floor(a.p.y / ATS);
+    if (ovInTown(tx, ty)) { aToast("Not in town. Walk out into the country to make camp."); return; }
+    var cell = OVW.cell; S.mycamps = S.mycamps || {}; var L = S.mycamps[cell] = S.mycamps[cell] || [];
+    if (L.length >= 3) { aToast("You already have three camps in this Realm. Pack one up first."); return; }
+    var cx = tx + 2, cy = ty; if (a.g[cy] && a.g[cy][cx] !== 0 && a.g[cy][cx] !== 10 && a.g[cy][cx] !== 11 && a.g[cy][cx] !== 8) { cx = tx; cy = ty - 2; }
+    S.wood -= 8; var m = { x: cx, y: cy, day: S.day }; L.push(m);
+    var n = Object.assign(ovCampNpc(cell, L.length - 1, m), { px: cx * ATS + 8, py: cy * ATS + 14 }); a.npcs.push(n); try { if (window.__vh3dAddNpc) window.__vh3dAddNpc(n); } catch (e) {}
+    aToast("You pitch a tent and get a fire going. Talk to the camp to rest, cook or pack up."); try { save(); } catch (e) {}
+  }
+  campB.addEventListener("click", function (ev) { ev.stopPropagation(); try { ovMakeCamp(); } catch (e) {} });
+  setInterval(function () {
+    try {
+      if (!ovLive() || !$("area")) { campB.hidden = true; return; } if (campB.parentNode !== $("area")) $("area").appendChild(campB);
+      var w = S.wood || 0, ok = w >= 8 && !AR.dlg && !sheet && !ovInTown(Math.floor(AR.p.x / ATS), Math.floor(AR.p.y / ATS));
+      campB.hidden = !(ok || (w > 0 && !AR.dlg && !sheet)); campB.disabled = !ok; campB.style.opacity = ok ? 1 : 0.55;
+      campB.textContent = ok ? "Make camp · 8 timber" : "Timber " + w + "/8 · stone " + (S.stone || 0);
+    } catch (x) {}
+  }, 700);
+  // the camp, and selling what you carry to caravans and pedlars
+  // installed after every other dialogue hook, so it sees the caravans' and pedlars' menus
+  setTimeout(function () { var gdSurv = getDlg;
+  getDlg = function (id) {
+    if (id && id.indexOf("mycamp:") === 0) {
+      var pz = id.split(":"), cell = +pz[1], i = +pz[2], L = (S.mycamps || {})[cell] || [], m = L[i]; if (!m) return { n: "Your camp", t: "Cold ashes. Someone's been through.", c: [{ t: "Go." }] };
+      return { n: "Your camp", t: "A tent, a ring of stones and a fire that takes a moment to coax back. It's quiet out here.", c: [
+        { t: "Rest until morning", fn: function () { AR.p.hp = AR.p.max; OVW.h = 6.5; setTimeout(function () { aToast("You sleep by the fire and wake stiff and whole. Morning."); }, 50); } },
+        { t: "Cook a meal (5 grain → 1 bread)", fn: function () { if (S.grain < 5) { aToast("You need 5 grain."); return; } var c = cp(); if ((c.bread || 0) >= 9) { aToast("Your pack can't hold more bread."); return; } S.grain -= 5; c.bread = (c.bread || 0) + 1; setTimeout(function () { aToast("Flatbread on a hot stone. +1 bread."); }, 50); } },
+        { t: "Pack up the camp (+4 timber back)", fn: function () { L.splice(i, 1); S.wood = (S.wood || 0) + 4; AR.npcs = AR.npcs.filter(function (q) { return !q.mycamp; }); try { if (window.__vh3dDropCamps) window.__vh3dDropCamps(); L.forEach(function (m2, j) { var n2 = Object.assign(ovCampNpc(cell, j, m2), { px: m2.x * ATS + 8, py: m2.y * ATS + 14 }); AR.npcs.push(n2); if (window.__vh3dAddNpc) window.__vh3dAddNpc(n2); }); } catch (e) {} setTimeout(function () { aToast("Packed. The fire's out. Walk on and the land will have you back in your camps next time."); }, 50); } },
+        { t: "Leave it." }] };
+    }
+    var d = gdSurv.apply(this, arguments);
+    try {
+      if (d && id && (id.indexOf("car:") === 0 || (id.indexOf("ovev:") === 0 && /pedlar|rope-seller/i.test(d.n || ""))) && ((S.wood || 0) + (S.stone || 0)) > 0) {
+        var val = (S.wood || 0) * 3 + (S.stone || 0) * 4, add = { t: "Sell your timber and stone (" + val + " crowns)", fn: function () { S.crowns += val; S.wood = 0; S.stone = 0; aToast("+" + val + " crowns for timber and stone."); } };
+        if (typeof d.c === "function") { var c0 = d.c; d.c = function () { var o = c0(); o.splice(Math.max(0, o.length - 1), 0, add); return o; }; } else if (Array.isArray(d.c)) d.c.splice(Math.max(0, d.c.length - 1), 0, add);
+      }
+    } catch (e) {}
+    return d;
+  }; }, 0);
   // ---- the horn (13 Nov): a big hostile army near you on the road? Call your banners and they ride to you ----
   var hornB = document.createElement("button"); hornB.id = "ahorn"; hornB.hidden = true; hornB.textContent = "Call your army";
   hornB.style.cssText = "position:absolute;left:50%;transform:translateX(-50%);top:calc(5.2rem + env(safe-area-inset-top,0px));z-index:4;padding:.45rem 1rem;border-radius:18px;background:linear-gradient(#7a2a18,#3a120a);border:1px solid #e0a050;color:#ffe8c0;font-family:Cinzel,Georgia,serif;font-weight:700;font-size:.78rem;letter-spacing:.06em;box-shadow:0 2px 10px rgba(0,0,0,.6);touch-action:manipulation";
@@ -17934,6 +18006,8 @@ setInterval(function () {
       targets: function () { try { return window.__ovTargets ? window.__ovTargets() : []; } catch (e) { return []; } },
       climbInfo: function () { try { return window.__ovClimbInfo ? window.__ovClimbInfo() : null; } catch (e) { return null; } },
       climb: function () { try { if (window.__ovClimb) window.__ovClimb(); } catch (e) {} },
+      gatherInfo: function () { try { return window.__ovGatherInfo ? window.__ovGatherInfo() : null; } catch (e) { return null; } },
+      gather: function () { try { if (window.__ovGather) window.__ovGather(); } catch (e) {} },
       sheetOpen: function () { return !!sheet; },
       inDlg: function () { return !!(AR && AR.dlg); },
       closeDlg: function () { try { dlgClose(); } catch (e) {} },

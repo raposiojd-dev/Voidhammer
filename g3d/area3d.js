@@ -305,6 +305,14 @@ function buildArea(st, api, A) {
   }
   if (big) streamChunks(A.p.x * PX, A.p.y * PX, 99);
   else for (let cz = 0; cz < nCZ; cz++) for (let cx = 0; cx < nCX; cx++) { const c = buildChunk(cx, cz, rand); if (c) chunks.push(c); }
+  // a felled tree or a broken rock: rebuild just the chunk it stood in
+  window.__vh3dTile = (tx, ty) => {
+    if (!big || ctlGone()) return; solidH[ty * W + tx] = g[ty][tx] === 2 ? 7 : 0;
+    const cx = Math.floor(tx / CH), cz = Math.floor(ty / CH), k = cx + "," + cz, c = live.get(k); if (!c) return;
+    dropChunk(c); live.delete(k); const i = chunks.indexOf(c); if (i >= 0) chunks.splice(i, 1);
+    const n = buildChunk(cx, cz, rng((A.id || "a") + "|" + k)); if (n) { live.set(k, n); chunks.push(n); }
+  };
+  let gone = false; const ctlGone = () => gone || api.AR() !== A;
 
   // ---------- buildings: the 2D town's houses, raised in the Realm's style ----------
   const MH = new Merge(), BH = new Batch(kit), VB = new Batch(kit);
@@ -718,10 +726,24 @@ function buildArea(st, api, A) {
     x.font = "900 96px Georgia, serif"; x.textAlign = "center"; x.textBaseline = "middle"; x.lineWidth = 10; x.strokeStyle = "#1a1209"; x.strokeText(ch, 64, 70); x.fillStyle = col; x.fillText(ch, 64, 70);
     const t = st.track(new THREE.CanvasTexture(c)); t.colorSpace = THREE.SRGBColorSpace; return t;
   }
+  // your own camp (survival): a tent, a fire and a warm ring of light
+  function myCamp(x, z) {
+    const grp = new THREE.Group(), add = (geo, mat, px, py, pz, sc, ry) => { const m = new THREE.Mesh(geo, mat); m.position.set(px, py, pz); m.scale.setScalar(sc); m.rotation.y = ry || 0; m.castShadow = true; grp.add(m); return m; };
+    if (kit.mm && kit.g["m:tent"]) add(kit.g["m:tent"], kit.mm.solid, x - 1.6, 0, z - 1.2, 2.6, 0.6); else { const t = add(kit.g.cone, kit.mat(0xb8a682), x - 1.6, 1.05, z - 1.2, 1, 0); t.scale.set(2.2, 2.1, 2.2); }
+    if (kit.mm && kit.g["m:campfire"]) add(kit.g["m:campfire"], kit.mm.solid, x, 0, z, 1.4, 0); if (kit.mm && kit.g["m:woodlog"]) add(kit.g["m:woodlog"], kit.mm.solid, x + 1.3, 0, z + 0.7, 1.2, 0.5);
+    const f = new THREE.Mesh(kit.g.flame, kit.glow(0xff8a3a)); f.position.set(x, 0.35, z); f.scale.setScalar(3); grp.add(f);
+    const gl = new THREE.Mesh(kit.g.pool || (kit.g.pool = new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2)), new THREE.MeshBasicMaterial({ map: kit.glowTex, color: 0xff9a40, transparent: true, opacity: 0.45, depthWrite: false, blending: THREE.AdditiveBlending }));
+    gl.scale.setScalar(6); gl.position.set(x, 0.06, z); grp.add(gl); scene.add(grp);
+    fires.push({ tick(t) { const k = 0.85 + 0.15 * Math.sin(t * 11 + x) * Math.sin(t * 7.3 + z); f.scale.set(3, 3.4 * k, 3); gl.material.opacity = 0.38 + 0.1 * k; } });
+    return grp;
+  }
   const npcs = [];
+  window.__vh3dDropCamps = () => { for (let i = npcs.length - 1; i >= 0; i--) { const o = npcs[i]; if (!o.n.mycamp) continue; if (o.obj) scene.remove(o.obj); if (o.mark) scene.remove(o.mark); npcs.splice(i, 1); } };
+  window.__vh3dAddNpc = (n) => { if (ctlGone()) return; const o = { n, x: n.px * PX, z: n.py * PX, obj: null, mark: null, mk: -1, label: null }; npcObj(o); npcs.push(o); };
   function npcObj(o) {
     const n = o.n, x = o.x, z = o.z;
-    if (n.chest || /chest|stash/.test(String(n.id || ""))) o.obj = chest(x, z);
+    if (n.mycamp) o.obj = myCamp(x, z);
+    else if (n.chest || /chest|stash/.test(String(n.id || ""))) o.obj = chest(x, z);
     else if (n.gate || n.portal) o.obj = portal(x, z);
     else if (n.cell) o.obj = cage(x, z);
     else if (n.id === "rvboard" && A._rv) o.obj = rvBoard3D(x, z);
@@ -947,13 +969,14 @@ function buildArea(st, api, A) {
     const u = api.useInfo(); nearDoor = null;
     if (!u && doors.length) { let bd = 9; for (const dr of doors) { const d = Math.hypot(dr.x - hx, dr.z - hz); if (d < dr.r && d < bd) { bd = d; nearDoor = dr; } } }
     const act = u ? { l: u.l, n: u.n } : nearDoor ? { l: "Go in", n: nearDoor.label, door: nearDoor } : nearParty ? { l: "Talk", n: nearParty.q.name.split(" · ")[0], party: nearParty.q.talk } : null;
+    if (!act && over && api.gatherInfo) { const c = api.gatherInfo(); if (c) { useAct = { l: c.l, n: c.n, gather: 1 }; const k2 = c.l + "|" + c.n; if (k2 !== (useBtn._k || "")) { useBtn._k = k2; useBtn.innerHTML = esc(c.l) + "<small>" + esc(c.n) + "</small>"; } return; } }
     if (!act && over && api.climbInfo) { const c = api.climbInfo(); if (c) { useAct = { l: c.l, n: c.n, climb: 1 }; const k2 = c.l + "|" + c.n; if (k2 !== (useBtn._k || "")) { useBtn._k = k2; useBtn.innerHTML = esc(c.l) + "<small>" + esc(c.n) + "</small>"; } return; } }
     const key = act ? act.l + "|" + act.n : "";
     if (key !== (useBtn._k || "")) { useBtn._k = key; useBtn.innerHTML = act ? esc(act.l) + (act.n ? "<small>" + esc(act.n) + "</small>" : "") : ""; }
     useAct = act;
   }
   // E / the button: re-check first, so a press right after arriving (or on a slow frame) still acts on what is here now
-  function doUse() { refreshUse(A.p.x * PX, A.p.y * PX); if (!useAct) return; if (useAct.door) { api.sfx("door"); inp.keys = {}; api.openPlace(useAct.door.key, useAct.door.sid); } else if (useAct.party) { inp.keys = {}; api.partyUse(useAct.party); } else if (useAct.climb) { inp.keys = {}; api.climb(); } else api.use(); }
+  function doUse() { refreshUse(A.p.x * PX, A.p.y * PX); if (!useAct) return; if (useAct.door) { api.sfx("door"); inp.keys = {}; api.openPlace(useAct.door.key, useAct.door.sid); } else if (useAct.party) { inp.keys = {}; api.partyUse(useAct.party); } else if (useAct.climb) { inp.keys = {}; api.climb(); } else if (useAct.gather) { api.gather(); refreshUse(A.p.x * PX, A.p.y * PX); } else api.use(); }
   inp.blocked = () => api.sheetOpen();
   inp.onKey = (k) => {
     if (k === "e" || k === "f") doUse();
