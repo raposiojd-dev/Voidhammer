@@ -693,6 +693,23 @@ function buildArea(st, api, A) {
       }
     }
   }
+  // ---------- the Void and the Realm gates (big overland): seen from far off, so you can walk to them ----------
+  const farMarks = [];
+  if (big) {
+    const domeG = st.track(new THREE.SphereGeometry(1, 28, 18)), beamG = st.track(new THREE.CylinderGeometry(0.6, 1.4, 60, 12, 1, true));
+    for (const q of (sp.SP || [])) {
+      if (!q.vh) continue; const x = (q.cx + 0.5) * T, z = (q.cy + 0.5) * T;
+      const dm = new THREE.Mesh(domeG, new THREE.MeshBasicMaterial({ color: 0x5a2aa0, transparent: true, opacity: 0.2, depthWrite: false, side: THREE.DoubleSide, fog: false })); dm.scale.set(30, 18, 30); dm.position.set(x, 0, z); dm.renderOrder = 4; scene.add(dm);
+      const pl = pool(kit, scene, x, z, 0x8a5ae0, 70, 0.45);
+      const lb = labelSprite(st, q.s.name, "held by the Void"); lb.scale.set(6, 1.5, 1); lb.position.set(x, 20, z); scene.add(lb);
+      farMarks.push({ m: dm, lb, pl, x, z, void: 1 });
+    }
+    for (const z0 of (sp.portals || [])) {
+      const x = (z0.x + 0.5) * T, z = (z0.y + 0.5) * T, bm = new THREE.Mesh(beamG, new THREE.MeshBasicMaterial({ color: 0x7ae0ff, transparent: true, opacity: 0.14, depthWrite: false, side: THREE.DoubleSide, blending: THREE.AdditiveBlending, fog: false }));
+      bm.position.set(x, 30, z); scene.add(bm); farMarks.push({ m: bm, x, z, gate: 1 });
+    }
+  }
+  function tickFar(t, hx, hz) { for (const f of farMarks) { const d = Math.hypot(f.x - hx, f.z - hz); if (f.void) { f.m.material.opacity = 0.16 + 0.05 * Math.sin(t * 0.8 + f.x); f.m.rotation.y = t * 0.05; f.lb.visible = d > 25; } else { f.m.visible = d > 12; f.m.material.opacity = 0.12 + 0.05 * Math.sin(t * 2); } } }
   // ---------- people: NPCs, chests, gates and cells ----------
   const markTex = [null, markerTex("!", "#ffd84a"), markerTex("?", "#9fd8ff")];
   function markerTex(ch, col) {
@@ -1204,7 +1221,7 @@ function buildArea(st, api, A) {
       else if (performance.now() - toastT > 3000) toastEl.classList.add("v3-tfade");
     }
     // foes (create lazily near the player), items, missiles, effects
-    syncFoes(dt, t, hx, hz); syncParties(dt, t, hx, hz); if (camps3.length) tickCamps(t); if (wildOn) { wildT -= dt; syncWild(Math.min(dt, 0.1), hx, hz, wildT <= 0); if (wildT <= 0) wildT = 1.5; } if (frameN % 10 === 0) { syncSigns(hx, hz); syncQuestBeams(hx, hz); if (camps3.length) syncCamps(hx, hz); if (big) lazyNpcs(hx, hz); for (const l of townNames) { const d = Math.hypot(l.position.x - hx, l.position.z - hz); l.material.opacity = clamp((110 - d) / 40, 0, 1) * clamp((d - 8) / 10, 0, 1); l.visible = l.material.opacity > 0.02; } }
+    syncFoes(dt, t, hx, hz); syncParties(dt, t, hx, hz); if (camps3.length) tickCamps(t); if (farMarks.length) tickFar(t, hx, hz); if (wildOn) { wildT -= dt; syncWild(Math.min(dt, 0.1), hx, hz, wildT <= 0); if (wildT <= 0) wildT = 1.5; } if (frameN % 10 === 0) { syncSigns(hx, hz); syncQuestBeams(hx, hz); if (camps3.length) syncCamps(hx, hz); if (big) lazyNpcs(hx, hz); for (const l of townNames) { const d = Math.hypot(l.position.x - hx, l.position.z - hz); l.material.opacity = clamp((110 - d) / 40, 0, 1) * clamp((d - 8) / 10, 0, 1); l.visible = l.material.opacity > 0.02; } }
     syncItems(t); syncProj(); syncFx();
     // exits: soft pulse; locked ones dim
     if (frameN % 15 === 0) for (const o of exits) { let lk = ""; try { lk = o.e.lock ? o.e.lock() : ""; } catch (e) {} o.locked = !!lk; if (o.veil) o.veil.material.color.set(lk ? 0xff6a5a : 0xfff0c0); if (o.sign) o.sign.material.opacity = lk ? 0.45 : 1; }

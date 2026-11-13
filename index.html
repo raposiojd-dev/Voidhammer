@@ -5514,7 +5514,7 @@ var BIMG_SRC={"farm": "data:image/webp;base64,UklGRqyAAABXRUJQVlA4WAoAAAAQAAAAZw
   function makeOverSpec() {
     var P = ovPoi(), N = ON, c = cp(), SP = [], byId = {}, i, tm = tier(), KM = OVK > 1 ? 4 : 1;
     var sp = { name: "The Shattered Realms", th: "grass", w: N, h: N, seed: 4242, safe: 0, over: 1, lv: 1, spawn: [N >> 1, N >> 1], trees: 0, rocks: 0, exits: [], npcs: [], enemies: [], chests: [] };
-    ovLocalSites().forEach(function (s) { var cx = Math.max(7, Math.min(N - 8, Math.round(s.x / OT))), cy = Math.max(7, Math.min(N - 8, Math.round(s.y / OT))); var q = { s: s, id: s.id, cx: cx, cy: cy }; SP.push(q); byId[s.id] = q; });
+    ovLocalSites().forEach(function (s) { var cx = Math.max(7, Math.min(N - 8, Math.round(s.x / OT))), cy = Math.max(7, Math.min(N - 8, Math.round(s.y / OT))); var q = { s: s, id: s.id, cx: cx, cy: cy, vh: !!((site(s.id) || {}).vh) }; SP.push(q); byId[s.id] = q; });
     sp.SP = SP; sp.byId = byId; sp.P = P;
     // towns and villages are built right into the open world (big overland): their streets, houses, doors and people,
     // so you walk in from the road with no gate. A settlement that is closed to you keeps its gate and its message.
@@ -5542,6 +5542,11 @@ var BIMG_SRC={"farm": "data:image/webp;base64,UklGRqyAAABXRUJQVlA4WAoAAAAQAAAAZw
         if (n.gate || n.chest || n.id === "rvboard" || /chest|stash/.test(String(n.id || ""))) return;
         sp.npcs.push(Object.assign({}, n, { id: aid + ":" + n.id, x: n.x + ox, y: n.y + oy, town: q.id }));
       });
+      // the town's own chests and your home chest, exactly where they stand when you enter from the map (same keys, same loot)
+      try {
+        OVW.tb = OVW.tb || {}; var TB = OVW.tb[aid]; if (!TB) { var TBa = buildArea0(aid); TB = OVW.tb[aid] = (TBa.npcs || []).filter(function (n) { return n.chest || n.id === "homechest"; }); }
+        TB.forEach(function (n) { sp.npcs.push(Object.assign({}, n, { id: aid + ":" + n.id, x: n.x + ox, y: n.y + oy, town: q.id })); });
+      } catch (e) {}
       var walled = q.s.type !== "village", shut = walled && (hostileSite(q.s) || wanted(q.s.owner) >= 50);
       if (walled) {
         var wl = { sid: q.id, q: q, x0: ox - 2, y0: oy - 2, x1: ox + ts.w + 1, y1: oy + ts.h + 1, shut: shut, gates: [] }; (sp.walls = sp.walls || []).push(wl); q.wall = wl;
@@ -5844,6 +5849,8 @@ var BIMG_SRC={"farm": "data:image/webp;base64,UklGRqyAAABXRUJQVlA4WAoAAAAQAAAAZw
     if (over) {
       a.sp.SP.forEach(function (q) { var s2 = q.s.type === "village" ? 5 : 8, p = P(q.cx, q.cy); g.fillStyle = "#000"; g.fillRect(p[0] - s2 / 2 - 1, p[1] - s2 / 2 - 1, s2 + 2, s2 + 2); g.fillStyle = FAC[q.s.owner] ? FAC[q.s.owner].col : "#ccc"; g.fillRect(p[0] - s2 / 2, p[1] - s2 / 2, s2, s2); });
       a.sp.P.caves.forEach(function (cv) { var p = P(cv.x, cv.y); g.fillStyle = cv.lair ? "#ff7a2a" : "#b8a8e0"; g.fillRect(p[0] - 2, p[1] - 2, 4, 4); });
+      a.sp.SP.forEach(function (q) { if (!q.vh) return; var p = P(q.cx, q.cy); g.fillStyle = "rgba(120,70,200,0.45)"; g.beginPath(); g.arc(p[0], p[1], 9, 0, 6.283); g.fill(); g.strokeStyle = "#cdb8ff"; g.lineWidth = 1.2; g.stroke(); });
+      (a.sp.portals || []).forEach(function (z) { var p = P(z.x, z.y), dx = p[0] - 70, dy = p[1] - 70, dd = Math.hypot(dx, dy); if (dd > 62) p = [70 + dx / dd * 62, 70 + dy / dd * 62]; g.strokeStyle = "#000"; g.lineWidth = 3; g.beginPath(); g.arc(p[0], p[1], 5, 0, 6.283); g.stroke(); g.strokeStyle = "#7ae0ff"; g.lineWidth = 1.8; g.stroke(); g.fillStyle = "#7ae0ff"; g.fillRect(p[0] - 1, p[1] - 1, 2, 2); });
       (a.sp.qsites || []).forEach(function (z) { var p = P(z.x, z.y); g.fillStyle = "#ffd060"; g.beginPath(); g.arc(p[0], p[1], 3, 0, 6.283); g.fill(); });
       a.sp.P.camps.forEach(function (cm) { if (cm.done) return; var p = P(cm.x, cm.y); if (cm.big) { g.fillStyle = "rgba(0,0,0,0.6)"; g.beginPath(); g.arc(p[0], p[1], 5, 0, 6.283); g.fill(); g.strokeStyle = "#ff6a3a"; g.lineWidth = 1.4; g.beginPath(); g.arc(p[0], p[1], 5, 0, 6.283); g.stroke(); } g.strokeStyle = "#e0503a"; g.lineWidth = 1.6; g.beginPath(); g.moveTo(p[0] - 2.5, p[1] - 2.5); g.lineTo(p[0] + 2.5, p[1] + 2.5); g.moveTo(p[0] + 2.5, p[1] - 2.5); g.lineTo(p[0] - 2.5, p[1] + 2.5); g.stroke(); });
       if (OVW.tip) { var tp2 = P(OVW.tip.x, OVW.tip.y); if (pulse) { g.strokeStyle = "#fff"; g.lineWidth = 1.5; g.beginPath(); g.arc(tp2[0], tp2[1], 5, 0, 6.283); g.stroke(); } }
@@ -5890,6 +5897,30 @@ var BIMG_SRC={"farm": "data:image/webp;base64,UklGRqyAAABXRUJQVlA4WAoAAAAQAAAAZw
     try { ovLocalsTick(dt, mv > 0.2); OVW.busy = (OVW.busy || 0) - dt; if (OVW.busy <= 0) { OVW.busy = 20; ovKeepBusy(); } } catch (e) {}
     OVW.h = (OVW.h + dt / 60) % 24; // the sky turns slowly while you walk: an hour a minute
   };
+  // ---- the horn (13 Nov): a big hostile army near you on the road? Call your banners and they ride to you ----
+  var hornB = document.createElement("button"); hornB.id = "ahorn"; hornB.hidden = true; hornB.textContent = "Call your army";
+  hornB.style.cssText = "position:absolute;left:50%;transform:translateX(-50%);top:calc(5.2rem + env(safe-area-inset-top,0px));z-index:4;padding:.45rem 1rem;border-radius:18px;background:linear-gradient(#7a2a18,#3a120a);border:1px solid #e0a050;color:#ffe8c0;font-family:Cinzel,Georgia,serif;font-weight:700;font-size:.78rem;letter-spacing:.06em;box-shadow:0 2px 10px rgba(0,0,0,.6);touch-action:manipulation";
+  function ovThreat() {
+    if (!ovLive()) return null; var best = null, bd = 1e9;
+    S.enemies.forEach(function (e) { if (!e || cellAt(e.x, e.y) !== OVW.cell || e.kind === "caravan") return; var hostile = e.kind !== "lord" || !!S.pwar[e.fac]; if (!hostile || e.n < 30) return; var d = Math.hypot(e.x - S.px, e.y - S.py); if (d < 320 && d < bd) { bd = d; best = e; } });
+    return best;
+  }
+  function ovCallArmy() {
+    var e = ovThreat(), cell = OVW.cell, came = [];
+    (S.allies || []).forEach(function (h) { if (h.away || cellAt(h.x, h.y) !== cell) return; h.mode = "follow"; var d = Math.hypot(h.x - S.px, h.y - S.py); if (d > 110) { var k = 90 / d; h.x = S.px + (h.x - S.px) * k; h.y = S.py + (h.y - S.py) * k; } came.push(h.name || "a warband"); });
+    if (came.length) aToast("You sound the horn. " + came.slice(0, 3).join(", ") + (came.length > 3 ? " and " + (came.length - 3) + " more" : "") + " ride to you" + (e ? ", and will stand with you against " + (e.name || "them") : "") + ".");
+    else aToast("You sound the horn, but none of your warbands are in this Realm. Hire or ally a warband and set it to follow, and it will answer.");
+    hornB.hidden = true; OVW.hornT = 25;
+  }
+  hornB.addEventListener("click", function (ev) { ev.stopPropagation(); try { ovCallArmy(); } catch (e) {} });
+  setInterval(function () {
+    try {
+      if (!ovLive() || !$("area")) { hornB.hidden = true; return; } if (hornB.parentNode !== $("area")) $("area").appendChild(hornB);
+      OVW.hornT = Math.max(0, (OVW.hornT || 0) - 1); var e = ovThreat(), mine = (S.allies || []).filter(function (h) { return !h.away && cellAt(h.x, h.y) === OVW.cell; }).length;
+      var show = !!e && !OVW.hornT && !AR.dlg && !sheet; hornB.hidden = !show;
+      if (show) hornB.textContent = "Call your army" + (mine ? " (" + mine + ")" : "") + " · " + (e.name || (e.kind === "void" ? "Void host" : "warband")) + " " + Math.round(e.n);
+    } catch (x) {}
+  }, 1000);
   // contact with a hostile party: step off the road into the battle, and come back to the same spot after
   var sbOld = startBattle;
   startBattle = function (e) {
@@ -6224,7 +6255,18 @@ var BIMG_SRC={"farm": "data:image/webp;base64,UklGRqyAAABXRUJQVlA4WAoAAAAQAAAAZw
     } catch (e) { return { cell: cell, err: String(e && e.stack || e).slice(0, 300) }; }
     finally { OVW.auditAll = false; OVW.cell = svc; OVW.tc = null; S.px = sv[0]; S.py = sv[1]; if (typeof svA !== "undefined") AREAS.overland = svA; }
   }
-  window.__ovw = { audit: ovAudit, qs: function () { return QS.map(function (q) { return [q.id, qSt(q), q.hub, q.zone]; }); }, live: function () { return { live: ovLive(), dlg: !!(AR && AR.dlg), sheet: !!sheet, B: !!B, spd: S.speed }; }, wanted: wanted, crime: ovCrime, pay: payBounty, raid: function (id) { var c = carById(id); if (c) ovRaid(c); }, daily: ovCaravanDaily, OVW: OVW };
+  // compare each built-in town with the same town entered from the map (people, by name)
+  function ovTownDiff() {
+    var out = [], A = AR; if (!A || !A.sp || !A.sp.stamps) return { err: "not on the open world" };
+    A.sp.SP.forEach(function (q) {
+      if (!q.stamp) return; var aid = q.stamp.story || q.stamp.aid, B = null; try { B = buildArea0(aid); } catch (e) { out.push({ id: q.id, aid: aid, err: String(e).slice(0, 120) }); return; }
+      var real = (B.npcs || []).map(function (n) { return n.name; }).filter(Boolean).sort(), here = A.npcs.filter(function (n) { return n.town === q.id; }).map(function (n) { return n.name; }).filter(Boolean).sort();
+      var miss = real.filter(function (n) { var i = here.indexOf(n); if (i >= 0) { here.splice(i, 1); return false; } return true; });
+      out.push({ id: q.id, name: q.s.name, aid: q.stamp.aid, story: q.stamp.story || "", realN: real.length, miss: miss, extra: here, realW: B.W, stW: q.stamp.ts.w });
+    });
+    return out;
+  }
+  window.__ovw = { audit: ovAudit, townDiff: ovTownDiff, qs: function () { return QS.map(function (q) { return [q.id, qSt(q), q.hub, q.zone]; }); }, live: function () { return { live: ovLive(), dlg: !!(AR && AR.dlg), sheet: !!sheet, B: !!B, spd: S.speed }; }, wanted: wanted, crime: ovCrime, pay: payBounty, raid: function (id) { var c = carById(id); if (c) ovRaid(c); }, daily: ovCaravanDaily, OVW: OVW };
 
   function ovBuildBtn() {
     if (!AR || AR.dlg) return;
