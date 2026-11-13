@@ -32,6 +32,8 @@ function styleOnce() {
 #vh3d.v3-area .v3-top{top:auto;bottom:auto;top:calc(40% + env(safe-area-inset-top,0px));right:.55rem;flex-direction:column;align-items:flex-end}
 #vh3d.v3-area .v3-top button{min-width:5.2rem;padding:.55rem .6rem}
 #vh3d.v3-area .v3-top button.on{background:#c8873a;color:#1a1208}
+#vh3d .v3-mapq{position:absolute;right:calc(7.2rem + env(safe-area-inset-right,0px));top:calc(.7rem + env(safe-area-inset-top,0px));z-index:6;display:flex;flex-direction:column;align-items:center;min-width:5.6rem;padding:.38rem .6rem;border-radius:14px;background:linear-gradient(#3a2a14e8,#1a1208e8);border:1px solid #c8a060;color:#f4e2b8;font:700 .64rem Cinzel,Georgia,serif;letter-spacing:.08em;text-transform:uppercase;touch-action:manipulation;cursor:pointer}
+#vh3d .v3-mapq small{font:500 .5rem 'IBM Plex Mono',ui-monospace,monospace;letter-spacing:.04em;text-transform:none;opacity:.8}
 @media (max-width:600px){#vh3d .v3-use{bottom:calc(9.4rem + env(safe-area-inset-bottom,0px));min-width:9rem;max-width:46vw;padding:.85rem 1rem;font-size:.92rem}#vh3d.v3-area .v3-top{top:calc(30% + env(safe-area-inset-top,0px))}#vh3d.v3-area .v3-top button{min-width:4.4rem;padding:.45rem .4rem;font-size:.54rem}}
 #vh3d .v3-fl{position:absolute;left:0;top:0;pointer-events:none;font:700 .95rem 'IBM Plex Mono',monospace;color:#ffe9b0;text-shadow:0 1px 3px #000,0 0 6px #000;white-space:nowrap;will-change:transform}
 #vh3d .v3-fl.h{color:#ff7a6a}
@@ -155,6 +157,44 @@ function buildArea(st, api, A) {
   // On the big overland (a whole continent, ~1.9 km) the ground, water, trees and rocks are built in chunks around the hero
   // as you walk and dropped again far behind; every other area is built once, as before.
   const big = over && W * H > 250000;
+  // ---------- rolling hills (big overland, 13 Nov): the open country rises and falls; towns, roads, water, camps and
+  // sites stay flat. Heights live on the tile corners, so the ground mesh, the props and everyone walking agree.
+  let HC = null; const hgt = (x, z) => {
+    if (!HC) return 0; const fx = x / T, fz = z / T, ix = Math.floor(fx), iz = Math.floor(fz); if (ix < 0 || iz < 0 || ix >= W || iz >= H) return 0;
+    const u = fx - ix, v = fz - iz, W1 = W + 1, a = HC[iz * W1 + ix], b = HC[iz * W1 + ix + 1], c = HC[(iz + 1) * W1 + ix], d = HC[(iz + 1) * W1 + ix + 1];
+    return (a * (1 - u) + b * u) * (1 - v) + (c * (1 - u) + d * u) * v;
+  };
+  if (big) {
+    const N = W * H, D = new Float32Array(N), BIG = 1e6;
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) { const t = g[y][x]; D[y * W + x] = (t === 0 || t === 8 || t === 10 || t === 11 || t === 2 || t === 7) ? BIG : 0; }
+    const flat = (cx, cy, r) => { for (let y = Math.max(0, Math.floor(cy - r)); y <= Math.min(H - 1, cy + r); y++) for (let x = Math.max(0, Math.floor(cx - r)); x <= Math.min(W - 1, cx + r); x++) D[y * W + x] = 0; };
+    for (const z of (sp.stamps || [])) { const w = (z.ts && z.ts.w) || 0, h = (z.ts && z.ts.h) || 0; for (let y = Math.max(0, z.oy - 2); y <= Math.min(H - 1, z.oy + h + 2); y++) for (let x = Math.max(0, z.ox - 2); x <= Math.min(W - 1, z.ox + w + 2); x++) D[y * W + x] = 0; }
+    for (const q of (sp.SP || [])) flat(q.cx, q.cy, 6);
+    const PP = sp.P || {}; for (const c of (PP.caves || [])) flat(c.x, c.y, 3); for (const c of (PP.camps || [])) flat(c.x, c.y, 5); for (const z of (sp.portals || [])) flat(z.x, z.y, 4);
+    // chamfer distance (in tiles) to the nearest flat tile
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) { const i = y * W + x; let d = D[i]; if (x > 0) d = Math.min(d, D[i - 1] + 1); if (y > 0) { d = Math.min(d, D[i - W] + 1); if (x > 0) d = Math.min(d, D[i - W - 1] + 1.414); if (x < W - 1) d = Math.min(d, D[i - W + 1] + 1.414); } D[i] = d; }
+    for (let y = H - 1; y >= 0; y--) for (let x = W - 1; x >= 0; x--) { const i = y * W + x; let d = D[i]; if (x < W - 1) d = Math.min(d, D[i + 1] + 1); if (y < H - 1) { d = Math.min(d, D[i + W] + 1); if (x < W - 1) d = Math.min(d, D[i + W + 1] + 1.414); if (x > 0) d = Math.min(d, D[i + W - 1] + 1.414); } D[i] = d; }
+    const W1 = W + 1, AMP = 5.2; HC = new Float32Array(W1 * (H + 1));
+    for (let j = 0; j <= H; j++) for (let i = 0; i <= W; i++) {
+      let m = BIG; for (let dy = -1; dy <= 0; dy++) for (let dx = -1; dx <= 0; dx++) { const tx = i + dx, ty = j + dy; if (tx < 0 || ty < 0 || tx >= W || ty >= H) { m = 0; continue; } m = Math.min(m, D[ty * W + tx]); }
+      const k = Math.min(1, Math.max(0, (m - 2) / 9)), mk = k * k * (3 - 2 * k); if (mk <= 0) continue;
+      const n = 0.62 * vnoise(i * 0.035, j * 0.035) + 0.28 * vnoise(i * 0.09 + 17, j * 0.09 + 5) + 0.1 * vnoise(i * 0.21 + 3, j * 0.21 + 11);
+      HC[j * W1 + i] = AMP * mk * Math.max(0, n * 1.25 - 0.18);
+    }
+  }
+  if (big) window.__vhHgt = hgt;
+  // bake a freshly built chunk onto the hills: instanced props and plain meshes ride the ground under them
+  const m4 = new THREE.Matrix4(), v3h = new THREE.Vector3();
+  function hillBake(grp, skip) {
+    if (!HC) return;
+    grp.traverse((o) => {
+      if (o === grp || skip.indexOf(o) >= 0) return;
+      if (o.isInstancedMesh) { for (let i = 0; i < o.count; i++) { o.getMatrixAt(i, m4); v3h.setFromMatrixPosition(m4); m4.elements[13] += hgt(v3h.x, v3h.z); o.setMatrixAt(i, m4); } o.instanceMatrix.needsUpdate = true; o.computeBoundingSphere && o.computeBoundingSphere(); o.frustumCulled = false; }
+      else if (o.isMesh && o.parent && (o.parent === grp || o.parent.parent === grp) && o.position.lengthSq() < 1e-6 && o.geometry && o.geometry.attributes.position) {
+        const ps = o.geometry.attributes.position; for (let i = 0; i < ps.count; i++) ps.setY(i, ps.getY(i) + hgt(ps.getX(i), ps.getZ(i))); ps.needsUpdate = true; o.geometry.computeBoundingSphere();
+      } else if ((o.isMesh || o.isSprite || o.isPoints) && o.parent && (o.parent === grp || o.parent.parent === grp)) o.position.y += hgt(o.position.x, o.position.z);
+    });
+  }
   const GT = cave ? "dirt" : (GROUND_TEX[info.realm] === "plaster" ? "plaster" : "grass");
   const gMat = groundMat(art, GT, cave ? "stone" : over ? "dirt" : info.type && info.type !== "village" ? "cobble" : "dirt", !cave && info.realm !== "frost" && info.realm !== "light");
   function groundGeo(x0, y0, nx, ny) {
@@ -172,7 +212,7 @@ function buildArea(st, api, A) {
       }
       k = k || 1; const nz = 0.86 + vnoise(ix * 0.31, j * 0.31) * 0.28;
       col[i * 3] = r / k * nz; col[i * 3 + 1] = gr / k * nz; col[i * 3 + 2] = b / k * nz; bl[i] = Math.min(0.9, blend / k * 1.1);
-      if (wet === k && k > 0) pos.setY(i, -0.35);
+      if (wet === k && k > 0) pos.setY(i, -0.35); else if (HC) pos.setY(i, HC[j * (W + 1) + ix]);
       uv.setXY(i, pos.getX(i) / 3.5, pos.getZ(i) / 3.5);
     }
     gg.setAttribute("color", new THREE.BufferAttribute(col, 3)); gg.setAttribute("aBlend", new THREE.BufferAttribute(bl, 1)); gg.computeVertexNormals();
@@ -287,8 +327,9 @@ function buildArea(st, api, A) {
       const gm = new THREE.Mesh(groundGeo(x0, y0, nx, ny), gMat); gm.receiveShadow = true; grp.add(gm); own.push(gm.geometry);
       const wt = waterMesh(x0, y0, x0 + nx, y0 + ny); if (wt) { grp.add(wt); own.push(wt.geometry); }
       M.build(grp, (x) => { own.push(x); return x; });
+      hillBake(grp, wt ? [gm, wt] : [gm]);
     } else M.build(grp, (x) => st.track(x));
-    scene.add(grp);
+    if (big) grp.userData.hillBaked = 1; scene.add(grp);
     return { grp, near, far, own, cx, cz, x: (cx + 0.5) * CH * T, z: (cz + 0.5) * CH * T };
   }
   function dropChunk(c) {
@@ -970,6 +1011,8 @@ function buildArea(st, api, A) {
   // the scene's buttons sit hidden in .v3-top and show up in the corner menu; the stick pushed to its rim runs (no Run button)
   const top = st.$(".v3-top");
   top.innerHTML = info.siteId ? '<button data-v="menu">' + esc(info.menuLabel || "Town menu") + "</button>" : "";
+  // the open world: a visible way to the world map for quick travel (third person is the default way to play)
+  if (over) { const mq = document.createElement("button"); mq.className = "v3-mapq"; mq.setAttribute("data-v", "map"); mq.innerHTML = "Map<small>quick travel</small>"; st.root.appendChild(mq); st.track({ dispose: () => mq.remove() }); }
   st.gfxButton();
   const host = api.host();
   st.menuSrc = () => {
@@ -998,6 +1041,7 @@ function buildArea(st, api, A) {
   st.listen(root, "click", (e) => {
     const b = e.target.closest("[data-v]"); if (!b) return; const v = b.getAttribute("data-v"); e.stopPropagation();
     if (v === "menu") api.openPlace(null);
+    else if (v === "map") { inp.keys = {}; api.leave(); }
   });
   st.listen(useBtn, "pointerdown", (e) => { e.stopPropagation(); e.preventDefault(); doUse(); });
   // what the Use button does from here: talk / open / enter / parley from the sim, or a door into the town's menus
@@ -1024,7 +1068,7 @@ function buildArea(st, api, A) {
   // ---------- per-frame sync ----------
   const v3 = new THREE.Vector3();
   const proj = (x, y, z, el, dy) => {
-    v3.set(x, y, z).project(camera);
+    v3.set(x, y + hgt(x, z), z).project(camera);
     if (v3.z > 1 || v3.x < -1.2 || v3.x > 1.2 || v3.y < -1.2 || v3.y > 1.2) { el.hidden = true; return false; }
     const sx = (v3.x * 0.5 + 0.5) * root.clientWidth, sy = (-v3.y * 0.5 + 0.5) * root.clientHeight + (dy || 0);
     el.style.transform = "translate(" + sx.toFixed(1) + "px," + sy.toFixed(1) + "px)"; el.hidden = false; return true;
@@ -1195,7 +1239,9 @@ function buildArea(st, api, A) {
   // the Realm Arts' effects (g3d/skills2.js): the sim casts, these pooled meshes draw it
   let K2v = null;
   try { if (api.sk2Fx) { K2v = api.sk2Fx({ THREE, scene, camera, root: st.root, glowTex: kit.glowTex, gfx: () => st.gfx, PX }); st.track({ dispose: () => K2v && K2v.dispose() }); } } catch (e) { K2v = null; }
+  const hillSkip = new Set(), hillOn = new Map();
   st.start((dt, t) => {
+    if (HC) { for (const [o, off] of hillOn) o.position.y -= off; hillOn.clear(); }
     if (K2v) K2v.pre();
     frameN++;
     const p = A.p, inDlg = api.inDlg(), paused = api.sheetOpen() || inDlg;
@@ -1330,7 +1376,14 @@ function buildArea(st, api, A) {
     { const bx = Math.sin(yaw) * Math.cos(pt), bz = Math.cos(yaw) * Math.cos(pt); let free = dist;
       for (let s = 0.8; s < dist; s += 0.45) { const h = solidAtW(cx + bx * s, cz + bz * s); if (h > 0 && 1.2 + s * Math.sin(pt) < h) { free = Math.max(1.6, s - 0.4); break; } }
       dist = Math.min(dist, free); }
+    if (HC) {
+      // everyone and everything that moves stands on the hills this frame (undone at the start of the next)
+      if (!hillSkip.size) { [L.sky, L.band, fx, L.sun, L.hemi].forEach((o) => o && hillSkip.add(o)); for (const c of chunks) hillSkip.add(c.grp); }
+      for (const o of scene.children) { if (hillSkip.has(o) || o.isCamera || o.isDirectionalLight || o.isHemisphereLight || o.isAmbientLight || o.userData.hillBaked) continue; const off = hgt(o.position.x, o.position.z); if (off) { o.position.y += off; hillOn.set(o, off); } }
+      cy = hgt(cx, cz);
+    }
     followCam(camera, cx, cy, cz, yaw, pt, dist, side, dt);
+    if (HC) { const gh = hgt(camera.position.x, camera.position.z) + 0.7; if (camera.position.y < gh) camera.position.y = gh; }
     if (!cave) { L.sun.position.set(hx + 30, 42, hz + 22); L.sun.target.position.set(hx, 0, hz); }
     if (K2v) K2v.tick(dt, hx, hz, heroYaw);
   });

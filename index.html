@@ -5882,11 +5882,17 @@ var BIMG_SRC={"farm": "data:image/webp;base64,UklGRqyAAABXRUJQVlA4WAoAAAAQAAAAZw
     g.fillStyle = "#fff"; g.beginPath(); g.moveTo(5.5, 0); g.lineTo(-4, -3.6); g.lineTo(-2.2, 0); g.lineTo(-4, 3.6); g.closePath(); g.fill(); g.restore();
     g.restore();
   }
-  var wkBtn = document.createElement("button"); wkBtn.id = "walkbtn"; wkBtn.textContent = "Walk the land"; wkBtn.setAttribute("aria-label", "Walk the overland");
+  var wkBtn = document.createElement("button"); wkBtn.id = "walkbtn"; wkBtn.textContent = "Walk the land (3rd person)"; wkBtn.setAttribute("aria-label", "Walk the overland");
   wkBtn.style.cssText = "position:fixed;right:calc(10px + env(safe-area-inset-right,0px));top:calc(132px + env(safe-area-inset-top,0px));z-index:60;min-height:40px;padding:.5rem .9rem;border-radius:20px;background:linear-gradient(#6a4718,#2b1c0b);border:1px solid #e3c27a;color:#f8e6b4;font:700 .72rem 'Cinzel',Georgia,serif;letter-spacing:.1em;text-transform:uppercase;box-shadow:0 0 14px rgba(224,160,70,.35);display:none";
   wkBtn.addEventListener("click", function (e) { e.stopPropagation(); if (AR || B || !S) return; window.__walk(); });
   document.body.appendChild(wkBtn);
-  setInterval(function () { var ti = document.getElementById("title"), lo = document.getElementById("loading"); wkBtn.style.display = (AR || B || typeof S === "undefined" || !S || sheet || (ti && !ti.hidden) || (lo && !lo.hidden)) ? "none" : "block"; }, 250);
+  // third person is the default (John, 13 Nov): the first time the world map comes up idle this session, you're put
+  // on the road in the open world. The map stays one tap away (Map · quick travel) and "Walk the land" brings you back.
+  var ovAutoDone = false, ovIdleT = 0;
+  setInterval(function () { var ti = document.getElementById("title"), lo = document.getElementById("loading"), idle = !(AR || B || typeof S === "undefined" || !S || sheet || (ti && !ti.hidden) || (lo && !lo.hidden) || [].some.call(document.querySelectorAll(".fd-screen"), function (e) { return !e.hidden && getComputedStyle(e).display !== "none" && getComputedStyle(e).visibility !== "hidden"; })); wkBtn.style.display = idle ? "block" : "none";
+    if (AR && AR.sp && AR.sp.over) ovAutoDone = true;
+    if (!ovAutoDone && idle && window.__vhK3 !== false) { ovIdleT += 250; if (ovIdleT >= 900) { ovAutoDone = true; try { window.__walk(); } catch (e) {} } } else ovIdleT = 0;
+  }, 250);
   window.__walk = function () { ovLoading(function () { startOverland(); }); };
   // ================= The living overland (John, 11 Nov): walk the whole map as one open world =================
   // While you walk, the world map runs: time passes about as fast as it would on the map for the same distance, armies,
