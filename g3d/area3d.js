@@ -741,8 +741,9 @@ function buildArea(st, api, A) {
   function wildSpawn(hx, hz) {
     const ks = Object.keys(wildP); if (!ks.length) return;
     for (let tries = 0; tries < 12; tries++) {
-      const ang = Math.random() * Math.PI * 2, d = 55 + Math.random() * 60, x = hx + Math.cos(ang) * d, z = hz + Math.sin(ang) * d;
-      if (!openTile(x, z) || herds.some((h) => Math.hypot(h.x - x, h.z - z) < 40)) continue;
+      // most herds turn up ahead of you, close enough to see (30–70 m), so the country feels alive
+      const f = A.p.face || { x: 0, y: 1 }, fa = Math.atan2(f.y, f.x), ang = Math.random() < 0.7 ? fa + (Math.random() - 0.5) * 1.6 : Math.random() * Math.PI * 2, d = 30 + Math.random() * 40, x = hx + Math.cos(ang) * d, z = hz + Math.sin(ang) * d;
+      if (!openTile(x, z) || herds.some((h) => Math.hypot(h.x - x, h.z - z) < 28)) continue;
       const day = ks.filter((q) => q !== "wolf" || (WILD[info.realm] || []).indexOf("wolf") >= 0), night = wildNight() && wildP.wolf && Math.random() < 0.6;
       const k = night ? "wolf" : day.length ? day[Math.floor(Math.random() * day.length)] : ks[0], [n0, n1] = WN[k], n = n0 + Math.floor(Math.random() * (n1 - n0 + 1)), h = { k, x, z, a: [] };
       for (let i = 0; i < n; i++) { const an = wildOne(k), px = x + (Math.random() - 0.5) * 6, pz = z + (Math.random() - 0.5) * 6; an.g.position.set(openTile(px, pz) ? px : x, 0, openTile(px, pz) ? pz : z); an.g.rotation.y = Math.random() * 6.28; scene.add(an.g); h.a.push(an); }
@@ -752,8 +753,8 @@ function buildArea(st, api, A) {
   function syncWild(dt, hx, hz, spawn) {
     if (spawn) {
       for (const h of herds) for (let j = h.a.length - 1; j >= 0; j--) { const a = h.a[j]; if (a.dead && (a.cut || a.deadT > 120)) { if (!a.cut) { scene.remove(a.g); a.mixer.stopAllAction(); } h.a.splice(j, 1); } }
-      for (let i = herds.length - 1; i >= 0; i--) { const h = herds[i]; if (!h.a.length || Math.hypot(h.x - hx, h.z - hz) > 170) { h.a.forEach((a) => { scene.remove(a.g); a.mixer.stopAllAction(); }); herds.splice(i, 1); } }
-      if (herds.length < 6) wildSpawn(hx, hz);
+      for (let i = herds.length - 1; i >= 0; i--) { const h = herds[i]; if (!h.a.length || Math.hypot(h.x - hx, h.z - hz) > 140) { h.a.forEach((a) => { scene.remove(a.g); a.mixer.stopAllAction(); }); herds.splice(i, 1); } }
+      if (herds.length < 8) wildSpawn(hx, hz); if (herds.length < 3) wildSpawn(hx, hz);
     }
     const night = wildNight(), busy = api.inDlg() || api.sheetOpen();
     for (const h of herds) {
