@@ -2683,8 +2683,8 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
     if (v.build) h += '<p class="dim-t">Building the ' + BUILDINGS[v.build.id].name + ': about ' + v.build.left + ' days left.</p>';
     Object.keys(BUILDINGS).forEach(function (k) {
       if (hs[k] || (v.build && v.build.id === k)) return;
-      var bd = BUILDINGS[k], why = v.build ? 'Another job is under way.' : v.I < bd.jobs ? 'Needs ' + bd.jobs + ' idle men. They have ' + v.I + '.' : S.crowns < bd.cost ? 'Not enough crowns.' : '';
-      h += row(bd.name + ': ' + bd.desc, bd.cost + ' crowns · ' + bd.days + ' days · employs ' + bd.jobs + ' idle men' + (why ? '<br>' + why : ''), 'Build', 'build', v.id, k, !!why);
+      var bd = BUILDINGS[k], why = v.build ? 'Another job is under way.' : v.I < bd.jobs ? 'Needs ' + bd.jobs + ' idle men. They have ' + v.I + '.' : !matCan(bd.cost) ? 'Not enough crowns.' : '';
+      h += row(bd.name + ': ' + bd.desc, bd.cost + ' crowns' + matNote(bd.cost) + ' · ' + bd.days + ' days · employs ' + bd.jobs + ' idle men' + (why ? '<br>' + why : ''), 'Build', 'build', v.id, k, !!why);
     });
     if (hs.farm) {
       var fg = Math.floor(v.farm || 0);
@@ -3122,8 +3122,8 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
     Object.keys(HOLDB).forEach(function (k) {
       if (hh[k] || (s.build && s.build.id === k)) return;
       var b = HOLDB[k]; if (b.town && s.type !== "town") return;
-      var why = s.build ? "Another job is under way." : S.crowns < b.cost ? "Not enough crowns." : "";
-      h += row(b.name + ": " + b.desc, b.cost + " crowns · " + b.days + " days · upkeep " + b.upkeep + " a day" + (why ? "<br>" + why : ""), "Build", "hbuild", s.id, k, !!why);
+      var why = s.build ? "Another job is under way." : !matCan(b.cost) ? "Not enough crowns." : "";
+      h += row(b.name + ": " + b.desc, b.cost + " crowns" + matNote(b.cost) + " · " + b.days + " days · upkeep " + b.upkeep + " a day" + (why ? "<br>" + why : ""), "Build", "hbuild", s.id, k, !!why);
     });
     var enemies = S.enemies.filter(function (e) { return e.kind === "lord" && S.pwar[e.fac] && dist(e.x, e.y, s.x, s.y) < 220; });
     if (enemies.length) h += '<div class="warn"><b>' + enemies[0].name + ' is near.</b> They will besiege this place if the garrison is weak.</div>';
@@ -5164,6 +5164,15 @@ var BIMG_SRC={"farm": "data:image/webp;base64,UklGRqyAAABXRUJQVlA4WAoAAAAQAAAAZw
   var YRET = null;
   function canBuild(s) { return s.type === "village" || s.owner === "player"; }
   function bTable(v) { return v.type === "village" ? BUILDINGS : HOLDB; }
+  // timber and stone you gathered (survival) pay for buildings first: 5 crowns' worth a timber, 6 a stone
+  function matVal() { return (S.wood || 0) * 5 + (S.stone || 0) * 6; }
+  function matCan(cost) { return S.crowns + matVal() >= cost; }
+  function matNote(cost) { var m = matVal(); if (!m) return ""; return " (your timber and stone cover " + Math.min(m, cost) + ")"; }
+  function matPay(cost) {
+    var left = cost, w = S.wood || 0, st = S.stone || 0, uw = Math.min(w, Math.floor(left / 5)); w -= uw; left -= uw * 5;
+    var us = Math.min(st, Math.floor(left / 6)); st -= us; left -= us * 6; S.wood = w; S.stone = st; S.crowns -= left;
+    if (uw || us) toast("Your " + (uw ? uw + " timber" : "") + (uw && us ? " and " : "") + (us ? us + " stone" : "") + " went into the work.");
+  }
   function bState(v, id) {
     if (v.has && v.has[id]) return { s: "done", p: 1 };
     if (v.build && v.build.id === id) { var tot = bTable(v)[id].days, fr = S.day - Math.floor(S.day); return { s: "build", p: Math.max(0.03, Math.min(0.97, 1 - (v.build.left - fr) / tot)), left: v.build.left }; }
@@ -16913,13 +16922,13 @@ setInterval(function () {
         S.from[v.id] -= r; if (S.from[v.id] <= 0) delete S.from[v.id];
         v.W += r; v.credit += 0.5; break;
       case "build":
-        if (v && !v.build && BUILDINGS[y] && S.crowns >= BUILDINGS[y].cost && v.I >= BUILDINGS[y].jobs) {
-          var bd = BUILDINGS[y]; S.crowns -= bd.cost; v.I -= bd.jobs; v.build = { id: y, left: bd.days }; bump(v, 10);
+        if (v && !v.build && BUILDINGS[y] && matCan(BUILDINGS[y].cost) && v.I >= BUILDINGS[y].jobs) {
+          var bd = BUILDINGS[y]; matPay(bd.cost); v.I -= bd.jobs; v.build = { id: y, left: bd.days }; bump(v, 10);
           log("Began a " + bd.name + " at " + v.name + ". " + bd.jobs + " idle men have work.", "e");
         } break;
       case "hbuild":
-        if (v && v.owner === "player" && v.type !== "village" && !v.build && HOLDB[y] && !(v.has && v.has[y]) && !(HOLDB[y].town && v.type !== "town") && S.crowns >= HOLDB[y].cost) {
-          S.crowns -= HOLDB[y].cost; v.build = { id: y, left: HOLDB[y].days }; log("Began a " + HOLDB[y].name + " at " + v.name + ".", "e");
+        if (v && v.owner === "player" && v.type !== "village" && !v.build && HOLDB[y] && !(v.has && v.has[y]) && !(HOLDB[y].town && v.type !== "town") && matCan(HOLDB[y].cost)) {
+          matPay(HOLDB[y].cost); v.build = { id: y, left: HOLDB[y].days }; log("Began a " + HOLDB[y].name + " at " + v.name + ".", "e");
         } break;
       case "labour":
         if (v) { S.crowns += 14; v.credit += 0.2; bump(v, 3); addXp(4); passDays(2); toast("Two days in " + v.name + "’s fields. 14 crowns."); } break;
