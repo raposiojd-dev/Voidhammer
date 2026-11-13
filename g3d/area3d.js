@@ -1109,7 +1109,8 @@ function buildArea(st, api, A) {
   function solidAtW(x, z) { const tx = Math.floor(x / T), tz = Math.floor(z / T); if (tx < 0 || tz < 0 || tx >= W || tz >= H) return 0; return solidH[tz * W + tx]; }
 
   function syncFoes(dt, t, pX, pZ) {
-    for (const e of A.en) {
+    const all = A.al && A.al.length ? A.en.concat(A.al) : A.en; // your own soldiers, when your army fights on the open world
+    for (const e of all) {
       let o = foes.get(e);
       const ex = e.x * PX, ez = e.y * PX, dP = Math.hypot(ex - pX, ez - pZ);
       if (!o) {
@@ -1126,7 +1127,7 @@ function buildArea(st, api, A) {
       const vis = dP < 58; o.f.visible = vis; if (!vis) continue;
       const mx = ex - o.lx, mz = ez - o.lz, sp = Math.hypot(mx, mz) / Math.max(dt, 1e-3);
       o.mv = lerp(o.mv, Math.min(2, sp / 3.2), 0.25); o.lx = ex; o.lz = ez;
-      const want = sp > 0.3 ? Math.atan2(mx, mz) : (e.aggro ? Math.atan2(pX - ex, pZ - ez) : o.yaw);
+      const want = sp > 0.3 ? Math.atan2(mx, mz) : e.ally ? (e.tgx != null ? Math.atan2(e.tgx * PX - ex, e.tgy * PX - ez) : o.yaw) : (e.aggro ? Math.atan2(pX - ex, pZ - ez) : o.yaw);
       o.yaw = angLerp(o.yaw, want, 1 - Math.exp(-dt * 10));
       if (e.cd > o.cd + 0.2 && e.aggro && !e.d.ranged) o.atk = 1; o.cd = e.cd;
       if (e.d.ranged && e.shot > o.shot + 0.3) o.atk = 1; o.shot = e.shot;
