@@ -5961,7 +5961,14 @@ var BIMG_SRC={"farm": "data:image/webp;base64,UklGRqyAAABXRUJQVlA4WAoAAAAQAAAAZw
   })();
   function ovCampNpc(cell, i, m) { return { id: "mycamp" + i, name: "Your camp", x: m.x, y: m.y, mycamp: 1, small: 1, col: "#c8873a", d: function () { return "mycamp:" + cell + ":" + i; } }; }
   var campB = document.createElement("button"); campB.id = "acamp"; campB.hidden = true;
-  campB.style.cssText = "position:absolute;right:calc(11.4rem + env(safe-area-inset-right,0px));bottom:calc(7.6rem + env(safe-area-inset-bottom,0px));z-index:3;padding:.4rem .8rem;border-radius:16px;background:linear-gradient(#5a3e18,#2a1a0a);border:1px solid #c8873a;color:#f4e2b8;font-family:Cinzel,Georgia,serif;font-weight:700;font-size:.7rem;letter-spacing:.05em;box-shadow:0 2px 8px rgba(0,0,0,.6);touch-action:manipulation";
+  // 13 Nov: what you carry sits quietly on the left under the meters (it was a button in the right-hand cluster, in the way);
+  // "Make camp" only appears there when you can actually make one
+  var resP = document.createElement("div"); resP.id = "ares"; resP.hidden = true;
+  resP.style.cssText = "position:absolute;left:calc(.6rem + env(safe-area-inset-left,0px));top:calc(8.4rem + env(safe-area-inset-top,0px));z-index:3;display:flex;flex-direction:column;align-items:flex-start;gap:4px;pointer-events:none;max-width:15rem";
+  var resT = document.createElement("div"); resT.style.cssText = "padding:2px 6px;border-radius:5px;background:rgba(8,6,4,.62);border:1px solid rgba(200,135,58,.35);color:#d8c290;font:600 .6rem ui-monospace,Menlo,monospace;letter-spacing:.02em;line-height:1.35;white-space:normal";
+  resP.appendChild(resT); resP.appendChild(campB);
+  campB.style.cssText = "pointer-events:auto;padding:.3rem .7rem;min-height:30px;border-radius:14px;background:linear-gradient(#5a3e18,#2a1a0a);border:1px solid #c8873a;color:#f4e2b8;font-family:Cinzel,Georgia,serif;font-weight:700;font-size:.64rem;letter-spacing:.05em;box-shadow:0 2px 8px rgba(0,0,0,.6);touch-action:manipulation";
+  campB.textContent = "Make camp · 8 timber";
   function ovMakeCamp() {
     if (!ovLive() || (S.wood || 0) < 8) return; var a = AR, tx = Math.floor(a.p.x / ATS), ty = Math.floor(a.p.y / ATS);
     if (ovInTown(tx, ty)) { aToast("Not in town. Walk out into the country to make camp."); return; }
@@ -5975,10 +5982,14 @@ var BIMG_SRC={"farm": "data:image/webp;base64,UklGRqyAAABXRUJQVlA4WAoAAAAQAAAAZw
   campB.addEventListener("click", function (ev) { ev.stopPropagation(); try { ovMakeCamp(); } catch (e) {} });
   setInterval(function () {
     try {
-      if (!ovLive() || !$("area")) { campB.hidden = true; return; } if (campB.parentNode !== $("area")) $("area").appendChild(campB);
-      var w = S.wood || 0, ok = w >= 8 && !AR.dlg && !sheet && !ovInTown(Math.floor(AR.p.x / ATS), Math.floor(AR.p.y / ATS));
-      campB.hidden = !(ok || ((w > 0 || (S.meat || 0) || (S.hides || 0)) && !AR.dlg && !sheet)); campB.disabled = !ok; campB.style.opacity = ok ? 1 : 0.55;
-      campB.textContent = (ok ? "Make camp · 8 timber" : "Timber " + w + "/8 · stone " + (S.stone || 0)) + ((S.meat || 0) || (S.hides || 0) ? " · meat " + (S.meat || 0) + " · hides " + (S.hides || 0) : "");
+      if (!ovLive() || !$("area")) { resP.hidden = true; return; } if (resP.parentNode !== $("area")) $("area").appendChild(resP);
+      var w = S.wood || 0, st = S.stone || 0, mt = S.meat || 0, hd = S.hides || 0, free = !AR.dlg && !sheet, ok = w >= 8 && free && !ovInTown(Math.floor(AR.p.x / ATS), Math.floor(AR.p.y / ATS));
+      resP.hidden = !(free && (w || st || mt || hd)); campB.hidden = !ok;
+      var bits = []; if (w) bits.push("Timber " + w); if (st) bits.push("Stone " + st); if (mt) bits.push("Meat " + mt); if (hd) bits.push("Hides " + hd); resT.textContent = bits.join(" · ");
+      // sit just under the Realm meters when they show
+      var ms = [].filter.call(document.querySelectorAll(".k2m"), function (e) { return e.offsetParent; }), bot = 0, lft = null;
+      ms.forEach(function (e) { var r = e.getBoundingClientRect(); if (r.bottom > bot) bot = r.bottom; if (lft === null || r.left < lft) lft = r.left; });
+      if (bot) { var ar = $("area").getBoundingClientRect(); resP.style.top = Math.round(bot - ar.top + 5) + "px"; resP.style.left = Math.round(lft - ar.left) + "px"; }
     } catch (x) {}
   }, 700);
   // the camp, and selling what you carry to caravans and pedlars
