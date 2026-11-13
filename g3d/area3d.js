@@ -818,12 +818,25 @@ function buildArea(st, api, A) {
     fires.push({ tick(t) { const k = 0.85 + 0.15 * Math.sin(t * 11 + x) * Math.sin(t * 7.3 + z); f.scale.set(3, 3.4 * k, 3); gl.material.opacity = 0.38 + 0.1 * k; } });
     return grp;
   }
+  // siege ground outside a town that has shut you out: a camp, a stack of ladders, a ram on its frame and your banner
+  function siegeGround(x, z) {
+    const grp = myCamp(x, z), wood = kit.mat(0x6a4a2a), dark = kit.mat(0x3a2a1a), add = (mat, px, py, pz, sx, sy, sz, ry) => { const m = new THREE.Mesh(kit.g.box, mat); m.position.set(px, py, pz); m.scale.set(sx, sy, sz); m.rotation.y = ry || 0; m.castShadow = true; grp.add(m); return m; };
+    // ladders, leaning in a stack
+    for (let i = 0; i < 3; i++) { const lx = x + 2.4 + i * 0.5, lz = z - 1.6; [-0.28, 0.28].forEach((o) => { const r = add(wood, lx + o, 1.5, lz, 0.08, 3.2, 0.08); r.rotation.z = -0.35; }); for (let k = 0; k < 6; k++) { const r = add(wood, lx - 0.42 + k * 0.17, 0.35 + k * 0.48, lz, 0.6, 0.06, 0.06); r.rotation.z = -0.35; } }
+    // the ram: a log slung in a roofed frame on wheels
+    const rx = x - 2.6, rz = z + 2.2; add(dark, rx, 0.9, rz, 0.32, 0.32, 3.4, 0); add(wood, rx, 2.0, rz, 1.5, 0.12, 3.0, 0);
+    [[-0.7, -1.3], [0.7, -1.3], [-0.7, 1.3], [0.7, 1.3]].forEach(([a, b]) => { add(wood, rx + a, 1.0, rz + b, 0.12, 2.0, 0.12, 0); const w = new THREE.Mesh(kit.g.cyl || kit.g.box, dark); w.position.set(rx + a * 1.15, 0.35, rz + b); w.scale.set(0.7, 0.14, 0.7); w.rotation.z = Math.PI / 2; grp.add(w); });
+    // a banner on a pole
+    add(wood, x + 1.2, 2.2, z + 2.4, 0.08, 4.4, 0.08); const fl = add(kit.mat(0x2f6fa8), x + 1.7, 3.8, z + 2.4, 1.0, 0.7, 0.04); fl.userData.flag = 1;
+    return grp;
+  }
   const npcs = [];
   window.__vh3dDropCamps = () => { for (let i = npcs.length - 1; i >= 0; i--) { const o = npcs[i]; if (!o.n.mycamp) continue; if (o.obj) scene.remove(o.obj); if (o.mark) scene.remove(o.mark); npcs.splice(i, 1); } };
   window.__vh3dAddNpc = (n) => { if (ctlGone()) return; const o = { n, x: n.px * PX, z: n.py * PX, obj: null, mark: null, mk: -1, label: null }; npcObj(o); npcs.push(o); };
   function npcObj(o) {
     const n = o.n, x = o.x, z = o.z;
     if (n.mycamp) o.obj = myCamp(x, z);
+    else if (n.siege) o.obj = siegeGround(x, z);
     else if (n.chest || /chest|stash/.test(String(n.id || ""))) o.obj = chest(x, z);
     else if (n.gate || n.portal) o.obj = portal(x, z);
     else if (n.cell) o.obj = cage(x, z);

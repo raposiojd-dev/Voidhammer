@@ -5568,6 +5568,8 @@ var BIMG_SRC={"farm": "data:image/webp;base64,UklGRqyAAABXRUJQVlA4WAoAAAAQAAAAZw
           spots.push(["winch", "The gate winch", [ox + (ts.spawn ? ts.spawn[0] : 2), oy + 1]]);
           if (hs0[0]) spots.push(["granary", "The granary", [ox + hs0[0][0] + (hs0[0][2] >> 1) + 2, oy + hs0[0][1] + hs0[0][3]]]);
           if (hs0[1]) spots.push(["armoury", "The armoury", [ox + hs0[1][0] + (hs0[1][2] >> 1) + 2, oy + hs0[1][1] + hs0[1][3]]]);
+          // outside, in sight of the gate: the spot where you pitch your siege camp and set up your engines (14 Nov)
+          sp.npcs.push({ id: "sgspot_" + q.id, name: "Siege ground · " + q.s.name, x: ox + (ts.w >> 1) + 4, y: oy + ts.h + 5, siege: q.id, small: 1, town: q.id, col: "#7a5a34", d: function () { return "sgspot:" + q.id; }, mk: function () { return 0; } });
           spots.forEach(function (z) { sp.npcs.push({ id: "sabo_" + q.id + "_" + z[0], name: z[1], x: z[2][0], y: z[2][1], draw: function () {}, small: 1, town: q.id, d: function () { return "sabo:" + q.id + ":" + z[0]; }, mk: function () { return ovSabDone(q.s, z[0]) ? 0 : 1; } }); });
         }
       }
@@ -6387,6 +6389,63 @@ var BIMG_SRC={"farm": "data:image/webp;base64,UklGRqyAAABXRUJQVlA4WAoAAAAQAAAAZw
     if (Math.random() < 0.4 && AR) { AR.en.forEach(function (e) { if (!e.dead && Math.hypot(e.x - AR.p.x, e.y - AR.p.y) < 260) e.aggro = true; }); t += " A shout goes up behind you."; }
     return t;
   }
+  // ---- siege ground and the lone challenge (14 Nov) ----
+  // every town or castle that shuts its gates on you has a siege ground outside: pitch camp there and build engines, assault,
+  // or take the place alone: over the wall with a rope, and every man of the garrison is waiting somewhere in the streets.
+  function ovGarrisonSpawn(a, w, s) {
+    var f = s.owner, n = Math.max(8, Math.min(30, Math.round(s.gar / 5))), spots = [], x, y;
+    for (y = w.y0 + 1; y < w.y1; y++) for (x = w.x0 + 1; x < w.x1; x++) { var t = a.g[y] && a.g[y][x]; if (t === 1 || t === 9 || t === 0) spots.push([x, y]); }
+    var made = 0, tries = 0; FAC[f] = FAC[f] || { name: "Garrison", col: "#8a3a28" };
+    while (made < n && spots.length && tries++ < n * 8) {
+      var sp2 = spots[Math.floor(Math.random() * spots.length)], px = sp2[0] * ATS + 8, py = sp2[1] * ATS + 8; if (!boxFree(a, px, py) || Math.hypot(px - a.p.x, py - a.p.y) < 90) continue;
+      var rngd = Math.random() < 0.3, ty = f === "metal" ? (rngd ? "wraithgun" : "wraith") : f === "shadow" ? "knife" : (rngd ? "slinger" : "bandit"), base = ET[ty]; if (!base) continue;
+      var d = Object.assign({}, base, { name: (FAC[f].name || "Garrison") + (rngd ? " archer" : " guard"), band: FAC[f].col }), tm = (1 + 0.8 * tier()) * 1.2 * lvScale();
+      a.en.push({ type: ty, d: d, x: px, y: py, hx: px, hy: py, hp: d.hp * tm, hpm: d.hp * tm, cd: 0.5, kx: 0, ky: 0, flash: 0, dead: false, aggro: false, shot: 1, wrd: 1, gar: s.id }); made++;
+    }
+    return made;
+  }
+  function ovLoneStart(s) {
+    var a = AR, w = (a.sp.walls || []).filter(function (z) { return z.sid === s.id; })[0]; if (!w || !w.shut) { aToast("Its gates are open to you."); return; }
+    if (!(S.rope > 0)) { aToast("You need a climbing rope for the wall. Caravan masters and rope-sellers carry them."); return; }
+    S.rope--; w.guards = 1; a.en = a.en.filter(function (e) { return !e.wrd || e.dead; });
+    // over the south wall, near the middle, three strides in
+    var px = ((w.x0 + w.x1) / 2) * ATS, py = (w.y1 - 3) * ATS, k = 0; while (!boxFree(a, px, py) && k++ < 60) { px += (Math.random() - 0.5) * 40; py -= Math.random() * 16; }
+    if (!boxFree(a, px, py)) { S.rope++; aToast("No footing inside here. Try climbing a different stretch of wall."); return; }
+    a.p.x = px; a.p.y = py; var n = ovGarrisonSpawn(a, w, s);
+    OVW.lone = { sid: s.id, k: n, name: s.name }; try { sfx("door"); } catch (e) {}
+    aToast("You're over the wall of " + s.name + ". " + n + " of the garrison are somewhere in these streets. Take them all, and the town is yours.");
+  }
+  setInterval(function () {
+    try {
+      var L = OVW.lone; if (!L) return; if (!ovLive() || !AR) { OVW.lone = null; return; } var s = site(L.sid); if (!s) { OVW.lone = null; return; }
+      var left = AR.en.filter(function (e) { return e.gar === L.sid && !e.dead && !e.gone; }).length;
+      if (left && ((L.last || 0) !== left) && left <= 3) aToast(left + " of the garrison left.");
+      L.last = left;
+      if (!left) {
+        OVW.lone = null; try { addXp(30 * L.k); } catch (x) {} var cr = 20 * L.k; S.crowns += cr;
+        if (hostileSite(s)) { try { captureSite(s, "player"); } catch (x) {} s.gar = Math.max(s.gar || 0, 10); }
+        aToast("The last of the garrison falls. " + L.name + " is yours, taken by one blade. +" + cr + " crowns."); try { save(); } catch (x) {}
+        // the walls open for you now
+        (AR.sp.walls || []).forEach(function (w) { if (w.sid === s.id) w.shut = false; });
+      }
+    } catch (x) {}
+  }, 1000);
+  setTimeout(function () { var gdSg = getDlg;
+  getDlg = function (id) {
+    if (id && id.indexOf("sgspot:") === 0) {
+      var s = site(id.slice(7)); if (!s) return null;
+      if (!hostileSite(s)) return { n: "Siege ground", t: "Trampled grass and old fire rings. " + s.name + " isn't shut against you.", c: [{ t: "Leave it." }] };
+      var e = ovEngOf(s.id), eff = Math.round(s.gar * s.wall * ovDefAdv(s)), my = Math.round(pStrength());
+      return { n: "Siege ground · " + s.name, t: "Good ground in sight of the gate, out of bowshot. The garrison is about " + Math.round(s.gar / 2) * 2 + " men behind the wall, worth about " + eff + " with the wall. Your column is worth about " + my + ".<br><span style=\"opacity:.75\">Built here: " + e.lad + " ladders, " + e.ram + " rams, " + e.twr + " towers, " + e.cat + " catapults.</span>",
+        c: [
+          { t: "Pitch camp and build siege engines", fn: function () { setTimeout(function () { try { ovCampOpen(s.id); } catch (x) {} }, 60); } },
+          { t: "Assault the walls now (" + Math.round(T()) + " men)", fn: function () { if (T() < 3) { setTimeout(function () { aToast("You need at least a few men to assault the walls."); }, 50); return; } setTimeout(function () { try { act("assault", s.id); } catch (x) {} }, 60); } },
+          { t: "Take it alone: over the wall, kill every guard (challenge" + (S.rope ? ", uses a rope" : ", needs a rope") + ")", fn: function () { setTimeout(function () { ovLoneStart(s); }, 60); } },
+          { t: "Not yet." }] };
+    }
+    return gdSg.apply(this, arguments);
+  }; }, 0);
+  window.__ovLone = { start: function (sid) { var s = site(sid); if (s) ovLoneStart(s); return OVW.lone; }, state: function () { return OVW.lone; } };
   // ================= Roadside life: something happening every minute or so of walking =================
   // Ambushes from the trees, Void-touched stragglers, pilgrims with news, a cart in a ditch, pedlars, refugees, a Realm patrol
   // with a tip about the nearest camp. They appear ahead of you, last while you're near, and are gone when you've walked on.
