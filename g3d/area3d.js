@@ -1095,11 +1095,13 @@ function buildArea(st, api, A) {
     grp.userData.legs = legs; return grp;
   }
   function makeParty(q) {
-    const grp = new THREE.Group(), n = Math.max(2, Math.min(q.kind === "caravan" ? 4 : 7, Math.round(q.n / 5))), mem = [];
+    // armies march as a column you can count: up to 16 in ranks of four behind the banner; bands and pilgrims stay small
+    const army = q.kind !== "caravan" && q.kind !== "folk" && q.n >= 25;
+    const grp = new THREE.Group(), n = army ? Math.max(6, Math.min(16, Math.round(q.n / 4))) : Math.max(2, Math.min(q.kind === "caravan" ? 4 : 7, Math.round(q.n / 5))), mem = [];
     let cart = null; if (q.kind === "caravan") { cart = wagon(q.col); grp.add(cart); }
     for (let i = 0; i < n; i++) {
       const f = partyMember(q, i), row = Math.floor(i / 2), side = i % 2 ? 1 : -1;
-      const ox = cart ? side * 1.6 : (i === 0 ? 0 : side * 0.9), oz = cart ? 1.2 - row * 2.4 : -row * 1.3;
+      const ox = army ? ((i % 4) - 1.5) * 1.05 : cart ? side * 1.6 : (i === 0 ? 0 : side * 0.9), oz = army ? -Math.floor(i / 4) * 1.3 : cart ? 1.2 - row * 2.4 : -row * 1.3;
       f.position.set(ox, 0, oz); grp.add(f); mem.push({ f, ox, oz, ph: i * 0.7 });
     }
     // a banner on a pole, in the party's colours
@@ -1109,6 +1111,19 @@ function buildArea(st, api, A) {
     if (q.hostile) { const ring = new THREE.Mesh(st.track(new THREE.RingGeometry(2.4, 2.7, 32)), new THREE.MeshBasicMaterial({ color: 0xd84a3a, transparent: true, opacity: 0.35, depthWrite: false, side: THREE.DoubleSide })); ring.rotation.x = -Math.PI / 2; ring.position.y = 0.06; grp.add(ring); }
     scene.add(grp);
     return { grp, mem, cart, flag, lab, q, yaw: 0, mv: 0, init: false };
+  }
+  // your army, called on the road: your men form up behind you and march with you until the fight
+  let escort = null;
+  window.__vh3dEscort = (men) => {
+    if (escort) { scene.remove(escort.grp); escort = null; } if (!men || ctlGone()) return;
+    escort = makeParty({ kind: "lord", n: Math.max(28, Math.min(64, men * 4)), col: "#3aa0d8", name: "Your army", hostile: false });
+    escort.grp.position.set(me.position.x, 0, me.position.z + 3); escort.yaw = 0;
+  };
+  function tickEscort(dt, t, hx, hz) {
+    if (!escort) return; const p = escort.grp.position, yaw = me.rotation.y, tx = hx + Math.cos(yaw) * 4.2 + Math.sin(yaw) * 2.5, tz = hz - Math.sin(yaw) * 4.2 + Math.cos(yaw) * 2.5, dx = tx - p.x, dz = tz - p.z, d = Math.hypot(dx, dz);
+    if (d > 25) p.set(tx, 0, tz); else { const k = 1 - Math.exp(-dt * 3); p.x += dx * k; p.z += dz * k; }
+    escort.mv = lerp(escort.mv, Math.min(1.4, d / 1.5), 0.1); if (d > 0.1) escort.yaw = angLerp(escort.yaw, Math.atan2(dx, dz), 1 - Math.exp(-dt * 4)); escort.grp.rotation.y = escort.yaw;
+    for (const m of escort.mem) animFigure(m.f, t + m.ph, escort.mv, 0, false, dt, 0); escort.flag.rotation.y = Math.sin(t * 1.7) * 0.3; escort.lab.visible = false;
   }
   let nearParty = null;
   function syncParties(dt, t, hx, hz) {
@@ -1244,7 +1259,7 @@ function buildArea(st, api, A) {
       else if (performance.now() - toastT > 3000) toastEl.classList.add("v3-tfade");
     }
     // foes (create lazily near the player), items, missiles, effects
-    syncFoes(dt, t, hx, hz); syncParties(dt, t, hx, hz); if (camps3.length) tickCamps(t); if (farMarks.length) tickFar(t, hx, hz); if (wildOn) { wildT -= dt; syncWild(Math.min(dt, 0.1), hx, hz, wildT <= 0); if (wildT <= 0) wildT = 1.5; } if (frameN % 10 === 0) { syncSigns(hx, hz); syncQuestBeams(hx, hz); if (camps3.length) syncCamps(hx, hz); if (big) lazyNpcs(hx, hz); for (const l of townNames) { const d = Math.hypot(l.position.x - hx, l.position.z - hz); l.material.opacity = clamp((110 - d) / 40, 0, 1) * clamp((d - 8) / 10, 0, 1); l.visible = l.material.opacity > 0.02; } }
+    syncFoes(dt, t, hx, hz); syncParties(dt, t, hx, hz); if (camps3.length) tickCamps(t); if (farMarks.length) tickFar(t, hx, hz); if (escort) tickEscort(dt, t, hx, hz); if (wildOn) { wildT -= dt; syncWild(Math.min(dt, 0.1), hx, hz, wildT <= 0); if (wildT <= 0) wildT = 1.5; } if (frameN % 10 === 0) { syncSigns(hx, hz); syncQuestBeams(hx, hz); if (camps3.length) syncCamps(hx, hz); if (big) lazyNpcs(hx, hz); for (const l of townNames) { const d = Math.hypot(l.position.x - hx, l.position.z - hz); l.material.opacity = clamp((110 - d) / 40, 0, 1) * clamp((d - 8) / 10, 0, 1); l.visible = l.material.opacity > 0.02; } }
     syncItems(t); syncProj(); syncFx();
     // exits: soft pulse; locked ones dim
     if (frameN % 15 === 0) for (const o of exits) { let lk = ""; try { lk = o.e.lock ? o.e.lock() : ""; } catch (e) {} o.locked = !!lk; if (o.veil) o.veil.material.color.set(lk ? 0xff6a5a : 0xfff0c0); if (o.sign) o.sign.material.opacity = lk ? 0.45 : 1; }
