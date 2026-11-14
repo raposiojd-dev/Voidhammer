@@ -432,7 +432,7 @@ window.__vhGame = function () { (function () {
   var ROADS = [["irontown", "ironwatch"], ["irontown", "steelgate"], ["ironwatch", "highmarch"], ["steelgate", "keep"], ["irontown", "slagmoor"], ["irontown", "pitmouth"], ["ashford", "emberfall"], ["emberfall", "highmarch"], ["emberfall", "keep"], ["ashford", "redbank"], ["ashford", "thornwick"], ["ashford", "millbrook"], ["thornwick", "granite"], ["thornwick", "greywater"], ["greywater", "highmarch"], ["redbank", "keep"], ["redbank", "tempest"], ["keep", "windspire"], ["windspire", "cloudmere"], ["windspire", "galeford"], ["galeford", "tempest"], ["tempest", "brightmere"], ["brightmere", "luminant"], ["brightmere", "millbrook"], ["millbrook", "candlewick"], ["candlewick", "dawnwatch"], ["dawnwatch", "luminant"], ["granite", "flintmoor"], ["redbank", "brightmere"]];
   var FAC = {
     ember: { name: "Flameborne", col: "#d4562c", lords: ["Lord Vashen", "Lady Cinder"], cap: "emberfall" },
-    stone: { name: "Stonehold", col: "#9aa4b4", lords: ["Lord Brannoch", "Lord Hald"], cap: "highmarch" },
+    stone: { name: "Stonehold", col: "#9aa4b4", lords: ["Lord Dunmor", "Lord Hald"], cap: "highmarch" },
     storm: { name: "Stormreach", col: "#5fb4e0", lords: ["Lady Ysmeine", "Lord Kerrin"], cap: "windspire" },
     light: { name: "Lightforge", col: "#e8c75a", lords: ["Lord Aurel", "Lady Ismay"], cap: "luminant" },
     frost: { name: "Frostgrave", col: "#a9dcd8", lords: ["Lyriel Frostwraith", "Elder Varyn"], cap: "stillcity" },
@@ -577,7 +577,7 @@ window.__vhGame = function () { (function () {
   }
 
   function load() {
-    try { var raw = localStorage.getItem(KEY); if (!raw) return null; var s = JSON.parse(raw); return s && s.v === 1 ? s : null; } catch (e) { return null; }
+    try { var raw = localStorage.getItem(KEY); if (!raw) return null; var s = JSON.parse(raw); if (s && s.enemies) s.enemies.forEach(function (e) { if (e.name === "Lord Brannoch") e.name = "Lord Dunmor"; }); return s && s.v === 1 ? s : null; } catch (e) { return null; }
   }
   var noSave = false, lastSaveT = 0;
   function save() { if (noSave) return; try { localStorage.setItem(KEY, JSON.stringify(S)); lastSaveT = Date.now(); } catch (e) {} }
@@ -1748,7 +1748,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
     "Whisper": { want: "To be seen, once, by someone who does not flinch.", yes: "“You looked at me. Most do not. I will come.”", no: "“Did we speak? I am not sure we did.”", b: 0.0 },
     "Lord Vashen": { want: "Pride. He wants to be asked as an equal, and he wants the credit.", yes: "“Fine. My banners ride with yours. When it is over, they will remember who led.”", no: "“You ask a lord of Flameborne to follow a wanderer? Come back with a bigger name.”", b: -0.05 },
     "Lady Cinder": { want: "A cause worth burning for.", yes: "“A cause! Finally. My riders are yours until the fire burns out.”", no: "“I burn for my own court. Not yet.”", b: 0.1 },
-    "Lord Brannoch": { want: "Duty. He answers oaths, not coin.", yes: "“I swore to hold the mountains. The mountains are wherever the Dominion is not. I will march.”", no: "“Stonehold does not leave its walls on a stranger’s word.”", b: 0.05, gift: 0.4 },
+    "Lord Dunmor": { want: "Duty. He answers oaths, not coin.", yes: "“I swore to hold the mountains. The mountains are wherever the Dominion is not. I will march.”", no: "“Stonehold does not leave its walls on a stranger’s word.”", b: 0.05, gift: 0.4 },
     "Lord Hald": { want: "Caution. He wants to see how strong the Dominion is before he commits.", yes: "“I have counted their wagons. You are right. We hang together or not at all.”", no: "“Show me they can be beaten, and I will come.”", b: -0.1 },
     "Lady Ysmeine": { want: "Freedom. She will be asked, never commanded.", yes: "“You asked. That is the only reason I said yes. The Assembly can argue about it later.”", no: "“Ask me again when the wind changes.”", b: 0.05 },
     "Lord Kerrin": { want: "A fair fight and fast horses.", yes: "“A fight with the Dominion? At last, something to ride at.”", no: "“Not while my riders are needed on our own roads.”", b: 0.05 },
@@ -1910,7 +1910,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
   }
   function storyEndingBlock() {
     if (!S.story || !S.story.on) return "";
-    var kh = S.kael !== "away" ? "<p class=\"dim-t\">Before the last march the Flameborne King took Kaelren’s hand and pressed his thumb into the palm until it burned. “Bring him home,” he said. Kaelren has not said who he meant.</p>" : "";
+    var kh = S.kael !== "away" ? "<p class=\"dim-t\">Before the last march the King kept Kaelren back after the others had gone. Kaelren has not said what passed between them.</p>" : "";
     if (S.story.fin) return "<p>" + STORY_FIN[S.story.fin] + "</p>" + kh;
     if (S.mc && S.mc.lost) return "<p>In the Iron Throne City a boy sits very still while the world is finished around him. No one has said his true name in a very long while.</p>" + kh;
     return kh;
@@ -4123,8 +4123,8 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
       paths: [[0, 13, 33, 13], [16, 0, 16, 25]], plaza: [13, 10, 7, 7], water: [[27, 20, 5, 4]],
       houses: [[3, 4, 6, 5], [24, 4, 6, 5], [3, 17, 6, 5], [22, 17, 5, 5], [10, 4, 4, 4]], trees: 24,
       exits: [{ x: 16, y: 25, w: 2, h: 1, to: "emberfall", tx: 17, ty: 2 }, { x: 33, y: 13, w: 1, h: 2, to: "world" }, { x: 0, y: 13, w: 1, h: 2, to: "cave3", tx: 3, ty: 15 },
-        { x: 16, y: 0, w: 2, h: 1, to: "pass", tx: 17, ty: 26, lock: function () { return !cfl("q3") ? "The gate to Greywater Pass is shut. Lord Brannoch holds the key." : ""; } }],
-      npcs: [{ id: "brannoch", name: "Lord Brannoch", x: 15, y: 12, col: "#7a8498", hair: "#bbbbbb", mk: function () { var f = cp().f; return (f.q2done && !f.q3) || (f.q3done && !f.q4) || (f.domRule && !f.q7) ? 1 : ((f.sable && !f.q3done) || (f.foundry && !f.q7done)) ? 2 : 0; }, d: function () { var f = cp().f; if (!f.q3done) return f.sable ? "b_back" : f.q3 ? "b_wait" : f.q2done ? "b_1" : "b_early"; if (!f.q4) return "b_4"; if (!f.q4done) return "b_4wait"; if (f.domRule && !f.q7) return "b_7"; if (f.q7 && !f.q7done) return f.foundry ? "b_7back" : "b_7wait"; return "b_done"; } },
+        { x: 16, y: 0, w: 2, h: 1, to: "pass", tx: 17, ty: 26, lock: function () { return !cfl("q3") ? "The gate to Greywater Pass is shut. Lord Dunmor holds the key." : ""; } }],
+      npcs: [{ id: "brannoch", name: "Lord Dunmor", x: 15, y: 12, col: "#7a8498", hair: "#bbbbbb", mk: function () { var f = cp().f; return (f.q2done && !f.q3) || (f.q3done && !f.q4) || (f.domRule && !f.q7) ? 1 : ((f.sable && !f.q3done) || (f.foundry && !f.q7done)) ? 2 : 0; }, d: function () { var f = cp().f; if (!f.q3done) return f.sable ? "b_back" : f.q3 ? "b_wait" : f.q2done ? "b_1" : "b_early"; if (!f.q4) return "b_4"; if (!f.q4done) return "b_4wait"; if (f.domRule && !f.q7) return "b_7"; if (f.q7 && !f.q7done) return f.foundry ? "b_7back" : "b_7wait"; return "b_done"; } },
         { id: "serra", name: "Serra the Cartographer", x: 8, y: 12, col: "#5a7a6a", hair: "#c8c0b0", mk: function () { var f = cp().f; return !f.sq3 ? 1 : (f.sq3clear && !f.sq3done) ? 2 : 0; }, d: function () { var f = cp().f; return f.sq3done ? "serra_done" : f.sq3clear ? "serra_back" : f.sq3 ? "serra_wait" : "serra_1"; } },
         { id: "guard", name: "Gate guard", x: 19, y: 11, col: "#5a6a8a", hair: "#2a2a2a", d: function () { return "guard"; } },
         { id: "merch", name: "Merchant", x: 11, y: 15, col: "#8a7a3a", hair: "#5a3a1a", d: function () { return "shop:highmarch"; } },
@@ -4196,7 +4196,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
       exits: [{ x: 0, y: 14, w: 1, h: 2, to: "world" }],
       chests: [[12, 4, 3], [22, 25, 3], [32, 3, 3], [42, 14, 3]],
       enemies: [["wraith", 8, 14], ["wraithgun", 12, 7], ["wraith", 12, 11], ["scout", 18, 14], ["wraith", 22, 19], ["wraithgun", 22, 23], ["wraith", 27, 14], ["wraithgun", 32, 8], ["wraith", 32, 5], ["scout", 36, 14], ["wraith", 38, 13], ["dravik", 41, 14]],
-      clear: function () { if (!cfl("foundry")) { cp().f.foundry = 1; aToast("The reactors are cold. Report to Lord Brannoch."); } }, npcs: [] }
+      clear: function () { if (!cfl("foundry")) { cp().f.foundry = 1; aToast("The reactors are cold. Report to Lord Dunmor."); } }, npcs: [] }
   };
 
   var DLG = {
@@ -4229,9 +4229,9 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
     hale_wait: { n: "Steward Corbet", t: "The Hollow, south of here. Grath keeps what he is paid in a chest. Bring me the writ." },
     hale_back: { n: "Steward Corbet", t: "A Dominion writ. Foundry office, countersigned in a hand I have not seen before. A name, scratched out on every copy. Not a signature, I think. It reads like the name of something they mean to build. Does that mean anything to you?", c: [
       { t: "No. Should it?", go: "hale_reward" }] },
-    hale_reward: { n: "Steward Corbet", t: "It should mean something to everyone. Take this: two hundred crowns of Lady Cinder's purse, and my word that Flameborne will hear of it. Lord Brannoch at Highmarch has seen Dominion scouts on the northern pass. Take the writ to him.", c: [
+    hale_reward: { n: "Steward Corbet", t: "It should mean something to everyone. Take this: two hundred crowns of Lady Cinder's purse, and my word that Flameborne will hear of it. Lord Dunmor at Highmarch has seen Dominion scouts on the northern pass. Take the writ to him.", c: [
       { t: "I will.", give: { crowns: 200, xp: 80 }, set: { q2done: 1 }, toast: "+200 crowns. Highmarch is open." }] },
-    hale_done: { n: "Steward Corbet", t: "Highmarch lies north. Brannoch will want to see that writ." },
+    hale_done: { n: "Steward Corbet", t: "Highmarch lies north. Dunmor will want to see that writ." },
     orla: { n: "Orla the Smith", t: "I mend what the Flameborne King’s guards break. He pays for it himself, which is why I like him. For fifty crowns I will temper your blade, once, and it will bite deeper.", c: [
       { t: "Browse and upgrade gear", go: "smith:emberfall" }, { t: "Temper my blade (50 crowns)", cost: 50, fn: function () { cp().dmg = (cp().dmg || 0) + 1; cp().f.tempered = 1; }, go: "orla_ok" }, { t: "Another time." }] },
     orla_ok: { n: "Orla the Smith", t: "There. She will cut through a coat now. Do not make me regret it." },
@@ -4246,28 +4246,28 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
     chest_open: { n: "Chest", t: "Inside: a purse and a folded writ sealed in grey wax. The signature is a single name.", c: [
       { t: "Take it.", give: { crowns: 60 }, set: { writ: 1 }, toast: "You have the Dominion writ. Return to Steward Corbet." }] },
     chest_empty: { n: "Chest", t: "Empty. You have what you came for." },
-    b_early: { n: "Lord Brannoch", t: "A stranger, in Highmarch. We do not change quickly here. Prove yourself elsewhere first." },
-    b_1: { n: "Lord Brannoch", t: "Brannoch of Stonehold. You carry Flameborne dust and a grey writ. Show me.", c: [{ t: "Here.", go: "b_2" }] },
-    b_2: { n: "Lord Brannoch", t: "I have seen this seal on orders for the northern pass. They are building something there, a foundry that never sleeps. Greywater is held by Warden Sable. Break her and we can see what stands behind her.", c: [
+    b_early: { n: "Lord Dunmor", t: "A stranger, in Highmarch. We do not change quickly here. Prove yourself elsewhere first." },
+    b_1: { n: "Lord Dunmor", t: "Dunmor of Stonehold. You carry Flameborne dust and a grey writ. Show me.", c: [{ t: "Here.", go: "b_2" }] },
+    b_2: { n: "Lord Dunmor", t: "I have seen this seal on orders for the northern pass. They are building something there, a foundry that never sleeps. Greywater is held by Warden Sable. Break her and we can see what stands behind her.", c: [
       { t: "I will go.", set: { q3: 1 }, toast: "New quest: Greywater Pass." }, { t: "Why me?", go: "b_3" }] },
-    b_3: { n: "Lord Brannoch", t: "A stranger who keeps choosing the hard road. That is exactly who I need, and exactly who I cannot afford to lose, so try not to die at the pass. Stonehold hates paperwork.", c: [{ t: "I will go.", set: { q3: 1 }, toast: "New quest: Greywater Pass." }] },
-    b_wait: { n: "Lord Brannoch", t: "Greywater Pass. The north gate. Sable holds it." },
-    b_back: { n: "Lord Brannoch", t: "You did it. The scouts are broken and the road north is ours to see. Take the Stonehold purse, three hundred crowns, and my mark. Every Stonehold lord will know you stood at the pass.", c: [
+    b_3: { n: "Lord Dunmor", t: "A stranger who keeps choosing the hard road. That is exactly who I need, and exactly who I cannot afford to lose, so try not to die at the pass. Stonehold hates paperwork.", c: [{ t: "I will go.", set: { q3: 1 }, toast: "New quest: Greywater Pass." }] },
+    b_wait: { n: "Lord Dunmor", t: "Greywater Pass. The north gate. Sable holds it." },
+    b_back: { n: "Lord Dunmor", t: "You did it. The scouts are broken and the road north is ours to see. Take the Stonehold purse, three hundred crowns, and my mark. Every Stonehold lord will know you stood at the pass.", c: [
       { t: "Accept.", go: "b_end", give: { crowns: 300, xp: 150 }, set: { q3done: 1 }, toast: "Act I complete." }] },
-    b_end: { n: "Lord Brannoch", t: "The Dominion has a name on its orders now, scratched out on every copy. Whatever it is, someone is making it. The world is yours, wanderer. Go, and keep choosing." },
-    b_done: { n: "Lord Brannoch", t: "The roads are yours. Go." },
-    b_4: { n: "Lord Brannoch", t: "You are back from the pass with a grey-coated figure on your mind. Good. He is on mine. The name on those orders is in no Stonehold ledger, and Stonehold records everything that can be weighed. The one place that keeps what cannot be weighed is the Lantern Archive. Spiritveil keeps an annex of it in Meridian, under Archivist Lume. Take the writ there. And be careful. Meridian is a city that has only just started to be afraid.", c: [
+    b_end: { n: "Lord Dunmor", t: "The Dominion has a name on its orders now, scratched out on every copy. Whatever it is, someone is making it. The world is yours, wanderer. Go, and keep choosing." },
+    b_done: { n: "Lord Dunmor", t: "The roads are yours. Go." },
+    b_4: { n: "Lord Dunmor", t: "You are back from the pass with a grey-coated figure on your mind. Good. He is on mine. The name on those orders is in no Stonehold ledger, and Stonehold records everything that can be weighed. The one place that keeps what cannot be weighed is the Lantern Archive. Spiritveil keeps an annex of it in Meridian, under Archivist Lume. Take the writ there. And be careful. Meridian is a city that has only just started to be afraid.", c: [
       { t: "I will go to Meridian.", set: { q4: 1 }, toast: "New quest: The Lantern Page." }, { t: "Why not send a rider?", go: "b_4why" }] },
-    b_4why: { n: "Lord Brannoch", t: "A rider brings back an answer. You bring back a reason to act on it. Go.", c: [{ t: "I will go to Meridian.", set: { q4: 1 }, toast: "New quest: The Lantern Page." }] },
-    b_4wait: { n: "Lord Brannoch", t: "Meridian. The Lantern Annex. Archivist Lume. Take the writ." },
-    b_7: { n: "Lord Brannoch", t: "It is done, then. The boy is gone and what stepped out of that wagon wears his face. Every foundry from Iron Throne City to Steelgate has opened its gates. The Dominion does not need a pretext any more. Steelgate builds the reactors that make Iron Wraiths. If it keeps building, there will be nothing left to defend. Break it, and Marshal Dravik with it.", c: [
+    b_4why: { n: "Lord Dunmor", t: "A rider brings back an answer. You bring back a reason to act on it. Go.", c: [{ t: "I will go to Meridian.", set: { q4: 1 }, toast: "New quest: The Lantern Page." }] },
+    b_4wait: { n: "Lord Dunmor", t: "Meridian. The Lantern Annex. Archivist Lume. Take the writ." },
+    b_7: { n: "Lord Dunmor", t: "It is done, then. The boy is gone and what stepped out of that wagon wears his face. Every foundry from Iron Throne City to Steelgate has opened its gates. The Dominion does not need a pretext any more. Steelgate builds the reactors that make Iron Wraiths. If it keeps building, there will be nothing left to defend. Break it, and Marshal Dravik with it.", c: [
       { t: "I will break Steelgate.", set: { q7: 1 }, toast: "New quest: The Steelgate Foundry." }, { t: "Is that enough?", go: "b_7enough" }] },
-    b_7enough: { n: "Lord Brannoch", t: "No. Nothing is enough. But it buys the Realms a season, and a season is how a stranger becomes a banner.", c: [{ t: "I will break Steelgate.", set: { q7: 1 }, toast: "New quest: The Steelgate Foundry." }] },
-    b_7wait: { n: "Lord Brannoch", t: "Steelgate. Dravik. Do not go in with a light heart." },
-    b_7back: { n: "Lord Brannoch", t: "Steelgate is dark. Dravik is dead and the reactors are cold. Take Stonehold's thanks, and take this. It was made for someone who would still be alive in a year.", c: [
+    b_7enough: { n: "Lord Dunmor", t: "No. Nothing is enough. But it buys the Realms a season, and a season is how a stranger becomes a banner.", c: [{ t: "I will break Steelgate.", set: { q7: 1 }, toast: "New quest: The Steelgate Foundry." }] },
+    b_7wait: { n: "Lord Dunmor", t: "Steelgate. Dravik. Do not go in with a light heart." },
+    b_7back: { n: "Lord Dunmor", t: "Steelgate is dark. Dravik is dead and the reactors are cold. Take Stonehold's thanks, and take this. It was made for someone who would still be alive in a year.", c: [
       { t: "Accept.", go: "b_7end", give: { crowns: 400, xp: 200 }, fn: function () { dropAtP(genItem(3, null, 3)); }, set: { q7done: 1 }, toast: "The Steelgate Foundry is broken." }] },
-    b_7end: { n: "Lord Brannoch", t: "The Dominion is loose, but it is no longer unstoppable. Its main host is marching on Meridian, and Lightforge will not hold forever. Call the heroes of the Realms. Hold what you can. The Iron Throne is where the boy sits. Whatever you mean to do about him, decide before you get there." },
-    lume_idle: { n: "Archivist Lume", t: "Spiritveil keeps what the world forgets. If you need something remembered, ask Lord Brannoch to send you." },
+    b_7end: { n: "Lord Dunmor", t: "The Dominion is loose, but it is no longer unstoppable. Its main host is marching on Meridian, and Lightforge will not hold forever. Call the heroes of the Realms. Hold what you can. The Iron Throne is where the boy sits. Whatever you mean to do about him, decide before you get there." },
+    lume_idle: { n: "Archivist Lume", t: "Spiritveil keeps what the world forgets. If you need something remembered, ask Lord Dunmor to send you." },
     lume_1: { n: "Archivist Lume", t: "Spiritveil keeps the memory of the world, and I keep this annex of it in a city that has stopped wanting to remember. You carry a grey writ. May I? There, under the scratching. In the Lantern Codex that name is a blank line, a hole where ink should be. It is not erased. Erasure leaves marks. It was never written, and yet it is everywhere. The page that explains it was moved to the Drowned Archive when the ink began to crawl off the paper. What crawls there now is not ink any more. Bring me the page.", c: [
       { t: "I will go down.", set: { lumeok: 1 }, toast: "New objective: the Drowned Archive.", go: "lume_go" }, { t: "What is crawling?", go: "lume_ink" }] },
     lume_ink: { n: "Archivist Lume", t: "A memory that was written and never allowed to finish. It does not know it is dead. Do not let it touch the page, or you.", c: [{ t: "I will go down.", set: { lumeok: 1 }, toast: "New objective: the Drowned Archive.", go: "lume_go" }] },
@@ -4312,7 +4312,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
       { t: "Cut the chains of the prisoners in the other wagons.", set: { freed: 1 }, give: { xp: 60 }, go: "valek_rise2" },
       { t: "Fall back. Live to fight him.", go: "valek_rise2" }] },
     valek_rise2: { n: "", t: function () { var f = cp().f; return (f.reach ? "The prints stop at the foundry gate. Something inside lifts the whole yard's hum by a note, and the gate swings shut in your face from the other side." : f.freed ? "The chains fall from forty people, who run. When you turn back, the Iron Wraiths in the yard have stopped moving, every one of them facing north, as if someone had called them." : "You back away. Nobody follows. The Wraiths in the yard have stopped moving, every one of them facing north.") + " Around you Ironwatch lights like a furnace. The Wraiths march north, and the foundries of the Iron Dominion open their gates. The Radiant Edict made a cage, and Metalcrown has broken out of it."; },
-      c: [{ t: "Run.", fn: startDominion, set: { coup: 1, q6done: 1 }, give: { xp: 250 }, toast: "The Dominion marches. Return to Lord Brannoch." }] },
+      c: [{ t: "Run.", fn: startDominion, set: { coup: 1, q6done: 1 }, give: { xp: 250 }, toast: "The Dominion marches. Return to Lord Dunmor." }] },
     tam_1: { n: "Tam the Drover", t: "Bandits dragged my wagon into the Thornfall Cave, up in the woods north of the road. Cutter Vane's lot. My whole season's wool is in there. Clear them out and what you find is yours, bar my wool.", c: [{ t: "I'll clear it.", set: { sq1: 1 }, toast: "Side quest: clear Thornfall Cave.", go: "tam_wait" }, { t: "Not now." }] },
     tam_wait: { n: "Tam the Drover", t: "The cave mouth is in the trees north of the road. Mind the slingers, they wait in the side tunnels." },
     tam_back: { n: "Tam the Drover", t: "You did it! Vane is dead? Take this, it is all I can spare, and a blade I found in the ditch.", c: [{ t: "Take the reward.", give: { crowns: 120, xp: 80 }, set: { sq1done: 1 }, fn: function () { dropAtP(genItem(2, null, 1)); }, toast: "Side quest complete." }] },
@@ -4338,7 +4338,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
       var out = []; if ((S.loot.shards || 0) > 0) out.push({ t: "Glass bolt · 1 void-glass (" + S.loot.shards + " left)", fn: function () { castBolt(); } });
       S.held.slice(0, 3).forEach(function (id) { out.push({ t: "Radiant wave · burn: " + FRAGS[id].title, fn: function () { castWave(id); } }); });
       out.push({ t: out.length ? "Never mind." : "You have nothing to cast with." }); return out; } },
-    valek_scene: { n: "", t: "Warden Sable falls. At the top of the pass a figure in a grey coat watches, an engineer's lens over one eye. He writes something in a ledger, closes it, and is gone into the smoke. Then the smoke closes over him.", c: [{ t: "Continue.", set: { sable: 1 }, toast: "Return to Lord Brannoch." }] }
+    valek_scene: { n: "", t: "Warden Sable falls. At the top of the pass a figure in a grey coat watches, an engineer's lens over one eye. He writes something in a ledger, closes it, and is gone into the smoke. Then the smoke closes over him.", c: [{ t: "Continue.", set: { sable: 1 }, toast: "Return to Lord Dunmor." }] }
   };
 
 
@@ -4518,11 +4518,11 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
   function leg(id, act, name, loc, st, obj) { var o = { id: id, act: act, name: name, loc: loc, leg: st, obj: obj }; QS.push(o); QMAP[id] = o; }
   leg("L1", 1, "The Millbrook Road", "Elder Mara, Ashford", function (f) { return f.q1done ? 4 : f.q1clear ? 3 : f.q1 ? 2 : 1; }, "Clear the bandits on the Millbrook Road.");
   leg("L2", 1, "The Hollow", "Steward Corbet, Hearthmount", function (f) { return f.q2done ? 4 : f.writ ? 3 : f.q2 ? 2 : f.q1done ? 1 : 0; }, "Defeat Grath in the Hollow and take the writ.");
-  leg("L3", 1, "Greywater Pass", "Lord Brannoch, Highmarch", function (f) { return f.q3done ? 4 : f.sable ? 3 : f.q3 ? 2 : f.q2done ? 1 : 0; }, "Defeat Warden Sable at Greywater Pass.");
-  leg("L4", 2, "The Lantern Page", "Lord Brannoch, Highmarch", function (f) { return f.q4done ? 4 : f.page ? 3 : f.lumeok ? 2 : f.q3done ? 1 : 0; }, "Take the Twin-Spark page from the Drowned Archive.");
+  leg("L3", 1, "Greywater Pass", "Lord Dunmor, Highmarch", function (f) { return f.q3done ? 4 : f.sable ? 3 : f.q3 ? 2 : f.q2done ? 1 : 0; }, "Defeat Warden Sable at Greywater Pass.");
+  leg("L4", 2, "The Lantern Page", "Lord Dunmor, Highmarch", function (f) { return f.q4done ? 4 : f.page ? 3 : f.lumeok ? 2 : f.q3done ? 1 : 0; }, "Take the Twin-Spark page from the Drowned Archive.");
   leg("L5", 3, "The Radiant Edict", "Archivist Lume, Meridian", function (f) { return f.q5done ? 4 : f.vaultclear ? 3 : f.q5 ? 2 : 0; }, "Stop the saboteurs in the Citadel undercroft.");
   leg("L6", 4, "The Iron Child", "Archmarshal Aldreth, Meridian", function (f) { return f.q6done ? 4 : f.q6 ? 2 : f.edict ? 1 : 0; }, "Follow the wagon from the ward to Ironwatch.");
-  leg("L7", 5, "The Steelgate Foundry", "Lord Brannoch, Highmarch", function (f) { return f.q7done ? 4 : f.foundry ? 3 : f.q7 ? 2 : f.domRule ? 1 : 0; }, "Break the Steelgate foundry and Marshal Dravik.");
+  leg("L7", 5, "The Steelgate Foundry", "Lord Dunmor, Highmarch", function (f) { return f.q7done ? 4 : f.foundry ? 3 : f.q7 ? 2 : f.domRule ? 1 : 0; }, "Break the Steelgate foundry and Marshal Dravik.");
 
   // ---- ACT I ----
   Q({ id: "den", act: 1, hub: "ashford", gpos: [16, 4], npc: "tobb", name: "The Blackroot Den", zone: "den", zname: "The Blackroot Den", th: "cave", lv: 1, seed: 301, pal: ["hound", "hound"], boss: "alpha", obj: "Clear the Blackroot Den and kill the alpha.",
@@ -4998,11 +4998,11 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
     if (!f.q2) return { text: "Find Steward Corbet in Hearthmount.", site: "emberfall", area: "emberfall", npc: "hale" };
     if (!f.writ) return { text: f.grathdead ? "Open the chest in the Hollow." : "Find the bandit hideout at Redbank and defeat Grath.", site: "redbank", area: "hollow", npc: f.grathdead ? "chest" : "", en: f.grathdead ? "" : "grath" };
     if (!f.q2done) return { text: "Bring the writ to Steward Corbet.", site: "emberfall", area: "emberfall", npc: "hale" };
-    if (!f.q3) return { text: "Find Lord Brannoch in Highmarch.", site: "highmarch", area: "highmarch", npc: "brannoch" };
+    if (!f.q3) return { text: "Find Lord Dunmor in Highmarch.", site: "highmarch", area: "highmarch", npc: "brannoch" };
     if (!f.sable) return { text: "Clear Greywater Pass and defeat Warden Sable.", site: "greywater", area: "pass", en: "sable" };
-    if (!f.q3done) return { text: "Report to Lord Brannoch.", site: "highmarch", area: "highmarch", npc: "brannoch" };
+    if (!f.q3done) return { text: "Report to Lord Dunmor.", site: "highmarch", area: "highmarch", npc: "brannoch" };
     var hasDom = !!site("ironwatch");
-    if (!f.q4) return { text: "Speak to Lord Brannoch about the scratched-out name.", site: "highmarch", area: "highmarch", npc: "brannoch" };
+    if (!f.q4) return { text: "Speak to Lord Dunmor about the scratched-out name.", site: "highmarch", area: "highmarch", npc: "brannoch" };
     if (!f.lumeok) return { text: "Find Archivist Lume at the Lantern Annex in Meridian.", site: "luminant", area: "luminantc", npc: "lume" };
     if (!f.page) return { text: "Descend into the Drowned Archive and take the Twin-Spark page.", site: "luminant", area: "archive", en: "unwritten" };
     if (!f.q4done) return { text: "Bring the page to Archivist Lume.", site: "luminant", area: "luminantc", npc: "lume" };
@@ -5014,9 +5014,9 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
     if (!f.cell) return { text: "Search the cell at the top of the stair.", site: "luminant", area: "ward", npc: "cell" };
     if (!hasDom) return { text: "The Edict has passed and the boy is gone. With the Dominion switched off, the war stays a rumour. The world is yours.", site: "" };
     if (!f.q6done) return { text: "Follow the ruts to Ironwatch and stop the wagon.", site: "ironwatch", area: "ironyard", en: "quill" };
-    if (!f.q7) return { text: "Report to Lord Brannoch. The Dominion marches.", site: "highmarch", area: "highmarch", npc: "brannoch" };
+    if (!f.q7) return { text: "Report to Lord Dunmor. The Dominion marches.", site: "highmarch", area: "highmarch", npc: "brannoch" };
     if (!f.foundry) return { text: "Break the Steelgate foundry and Marshal Dravik.", site: "steelgate", area: "foundry", en: "dravik" };
-    if (!f.q7done) return { text: "Report to Lord Brannoch.", site: "highmarch", area: "highmarch", npc: "brannoch" };
+    if (!f.q7done) return { text: "Report to Lord Dunmor.", site: "highmarch", area: "highmarch", npc: "brannoch" };
     return { text: "The Dominion is loose. Hold the Realms, call heroes, and break the Iron Throne.", site: "irontown" };
   }
   function areaHop(from, to) {
@@ -16697,10 +16697,10 @@ function ovGateOpening() {
     ["Lady Cinder is sitting on a charred doorstep in a village that has no houses.", "“I burned this in a rage when I was nineteen,” she says. “They were rude to my mother. Forty people. Everyone says it was an accident and an age. Everyone is kind. I would like one person to say the word.”", "She looks up. Her eyes are very dry. “Say it.”"],
     "“You murdered them.”", "She closes her eyes. “Thank you,” she says. “I needed to hear it from someone who would not flinch.” She rebuilds the village board by board, over a year, with her own hands.", function () { px(2); },
     "“You were a child, and you are not one now.”", "Cinder is silent. “That is kinder,” she says. “I do not know whether it is better.”", function () { S.crowns += 120; });
-  L("brannoch", "Lord Brannoch", 36, "A Father's Ledger", "Stonehold · Lord Brannoch",
-    ["Lord Brannoch keeps two ledgers. One is for the realm. The other is a list of the days since his son stopped writing.", "“Four hundred and eleven,” he says. “He joined the Dominion for the pay. He believes I would be ashamed. I would be ashamed of nothing but this silence.”", "He hands you a letter, sealed in plain wax. “If you ever cross the Iron Throne, give him this. Do not tell him how you came by it.”"],
+  L("brannoch", "Lord Dunmor", 36, "A Father's Ledger", "Stonehold · Lord Dunmor",
+    ["Lord Dunmor keeps two ledgers. One is for the realm. The other is a list of the days since his son stopped writing.", "“Four hundred and eleven,” he says. “He joined the Dominion for the pay. He believes I would be ashamed. I would be ashamed of nothing but this silence.”", "He hands you a letter, sealed in plain wax. “If you ever cross the Iron Throne, give him this. Do not tell him how you came by it.”"],
     "Take the letter.", "You carry it north. The sealed wax is soft with being handled. You have no idea yet what it says.", function () { px(1); cp().f.lo_letter = 1; },
-    "Tell him to write it himself.", "Brannoch looks at the pen on his desk for a long moment. “Yes,” he says. “Yes. A man should deliver his own apology.”", function () { S.crowns += 100; });
+    "Tell him to write it himself.", "Dunmor looks at the pen on his desk for a long moment. “Yes,” he says. “Yes. A man should deliver his own apology.”", function () { S.crowns += 100; });
   L("hald", "Lord Hald", 44, "The Mason's Oath", "Stonehold · Lord Hald",
     ["Lord Hald has swollen knuckles and a mason's calluses, though he has been a lord thirty years.", "“I laid the first stone of Highmarch's wall,” he says. “I swore, on my knees, that no army would ever pass it. Last month a child walked through the postern gate with a basket of bread. Nobody stopped her. I wept in the privy for an hour. My oath is still sound. I do not know what it is for.”"],
     "“Keep it for the day it matters.”", "Hald nods slowly. “A wall that is never tested is still a wall,” he says. He mortars the postern gate himself, and leaves a small hole at the base for a cat.", function () { px(1); },
@@ -16983,7 +16983,7 @@ var VLORDS = [
   };
 })();
 // ---- ovLFACE: painted portraits for every realm lord, ruler and vassal (img/face/<slug>.webp) ----
-var LFACE = { "Lady Cinder": "cinder", "Lord Brannoch": "brannoch", "Lord Hald": "hald", "Lady Ysmeine": "ysolde", "Lord Kerrin": "kerrin", "Lord Aurel": "aurel", "Lady Marisse": "maren", "Lady Ismay": "maren", "Lyriel Frostwraith": "lyriel", "High Seer Vaelith": "vaelith", "Archivist Lume": "lume", "Veilrend": "veilrend", "Marshal Dravik": "dravik", "Warden Sable": "sable", "Overseer Quill": "quill", "Magistrate Voss": "voss", "Ser Alden Roe": "alden", "Dame Brisa Voll": "hesper", "Garth Ironhand": "brask", "Calla Ember": "calla", "Tobren Quill": "tobren", "Naia of the Veil": "naia", "Orrin Lantern": "orrinl", "Isa Winterborn": "isa", "Maud Thatcher": "maud", "Varro the Late": "varro" };
+var LFACE = { "Lady Cinder": "cinder", "Lord Dunmor": "brannoch", "Lord Hald": "hald", "Lady Ysmeine": "ysolde", "Lord Kerrin": "kerrin", "Lord Aurel": "aurel", "Lady Marisse": "maren", "Lady Ismay": "maren", "Lyriel Frostwraith": "lyriel", "High Seer Vaelith": "vaelith", "Archivist Lume": "lume", "Veilrend": "veilrend", "Marshal Dravik": "dravik", "Warden Sable": "sable", "Overseer Quill": "quill", "Magistrate Voss": "voss", "Ser Alden Roe": "alden", "Dame Brisa Voll": "hesper", "Garth Ironhand": "brask", "Calla Ember": "calla", "Tobren Quill": "tobren", "Naia of the Veil": "naia", "Orrin Lantern": "orrinl", "Isa Winterborn": "isa", "Maud Thatcher": "maud", "Varro the Late": "varro" };
 (function () {
   Object.keys(LFACE).forEach(function (k) { NFACEN[k] = LFACE[k]; });
   function lfImg(name, sz) { var f = LFACE[name]; return f ? '<img class="face talk" src="img/face/' + f + '.webp" width="' + sz + '" height="' + sz + '" alt="" style="float:left;margin:.1rem .75rem .4rem 0;border-radius:3px;border:1px solid #6a4f22;box-shadow:0 3px 10px rgba(0,0,0,.6)" onerror="this.remove()">' : ""; }

@@ -92,7 +92,7 @@
       arrive: "She writes it, and you lean over to make sure she has the initials right, because initials are what last."
     },
     {
-      id: "spirit", name: "Spiritveil", people: "the Veilborn", art: "Veilweave", home: "Lanthys Vale",
+      id: "spirit", name: "Spiritveil", people: "the Lampfolk", art: "Veilweave", home: "Lanthys Vale",
       motto: "What is remembered survives.",
       line: "Nobody is gone while you still say their name.",
       blurb: "The Realm of memory, home of the Lantern Archives and the Drift, a lake of the dead's lanterns. Its people age like anyone until about twenty-five and then barely at all, and the Lantern Council's laws lapse the day no living councillor remembers why they were made.",
@@ -107,7 +107,7 @@
     },
     {
       id: "metal", name: "Metalcrown", people: "the Forged", art: "Synthetic sparks", home: "Iron Throne City",
-      motto: "Power is forged, not gifted.",
+      motto: "Power is not given. It is forged.",
       line: "Nobody gave you anything, so you built it.",
       blurb: "The shard with an empty hand, cracked off Stonehold with almost none of the First Spark and founded by the Unmarked, the families Stonehold left off its road-markers. Metalcrown has asked for a seat on the Council nine times. This spring the answer was no for the ninth time.",
       price: "There is no Spark in you to wake, so you build one, and the Fitting takes your humanity part by part. A stamped Tally at the wrist lists what is still born rather than made.",
