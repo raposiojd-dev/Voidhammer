@@ -8,7 +8,7 @@ The game is set in the **late Ascension Era, just before the Radiant Edict**. Th
 1. **The Concord's last season.** Realm politics, crises and lords. Metalcrown is mocked and kept out of Council seats, and is quietly preparing.
 2. **The TwinSpark child.** Rumours, then clues, then the truth: a boy carrying two sparks from all Realms, is the subject of the old prophecy. Every faction wants him.
 3. **The Edict.** Ardyn Solbrand passes the Radiant Edict. Stormreach rebels, Flameborne riots, Stonehold refuses, Spiritveil warns, Shadowdeep sabotages, and Metalcrown smiles.
-4. **The coup.** Metalcrown seizes the TwinSpark child with a synthetic spark-reactor. What comes out of the reactor is sealed canon (see the private spec in the Project). The Dominion marches on Lightforge.
+4. **The coup.** Metalcrown seizes the TwinSpark child. What happens next is sealed canon (see the private spec in the Project). The Dominion marches on Lightforge.
 5. **Finale at the Iron Throne / the fall of Lightforge.** Existing ending choices (break / name / name-fails / take) become variations of one ending:
    - **"Name"** is the most canon-faithful. The player speaks the boy's true name (never shown on screen), and for one heartbeat the boy surfaces and spares them.
    - All variants close on **"The Thousand-Year War begins."** NG+ follows.
@@ -34,12 +34,12 @@ Keep the game's existing per-realm costs where they fit. Fix the identities.
 Emberhold does not exist in this era. Its site is **Hearthward**, the joint Flameborne–Stonehold keep on the Ember March.
 
 ## CHARACTERS (this era)
-- **Kaelren**: a young **Flameborne** warrior, about 18, ward of the Flameborne King, who trained him ("Again, little ember"). Steady, notices what things cost, never chooses himself. **NOT Stormreach / "Stormborne".** He may keep a younger sister. **He cannot permanently die** (canon needs him alive): replace death with "carried from the field / wounded, returns later". The King's flame and oath are NOT given yet; that happens at the war's start, so a final-act hint is allowed: the King gives him a burn on the palm, "Bring him home."
+- **Kaelren**: a young **Flameborne** warrior, about 17, ward of the Flameborne King, who trained him ("Again, little ember"). Steady, notices what things cost, never chooses himself. **NOT Stormreach / "Stormborne".** **He cannot permanently die** (canon needs him alive): replace death with "carried from the field / wounded, returns later". The King's flame and oath are NOT given yet; that happens at the war's start, so a final-act hint is allowed: the King gives him a burn on the palm, "Bring him home."
 - **The Flameborne King**: warm, generous, brings bread, scholarship patron, writes unsent letters to people he failed. Under strain as the Edict nears. Any "Ember King" content means him.
 - **The TwinSpark child**: an Academy student who hides how much power he has. His name is sealed canon: never show it in game text, choices, comments or docs.
 - **Noctis, the Iron Shade**: Metalcrown's first engineered machine-wraith, feared in children's stories. Can stay a freeable prisoner or companion.
 - **The Eternal Voyager**: in this era he is alive and sits on the Aetherguard Council as the Hammer-Bearer, the one Councillor without a Realm. He is uncanny and kind. As an NPC he is fine; tone down "cannot die / void bargain not to feel" into "something the Codex cannot write". **His true name is unknown. Never give him one.**
-- **Elyndra Vaelis**: a young **Spiritveil Lantern archivist** (long-lived), who keeps the Record, which is the **Lantern Codex**. **NOT a levy clerk in Ashford.** She is quietly drawn to the Voyager.
+- **Elyndra Vaelis**: a young **Spiritveil Lantern archivist** (long-lived), who keeps the Record, which is the **Lantern Codex**. **NOT a levy clerk in Ashford.**
 - **Jorren**: Shadowdeep exile and spy who "disappears and never explains". **Keep him; this matches canon.**
 - **Talla** (the game's Spiritveil lantern-scout hero): **rename the display name to "Wren"**. Canon's Talla lives 1,100 years later.
 - **Aetherguard High Council**: Ardyn Solbrand (Radiance, passes the Edict), Seraphine Skyrend (Tempest, opposes it), Lyriel Frostwraith (Chrona, foresaw the collapse), the Silent Sentinel (Gravem), Kaelis Emberwarden (Embercraft), Vaelora Lanthys (Veilweave), the Voyager (Hammer-Bearer).
@@ -47,7 +47,7 @@ Emberhold does not exist in this era. Its site is **Hearthward**, the joint Flam
 - **The Archivist / Archivist Lume**: keep.
 - **The Herald**: the Void's memory-eater. **The "Name-Eater" should be renamed to "the Herald".** **The battle-horn/banner item currently called "Herald" must be renamed** (e.g. "Warhorn") to avoid the clash.
 - **Hunters**: constructs **made by the Codex** to hunt what it cannot write. Fix "made before the Codex".
-- **"The Unwritten" boss**: rename the display name to **"The Unfiled"**. "The Unwritten" is reserved for the Voyager in the books.
+- **"The Unwritten" boss**: rename the display name to **"The Unfiled"**. "The Unwritten" is reserved for the books.
 - **Future villains** never appear by name in this era. Any old "Hollow King" content becomes a **prophetic vision** of an unnamed figure, clearly a future vision.
 
 ## BOOKS LIST (replace BOOKS_AFTER, which says Books II–VI)
