@@ -11922,7 +11922,7 @@ function qFinish(q, opt, idx) { if (cp().f["qd_" + q.id]) { aToast("Already clai
   ch({ id: "cassforge", act: 1, hub: "emberfall", npc: "cass", npcDef: { name: "Old Cass the Flamewright", col: "#9a5a2a", hair: "#d8d0c0", idle: "I made the throne's first sword. It is still hungry. I do not look at it." },
     need: function (f) { return f.qd_embertrial; }, name: "What the Flame Remembers", zone: "cassforge", zname: "The First Forge", th: "mine", lv: 2, seed: 412, pal: ["slagimp", "cinderling"], boss: "slagking", obj: "Reach the first forge and decide what to do with the recipe.",
     gate: "A mine shaft that glows from below, as though the rock is breathing.",
-    intro: "The Flameborne King is tired. He brings bread to the Court himself and stays up writing letters he never sends, and the Edict has him carrying the whole Realm on one back. I made his sword. I know where I hid the method: how to bind a king's passion into steel so it can outlast him. It would hold the Realm together. It cost me my wife the first time. Go down. Decide better than I did.",
+    intro: "The Flameborne King is tired. He sits the Court himself and stays up writing letters he never sends, and the Edict has him carrying the whole Realm on one back. I made his sword. I know where I hid the method: how to bind a king's passion into steel so it can outlast him. It would hold the Realm together. It cost me my wife the first time. Go down. Decide better than I did.",
     turn: "You have it. The method for ember-steel that burns without fire, in my own hand. I wrote it forty years ago and I have never wanted to read it again.",
     opts: [{ t: "Give it to Pyrrha. The King's right hand should have the power to hold the Realm.", reward: { xp: 180, item: 2 }, set: { ember_recipe: "pyrrha" }, text: "Cass nods slowly. “Powerful people pay. I hope she knows the price.”" },
       { t: "Burn it. No one should bind a person into steel.", reward: { xp: 180, perm: "pts" }, set: { ember_recipe: "burn" }, text: "The paper flares and is gone. Cass lets out a long breath he has held for forty years." },
@@ -15632,10 +15632,10 @@ var ERAS = [
     "The Conclaves became fortresses. The students became weapons. Somewhere in the long dark the Void learned that the Realms were beginning to forget themselves."
   ] },
   { id: "e6", t: "The King Who Pays for Scholars", sub: "The Lantern Chronicle · The Flameborne King", min: 54, body: [
-    "The Flameborne King carries the bread into Court himself. He has done it every Court day since the first time, when a hungry clerk cried, and he has never got over it.",
+    "The Flameborne King hears every refusal at Court himself. He has done it every Court day since the first time, when a clerk cried, and he has never got over it.",
     "He pays for scholars he will never meet. At night he writes letters to people he failed, and he does not send them. There is a drawer for them. It does not close any more.",
-    "In the Lantern Archive there is a page about him that the keepers read aloud more than any other. It is a list of the people he has fed. It is not finished.",
-    "The King has heard of the page. He asked whether anyone on it was still hungry, and sent for bread."
+    "In the Lantern Archive there is a page about him that the keepers read aloud more than any other. It is a list of the people he has helped. It is not finished.",
+    "The King has heard of the page. He asked whether anyone on it still needed help, and sent for them."
   ] },
   { id: "e7", t: "The First Fractures", sub: "The Lantern Chronicle · The Void Stirs", min: 70, body: [
     "The Void does not want anything, the old books say. The old books were written before anyone had seen a grey edge.",
@@ -15800,7 +15800,7 @@ var CRISES = {
     "Two more seats gone. Hush’s walls are thinner each morning, as though the city itself were being edited. No one in Shadowdeep trusts the person beside them, and the Realm’s agents have stopped reporting to one another.",
     "The Umbral Council no longer exists. Shadowdeep’s towns each decided, separately and in silence, that they answer to no one. The paranoia is done; the Realm that most feared its own magic has been taken apart by it." ] },
   ember: { cell: 4, t: "The Burning King", s: [
-    "The Flameborne King is a warm man in a hot Realm, and the Edict has put him between his law and his people. He still carries the bread into Court himself. He has stopped sleeping. The Hearth Court asks whether you would stand beside him while he decides, so that somebody does.",
+    "The Flameborne King is a warm man in a hot Realm, and the Edict has put him between his law and his people. He still hears every refusal at Court himself. He has stopped sleeping. The Hearth Court asks whether you would stand beside him while he decides, so that somebody does.",
     "The Hearth Court rioted last night and burned a hall to the ground. The King walked into it twice to bring people out, and came out the second time with his beard on fire and a clerk under each arm. The Realm loves him for it. The riots have not stopped.",
     "The King has shut himself in the Ember Hall with a stack of letters to people he failed, and he is not sending any of them. Flameborne’s castles woke to find no orders, and the riots started before the sun was up." ] },
   storm: { cell: 2, t: "The Ageing Wind", s: [
@@ -16463,7 +16463,7 @@ function areaUnlocked(id) { if (id === "unmadecity" || id === "lanterncity" || i
     ["wy_4", 5, "emberfall", "wy_3", "Pilgrim Ash", "#8a8070", "#cfc8c0", "I walked to the Ember Throne once. The wyrm walked with me.", "The Wyrm Walks", "The Cinder Road", "pass", ["hound", "scout"], "The Walking Wyrm", "A road of cinders along which a wyrm the size of a house is walking, slowly, towards the Throne.",
       "The wyrm is walking to the Ember Throne. It is the size of a building. It has not harmed anyone. It is, as far as I can tell, going home. I would like you to go with it, and tell me where home is.", "Home is under the Throne. It was the first fire a King of the Hearth ever kindled. It is going back to be its fuel.",
       "“Let it. It is going where it belongs.”", "Ash watches it vanish beneath the Throne. The ground shakes once, kindly.", "“Stop it. The Throne would burn.”", "Ash steps in front of it. The wyrm halts. It looks at him for a long time. Then it turns away.", "ember"],
-    ["wy_5", 6, "emberfall", "wy_4", "The Flameborne King", "#e08a2a", "#4a1a0a", "Sit. Eat something. Everyone who comes up this road is hungry, and I am the only one who ever brings bread.", "The Ember Wyrm", "The Throne of Embers", "ember", ["bandit", "slinger"], "The Ember Wyrm", "A throne of ash on which a king sits, and under which something very old is awake.",
+    ["wy_5", 6, "emberfall", "wy_4", "The Flameborne King", "#e08a2a", "#4a1a0a", "Sit. Rest. Everyone who comes up this road is tired, and I am the only one who ever comes down to meet them.", "The Ember Wyrm", "The Throne of Embers", "ember", ["bandit", "slinger"], "The Ember Wyrm", "A throne of ash on which a king sits, and under which something very old is awake.",
       "The wyrm sleeps under my throne. It was the first fire my line ever kindled, and it has kept Flameborne warm longer than anyone has counted. Now it is hungry, and the Edict says I may not feed it. I would rather not choose between my law and my Realm before breakfast. Speak to it for me.", "You spoke. They both heard. The Throne is still warm.",
       "“Let the king rest. Feed the wyrm with your fire.”", "The king sleeps. The wyrm drinks the ember in your hands. You feel the warmth leave you slowly.", "“Let the wyrm sleep. The king can burn.”", "The wyrm curls under the Throne. The King stands, brushes ash off his knees, and asks if anyone has eaten.", "ember"],
     // SPIRITVEIL: the Ghost Fleet

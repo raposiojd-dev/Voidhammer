@@ -53,7 +53,7 @@ export const BARKS = {
 "Fire remembers. Brann idh.",
 "Show me your wedding hands!",
 "My boy did his First No at thirteen. He refused porridge. We were very proud.",
-"He carries the bread into Court himself, the King. Every Court day. Somebody told him once a King shouldn't. He refused."
+"He hears every refusal at Court himself, the King. Every Court day. Somebody told him once a King shouldn't. He refused."
 ],
 "spirit": [
 "Every lamp was somebody's.",

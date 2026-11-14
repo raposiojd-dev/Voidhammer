@@ -35,7 +35,7 @@ Emberhold does not exist in this era. Its site is **Hearthward**, the joint Flam
 
 ## CHARACTERS (this era)
 - **Kaelren**: a young **Flameborne** warrior, about 17. Steady, notices what things cost, never chooses himself. **NOT Stormreach / "Stormborne".** **He cannot permanently die** (canon needs him alive): replace death with "carried from the field / wounded, returns later". The King's flame and oath are NOT given in the game, and the game does not hint at them.
-- **The Flameborne King**: warm, generous, brings bread, scholarship patron, writes unsent letters to people he failed. Under strain as the Edict nears. Any "Ember King" content means him.
+- **The Flameborne King**: warm, generous, scholarship patron, writes unsent letters to people he failed. Under strain as the Edict nears. Any "Ember King" content means him.
 - **The TwinSpark child**: an Academy student who hides how much power he has. His name is sealed canon: never show it in game text, choices, comments or docs.
 - **Noctis, the Iron Shade**: Metalcrown's first engineered machine-wraith, feared in children's stories. Can stay a freeable prisoner or companion; if held, the Dominion caught him only months before and never admits it.
 - **The Eternal Voyager**: in this era he is alive and sits on the Aetherguard Council as the Hammer-Bearer, the one Councillor without a Realm. He is uncanny and kind. As an NPC he is fine; tone down "cannot die / void bargain not to feel" into "something the Codex cannot write". **He has no name; never give him one.**
