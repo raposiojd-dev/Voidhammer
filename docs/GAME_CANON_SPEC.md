@@ -34,10 +34,10 @@ Keep the game's existing per-realm costs where they fit. Fix the identities.
 Emberhold does not exist in this era. Its site is **Hearthward**, the joint Flameborne–Stonehold keep on the Ember March.
 
 ## CHARACTERS (this era)
-- **Kaelren**: a young **Flameborne** warrior, about 17, ward of the Flameborne King, who trained him ("Again, little ember"). Steady, notices what things cost, never chooses himself. **NOT Stormreach / "Stormborne".** **He cannot permanently die** (canon needs him alive): replace death with "carried from the field / wounded, returns later". The King's flame and oath are NOT given yet; that happens at the war's start, so a final-act hint is allowed: the King gives him a burn on the palm, "Bring him home."
+- **Kaelren**: a young **Flameborne** warrior, about 17, ward of the Flameborne King, who trained him ("Again, little ember"). Steady, notices what things cost, never chooses himself. **NOT Stormreach / "Stormborne".** **He cannot permanently die** (canon needs him alive): replace death with "carried from the field / wounded, returns later". The King's flame and oath are NOT given in the game, and the game does not hint at them.
 - **The Flameborne King**: warm, generous, brings bread, scholarship patron, writes unsent letters to people he failed. Under strain as the Edict nears. Any "Ember King" content means him.
 - **The TwinSpark child**: an Academy student who hides how much power he has. His name is sealed canon: never show it in game text, choices, comments or docs.
-- **Noctis, the Iron Shade**: Metalcrown's first engineered machine-wraith, feared in children's stories. Can stay a freeable prisoner or companion.
+- **Noctis, the Iron Shade**: Metalcrown's first engineered machine-wraith, feared in children's stories. Can stay a freeable prisoner or companion; if held, the Dominion caught him only months before and never admits it.
 - **The Eternal Voyager**: in this era he is alive and sits on the Aetherguard Council as the Hammer-Bearer, the one Councillor without a Realm. He is uncanny and kind. As an NPC he is fine; tone down "cannot die / void bargain not to feel" into "something the Codex cannot write". **His true name is unknown. Never give him one.**
 - **Elyndra Vaelis**: a young **Spiritveil Lantern archivist** (long-lived), who keeps the Record, which is the **Lantern Codex**. **NOT a levy clerk in Ashford.**
 - **Jorren**: Shadowdeep exile and spy who "disappears and never explains". **Keep him; this matches canon.**
