@@ -22,7 +22,7 @@ The Void is stirring, not conquering. Before the coup it shows only as rare, fai
 Keep the game's existing per-realm costs where they fit. Fix the identities.
 | Realm | Identity / Aether | Notes |
 |---|---|---|
-| Lightforge | Radiance: truth, law, judgment ("All lies burn away beneath the First Light") | Seat of the Concord; origin of the Edict. Cost can stay "troops lose their past". Do NOT make Lightforge the realm of memory or forgetting. |
+| Lightforge | Radiance: truth, law, judgment ("All lies burn away beneath the First Light") | Seat of the Concord; origin of the Edict. Cost: Clarity. Wielders lose privacy, then doubt, then the power to forgive; no Radiance troop or text "loses its past" or forgets. Do NOT make Lightforge the realm of memory or forgetting. |
 | Shadowdeep | Shadow Inversion: secrets, knives, silence; spark-ripping | Cost: identity erosion |
 | Stormreach | Tempest: storm, sky, speed, freedom | First to reject the Edict. Cost: each charge ages the rider (keep) |
 | Frostgrave | **Chrona: time, ice, echoes, prophecy** | Seers see short futures. Cost: emotional numbness (keep) |

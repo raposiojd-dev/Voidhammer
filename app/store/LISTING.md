@@ -26,7 +26,7 @@ LEAD A WARBAND
 Recruit from villages, train your troops through six tiers, feed and pay them, and march across a living map where realms wage war without you. Besiege towns and castles. Take them and rule them. Appoint vassal lords, call their banners and fight beside them in bigger battles.
 
 MAGIC WITH A PRICE
-Every realm has a school of magic, and every school takes something. Lightforge's Radiance costs troops their past. Shadowdeep erodes who you are. Stormreach ages its riders with every charge. Stonehold's stone creeps into the limbs. Flameborne burns away self-control. Your own power runs on memory, and a burned memory never comes back. Use it and you win the battle. Use it too much and you lose something that mattered.
+Every realm has a school of magic, and every school takes something. Lightforge's Radiance burns away doubt, then mercy. Shadowdeep erodes who you are. Stormreach ages its riders with every charge. Stonehold's stone creeps into the limbs. Flameborne burns away self-control. Your own power runs on memory, and a burned memory never comes back. Use it and you win the battle. Use it too much and you lose something that mattered.
 
 NINE REALMS
 Lightforge, Shadowdeep, Stormreach, Frostgrave, Stonehold, Flameborne, Spiritveil, Metalcrown, and the Unstable Shard, the ninth Realm that broke at its birth. Each has its own troops, architecture, politics and a crisis that unfolds whether you act or not. Befriend lords. Betray them. Watch them remember.
