@@ -59,7 +59,7 @@ Emberhold does not exist in this era. Its site is **Hearthward**, the joint Flam
 Strict, concrete, warm, dry humour; keep the existing good jokes (the goat line).
 - **Cut morals stated aloud.**
 - **Avoid these:** "I do not know" spam, "for the first time" spam, "the weight of", "something shifted", and "Not X. Not Y." used more than once per scene.
-- **Never spoil the main saga:** no Ember Oath detail beyond the final hint, no Kaelren immortality reveal, no Voyager true name, and no Consumption or Emberhold-as-last-refuge.
+- **Never spoil the main saga:** no Ember Oath detail or hint, no Kaelren immortality reveal, no Voyager true name, and no Consumption or Emberhold-as-last-refuge.
 
 ## LENGTH AND PACING (John, 29 Oct: "a 200-hour-plus game; the Void must not consume everything")
 - **No calendar ending.** The story decides when it ends; the world keeps going after.
