@@ -38,7 +38,7 @@ Emberhold does not exist in this era. Its site is **Hearthward**, the joint Flam
 - **The Flameborne King**: warm, generous, scholarship patron, writes unsent letters to people he failed. Under strain as the Edict nears. Any "Ember King" content means him.
 - **The TwinSpark child**: an Academy student who hides how much power he has. His name is sealed canon: never show it in game text, choices, comments or docs.
 - **Noctis, the Iron Shade**: Metalcrown's first engineered machine-wraith, feared in children's stories. Can stay a freeable prisoner or companion; if held, the Dominion caught him only months before and never admits it.
-- **The Eternal Voyager**: in this era he is alive and sits on the Aetherguard Council as the Hammer-Bearer, the one Councillor without a Realm. He is uncanny and kind. As an NPC he is fine; tone down "cannot die / void bargain not to feel" into "something the Codex cannot write". **He has no name; never give him one.**
+- **The Voyager**: in this era he is alive and sits on the Aetherguard Council as the Hammer-Bearer, the one Councillor without a Realm. He is uncanny and kind. As an NPC he is fine; nothing about him is explained beyond "something the Codex cannot write". **He has no name; never give him one.**
 - **Elyndra Vaelis**: a young **Spiritveil Lantern archivist** (long-lived), who keeps the Record, which is the **Lantern Codex**. **NOT a levy clerk in Ashford.**
 - **Jorren**: Shadowdeep exile and spy who "disappears and never explains". **Keep him; this matches canon.**
 - **Talla** (the game's Spiritveil lantern-scout hero): **rename the display name to "Wren"**. Canon's Talla lives 1,100 years later.

@@ -2719,7 +2719,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
     h += forgeSection(t);
     h += '<div class="sec">Men</div>';
     h += row("Hire sellswords", "150 crowns. 0.6 a day each. They leave when unpaid.", "Hire 5", "hire", t.id, "", S.crowns < 150 || capNow() - T() < 5);
-    if (t.id === "emberfall" && S.kael === "away") h += '<div class="sec">Tavern</div>' + row("Kaelren, a young Flameborne swordsman", T() >= 5 ? "He is handing out water to men who are not his. The Flameborne King trained him and sent him out to learn the roads. He will ride with you." : "He will not follow someone with no one behind them. Come back with five men.", "Ask him", "joinkael", t.id, "", T() < 5);
+    if (t.id === "emberfall" && S.kael === "away") h += '<div class="sec">Tavern</div>' + row("Kaelren, a young Flameborne swordsman", T() >= 5 ? "He is handing out water to men who are not his. He is out to learn the roads. He will ride with you." : "He will not follow someone with no one behind them. Come back with five men.", "Ask him", "joinkael", t.id, "", T() < 5);
     h += '<div class="sec">Tavern</div>';
     h += row("Listen for rumours", "5 crowns", "Listen", "rumour", t.id, "", S.crowns < 5);
     if (S.rumours.length) h += S.rumours.map(function (r) { return '<p class="dim-t" style="margin-top:0.6rem">' + r + "</p>"; }).join("");
@@ -4620,7 +4620,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
     gate: "A long barracks street where the Dominion drills its newest column.", intro: "Magistrate Voss drills the Dominion's next column in Furnace Row. If it marches, every village between here and Meridian burns. The Senate cannot move. You can.", turn: "The column is scattered. Voss threw down her seal and walked off the field. I did not think I would be glad to see a Magistrate walk. I am glad.", reward: { xp: 360, crowns: 300, perm: "hp" } });
   Q({ id: "gate", act: 5, hub: "highmarch", npc: "hald", name: "The Iron Gate", zone: "irongate", zname: "The Iron Gate", th: "pass", lv: 3, seed: 345, pal: ["wraith", "wraithgun"], boss: "reaper", obj: "Break the Iron Reaper's hold on the Iron Gate.",
     need: function (f) { return f.qd_slagmoor && f.qd_pitmouth && f.qd_rivet && f.qd_furnace; },
-    gate: "The last road before Iron Throne City. A gate of black iron, taller than any wall you have seen.", intro: "Four holdings are broken. The road to Iron Throne City runs through one last gate, and the man who holds it was building guns for Metalcrown before the boy in the chair was born. Chief Engineer Solvane. The Dominion calls him the Iron Reaper. Whatever you mean to do about the boy, you will have to get past it first.",
+    gate: "The last road before Iron Throne City. A gate of black iron, taller than any wall you have seen.", intro: "Four holdings are broken. The road to Iron Throne City runs through one last gate, and the man who holds it designed the Iron Reaper the year after the Council laughed at him. Chief Engineer Solvane. The Dominion calls him the Iron Reaper. Whatever you mean to do about the boy, you will have to get past it first.",
     turn: "Solvane's crew is scattered and his gun is dragged back into the Kiln, still warm. He limps after it, still giving orders. The gate to Iron Throne City stands open. Whatever you mean to do about the boy, you have earned the right to decide.", reward: { xp: 600, crowns: 500, item: 3, perm: "hp" } });
 
   function campRusk(how) {
