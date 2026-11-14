@@ -1910,7 +1910,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
   }
   function storyEndingBlock() {
     if (!S.story || !S.story.on) return "";
-    var kh = S.kael !== "away" ? "<p class=\"dim-t\">Before the last march the King kept Kaelren back after the others had gone. Kaelren has not said what passed between them.</p>" : "";
+    var kh = "";
     if (S.story.fin) return "<p>" + STORY_FIN[S.story.fin] + "</p>" + kh;
     if (S.mc && S.mc.lost) return "<p>In the Iron Throne City a boy sits very still while the world is finished around him. Nobody has come for him.</p>" + kh;
     return kh;
@@ -4307,11 +4307,11 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
     cell_locked: { n: "The cell", t: "The stair is full of grey coats. Clear it first." },
     cell_1: { n: "The cell", t: "The door hangs open, its lock turned inside out by a reactor's hum. On the cot lies a wooden toy horse with one leg broken off. On the wall, scratched with a spoon, the same name over and over in a child's hand, each one scored through until it cannot be read. Under the last one the wall is scraped bare. Wheel ruts lead north towards Ironwatch.", c: [{ t: "Follow the ruts.", set: { cell: 1 }, toast: "The wagon went north to Ironwatch." }] },
     cell_done: { n: "The cell", t: "The cell is empty. The toy horse is still on the cot." },
-    valek_rise: { n: "", t: "Overseer Quill goes down and crawls away into the smoke. Behind him the reactor wagon's doors stand open and the hum has stopped. The wagon is empty. Chains lie on its floor, still warm, and small boot-prints lead out across the yard towards the foundries, where every furnace is lighting at once.", c: [
-      { t: "Follow the boot-prints.", set: { reach: 1 }, go: "valek_rise2" },
-      { t: "Cut the chains of the prisoners in the other wagons.", set: { freed: 1 }, give: { xp: 60 }, go: "valek_rise2" },
-      { t: "Fall back. Live to fight him.", go: "valek_rise2" }] },
-    valek_rise2: { n: "", t: function () { var f = cp().f; return (f.reach ? "The prints stop at the foundry gate. Something inside lifts the whole yard's hum by a note, and the gate swings shut in your face from the other side." : f.freed ? "The chains fall from forty people, who run. When you turn back, the Iron Wraiths in the yard have stopped moving, every one of them facing north, as if someone had called them." : "You back away. Nobody follows. The Wraiths in the yard have stopped moving, every one of them facing north.") + " Around you Ironwatch lights like a furnace. The Wraiths march north, and the foundries of the Iron Dominion open their gates. The Radiant Edict made a cage, and Metalcrown has broken out of it."; },
+    quill_after: { n: "", t: "Overseer Quill goes down and crawls away into the smoke. Behind him the reactor wagon's doors stand open and the hum has stopped. The wagon is empty. Chains lie on its floor, still warm, and small boot-prints lead out across the yard towards the foundries, where every furnace is lighting at once.", c: [
+      { t: "Follow the boot-prints.", set: { reach: 1 }, go: "quill_after2" },
+      { t: "Cut the chains of the prisoners in the other wagons.", set: { freed: 1 }, give: { xp: 60 }, go: "quill_after2" },
+      { t: "Fall back. Live to fight him.", go: "quill_after2" }] },
+    quill_after2: { n: "", t: function () { var f = cp().f; return (f.reach ? "The prints stop at the foundry gate. Something inside lifts the whole yard's hum by a note, and the gate swings shut in your face from the other side." : f.freed ? "The chains fall from forty people, who run. When you turn back, the Iron Wraiths in the yard have stopped moving, every one of them facing north, as if someone had called them." : "You back away. Nobody follows. The Wraiths in the yard have stopped moving, every one of them facing north.") + " Around you Ironwatch lights like a furnace. The Wraiths march north, and the foundries of the Iron Dominion open their gates. The Radiant Edict made a cage, and Metalcrown has broken out of it."; },
       c: [{ t: "Run.", fn: startDominion, set: { coup: 1, q6done: 1 }, give: { xp: 250 }, toast: "The Dominion marches. Return to Lord Dunmor." }] },
     tam_1: { n: "Tam the Drover", t: "Bandits dragged my wagon into the Thornfall Cave, up in the woods north of the road. Cutter Vane's lot. My whole season's wool is in there. Clear them out and what you find is yours, bar my wool.", c: [{ t: "I'll clear it.", set: { sq1: 1 }, toast: "Side quest: clear Thornfall Cave.", go: "tam_wait" }, { t: "Not now." }] },
     tam_wait: { n: "Tam the Drover", t: "The cave mouth is in the trees north of the road. Mind the slingers, they wait in the side tunnels." },
@@ -4338,7 +4338,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
       var out = []; if ((S.loot.shards || 0) > 0) out.push({ t: "Glass bolt · 1 void-glass (" + S.loot.shards + " left)", fn: function () { castBolt(); } });
       S.held.slice(0, 3).forEach(function (id) { out.push({ t: "Radiant wave · burn: " + FRAGS[id].title, fn: function () { castWave(id); } }); });
       out.push({ t: out.length ? "Never mind." : "You have nothing to cast with." }); return out; } },
-    valek_scene: { n: "", t: "Warden Sable falls. At the top of the pass a figure in a grey coat watches, an engineer's lens over one eye. He writes something in a ledger, closes it, and is gone into the smoke. Then the smoke closes over him.", c: [{ t: "Continue.", set: { sable: 1 }, toast: "Return to Lord Dunmor." }] }
+    sable_after: { n: "", t: "Warden Sable falls. At the top of the pass a figure in a grey coat watches, an engineer's lens over one eye. He writes something in a ledger, closes it, and is gone into the smoke. Then the smoke closes over him.", c: [{ t: "Continue.", set: { sable: 1 }, toast: "Return to Lord Dunmor." }] }
   };
 
 
@@ -4828,12 +4828,12 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
     AR.fx.push({ x: e.x, y: e.y - 6, t: 0.4 });
     if (sk("bloodlust") && Math.random() < 0.12 * sk("bloodlust")) { AR.p.hp = Math.min(AR.p.max, AR.p.hp + 0.5); AR.floats.push({ x: AR.p.x, y: AR.p.y - 18, t: 0.8, s: "+blood", col: "#ff5a5a" }); }
     if (e.type === "grath") { cp().f.grathdead = 1; aToast("Grath is down. Check the chest."); }
-    if (e.type === "sable") { setTimeout(function () { if (AR) dlgOpen("valek_scene"); }, 700); }
+    if (e.type === "sable") { setTimeout(function () { if (AR) dlgOpen("sable_after"); }, 700); }
     if (e.type === "unwritten") { cp().f.page = 1; aToast("You take the Twin-Spark page. Bring it to Lume."); }
     if (e.type === "hollowknife") { cp().f.vaultclear = 1; }
     if (e.type === "dravik") { cp().f.foundry = 1; }
     if (e.d.zb && AR) { cp().f["z_" + AR.id] = 1; aToast(e.d.name + " is down."); }
-    if (e.type === "quill") { setTimeout(function () { if (AR) dlgOpen("valek_rise"); }, 700); }
+    if (e.type === "quill") { setTimeout(function () { if (AR) dlgOpen("quill_after"); }, 700); }
     checkClear();
   }
   function hurtP1(n) {
@@ -11990,7 +11990,7 @@ function qFinish(q, opt, idx) { if (cp().f["qd_" + q.id]) { aToast("Already clai
 
   // ---------------- CHAIN 5 · WINDSPIRE · THE WIND OWES ----------------
   var d4 = function (f) { return !!f.q4done; };
-  ch({ id: "kaelone", act: 3, hub: "windspire", npc: "kaelren", npcDef: { name: "Kaelren", col: "#6cc0e8", hair: "#f0f8ff", idle: "The King used to say, again, little ember. I am still doing it again. I will tell you when I get it right." },
+  ch({ id: "kaelone", act: 3, hub: "windspire", npc: "kaelren", npcDef: { name: "Kaelren", col: "#6cc0e8", hair: "#f0f8ff", idle: "Again. I am still doing it again. I will tell you when I get it right." },
     need: d4, name: "The Last Courier", zone: "kaelone", zname: "The Storm Road", th: "pass", lv: 3, seed: 441, pal: ["scout", "slinger"], boss: "stormbanner", obj: "Ride the Storm Road with Kaelren.",
     gate: "A cliff road where the wind blows sideways and every cairn is carved with a courier's name.",
     intro: "The Flameborne King has a letter that has to cross the Storm Road before the Assembly sits. Stormreach couriers have tried nine times. I offered every time, and the Assembly says a Flameborne boy does not ride their road. I would like you to tell me I may. Or tell me I may not. Either way, someone else gets to decide for once.",
@@ -13820,7 +13820,7 @@ function writList(hub) {
   var wk = writWeek(), r = arng(nhash("writ" + hub + "w" + wk)), out = [], i, am = writActMax(), tr = (typeof tier === "function" ? tier() : 0), done = (S.writs && S.writs.done) || {};
   var ko = Math.floor(r() * WRITK.length), usedP = {};
   for (i = 0; i < 3; i++) {
-    var K = WRITK[(ko + i) % WRITK.length], nm = ["Brek", "Oswin", "Marrow", "Tavish", "Tamsel", "Corrin", "Brigid", "Dunmore", "Ferris", "Agna"][Math.floor(r() * 10)] + " " + WRITA[Math.floor(r() * WRITA.length)], pl = WRITP[Math.floor(r() * WRITP.length)]; while (usedP[pl]) pl = WRITP[Math.floor(r() * WRITP.length)]; usedP[pl] = 1;
+    var K = WRITK[(ko + i) % WRITK.length], nm = ["Brek", "Gravet", "Marrow", "Tavish", "Tamsel", "Corrin", "Brigid", "Torvik", "Ferris", "Agna"][Math.floor(r() * 10)] + " " + WRITA[Math.floor(r() * WRITA.length)], pl = WRITP[Math.floor(r() * WRITP.length)]; while (usedP[pl]) pl = WRITP[Math.floor(r() * WRITP.length)]; usedP[pl] = 1;
     var lv = Math.max(1, Math.min(6, am + tr * 2 + i - 1 + (r() < 0.3 ? 1 : 0))), id = "writ:" + hub + ":" + wk + ":" + i, lvf = S.writs && S.writs.lv && S.writs.lv[id]; if (lvf) lv = lvf;
     out.push({ id: id, hub: hub, i: i, k: K.k, title: K.t(nm, pl), sub: K.s(nm, pl), lv: lv, nm: nm, pl: pl, cr: Math.round((70 + 40 * lv) * (1 + 0.5 * tr)), xp: 50 + 35 * lv, done: !!done[id], seed: nhash(id) % 99991 });
   }
@@ -15631,9 +15631,9 @@ var ERAS = [
     "Shadowdeep ran through all of it, under every city, in tunnels that remembered everything. The Umbral Council never ruled. It chose who would. “What is hidden shapes what is seen,” they said, and killed whoever came too close to either.",
     "The Conclaves became fortresses. The students became weapons. Somewhere in the long dark the Void learned that the Realms were beginning to forget themselves."
   ] },
-  { id: "e6", t: "The King Who Brings Bread", sub: "The Lantern Chronicle · The Flameborne King", min: 54, body: [
+  { id: "e6", t: "The King Who Pays for Scholars", sub: "The Lantern Chronicle · The Flameborne King", min: 54, body: [
     "The Flameborne King carries the bread into Court himself. He has done it every Court day since the first time, when a hungry clerk cried, and he has never got over it.",
-    "He pays for scholars he will never meet. He trained a ward with a wooden sword in the palace yard, every morning, the same three words each time the boy fell over: <i>again, little ember</i>. At night he writes letters to people he failed, and he does not send them. There is a drawer for them. It does not close any more.",
+    "He pays for scholars he will never meet. At night he writes letters to people he failed, and he does not send them. There is a drawer for them. It does not close any more.",
     "In the Lantern Archive there is a page about him that the keepers read aloud more than any other. It is a list of the people he has fed. It is not finished.",
     "The King has heard of the page. He asked whether anyone on it was still hungry, and sent for bread."
   ] },
@@ -15683,7 +15683,7 @@ var BOOK1 = [
   { id: "k7", t: "Hunters Awake", sub: "The Concord Chronicle · VII", cond: function () { return mcFellCount() >= 1 || cp().f.q5done; }, body: [
     "Under Highmarch the Hunters woke. The Codex made them long ago to hunt whatever it cannot write, and then sealed them, because a thing like that is only safe asleep. Nobody gave the order to wake them. The Codex did that on its own.",
     "Orders started arriving in two versions. Soldiers stopped in the middle of drills, not hurt, only waiting, as if their instructions were coming late. A councillor said, “The system is responding to something it has not classified,” and then went very pale, because that sentence should not have been possible.",
-    "The Hunters walked the vaults for a night and a day, looking. They stopped outside the Voyager’s door. Then they went back to sleep."
+    "The Hunters walked the vaults for a night and a day, looking. Then they went back to sleep, and nobody could say what they had been looking for."
   ] },
   { id: "k8", t: "A Signal From Far Off", sub: "The Concord Chronicle · VIII", cond: function () { return cp().f.q5done || S.day >= 140; }, body: [
     "Deep in the Codex a label appeared for the length of one breath: <b>CROWNED PRESENCE · UNCONFIRMED · FUTURE LAYER.</b> Then it was struck out, by no hand anyone could find.",
@@ -18302,7 +18302,7 @@ setInterval(function () {
       return baOld.apply(this, arguments);
     };
     // ---- every village, town and castle has a local quest giver with a "!" (the week's writs, posted and paid locally) ----
-    var VQN = ["Hollis", "Thursby", "Edda", /* was "Brannoc": clashed with the canon founder Brannoc the Paired (renamed 2 Nov) */ "Morrow", "Tamsin", "Corwen", "Ilse", "Dunmore", "Agna", "Perrin"];
+    var VQN = ["Stoll", "Thursby", "Orvan", /* was "Brannoc": clashed with the canon founder Brannoc the Paired (renamed 2 Nov) */ "Morrow", "Fergal", "Hagan", "Tavan", "Ruddock", "Agna", "Perrin"];
     function vqWho(s) { var n = VQN[nhash("vq" + s.id) % VQN.length]; return (s.type === "village" ? "Reeve " : s.type === "castle" ? "Castellan " : "Watch Captain ") + n; }
     function vqOpen(sid) { try { return writList(sid).filter(function (w) { return !w.done; }); } catch (e) { return []; } }
     var gsOld = genSpec; genSpec = function (id) {
