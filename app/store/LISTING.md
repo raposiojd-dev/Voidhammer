@@ -32,10 +32,10 @@ NINE REALMS
 Lightforge, Shadowdeep, Stormreach, Frostgrave, Stonehold, Flameborne, Spiritveil, Metalcrown, and the Unstable Shard, the ninth Realm that broke at its birth. Each has its own troops, architecture, politics and a crisis that unfolds whether you act or not. Befriend lords. Betray them. Watch them remember.
 
 COMPANIONS WITH WOUNDS
-Kaelren, the Flameborne King's young ward, never chooses himself. Elyndra, a Spiritveil Lantern archivist, writes down every promise you break. Jorren, a Shadowdeep exile, disappears and never explains. Noctis, the Iron Shade, only wants to be chosen. They make their own decisions, and they will surprise you.
+Kaelren, a young Flameborne warrior, never chooses himself. Elyndra, a Spiritveil Lantern archivist, writes down every promise you break. Jorren, a Shadowdeep exile, disappears and never explains. Noctis, the Iron Shade, only wants to be chosen. They make their own decisions, and they will surprise you.
 
 THE VOID IS STIRRING
-It is not evil, and it is not here yet. It has noticed something in the north. Rifts tear open, holds go grey, and the troops who touch it slowly vanish from your roster, names and faces first. Ignore it and you will be fighting on two fronts.
+It is not evil, and it is not here yet. It has noticed something in the north. Grey edges open, holds go grey, and the troops who touch it slowly vanish from your roster, names and faces first. Ignore it and you will be fighting on two fronts.
 
 DEEP AND LONG
 Dozens of hours of quests, sixteen boss lairs with their own stories, dungeons, a skill book with active battle skills, crafting, trade and a New Game Plus.
