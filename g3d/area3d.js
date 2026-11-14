@@ -19,7 +19,7 @@ const WALL_STYLE = { ember: "frame", stone: "stone", storm: "frame", light: "ash
 const ROOF_TEX = { ember: "tile", stone: "stone", storm: "slate", light: "tile", frost: "slate", spirit: "slate", shadow: "slate", metal: "slate" };
 // house kinds (from the 2D town painter) that open a section of the settlement sheet
 const KIND = { tavern: ["tavern", "Tavern"], smithy: ["smith", "Smithy"], barracks: ["barracks", "Barracks"], market: ["market", "Market"], granary: ["market", "Granary"], mill: ["market", "Mill"], yard: ["build", "Builders' Yard"], farm: ["fields", "The Fields"] };
-const FEMALE = /\b(Mara|Marta|Ilse|Sella|Tamsin|Wen|Anwen|Orrel|Elyndra|Wren|Lady|Sister|Mother|Widow|Dame|Aunt|Gran|Nan|Maid|Mistress|Hild|Brannagh|Ysane|Lume)\b/i;
+const FEMALE = /\b(Mara|Marta|Nessa|Odela|Ilythe|Sella|Tamsin|Wen|Anwen|Orrel|Elyndra|Wren|Lady|Sister|Mother|Widow|Dame|Aunt|Gran|Nan|Maid|Mistress|Hild|Brannagh|Ysane|Lume)\b/i;
 
 let styled = false;
 function styleOnce() {
