@@ -31,7 +31,7 @@
       start: "Gentle start. The fullest purse of any people, and every Realm listens when you speak, if only to argue.",
       pal: { a: "#C9A13B", b: "#F4EFE3", c: "#CDB78E", glow: "#FFF4D6", ink: "#fbf3df" },
       look: { cloth: 0xf4efe3, cloth2: 0xc9a13b, legs: 0xcdb78e, boots: 0xe8dcc2, metal: 0xc9a13b, dark: 0x8a7440, leather: 0x9a8058, trim: 0xc9a13b, skin: 0xb98a5e, hair: 0xd8bf7a, weapon: "spear", shieldKind: "round", shield: 0xfafaf5 },
-      names: ["Adra", "Bellis", "Clarin", "Lenna", "Merin", "Aldren", "Benet", "Dorran", "Edran", "Lorne", "Arin", "Ellis", "Kerith", "Larkin", "Teale"],
+      names: ["Adra", "Clarin", "Lenna", "Merin", "Aldren", "Benet", "Dorran", "Edran", "Lorne", "Arin", "Ellis", "Kerith", "Larkin", "Teale"],
       open: "In Meridian the light never quite leaves the streets, and you grew up reading your own Day-Book aloud at the long table, every small cowardice set down in your own hand. You crossed the Between with that book on its cord and a habit of saying exactly what you mean, which has so far cost you two friends and one very good position.",
       arrive: "She writes yours. You check the spelling out of habit, and it is right, which you note."
     },
@@ -73,7 +73,7 @@
       start: "Gentle start. The grain lasts while you find your feet.",
       pal: { a: "#A9C9DB", b: "#16181B", c: "#F1F3F2", glow: "#DDF4FF", ink: "#eef6fa" },
       look: { cloth: 0xf1f3f2, cloth2: 0x16181b, legs: 0xa9aba8, boots: 0x16181b, metal: 0x3e5568, dark: 0x16181b, leather: 0x6a5a48, trim: 0xa9c9db, skin: 0xe0c4ae, hair: 0xcdb88e, weapon: "spear", shieldKind: null, shield: 0xa9c9db, helm: false },
-      names: ["Aino", "Elin", "Linnea", "Runa", "Arvo", "Eino", "Halvar", "Sorren", "Eira", "Ilo", "Lumi", "Onni", "Sorn", "Veli", "Aune"],
+      names: ["Elin", "Linnea", "Runa", "Arvo", "Halvar", "Sorren", "Eira", "Ilo", "Lumi", "Onni", "Sorn", "Veli", "Aune"],
       open: "Rimehold is called the Still City because nothing in it hurries, least of all its people, and you were raised to say a thing once and then keep it. There are nine knots on the word-cord at your belt. Each is a promise you are still keeping, and two of them are going to be difficult.",
       arrive: "She writes it once, carefully, without asking you to repeat it, and you find you trust her for that."
     },
@@ -87,7 +87,7 @@
       start: "Standard start. Armour for the first fights, and feet that do not move.",
       pal: { a: "#B07A2E", b: "#6E6E6A", c: "#2F4256", glow: "#9FD3F0", ink: "#efe2c8" },
       look: { cloth: 0x6e6e6a, cloth2: 0xb07a2e, legs: 0x2f4256, boots: 0x2a2624, metal: 0x2f4256, dark: 0x22303e, leather: 0x4a3a2a, trim: 0xb5893a, skin: 0x8a6a50, hair: 0x241a14, weapon: "axe", shieldKind: "round", shield: 0x6e6e6a, helm: true },
-      names: ["Agna", "Brekka", "Dagna", "Helka", "Thora", "Bror", "Grund", "Jarn", "Stenn", "Boden", "Brock", "Carrow", "Dell", "Harrow", "Kester"],
+      names: ["Agna", "Dagna", "Helka", "Thora", "Bror", "Grund", "Jarn", "Stenn", "Boden", "Brock", "Carrow", "Dell", "Harrow", "Kester"],
       open: "Before you left the Anchorstone you carved your own initials on a mile-marker, the way everyone does before a long road, so that someone would know where to carve the rest. You have walked further from that marker than anyone in your family, and your feet have not yet noticed.",
       arrive: "She writes it, and you lean over to make sure she has the initials right, because initials are what last."
     },
@@ -115,7 +115,7 @@
       start: "Demanding start. You are far from home, among Realms that have voted your people out nine times.",
       pal: { a: "#8E3B2A", b: "#1B1B1C", c: "#B08D57", glow: "#FF6A13", ink: "#f1d9c6" },
       look: { cloth: 0x5a5d61, cloth2: 0x8e3b2a, legs: 0x1b1b1c, boots: 0x141414, metal: 0x1b1b1c, dark: 0x101010, leather: 0x3a2a20, trim: 0xb08d57, skin: 0xc9ab95, hair: 0x2a2624, weapon: "sword", shieldKind: "round", shield: 0x1b1b1c },
-      names: ["Brinna", "Dora", "Elka", "Grete", "Lotte", "Brom", "Gunn", "Lenk", "Otto", "Bex", "Cass", "Ivo", "Jem", "Quin", "Tarn"],
+      names: ["Brinna", "Dora", "Elka", "Grete", "Lotte", "Brom", "Gunn", "Lenk", "Otto", "Bex", "Cass", "Jem", "Quin", "Tarn"],
       open: "You made your First Tool alone at ten, as every Metalcrown child does, and it is still in your pack with your name stamped on the handle. You left Iron Throne City before the gates closed. Nobody would say what the foundries were building, and the people who asked twice stopped coming to work.",
       arrive: "She writes your name and, beside it, nothing at all, which in your experience is rarer than it ought to be."
     }
@@ -134,7 +134,7 @@
       start: "Standard start. A soldier's kit, and a welcome at either hearth.",
       pal: { a: "#9E2B25", b: "#6E6E6A", c: "#B87333", glow: "#FF7A1A", ink: "#f0d8c0" },
       look: { cloth: 0x6e6e6a, cloth2: 0x9e2b25, legs: 0x2b2523, boots: 0x1e1a18, metal: 0x2f4256, dark: 0x22303e, leather: 0x4a3a2a, trim: 0xb87333, skin: 0x9a6c4c, hair: 0x241a14, weapon: "axe", shieldKind: "round", shield: 0x9e2b25, helm: true },
-      names: ["Brann", "Coll", "Taran", "Ren", "Rudd", "Davan", "Dilys", "Brekka", "Agna", "Helka", "Kester", "Dell", "Harrow", "Jarn", "Wyn"],
+      names: ["Brann", "Coll", "Taran", "Ren", "Rudd", "Davan", "Dilys", "Agna", "Helka", "Kester", "Dell", "Harrow", "Jarn", "Wyn"],
       open: "You were born under Hearthward's wall on the Ember March, where the Stonehold road begins its count and half the words your family used were borrowed from the other side. Nobody whistles in the yard there. You still don't, though you stopped asking why somewhere around your tenth winter.",
       arrive: "She writes your name, and you tell her both halves of where you come from, because on the March anything less would be rude."
     }
