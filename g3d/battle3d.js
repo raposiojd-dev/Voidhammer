@@ -2,8 +2,8 @@
 // You control your hero directly (stick, look, Strike / Block / Shoot with light auto-target); your men stand in
 // formations by troop type (infantry line, shield wall, archers, cavalry) and take orders from a thumb-sized order fan:
 // Follow me, Hold, Charge, Advance, Shield wall, Fire at will / Hold fire. Archers loose arcing volleys you can see,
-// cavalry charge home with impact and knockback, morale breaks lines, and Kaelren fights at your side (his vow is
-// unchanged: wounded, never killed). Sieges add walls, a gate, towers, ladders and a ram (siege3d.js builds the walls).
+// cavalry charge home with impact and knockback, morale breaks lines, and Kaelren fights at your side (as on the
+// battle sheet: wounded, never killed). Sieges add walls, a gate, towers, ladders and a ram (siege3d.js builds the walls).
 // The scene never touches game numbers: it reports how much of each side is left, and the bridge feeds that to
 // finishBattle exactly as the 2D field does.
 import { K3 } from "./scene3d.js";
@@ -433,7 +433,7 @@ function buildBattle(st, api, info, done) {
     if (K2) K2.dispose();
     setTimeout(() => { st.dispose(); done({ how: over, pf, ef, kdead, breach: SG ? (SG.breached ? "gate" : SG.wallTaken ? "wall" : "") : "" }); }, 420);
   }
-  // Kaelren's vow, as on the battle sheet: the line is breaking and he is about to ride
+  // Kaelren's charge, as on the battle sheet: the line is breaking and he is about to ride
   function vowModal() {
     paused = true; vowDone = true; inp.keys = {}; fan.classList.remove("on");
     const m = document.createElement("div"); m.className = "v3-modal";
@@ -537,7 +537,7 @@ function buildBattle(st, api, info, done) {
         if (pr > 0 && Math.random() < pr * 0.35) { u.rout = true; if (u.side === "e" && Math.random() < 0.3) spark(u.x, u.y + 2, u.z, 0xffffff); }
       }
     }
-    // Kaelren's vow
+    // Kaelren's charge
     if (!vowDone && !over && kael && fighting(kael) && (pW / p0w < 0.62 || kael.hp < kael.hpm * 0.4)) { vowModal(); return; }
 
     // ---- every soldier ----

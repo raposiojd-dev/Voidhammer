@@ -20,7 +20,7 @@ Nine Realms. One fractured world. And the Void that hungers for both.
 
 Voidhammer is a sandbox war RPG in the spirit of the great medieval warband games, with a story, a cast of characters who matter, and a magic system where nothing is free.
 
-It is the last season of the Concord. The Nine Realms still sit at one table under the Aetherguard High Council, Metalcrown is laughed out of the room, and Lightforge is drafting the Radiant Edict: every spark monitored, every scrap of Aether regulated, and one boy with two sparks kept under lock and key. You arrive just before it passes. You cannot stop the war that follows. You decide who lives through it, what gets remembered, and how the Realms go into it.
+It is the last season of the Concord. The Realms still sit at one table under the Aetherguard High Council, Metalcrown is laughed out of the room, and Lightforge is drafting the Radiant Edict: every spark monitored, every scrap of Aether regulated, and one boy with two sparks kept under lock and key. You arrive just before it passes. You cannot stop the war that follows. You decide who lives through it, what gets remembered, and how the Realms go into it.
 
 LEAD A WARBAND
 Recruit from villages, train your troops through six tiers, feed and pay them, and march across a living map where realms wage war without you. Besiege towns and castles. Take them and rule them. Appoint vassal lords, call their banners and fight beside them in bigger battles.
