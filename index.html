@@ -4358,7 +4358,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
   EN("echo", "Echo", 3, 30, 1, "#9a8fd0", "#e0d8ff"); BN("ysen", "Echo of Captain Ysen", 14, 36, 2, "#6a5fa0", "#e0d8ff");
   EN("stormling", "Storm-wisp", 4, 40, 1, "#5fb4e0", "#f0f8ff"); EN("edictguard", "Edict guard", 5, 30, 1, "#d8c060", "#fff0a0");
   BN("valda", "Enforcer Valda", 15, 36, 2, "#c8a850", "#ffffff"); BN("drake", "Skyrazor Drake", 16, 44, 2, "#4a8ab0", "#aee8ff");
-  EN("rioter", "Rioter", 3, 36, 1, "#d4562c", "#ffb08a"); BN("garrow", "Riot-King Garrow", 15, 38, 2, "#a8321c", "#ff7a3a");
+  EN("rioter", "Rioter", 3, 36, 1, "#d4562c", "#ffb08a"); BN("garrow", "Riot-King Stade", 15, 38, 2, "#a8321c", "#ff7a3a");
   BN("hurl", "Edict Marshal Hurl", 16, 34, 2, "#b8a040", "#ffffff");
   EN("sealshade", "Seal-shade", 4, 32, 1, "#5a5a7a", "#c8c0ff"); BN("gshadow", "The Sentinel's Shadow", 16, 30, 2, "#3a3a4a", "#8a8a9a");
   EN("golem", "Quarry golem", 8, 20, 2, "#8a8f98", "#ffb03a"); BN("colossus", "The Runaway Colossus", 20, 22, 2, "#6a6f78", "#ffb03a");
@@ -4576,7 +4576,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
     gate: "A burned-out market district, still smoking, where Flameborne rioted against the Edict.", intro: "They said the riots would burn themselves out. They did not. A man calling himself the Riot-King is holding half the district hostage, and the other half is in his cells. I was in the streets when it started. I know who they are. They are not monsters. They are scared.",
     prop: { name: "The rioters", captive: 1, col: "#a8321c", t: "A dozen Flameborne in singed coats, packed into a cellar. \"Is it over?\" asks one. \"Is anyone coming?\"", act: "Open the cellar.", obj: "Open the cellar and free the rioters.", toast: "The rioters are free." },
     turn: "You got them out. The Lightforge watch will want a name for who did it. I would like you to keep yours to yourself.",
-    opts: [{ t: "Tell the watch Garrow is dead. Collect the reward.", reward: { xp: 150, crowns: 260 }, text: "The watch pays and does not ask about the rioters. Brann does not look at you for a long while." },
+    opts: [{ t: "Tell the watch Stade is dead. Collect the reward.", reward: { xp: 150, crowns: 260 }, text: "The watch pays and does not ask about the rioters. Brann does not look at you for a long while." },
       { t: "Say nothing. Let the rioters walk free.", reward: { xp: 190, perm: "hp" }, text: "Brann nods once. \"Flameborne remembers who stood in the smoke with them,\" he says." }] });
   Q({ id: "refuse", act: 3, hub: "windspire", npc: "dorrin", npcDef: { name: "Envoy Dorrin", col: "#9aa4b4", hair: "#7a7a7a", idle: "Stonehold does not move. We have been standing in the same place for a very long time." }, name: "The Refusal Pass", zone: "refuse", zname: "The Refusal Pass", th: "pass", lv: 2, seed: 324, pal: ["edictguard", "slinger"], boss: "hurl", obj: "Break Edict Marshal Hurl's column in the Refusal Pass.",
     gate: "A mountain pass where a Lightforge column is trying to force its way into Stonehold.", intro: "Lightforge sends a column to force Stonehold's compliance. The Hold-Senate refused. The pass is the only road. Stonehold does not run. We hold. I am asking you to hold with us.", turn: "The column broke on the stones. Stonehold does not forget a friend.", reward: { xp: 190, crowns: 150, perm: "dmg" } });
@@ -11936,25 +11936,25 @@ function qFinish(q, opt, idx) { if (cp().f["qd_" + q.id]) { aToast("Already clai
 
   // ---------------- CHAIN 3 · HIGHMARCH · THE HOLLOW GARRISON ----------------
   var d3 = function (f) { return !!f.q3done; };
-  ch({ id: "hollowpost", act: 2, hub: "highmarch", npc: "marl", npcDef: { name: "Sergeant Marl", col: "#7a8498", hair: "#5a5a5a", idle: "I have eleven names on my roll. I could swear there were twenty-two." },
+  ch({ id: "hollowpost", act: 2, hub: "highmarch", npc: "marl", npcDef: { name: "Sergeant Faro", col: "#7a8498", hair: "#5a5a5a", idle: "I have eleven names on my roll. I could swear there were twenty-two." },
     need: d3, name: "The Quiet Post", zone: "hollowpost", zname: "The Quiet Post", th: "pass", lv: 2, seed: 421, pal: ["hollowsent", "knife"], boss: "hollowcap", obj: "Find out why the watch post stopped answering.",
     gate: "A beacon tower on the ridge. The beacon is lit. Nobody has tended it in weeks.",
     intro: "Redtor Post stopped answering our horns nine days ago. The fire still burns but nobody feeds it. I sent two riders and neither came back, and when I count the roll, I cannot remember who I sent. Go. Please bring Captain Ael home, whatever shape he is in.",
     turn: "He is gone, and he was gone before you got there. His face was blank. His mouth was moving, saying a roll of names. You stood quietly until it was done. Tell me what you saw.",
-    opts: [{ t: "“They were killed by raiders. A clean death.”", reward: { xp: 120, crowns: 100 }, set: { hm_clean: 1 }, text: "Marl nods. He wants to believe it. He is good at wanting." },
-      { t: "“Something unwrote them. Their names are gone. The Void is here.”", reward: { xp: 150, item: 1 }, set: { hm_void: 1 }, text: "“Yes,” Marl says, very quietly. “I thought so. I have been looking at my roll for nine days and it keeps getting shorter.”" }] });
+    opts: [{ t: "“They were killed by raiders. A clean death.”", reward: { xp: 120, crowns: 100 }, set: { hm_clean: 1 }, text: "Faro nods. He wants to believe it. He is good at wanting." },
+      { t: "“Something unwrote them. Their names are gone. The Void is here.”", reward: { xp: 150, item: 1 }, set: { hm_void: 1 }, text: "“Yes,” Faro says, very quietly. “I thought so. I have been looking at my roll for nine days and it keeps getting shorter.”" }] });
   ch({ id: "namesroll", act: 2, hub: "highmarch", npc: "wynn", npcDef: { name: "Scout Wynn", col: "#4a7a58", hair: "#2a2a1a", idle: "I scouted the Void's edge once. It does not hurt. That is what is wrong with it." },
     need: function (f) { return f.qd_hollowpost; }, name: "The Roll of Names", zone: "namesroll", zname: "The Nameless Barracks", th: "cave", lv: 3, seed: 422, pal: ["hollowsent", "inkling"], boss: "voidwarden", obj: "Recover the lost roll from the Herald.",
     gate: "A cellar door chalked with names. The chalk is still wet and the names are fading.",
-    intro: function () { return F().hm_void ? "Marl believes you about the Void. That is why I am asking. There is a thing in the old barracks that eats names. Scouts at the edge call it the Herald, because it arrives before the Void does. It has Redtor's roll. If you take it back the men are remembered. If you leave it, they are not." : "Marl told me what you said about the raiders. I know what I found at Redtor. Raiders do not unwrite a man. There is a thing in the old barracks that holds the roll. Take it back."; },
+    intro: function () { return F().hm_void ? "Faro believes you about the Void. That is why I am asking. There is a thing in the old barracks that eats names. Scouts at the edge call it the Herald, because it arrives before the Void does. It has Redtor's roll. If you take it back the men are remembered. If you leave it, they are not." : "Faro told me what you said about the raiders. I know what I found at Redtor. Raiders do not unwrite a man. There is a thing in the old barracks that holds the roll. Take it back."; },
     turn: "You have the roll. The Herald did not die. It let go, the way a tide lets go of a pier. The roll is warm, and every name on it is whispering, like a crowd waiting for a door to open.",
-    opts: [{ t: "Read the names aloud, one by one. Let them be remembered.", reward: { xp: 220, perm: "pts" }, set: { hm_read: 1 }, text: "It takes until dawn. The courtyard fills with quiet people who do not know why they came. When the last name is spoken, Marl is on his knees, and Wynn is looking at the sky." },
-      { t: "Burn the roll. The dead earned their rest.", reward: { xp: 200, item: 2 }, set: { hm_burn: 1 }, text: "The roll burns without smoke. Something that was in the room leaves. Marl cannot remember why he is crying." }] });
+    opts: [{ t: "Read the names aloud, one by one. Let them be remembered.", reward: { xp: 220, perm: "pts" }, set: { hm_read: 1 }, text: "It takes until dawn. The courtyard fills with quiet people who do not know why they came. When the last name is spoken, Faro is on his knees, and Wynn is looking at the sky." },
+      { t: "Burn the roll. The dead earned their rest.", reward: { xp: 200, item: 2 }, set: { hm_burn: 1 }, text: "The roll burns without smoke. Something that was in the room leaves. Faro cannot remember why he is crying." }] });
   ch({ id: "woundpass", act: 3, hub: "highmarch", npc: "wynn", need: function (f) { return f.qd_namesroll && f.q4done; }, name: "The Wound in the Pass", zone: "woundpass", zname: "The Wound in the Pass", th: "pass", lv: 3, seed: 423, pal: ["hollowsent", "wraith"], boss: "hush", obj: "Seal the wound in the pass before the Hush spreads.",
     gate: "The pass is wrong. Snow falls and makes no sound. Your own footsteps are missing.",
     intro: "Something has opened in the high pass. It is not a cave or a crevice. It is a place where the world forgot to continue. The snow falls into it and does not land. If it grows, Highmarch is next. You have seen the Void's work. Come and see its door.",
     turn: "The door is shut, for now. It will open again, somewhere else. The Stillness spoke before it fell. It said one word, and I think it was not a threat. I think it was a plea.",
-    opts: [{ t: "Seal it with the garrison's help. Hold the line.", reward: { xp: 320, crowns: 250, item: 3 }, set: { void_held: 1 }, eff: gift({ troops: 10, say: "The garrison of Highmarch marches with you." }), text: "Marl, Wynn and a hundred men stand in a silent snowfall for three days. When it is over, nobody speaks of it. They all know." },
+    opts: [{ t: "Seal it with the garrison's help. Hold the line.", reward: { xp: 320, crowns: 250, item: 3 }, set: { void_held: 1 }, eff: gift({ troops: 10, say: "The garrison of Highmarch marches with you." }), text: "Faro, Wynn and a hundred men stand in a silent snowfall for three days. When it is over, nobody speaks of it. They all know." },
       { t: "Study it. Learn what it wants before you close it.", reward: { xp: 320, perm: "pts" }, set: { void_studied: 1 }, text: "You sit at the edge for a long hour, and something looks back. It is not hungry. It is afraid. Of change." }] });
 
   // ---------------- CHAIN 4 · LUMINANT · THE MEMORY THIEF ----------------
@@ -11972,7 +11972,7 @@ function qFinish(q, opt, idx) { if (cp().f["qd_" + q.id]) { aToast("Already clai
       var f = F(), l = [];
       if (f.ash_lie) l.push("You told Dessa the bandits took the tithe. You knew it was Haldan.");
       if (f.ash_truth) l.push("You exposed Haldan before the village. It was true. It was also cruel.");
-      if (f.hm_clean) l.push("You told Marl his men died cleanly. They were unwritten.");
+      if (f.hm_clean) l.push("You told Faro his men died cleanly. They were unwritten.");
       if (f.lf_shatter) l.push("You destroyed Odela's memory because it hurt her.");
       if (f.ember_recipe === "keep") l.push("You kept Cass's recipe and told nobody.");
       if (!l.length) l.push("You have kept your word so far. That is rarer than you think.");
@@ -15233,7 +15233,7 @@ function ovMore2(P) {
 }
 // bandit holds (13 Nov): a dozen stockades per Realm, each a short walk off a road, with a full crew and a named chief
 var HOLDN = ["Redhand Hold", "The Crows' Stockade", "Gallows Rise", "Cutpurse Keep", "The Rat King's Fence", "Broken Wheel Hold", "Blackbriar Stockade", "The Toll-Takers' Camp", "Mudwater Hold", "The Hanged Man's Rest", "Scavengers' Ring", "Ditchmoor Stockade"];
-var HOLDC = ["Mother Gutter", "Hask the Toll", "One-Boot Pell", "Sorrel Knuckles", "Grey Agna", "Ketch Ninefingers", "Bram the Lender", "Old Lantern-Thief", "Widow Crake", "Tallow Jon", "Rook Halfprice", "Marl the Patient"];
+var HOLDC = ["Mother Gutter", "Hask the Toll", "One-Boot Pell", "Sorrel Knuckles", "Grey Agna", "Ketch Ninefingers", "Pruitt the Lender", "Old Lantern-Thief", "Widow Crake", "Tallow Jon", "Rook Halfprice", "Varl the Patient"];
 function ovMore4(P) {
   var cell = curCell(), r = arng(nhash("ovholds") + cell * 197), co = cellOrg(cell), all = [];
   Object.keys(P).forEach(function (k) { if (Array.isArray(P[k])) P[k].forEach(function (o) { if (o && typeof o.x === "number") all.push([o.x, o.y]); }); });
@@ -16299,9 +16299,9 @@ function areaUnlocked(id) { if (id === "unmadecity" || id === "lanterncity" || i
     ["gra_vein_b", 2, "granitekeep", "Miner Jarn", "#7a7a88", "#b0b0b0", "A mountain keeps secrets. It just does not speak.", "The Vein That Hummed", "The Singing Seam", "mine", ["wraith", "slinger"], "The Seam-Wight", "A seam of grey stone that has begun to hum a tune the miners cannot place.",
       "A vein is humming in the lower seam. The miners can hear it through their boots. Three have walked into it and not come out. I want to know what is singing.", "It was the mountain remembering a lullaby sung by the first miner. The lullaby is dangerous because it makes people want to sleep in the stone.",
       "“Seal the seam. Let the song end.”", "Jarn mortars the entrance himself. For a week, the Keep is quiet in a way it has never been.", "“Teach the song to the miners. It is theirs.”", "The song becomes a work-chant. The seam is safe, and the Keep hums with it."],
-    ["gra_stone_b", 3, "granitekeep", "Sculptor Bram", "#8a8a90", "#c0c0c0", "Stonehold carves its dead. The dead carve back.", "The Statue That Blinked", "The Gallery of the Dead", "cave", ["wraith", "hollowsent"], "The Stone Mourner", "A gallery of statues of every Senator who ever served, one of which has recently moved.",
+    ["gra_stone_b", 3, "granitekeep", "Sculptor Ferrus", "#8a8a90", "#c0c0c0", "Stonehold carves its dead. The dead carve back.", "The Statue That Blinked", "The Gallery of the Dead", "cave", ["wraith", "hollowsent"], "The Stone Mourner", "A gallery of statues of every Senator who ever served, one of which has recently moved.",
       "One of the statues moved last night. It is the statue of a Senator who died before I was born. I want to know why a dead man would want to be seen.", "He wanted to be asked. Nothing more. He wanted to be asked whether he was proud of what he built. I told him yes. I may have meant it.",
-      "“Tell him you are proud. It is a kindness.”", "Bram polishes the statue’s eyes. For a month it does not move again.", "“Tell him the truth. The Keep is not what he hoped.”", "The statue turns its face to the wall. Nobody asks it to turn back."],
+      "“Tell him you are proud. It is a kindness.”", "Ferrus polishes the statue’s eyes. For a month it does not move again.", "“Tell him the truth. The Keep is not what he hoped.”", "The statue turns its face to the wall. Nobody asks it to turn back."],
     ["gra_wall", 4, "granitekeep", "Foreman Kast", "#6a6a78", "#a0a0a0", "A wall is a promise made of rock.", "The Wall That Grew", "The Inner Rampart", "cave", ["hollowsent", "slinger"], "The Growing Stone", "A rampart that has gained a foot in height every night for a month.",
       "The inner wall is growing. A foot a night. It has already shut out the east market and will shut out the sun by spring. Find what is feeding it.", "The wall was growing because it was afraid. A mason’s fear, built into the stone, saying: keep them out. Keep them all out.",
       "“Talk to it. Tell it the fear is over.”", "Kast presses his palm to the stone. The wall shrinks by two inches that night and then, gently, stops.", "“Break it. We cannot live behind a frightened wall.”", "The rampart comes down in a long grumble. The east market opens at dawn, and everyone is a little afraid."],
