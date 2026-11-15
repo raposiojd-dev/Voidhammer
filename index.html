@@ -4572,7 +4572,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
     gate: "A rope-bridge path up to the Skybridge relay, dark against the clouds.", intro: "The Edict's enforcers have taken the Skybridge relay. No beacon, no messengers, and Stormreach cannot talk to its own towers. I could ride in and die gloriously. I would rather you did it slowly and well.", turn: "Lit. Look at it! Every tower in the Spire answers. Take this, and take my thanks; I am not good at the second part.", reward: { xp: 170, crowns: 130, perm: "pts" } });
   Q({ id: "roost", act: 3, hub: "windspire", npc: "aeris", npcDef: { name: "Captain Tori Galeheart", col: "#5fb4e0", hair: "#e0f4ff", idle: "Warden-captains die young. I intend to be a very annoying exception." }, name: "The Drake Roost", zone: "roost", zname: "The Drake Roost", th: "pass", lv: 2, seed: 322, pal: ["stormling", "stormling"], boss: "drake", obj: "Kill the Skyrazor Drake in the Drake Roost.",
     gate: "A ridge-top roost, scored with claw-marks and scorched by lightning.", intro: "Skyrazor drakes nest on the ridge. They have never come down. Since the Edict began regulating storms they are hungry and angry, and they are coming into the Spire. Kill the mother, and the young may stay up there.", turn: "The roost is quiet. A thing like that deserved a better death than the Edict gave it. I will carve her scales into a shield. Take the first.", reward: { xp: 180, item: 2, perm: "hp" } });
-  Q({ id: "riot", act: 3, hub: "windspire", npc: "ashe", npcDef: { name: "Brann Ashe", col: "#d4562c", hair: "#2a1a10", idle: "Flameborne does not do quiet. Quiet is how they win." }, name: "The Cinder Riot", zone: "riot", zname: "The Cinder Riot", th: "ember", lv: 2, seed: 323, pal: ["rioter", "bandit"], boss: "garrow", kind: "captive", obj: "Reach the captured rioters beyond Riot-King Garrow.",
+  Q({ id: "riot", act: 3, hub: "windspire", npc: "ashe", npcDef: { name: "Brann Ashe", col: "#d4562c", hair: "#2a1a10", idle: "Flameborne does not do quiet. Quiet is how they win." }, name: "The Cinder Riot", zone: "riot", zname: "The Cinder Riot", th: "ember", lv: 2, seed: 323, pal: ["rioter", "bandit"], boss: "garrow", kind: "captive", obj: "Reach the captured rioters beyond Riot-King Stade.",
     gate: "A burned-out market district, still smoking, where Flameborne rioted against the Edict.", intro: "They said the riots would burn themselves out. They did not. A man calling himself the Riot-King is holding half the district hostage, and the other half is in his cells. I was in the streets when it started. I know who they are. They are not monsters. They are scared.",
     prop: { name: "The rioters", captive: 1, col: "#a8321c", t: "A dozen Flameborne in singed coats, packed into a cellar. \"Is it over?\" asks one. \"Is anyone coming?\"", act: "Open the cellar.", obj: "Open the cellar and free the rioters.", toast: "The rioters are free." },
     turn: "You got them out. The Lightforge watch will want a name for who did it. I would like you to keep yours to yourself.",
@@ -5060,7 +5060,7 @@ var VKEYS = TROOPT.filter(function (q) { return q.id > 1; }).map(function (q) { 
   }
   BN("scrivener", "The Blind Scrivener", 20, 36, 2, "#6a5a8a", "#d8c8ff");
   BN("gale", "Gale-Mother Ysolt", 20, 44, 2, "#8aa4c8", "#ffffff");
-  BN("tallow", "Tallow-King Brisk", 22, 34, 2, "#8a6a3a", "#ff9a2a");
+  BN("tallow", "Tallow-King Coalbright", 22, 34, 2, "#8a6a3a", "#ff9a2a");
   BN("stoneeye", "The Stone-Eye", 24, 28, 3, "#7a7a84", "#c8c8d8");
   BN("lanternbearer", "The Lantern-Bearer", 20, 38, 2, "#c8b86a", "#fff0a0");
   BN("cinderlord", "Cinder-Lord Vash", 22, 40, 2, "#8a3a22", "#ff6a2a");
@@ -13820,7 +13820,7 @@ function writList(hub) {
   var wk = writWeek(), r = arng(nhash("writ" + hub + "w" + wk)), out = [], i, am = writActMax(), tr = (typeof tier === "function" ? tier() : 0), done = (S.writs && S.writs.done) || {};
   var ko = Math.floor(r() * WRITK.length), usedP = {};
   for (i = 0; i < 3; i++) {
-    var K = WRITK[(ko + i) % WRITK.length], nm = ["Brek", "Gravet", "Marrow", "Tavish", "Tamsel", "Corrin", "Brigid", "Torvik", "Ferris", "Agna"][Math.floor(r() * 10)] + " " + WRITA[Math.floor(r() * WRITA.length)], pl = WRITP[Math.floor(r() * WRITP.length)]; while (usedP[pl]) pl = WRITP[Math.floor(r() * WRITP.length)]; usedP[pl] = 1;
+    var K = WRITK[(ko + i) % WRITK.length], nm = ["Brek", "Gravet", "Marrow", "Tavish", "Ormand", "Corrin", "Brigid", "Torvik", "Ferris", "Agna"][Math.floor(r() * 10)] + " " + WRITA[Math.floor(r() * WRITA.length)], pl = WRITP[Math.floor(r() * WRITP.length)]; while (usedP[pl]) pl = WRITP[Math.floor(r() * WRITP.length)]; usedP[pl] = 1;
     var lv = Math.max(1, Math.min(6, am + tr * 2 + i - 1 + (r() < 0.3 ? 1 : 0))), id = "writ:" + hub + ":" + wk + ":" + i, lvf = S.writs && S.writs.lv && S.writs.lv[id]; if (lvf) lv = lvf;
     out.push({ id: id, hub: hub, i: i, k: K.k, title: K.t(nm, pl), sub: K.s(nm, pl), lv: lv, nm: nm, pl: pl, cr: Math.round((70 + 40 * lv) * (1 + 0.5 * tr)), xp: 50 + 35 * lv, done: !!done[id], seed: nhash(id) % 99991 });
   }
@@ -16757,7 +16757,7 @@ var VLORDS = [
   { id: "orrin", name: "Orrin Lantern", realm: "Spiritveil", wound: "He speaks to a brother who died at Greywater, and the brother answers.", war: 4, loss: 7, meal: 11, n: 40 },
   { id: "isa", name: "Isa Winterborn", realm: "Frostgrave", wound: "She felt nothing at her mother’s funeral and has been waiting for it ever since.", war: 2, loss: 4, meal: 15, n: 42 },
   { id: "maud", name: "Maud Thatcher", realm: "no realm", wound: "A farmer’s widow who picked up a sword. She wants her village left alone, nothing more.", war: 6, loss: 11, meal: 8, n: 36 },
-  { id: "varro", name: "Varro the Late", realm: "no realm", wound: "He deserted three armies and has never once been afraid. He just gets bored.", war: 3, loss: 3, meal: 18, n: 48 }
+  { id: "varro", name: "Teasel the Late", realm: "no realm", wound: "He deserted three armies and has never once been afraid. He just gets bored.", war: 3, loss: 3, meal: 18, n: 48 }
 ];
 (function () {
   function vget() { S.vas = S.vas || {}; return S.vas; }
@@ -16983,7 +16983,7 @@ var VLORDS = [
   };
 })();
 // ---- ovLFACE: painted portraits for every realm lord, ruler and vassal (img/face/<slug>.webp) ----
-var LFACE = { "Lady Cinder": "cinder", "Lord Dunmor": "brannoch", "Lord Hald": "hald", "Lady Ysmeine": "ysolde", "Lord Kerrin": "kerrin", "Lord Aurel": "aurel", "Lady Marisse": "maren", "Lady Ismay": "maren", "Lyriel Frostwraith": "lyriel", "High Seer Vaelith": "vaelith", "Archivist Lume": "lume", "Veilrend": "veilrend", "Marshal Dravik": "dravik", "Warden Sable": "sable", "Overseer Quill": "quill", "Magistrate Voss": "voss", "Ser Alden Roe": "alden", "Dame Brisa Voll": "hesper", "Garth Ironhand": "brask", "Calla Ember": "calla", "Tobren Quill": "tobren", "Naia of the Veil": "naia", "Orrin Lantern": "orrinl", "Isa Winterborn": "isa", "Maud Thatcher": "maud", "Varro the Late": "varro" };
+var LFACE = { "Lady Cinder": "cinder", "Lord Dunmor": "brannoch", "Lord Hald": "hald", "Lady Ysmeine": "ysolde", "Lord Kerrin": "kerrin", "Lord Aurel": "aurel", "Lady Marisse": "maren", "Lady Ismay": "maren", "Lyriel Frostwraith": "lyriel", "High Seer Vaelith": "vaelith", "Archivist Lume": "lume", "Veilrend": "veilrend", "Marshal Dravik": "dravik", "Warden Sable": "sable", "Overseer Quill": "quill", "Magistrate Voss": "voss", "Ser Alden Roe": "alden", "Dame Brisa Voll": "hesper", "Garth Ironhand": "brask", "Calla Ember": "calla", "Tobren Quill": "tobren", "Naia of the Veil": "naia", "Orrin Lantern": "orrinl", "Isa Winterborn": "isa", "Maud Thatcher": "maud", "Teasel the Late": "varro" };
 (function () {
   Object.keys(LFACE).forEach(function (k) { NFACEN[k] = LFACE[k]; });
   function lfImg(name, sz) { var f = LFACE[name]; return f ? '<img class="face talk" src="img/face/' + f + '.webp" width="' + sz + '" height="' + sz + '" alt="" style="float:left;margin:.1rem .75rem .4rem 0;border-radius:3px;border:1px solid #6a4f22;box-shadow:0 3px 10px rgba(0,0,0,.6)" onerror="this.remove()">' : ""; }

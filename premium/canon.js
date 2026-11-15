@@ -115,7 +115,7 @@
       start: "Demanding start. You are far from home, among Realms that have voted your people out nine times.",
       pal: { a: "#8E3B2A", b: "#1B1B1C", c: "#B08D57", glow: "#FF6A13", ink: "#f1d9c6" },
       look: { cloth: 0x5a5d61, cloth2: 0x8e3b2a, legs: 0x1b1b1c, boots: 0x141414, metal: 0x1b1b1c, dark: 0x101010, leather: 0x3a2a20, trim: 0xb08d57, skin: 0xc9ab95, hair: 0x2a2624, weapon: "sword", shieldKind: "round", shield: 0x1b1b1c },
-      names: ["Brinna", "Dora", "Elka", "Grete", "Marta", "Brom", "Gunn", "Lenk", "Otto", "Bex", "Cass", "Ivo", "Jem", "Quin", "Tarn"],
+      names: ["Brinna", "Dora", "Elka", "Grete", "Lotte", "Brom", "Gunn", "Lenk", "Otto", "Bex", "Cass", "Ivo", "Jem", "Quin", "Tarn"],
       open: "You made your First Tool alone at ten, as every Metalcrown child does, and it is still in your pack with your name stamped on the handle. You left Iron Throne City before the gates closed. Nobody would say what the foundries were building, and the people who asked twice stopped coming to work.",
       arrive: "She writes your name and, beside it, nothing at all, which in your experience is rarer than it ought to be."
     }
