@@ -15552,7 +15552,7 @@ document.addEventListener("click", function (e) { var t = e.target && e.target.c
   EB("hunterprime", "Hunter Prime", 19, "#4a4a5a", "#ffb060");
   EB("kingsignal", "A Signal Wearing a Crown", 20, "#18141c", "#ff7a3a");
   EB("gatewatcher", "The Watcher at the Gate", 22, "#101018", "#ffffff");
-  EB("harrowedking", "The Crowned Presence", 28, "#201010", "#ff5a2a");
+  EB("crownedpresence", "The Crowned Presence", 28, "#201010", "#ff5a2a");
   function F() { return cp().f; }
   function m(id) { return function (f) { return !!f["qd_" + id]; }; }
   function ch(q) { q.opt = 0; q.act = 6; Q(q); }
@@ -15594,7 +15594,7 @@ document.addEventListener("click", function (e) { var t = e.target && e.target.c
     turn: "It looked at you and did not strike. Nor did you. For a moment the square was perfectly still, and no one was afraid, and that was the worst part. We have bought a little time. Ask me later what we paid with.",
     opts: [{ t: "“Hold the line around the grey edge. Nothing in, nothing out.”", reward: { xp: 680, crowns: 500 }, set: { eb_hold: 1 }, text: "Tori posts watch around the arch. The grey shapes watch back. Nobody blinks for three days." },
       { t: "“Keep it open a crack. We need to understand it.”", reward: { xp: 680, item: 3 }, set: { eb_open: 1 }, text: "Tori stares at you. “If you are wrong,” she says, “you will not be here to be wrong.” But she posts no guard." }] });
-  ch({ id: "eb_king", hub: "highmarch", npc: "hald", need: m("eb_gate"), name: "The Grey Edge at Supper", zone: "ebking", zname: "The Hall of Ash", th: "ember", lv: 5, seed: 467, pal: ["hollowsent", "wraith"], boss: "harrowedking", obj: "Walk into the grey edge over the ash-market.",
+  ch({ id: "eb_king", hub: "highmarch", npc: "hald", need: m("eb_gate"), name: "The Grey Edge at Supper", zone: "ebking", zname: "The Hall of Ash", th: "ember", lv: 5, seed: 467, pal: ["hollowsent", "wraith"], boss: "crownedpresence", obj: "Walk into the grey edge over the ash-market.",
     gate: "The crossroads market below Highmarch. Over the stalls a grey edge hangs open, and through it, a hall of ash.",
     intro: "A grey edge opened in the crossroads market at supper. The stallholders finished packing first. Through it there is a hall of ash, and something standing in it that makes grown soldiers look at the ground. Lyriel says it is a future, not a guest. I would like that confirmed by someone who has walked into it and come back. You, ideally.",
     turn: "You came back out. That was not guaranteed. Then the grey edge closed. Hald says the market will open in the morning as usual. What did you do in there?",
