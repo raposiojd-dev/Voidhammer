@@ -144,6 +144,21 @@ h1,h2,h3{font-family:var(--serif);font-weight:600;line-height:1.08;letter-spacin
 .share .btn{width:100%;max-width:420px}
 .toast{min-height:20px;font-size:13.5px;color:var(--ember2);font-weight:500;text-align:center}
 .next{margin-top:30px;padding-top:26px;border-top:1px solid var(--line)}
+.sr-only{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+.gate .card{text-align:left}
+.gate .card .kicker,.gate .card h1,.gate .card .motto{text-align:center}
+.gate .seal{width:64px;height:1px;margin:0 auto 20px;background:var(--c-a);opacity:.55}
+.gate .body p{font-size:18px}
+.gate form{margin-top:20px}
+.gate .fld{display:block;width:100%;min-height:54px;padding:15px 18px;border-radius:14px;background:rgba(0,0,0,.34);border:1px solid var(--c-line);color:var(--c-ink);font-family:var(--sans);font-size:16px}
+.gate .fld::placeholder{color:var(--c-mute)}
+.gate .fld:focus{outline:2px solid var(--c-a);outline-offset:2px}
+.gate .go{width:100%;margin-top:12px}
+.gate .go[disabled]{opacity:.65;pointer-events:none}
+.gate .err{margin:10px 2px 0;font-family:var(--sans);font-size:14px;line-height:1.4;color:#ff9b8a}
+.gate .fine{margin:16px 2px 0;font-family:var(--sans);font-size:13px;line-height:1.55;color:var(--c-mute)}
+.gate .skip{display:block;margin:20px auto 0;padding:6px;background:none;border:0;font-family:var(--sans);font-size:13.5px;color:var(--c-mute);text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+.gate .skip:hover{color:var(--c-ink)}
 .next h2{font-size:clamp(30px,8vw,42px);margin:8px 0 10px}
 .next h2 em{font-style:italic;font-weight:500;color:var(--ember2)}
 .next .lede{color:var(--mute);font-size:16px;margin-bottom:20px;max-width:560px}
@@ -221,6 +236,9 @@ footer a:hover{color:var(--ember2)}
     <p>The Realms are arguing over you&hellip;</p>
   </section>
 
+  <!-- EMAIL GATE -->
+  <section class="screen result gate" id="s-gate" aria-live="polite"></section>
+
   <!-- RESULT -->
   <section class="screen result" id="s-result" aria-live="polite"></section>
 
@@ -269,7 +287,7 @@ var LINKS={
 };
 
 var $=function(id){return document.getElementById(id);};
-var screens=["s-intro","s-quiz","s-weigh","s-result","s-teaser"];
+var screens=["s-intro","s-quiz","s-weigh","s-gate","s-result","s-teaser"];
 function show(id){
   screens.forEach(function(s){$(s).classList.toggle("on",s===id);});
   window.scrollTo(0,0);
@@ -359,10 +377,83 @@ function start(){
 }
 $("begin").addEventListener("click",start);
 
+/* ---------- the list: MailerLite embedded form, public endpoint ---------- */
+var ML={account:"2172873",form:"204425117340534444"};
+var SUBKEY="vh_quiz_sub";
+function alreadyOnList(){try{return localStorage.getItem(SUBKEY)==="1";}catch(e){return false;}}
+function rememberOnList(){try{localStorage.setItem(SUBKEY,"1");}catch(e){}}
+function looksLikeEmail(v){return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v);}
+function subscribe(email,realm){
+  var fd=new FormData();
+  fd.append("fields[email]",email);
+  fd.append("fields[sorting_quiz_realm]",realm);
+  fd.append("ml-submit","1");
+  fd.append("anticsrf","true");
+  return fetch("https://assets.mailerlite.com/jsonp/"+ML.account+"/forms/"+ML.form+"/subscribe",
+               {method:"POST",body:fd})
+    .then(function(r){return r.json();})
+    .then(function(j){
+      if(j&&j.success===false&&j.errors&&j.errors.fields&&j.errors.fields.email)
+        throw new Error(j.errors.fields.email[0]);
+      return true;
+    });
+}
+
+/* ---------- gate: the Realm is decided, the reader is not on the list yet ---------- */
+function renderGate(code,second){
+  var t=theme(code),wrap=$("s-gate");wrap.innerHTML="";
+  var card=el("article","card"+(t.light?" light":""));
+  card.style.cssText="--c-bg1:"+t.bg1+";--c-bg2:"+t.bg2+";--c-ink:"+t.ink+";--c-mute:"+t.mute+";--c-line:"+t.line+";--c-a:"+t.a+";--c-a2:"+t.a2;
+  card.appendChild(el("p","kicker","The Realms have decided"));
+  var h=el("h1");h.id="gate-h";h.tabIndex=-1;h.textContent="Your Realm is ready.";card.appendChild(h);
+  card.appendChild(el("p","motto","Nine of them argued over you. One of them won."));
+  card.appendChild(el("div","seal"));
+  var body=el("div","body");
+  body.appendChild(el("p",null,"Tell me where to send it and it opens. You get your Realm in full, Chapter One free to read, and one lore drop a month."));
+  card.appendChild(body);
+
+  var form=el("form");form.noValidate=true;
+  var lab=el("label","sr-only","Your email address");lab.setAttribute("for","gate-email");
+  var inp=el("input","fld");inp.id="gate-email";inp.type="email";inp.name="email";
+  inp.placeholder="you@example.com";inp.autocomplete="email";inp.setAttribute("inputmode","email");
+  var go=el("button","btn btn--ember go");go.type="submit";
+  go.innerHTML='Open my Realm <span class="arr" aria-hidden="true">&rarr;</span>';
+  var err=el("p","err");err.setAttribute("role","alert");
+  form.appendChild(lab);form.appendChild(inp);form.appendChild(go);form.appendChild(err);
+  card.appendChild(form);
+  card.appendChild(el("p","fine","Confirm from the email that lands and you are in. Leave any time, one click. Sent by John Raposio."));
+  var skip=el("button","skip","No thanks, just show me my Realm");skip.type="button";
+  skip.addEventListener("click",function(){renderResult(code,second);});
+  card.appendChild(skip);
+  wrap.appendChild(card);
+
+  var open=function(){renderResult(code,second);};
+  form.addEventListener("submit",function(e){
+    e.preventDefault();
+    var v=inp.value.trim();
+    err.textContent="";
+    if(!looksLikeEmail(v)){err.textContent="That address does not look right. Check it and try again.";inp.focus();return;}
+    go.disabled=true;go.textContent="Opening\u2026";
+    subscribe(v,D.r[code][0]).then(function(){rememberOnList();open();},
+      function(e2){
+        var m=(e2&&e2.message)||"";
+        /* a bad address is worth a second go; anything else is our problem, not theirs */
+        if(/email/i.test(m)&&!/network|fetch|failed/i.test(m)){
+          err.textContent=m;go.disabled=false;
+          go.innerHTML='Open my Realm <span class="arr" aria-hidden="true">&rarr;</span>';
+          inp.focus();
+        } else open();
+      });
+  });
+
+  show("s-gate");
+  h.focus({preventScroll:true});
+}
+
 function finish(){
   var res=score(picks);
   show("s-weigh");
-  setTimeout(function(){renderResult(res.code,res.second);},reduced?150:1500);
+  setTimeout(function(){(alreadyOnList()?renderResult:renderGate)(res.code,res.second);},reduced?150:1500);
 }
 
 /* ---------- result ---------- */
