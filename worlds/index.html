@@ -53,11 +53,12 @@ a { color: inherit; }
 .band.flip::after { background: linear-gradient(270deg, rgba(13,12,16,.94) 0%, rgba(13,12,16,.72) 55%, rgba(13,12,16,.5) 100%); }
 .band .wrap { position: relative; z-index: 1; display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); gap: clamp(28px, 5vw, 64px); align-items: center; padding-block: clamp(56px, 9vw, 104px); }
 .band.flip .portrait { order: 2; }
-.portrait { margin: 0; position: relative; }
-.portrait img { display: block; width: 100%; max-width: 100%; aspect-ratio: 1; object-fit: cover; border: 1px solid color-mix(in srgb, var(--realm) 45%, transparent); box-shadow: 0 30px 80px -30px color-mix(in srgb, var(--realm) 55%, transparent); }
+.portrait { margin: 0; position: relative; max-width: 380px; justify-self: center; }
+.portrait img { display: block; width: 100%; max-width: 100%; height: auto; aspect-ratio: 2 / 3; object-fit: cover; border: 1px solid color-mix(in srgb, var(--realm) 45%, transparent); box-shadow: 0 30px 80px -30px color-mix(in srgb, var(--realm) 55%, transparent); }
 .portrait figcaption { font-family: var(--mono); font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--dust); margin-top: 10px; }
-.portrait .second { position: absolute; width: 38%; right: -6%; bottom: 14%; border-width: 2px; }
+.portrait .second { position: absolute; width: 42%; height: auto; right: -11%; bottom: -5%; aspect-ratio: 1; border-width: 2px; }
 .entry { min-width: 0; }
+.crest { float: right; width: clamp(76px, 10vw, 118px); height: auto; margin: 2px 0 10px 22px; shape-outside: circle(50%); filter: drop-shadow(0 12px 30px rgba(0,0,0,.85)); }
 .num { font-family: var(--mono); font-size: 12px; letter-spacing: .18em; text-transform: uppercase; color: var(--realm); margin: 0 0 10px; }
 .entry h2 { font-family: var(--display); font-weight: 400; font-size: clamp(38px, 6vw, 68px); line-height: 1.02; margin: 0 0 6px; text-wrap: balance; }
 .aether { font-family: var(--body); font-style: italic; color: var(--dust); margin: 0 0 22px; font-size: 19px; }
@@ -71,12 +72,12 @@ a { color: inherit; }
 .codex dd.price::before { content: "◆ "; color: var(--realm); font-size: 12px; vertical-align: 2px; }
 
 /* The shard has no living landscape: it can't hold one */
-.band.still { background: radial-gradient(ellipse at 30% 40%, color-mix(in srgb, var(--realm) 22%, transparent), transparent 60%), var(--ash); }
-.band.still::after { display: none; }
+.band.still { background: var(--ash); }
+.band.still::before { content: ""; position: absolute; inset: 0; background: url(shard-land.jpg) center / cover no-repeat; opacity: .72; }
+.band.still::after { background: linear-gradient(90deg, rgba(13,12,16,.88) 0%, rgba(13,12,16,.6) 55%, rgba(13,12,16,.38) 100%), radial-gradient(ellipse at 30% 40%, color-mix(in srgb, var(--realm) 20%, transparent), transparent 62%); }
 .band.still .portrait img { filter: contrast(1.05); clip-path: polygon(0 0, 62% 0, 58% 22%, 100% 18%, 100% 100%, 41% 100%, 45% 74%, 0 79%); }
 
 /* Emberhold, the one still lit */
-.home .wrap { grid-template-columns: minmax(0, 1fr); text-align: left; }
 .home .entry { max-width: 40em; }
 .cta { display: inline-flex; align-items: center; gap: 10px; margin-top: 8px; background: var(--ember); color: var(--night); font-family: var(--mono); font-weight: 500; font-size: 14px; letter-spacing: .1em; text-transform: uppercase; text-decoration: none; padding: 16px 26px; border-radius: 2px; transition: transform .2s, box-shadow .2s; }
 .cta:hover { transform: translateY(-2px); box-shadow: 0 12px 30px -10px var(--ember); }
@@ -92,7 +93,7 @@ footer .wrap { padding-block: 36px 48px; font-family: var(--mono); font-size: 12
   .codex { grid-template-columns: minmax(0, 1fr); }
   .codex dt { padding-bottom: 0; border-bottom: 0; }
   .cta.ghost { margin-left: 0; }
-  .portrait .second { right: -4%; }
+  .portrait .second { right: -4%; bottom: -3%; }
 }
 @media (prefers-reduced-motion: reduce) { .cta, .gate a { transition: none; } }
 </style>
@@ -124,8 +125,9 @@ footer .wrap { padding-block: 36px 48px; font-family: var(--mono); font-size: 12
   <section class="band" id="lightforge" style="--realm:#f2c45a">
     <video data-src="lightforge.mp4" poster="lightforge-poster.jpg" muted loop playsinline aria-hidden="true"></video>
     <div class="wrap">
-      <figure class="portrait"><img src="champ-lightforge.jpg" alt="A Lightforge warden in gold armour before a blazing halo" loading="lazy" width="820" height="820"><figcaption>Radiance warden</figcaption></figure>
+      <figure class="portrait"><img src="soldier-lightforge.jpg" alt="A Lightforge soldier in gold-plate armour, standing in light that casts no shadow" loading="lazy" width="900" height="1341"><figcaption>Radiance warden</figcaption></figure>
       <div class="entry">
+        <img class="crest" src="badge-lightforge.webp" alt="" width="300" height="300" loading="lazy">
         <p class="num">Realm I</p>
         <h2>Lightforge</h2>
         <p class="aether">Radiance Aether · truth, law, judgment</p>
@@ -139,8 +141,9 @@ footer .wrap { padding-block: 36px 48px; font-family: var(--mono); font-size: 12
   <section class="band flip" id="shadowdeep" style="--realm:#9a5cf0">
     <video data-src="shadowdeep.mp4" poster="shadowdeep-poster.jpg" muted loop playsinline aria-hidden="true"></video>
     <div class="wrap">
-      <figure class="portrait"><img src="champ-shadowdeep.jpg" alt="A faceless hooded figure holding two violet daggers" loading="lazy" width="820" height="820"><figcaption>Nightblade</figcaption></figure>
+      <figure class="portrait"><img src="soldier-shadowdeep.jpg" alt="A Shadowdeep soldier in dark leathers, lit only from the ground by rune-light" loading="lazy" width="900" height="1341"><figcaption>Nightblade</figcaption></figure>
       <div class="entry">
+        <img class="crest" src="badge-shadowdeep.webp" alt="" width="300" height="300" loading="lazy">
         <p class="num">Realm II</p>
         <h2>Shadowdeep</h2>
         <p class="aether">Shadow Inversion · secrets, knives, silence</p>
@@ -154,8 +157,9 @@ footer .wrap { padding-block: 36px 48px; font-family: var(--mono); font-size: 12
   <section class="band" id="stormreach" style="--realm:#5fb4ff">
     <video data-src="stormreach.mp4" poster="stormreach-poster.jpg" muted loop playsinline aria-hidden="true"></video>
     <div class="wrap">
-      <figure class="portrait"><img src="champ-stormreach.jpg" alt="A hooded storm rider on a rock with a lightning spear" loading="lazy" width="820" height="820"><figcaption>Tempest rider</figcaption></figure>
+      <figure class="portrait"><img src="soldier-stormreach.jpg" alt="A Stormreach soldier in storm-worn armour, the sky breaking open behind" loading="lazy" width="900" height="1341"><figcaption>Tempest rider</figcaption></figure>
       <div class="entry">
+        <img class="crest" src="badge-stormreach.webp" alt="" width="300" height="300" loading="lazy">
         <p class="num">Realm III</p>
         <h2>Stormreach</h2>
         <p class="aether">Tempest Aether · storm, sky, speed</p>
@@ -169,8 +173,9 @@ footer .wrap { padding-block: 36px 48px; font-family: var(--mono); font-size: 12
   <section class="band flip" id="frostgrave" style="--realm:#a9dcf2">
     <video data-src="frostgrave.mp4" poster="frostgrave-poster.jpg" muted loop playsinline aria-hidden="true"></video>
     <div class="wrap">
-      <figure class="portrait"><img src="champ-frostgrave.jpg" alt="A bearded Frostgrave seer in frosted armour with two echoes behind him" loading="lazy" width="820" height="820"><img class="second" src="champ-titan.jpg" alt="A Frostbound Titan made of cracked blue ice" loading="lazy" width="820" height="820"><figcaption>Frostwraith seer · Frostbound Titan</figcaption></figure>
+      <figure class="portrait"><img src="soldier-frostgrave.jpg" alt="A Frostgrave soldier in frosted mail, breath showing in the cold" loading="lazy" width="900" height="1341"><img class="second" src="champ-titan.jpg" alt="A Frostbound Titan made of cracked blue ice" loading="lazy" width="820" height="820"><figcaption>Frostwraith seer · Frostbound Titan</figcaption></figure>
       <div class="entry">
+        <img class="crest" src="badge-frostgrave.webp" alt="" width="300" height="300" loading="lazy">
         <p class="num">Realm IV</p>
         <h2>Frostgrave</h2>
         <p class="aether">Chrona Aether · time, ice, echoes, prophecy</p>
@@ -184,8 +189,9 @@ footer .wrap { padding-block: 36px 48px; font-family: var(--mono); font-size: 12
   <section class="band" id="stonehold" style="--realm:#c7a35a">
     <video data-src="stonehold.mp4" poster="stonehold-poster.jpg" muted loop playsinline aria-hidden="true"></video>
     <div class="wrap">
-      <figure class="portrait"><img src="champ-stonehold.jpg" alt="A towering Stonehold oath-keeper with a stone hammer, blue fire rising behind" loading="lazy" width="820" height="820"><figcaption>Gravem oath-keeper</figcaption></figure>
+      <figure class="portrait"><img src="soldier-stonehold.jpg" alt="A Stonehold soldier with a stone hammer, the grey of the stone showing in one hand" loading="lazy" width="900" height="1341"><figcaption>Gravem oath-keeper</figcaption></figure>
       <div class="entry">
+        <img class="crest" src="badge-stonehold.webp" alt="" width="300" height="300" loading="lazy">
         <p class="num">Realm V</p>
         <h2>Stonehold</h2>
         <p class="aether">Gravem Aether · gravity, stone, endurance</p>
@@ -199,8 +205,9 @@ footer .wrap { padding-block: 36px 48px; font-family: var(--mono); font-size: 12
   <section class="band flip" id="flameborne" style="--realm:#ff6a2b">
     <video data-src="flameborne.mp4" poster="flameborne-poster.jpg" muted loop playsinline aria-hidden="true"></video>
     <div class="wrap">
-      <figure class="portrait"><img src="champ-flameborne.jpg" alt="A Flameborne warrior wreathed in fire on a field of lava" loading="lazy" width="820" height="820"><figcaption>Emberforged</figcaption></figure>
+      <figure class="portrait"><img src="soldier-flameborne.jpg" alt="A Flameborne soldier in scorched plate, lit from below by the Cinderway" loading="lazy" width="900" height="1341"><figcaption>Emberforged</figcaption></figure>
       <div class="entry">
+        <img class="crest" src="badge-flameborne.webp" alt="" width="300" height="300" loading="lazy">
         <p class="num">Realm VI</p>
         <h2>Flameborne</h2>
         <p class="aether">Embercraft Aether · fire, rebellion, refusal</p>
@@ -214,8 +221,9 @@ footer .wrap { padding-block: 36px 48px; font-family: var(--mono); font-size: 12
   <section class="band" id="spiritveil" style="--realm:#8fe0c4">
     <video data-src="spiritveil.mp4" poster="spiritveil-poster.jpg" muted loop playsinline aria-hidden="true"></video>
     <div class="wrap">
-      <figure class="portrait"><img src="champ-spiritveil.jpg" alt="A Spiritveil archivist with a staff, drawing threads of golden light" loading="lazy" width="820" height="820"><figcaption>Veilweave archivist</figcaption></figure>
+      <figure class="portrait"><img src="soldier-spiritveil.jpg" alt="A Spiritveil soldier beside a silver lantern" loading="lazy" width="900" height="1341"><figcaption>Veilweave archivist</figcaption></figure>
       <div class="entry">
+        <img class="crest" src="badge-spiritveil.webp" alt="" width="300" height="300" loading="lazy">
         <p class="num">Realm VII</p>
         <h2>Spiritveil</h2>
         <p class="aether">Veilweave Aether · memory, ghostlight, Lantern Paths</p>
@@ -229,8 +237,9 @@ footer .wrap { padding-block: 36px 48px; font-family: var(--mono); font-size: 12
   <section class="band flip" id="metalcrown" style="--realm:#d0503a">
     <video data-src="metalcrown.mp4" poster="metalcrown-poster.jpg" muted loop playsinline aria-hidden="true"></video>
     <div class="wrap">
-      <figure class="portrait"><img src="champ-metalcrown.jpg" alt="An armoured Metalcrown soldier with a glowing reactor in his chest" loading="lazy" width="820" height="820"><figcaption>Iron Dominion</figcaption></figure>
+      <figure class="portrait"><img src="soldier-metalcrown.jpg" alt="A Metalcrown soldier in forged plate of their own making" loading="lazy" width="900" height="1341"><figcaption>Iron Dominion</figcaption></figure>
       <div class="entry">
+        <img class="crest" src="badge-metalcrown.webp" alt="" width="300" height="300" loading="lazy">
         <p class="num">Realm VIII</p>
         <h2>Metalcrown</h2>
         <p class="aether">Synthetic sparks · machines, foundries, the Iron Dominion</p>
@@ -243,8 +252,9 @@ footer .wrap { padding-block: 36px 48px; font-family: var(--mono); font-size: 12
 
   <section class="band still" id="shard" style="--realm:#56d7ea">
     <div class="wrap">
-      <figure class="portrait"><img src="champ-shard.jpg" alt="A hooded figure holding a cracked sword of blue light" loading="lazy" width="820" height="820"><figcaption>No one is sure</figcaption></figure>
+      <figure class="portrait"><img src="soldier-shard.jpg" alt="A figure from the Unstable Shard, never quite resolving" loading="lazy" width="900" height="1341"><figcaption>No one is sure</figcaption></figure>
       <div class="entry">
+        <img class="crest" src="badge-shard.webp" alt="" width="300" height="300" loading="lazy">
         <p class="num">Realm IX</p>
         <h2>The Unstable Shard</h2>
         <p class="aether">Raw possibility</p>
@@ -255,10 +265,12 @@ footer .wrap { padding-block: 36px 48px; font-family: var(--mono); font-size: 12
     </div>
   </section>
 
-  <section class="band home" id="emberhold" style="--realm:#e8854f">
+  <section class="band flip home" id="emberhold" style="--realm:#e8854f">
     <video data-src="emberhold.mp4" poster="emberhold-poster.jpg" muted loop playsinline aria-hidden="true"></video>
     <div class="wrap">
+      <figure class="portrait"><img src="soldier-emberhold.jpg" alt="An Emberhold soldier of the wall in patched iron and salvaged plate" loading="lazy" width="900" height="1341"><figcaption>Soldier of the wall</figcaption></figure>
       <div class="entry">
+        <img class="crest" src="badge-emberhold.webp" alt="" width="300" height="300" loading="lazy">
         <p class="num">The last light</p>
         <h2>Emberhold</h2>
         <p class="aether">The Last Realm · the only city still standing</p>
