@@ -27,13 +27,14 @@ const MUS = { on: true, ok: false, want: null, cur: null, el: {}, vol: 0.55,
   files: { title: "std_title", map: "std_frost", hold: "rv_ember_1", fight: "std_frost_fight", boss: "std_tremor_boss" } };
 try { if (localStorage.getItem("vh_march_music") === "off") MUS.on = false; } catch (e) {}
 MUS.get = function (k) { if (!MUS.el[k]) { const a = new Audio("../mus/" + MUS.files[k] + ".mp3"); a.loop = true; a.preload = "none"; a.volume = 0; MUS.el[k] = a; } return MUS.el[k]; };
-MUS.fade = function (a, to, done) { clearInterval(a._f); a._f = setInterval(() => { const v = a.volume + (to > a.volume ? 0.05 : -0.05); if ((to > a.volume && v >= to) || (to <= a.volume && v <= to)) { a.volume = to; clearInterval(a._f); if (done) done(); } else a.volume = Math.max(0, Math.min(1, v)); }, 60); };
 MUS.play = function (k) {
-  MUS.want = k; if (!MUS.on || !MUS.ok || UI.fast) return; if (MUS.cur === k && !MUS.get(k).paused) return;
-  const old = MUS.cur && MUS.cur !== k ? MUS.el[MUS.cur] : null; if (old) MUS.fade(old, 0, () => old.pause());
-  MUS.cur = k; const a = MUS.get(k); const pr = a.play(); if (pr && pr.catch) pr.catch(() => {}); MUS.fade(a, MUS.vol);
+  MUS.want = k; if (!MUS.on || !MUS.ok || UI.fast) return;
+  // only ever one track: stop every other one outright (iPhones ignore volume, so a fade-out never ends there)
+  Object.keys(MUS.el).forEach(o => { if (o !== k && !MUS.el[o].paused) MUS.el[o].pause(); });
+  const a = MUS.get(k); MUS.cur = k; a.volume = MUS.vol; if (!a.paused) return;
+  const pr = a.play(); if (pr && pr.catch) pr.catch(() => {});
 };
-MUS.stop = function () { Object.keys(MUS.el).forEach(k => { clearInterval(MUS.el[k]._f); MUS.el[k].pause(); }); MUS.cur = null; };
+MUS.stop = function () { Object.keys(MUS.el).forEach(k => MUS.el[k].pause()); MUS.cur = null; };
 MUS.set = function (on) { MUS.on = on; try { localStorage.setItem("vh_march_music", on ? "on" : "off"); } catch (e) {} if (on) MUS.play(MUS.want || "map"); else MUS.stop(); };
 addEventListener("pointerdown", () => { if (MUS.ok) return; MUS.ok = true; if (MUS.want) MUS.play(MUS.want); }, true);
 document.addEventListener("visibilitychange", () => { if (document.hidden) MUS.stop(); else if (MUS.want) MUS.play(MUS.want); });
