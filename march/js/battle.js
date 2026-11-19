@@ -16,7 +16,7 @@ B.start = function (kind, onEnd) {
   const place = (list, side) => {
     const melee = list.filter(u => D.UNITS[u.type].rng === 1), ranged = list.filter(u => D.UNITS[u.type].rng > 1);
     const rows = [2, 1, 3, 0, 4];
-    const put = (arr, x, x2) => arr.forEach((u, i) => { const def = D.UNITS[u.type]; st.units.push({ id: st.units.length + 1, wid: u.id || 0, type: u.type, side, x: i < 5 ? x : x2, y: rows[i % 5], hp: side ? def.hp : Math.max(1, Math.min(u.hp, G.maxHp(u))), max: side ? def.hp : G.maxHp(u), ab: side ? 0 : G.atkBonus(u), lv: side ? 0 : G.lvl(u), acted: false, moved: false, name: side ? def.name : G.uName(u), art: side ? def.art : G.uArt(u), dx: 0, dy: 0, flash: 0 }); });
+    const put = (arr, x, x2) => arr.forEach((u, i) => { const def = D.UNITS[u.type]; st.units.push({ id: st.units.length + 1, wid: u.id || 0, type: u.type, side, x: i < 5 ? x : x2, y: rows[i % 5], hp: side ? def.hp : Math.max(1, Math.min(u.hp, G.maxHp(u))), max: side ? def.hp : G.maxHp(u), ab: side ? 0 : G.atkBonus(u), lv: side ? 0 : G.lvl(u), sk: side ? {} : (u.skills || {}), acted: false, moved: false, name: side ? def.name : G.uName(u), art: side ? def.art : G.uArt(u), dx: 0, dy: 0, flash: 0 }); });
     if (side === 0) { put(melee, 1, 2); put(ranged, 0, 1); } else { put(melee, 7, 6); put(ranged, 8, 7); }
   };
   place(pick, 0); place(foes.map(t => ({ type: t })), 1);
@@ -49,11 +49,15 @@ B.reach = function (u, mv) { // cells reachable this turn -> { "x,y": [path] }
     [[1, 0], [-1, 0], [0, 1], [0, -1]].forEach(d => { const x = c[0] + d[0], y = c[1] + d[1], k = bk(x, y); if (seen[k] || !B.open(x, y, u) || B.at(x, y)) return; seen[k] = 1; const p = c[2].concat([[x, y]]); out[k] = p; q.push([x, y, p]); }); }
   return out;
 };
+B.mv = u => D.UNITS[u.type].mv + (u.sk && u.sk.fleet ? 1 : 0);
+B.rng = u => D.UNITS[u.type].rng + (u.sk && u.sk.longarm ? 1 : 0);
 B.spCost = m => Math.max(1, D.SPELLS[m].cost - (G.s.flags.banked ? 1 : 0));
 B.dmg = function (a, t, bonus) { // [min, max]
-  const A = D.UNITS[a.type], T = D.UNITS[t.type]; let base = A.atk + (a.ab || 0) + (bonus || 0) - T.def;
-  if (B.st.units.some(o => o.hp > 0 && o.side === a.side && o !== a && man(o, t) === 1)) base += 1;
-  if (B.st.units.some(o => o.hp > 0 && o.side === t.side && o !== t && D.UNITS[o.type].guard && man(o, t) === 1)) base -= 1;
+  const A = D.UNITS[a.type], T = D.UNITS[t.type]; const ask = a.sk || {}, tsk = t.sk || {}; let base = A.atk + (a.ab || 0) + (bonus || 0) - T.def - (tsk.wall ? 1 : 0);
+  if (B.st.units.some(o => o.hp > 0 && o.side === a.side && o !== a && man(o, t) === 1)) base += ask.flanker ? 2 : 1;
+  if (B.st.units.some(o => o.hp > 0 && o.side === t.side && o !== t && (D.UNITS[o.type].guard || (o.sk && o.sk.mate)) && man(o, t) === 1)) base -= 1;
+  if (ask.finisher && t.hp * 2 < t.max) base += 2;
+  if (ask.marksman && !B.st.units.some(o => o.hp > 0 && o.side !== a.side && man(o, a) === 1)) base += 2;
   if (A.fire && T.fireproof) base = Math.ceil(base / 2);
   return [Math.max(1, base), Math.max(1, base + 2)];
 };
@@ -63,6 +67,7 @@ B.say = function (t) { B.st.log = t; const el = document.getElementById("b-say")
 // ---------- actions ----------
 B.float = function (u, text, col) { B.fx.push({ x: u.x, y: u.y, text, col: col || "#fff", t: 0 }); };
 B.hurt = async function (t, n, by) {
+  if (t.sk && t.sk.stubborn && !t.stood && t.hp > 1 && n >= t.hp) { n = t.hp - 1; t.stood = 1; B.say(t.name + " will not go down."); }
   t.hp = Math.max(0, t.hp - n); t.flash = 1; B.float(t, "-" + n, t.side ? "#ffd9a8" : "#ff8f7a");
   const st = B.st; if (t.type === "hero" || (by && by.type === "hero")) st.heat = Math.min(10, st.heat + 1);
   if (t.hp <= 0) { if (t.side === 0) st.downed.push(t.wid); else if (by && by.side === 0) st.kills[by.wid] = (st.kills[by.wid] || 0) + 1; B.say(t.name + (t.side ? " goes down." : " is down.")); }
@@ -110,17 +115,17 @@ B.tap = async function (cx, cy) {
   const def = D.UNITS[sel.type];
   B.busy = true;
   if (hit && hit.side === 1) {
-    if (man(sel, hit) > def.rng) {
+    if (man(sel, hit) > B.rng(sel)) {
       if (sel.moved) { B.busy = false; B.say("Too far to reach this turn."); return; }
-      const rc = B.reach(sel, def.mv); let best = null;
-      Object.keys(rc).forEach(k => { const p = k.split(",").map(Number); if (Math.abs(p[0] - hit.x) + Math.abs(p[1] - hit.y) <= def.rng && (!best || rc[k].length < best.length)) best = rc[k]; });
+      const rc = B.reach(sel, B.mv(sel)); let best = null;
+      Object.keys(rc).forEach(k => { const p = k.split(",").map(Number); if (Math.abs(p[0] - hit.x) + Math.abs(p[1] - hit.y) <= B.rng(sel) && (!best || rc[k].length < best.length)) best = rc[k]; });
       if (!best) { B.busy = false; B.say("Too far to reach this turn."); return; }
       await B.walk(sel, best); sel.moved = true;
     }
     if (sel.hp > 0) await B.strike(sel, hit);
     sel.acted = true; st.sel = null;
   } else if (!hit) {
-    const rc = B.reach(sel, def.mv);
+    const rc = B.reach(sel, B.mv(sel));
     if (!sel.moved && rc[bk(x, y)]) { await B.walk(sel, rc[bk(x, y)]); sel.moved = true; if (sel.hp <= 0) st.sel = null; }
     else st.sel = null;
   }
@@ -165,7 +170,7 @@ B.foeAct = async function (e) {
     // walk towards the nearest fighter: breadth-first over open cells, ignoring other units for the route
     const dist = {}; const q = []; mine.forEach(m => { dist[bk(m.x, m.y)] = 0; q.push([m.x, m.y]); });
     while (q.length) { const c = q.shift(); [[1, 0], [-1, 0], [0, 1], [0, -1]].forEach(d => { const x = c[0] + d[0], y = c[1] + d[1], k = bk(x, y); if (dist[k] !== undefined || !B.open(x, y, e)) return; dist[k] = dist[bk(c[0], c[1])] + 1; q.push([x, y]); }); }
-    const rc = B.reach(e, def.mv); let best = null, bd = dist[bk(e.x, e.y)]; if (bd === undefined) bd = 99;
+    const rc = B.reach(e, B.mv(e)); let best = null, bd = dist[bk(e.x, e.y)]; if (bd === undefined) bd = 99;
     Object.keys(rc).forEach(k => { const d = dist[k]; if (d !== undefined && d >= (def.rng > 1 ? 2 : 1) && d < bd) { bd = d; best = rc[k]; } });
     if (best) { await B.walk(e, best); if (e.hp <= 0) return; }
     t = inRange();
@@ -215,7 +220,7 @@ B.draw = function () {
   // highlights
   if (sel && st.turn === "player" && !B.busy) {
     if (st.mode === "wall") { for (let x = 0; x < BW; x++) for (let y = 0; y < BH; y++) if (Math.abs(x - sel.x) + Math.abs(y - sel.y) <= 3 && B.open(x, y)) B.cellFill(x, y, "rgba(255,122,26,.20)"); }
-    else if (!st.mode && !sel.moved) { const rc = B.reach(sel, def.mv); Object.keys(rc).forEach(k => { const p = k.split(",").map(Number); B.cellFill(p[0], p[1], "rgba(232,190,120,.20)"); }); }
+    else if (!st.mode && !sel.moved) { const rc = B.reach(sel, B.mv(sel)); Object.keys(rc).forEach(k => { const p = k.split(",").map(Number); B.cellFill(p[0], p[1], "rgba(232,190,120,.20)"); }); }
   }
   // hazards, rocks, fire
   Object.keys(st.haz).forEach(k => { const p = k.split(",").map(Number), x = gx + p[0] * S, y = gy + p[1] * S; const g = c.createRadialGradient(x + S / 2, y + S / 2, 2, x + S / 2, y + S / 2, S * .5); g.addColorStop(0, "rgba(255,170,60," + (.55 + .15 * Math.sin(now / 300 + p[0])) + ")"); g.addColorStop(1, "rgba(255,90,10,0)"); c.fillStyle = g; c.fillRect(x, y, S, S); c.strokeStyle = "rgba(255,200,120,.8)"; c.lineWidth = 2; c.beginPath(); c.moveTo(x + S * .2, y + S * .3); c.lineTo(x + S * .45, y + S * .5); c.lineTo(x + S * .4, y + S * .7); c.moveTo(x + S * .45, y + S * .5); c.lineTo(x + S * .8, y + S * .55); c.stroke(); });
@@ -236,7 +241,7 @@ B.draw = function () {
     c.fillStyle = u.side ? "#a9bcc6" : (u.hp / u.max > .4 ? "#e0a25a" : "#e2553f"); B.rr(c, bx, by, Math.max(2, bw * u.hp / u.max), 5, 2.5); c.fill();
     // forecast on targets
     if (sel && u.side === 1 && st.turn === "player" && !B.busy && !st.mode) {
-      let can = man(sel, u) <= def.rng; if (!can && !sel.moved) { const rc = B.reach(sel, def.mv); can = Object.keys(rc).some(k => { const p = k.split(",").map(Number); return Math.abs(p[0] - u.x) + Math.abs(p[1] - u.y) <= def.rng; }); }
+      let can = man(sel, u) <= B.rng(sel); if (!can && !sel.moved) { const rc = B.reach(sel, B.mv(sel)); can = Object.keys(rc).some(k => { const p = k.split(",").map(Number); return Math.abs(p[0] - u.x) + Math.abs(p[1] - u.y) <= B.rng(sel); }); }
       if (can && !sel.acted) { const d = B.dmg(sel, u); c.strokeStyle = "rgba(226,85,63,.95)"; c.lineWidth = 2.5; c.setLineDash([5, 4]); c.beginPath(); c.arc(x, y, r + 5, 0, 7); c.stroke(); c.setLineDash([]); B.tag(c, x, y - r - 9, d[0] + "–" + d[1], "#e2553f"); }
     }
     if (st.mode === "lance" && sel && u.side === 1 && man(sel, u) <= 4) { c.strokeStyle = "rgba(255,160,60,.95)"; c.lineWidth = 3; c.beginPath(); c.arc(x, y, r + 5, 0, 7); c.stroke(); }

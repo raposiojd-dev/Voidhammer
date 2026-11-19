@@ -186,3 +186,14 @@ button:focus-visible{outline:2px solid var(--glow);outline-offset:2px}
 .row.job{align-items:flex-start;padding-top:8px;padding-bottom:8px}
 .row.job button{align-self:center}
 .unit .lv{font-family:"Cinzel";font-size:11.5px;color:#e0a25a;font-weight:700}
+/* one fighter, skills, notice board */
+.unit[data-u]{cursor:pointer}
+.unit.pts{border-color:#e0a25a;box-shadow:0 0 0 1px rgba(224,162,90,.45)}
+.who2{display:flex;gap:12px;align-items:center;margin-bottom:6px}
+.who2 img{width:72px;height:72px;border-radius:50%;object-fit:cover;border:2px solid var(--copper)}
+.xpb{height:7px;background:#3a2c24;border-radius:4px;overflow:hidden;margin:4px 0}
+.xpb b{display:block;height:100%;background:linear-gradient(90deg,#b87333,#e0a25a)}
+.row.got{border-color:#e0a25a}
+.row .tick{font-family:"Cinzel";font-size:12px;color:#e0a25a;padding:0 12px;align-self:center}
+#dock button{position:relative}
+#dock .dot{position:absolute;top:5px;right:6px;width:9px;height:9px;border-radius:50%;background:var(--glow);box-shadow:0 0 6px var(--glow)}

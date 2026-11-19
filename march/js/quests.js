@@ -3,10 +3,29 @@
 
 // ---------- levels ----------
 // Experience comes from fights won (one each, and one more per kill) and from drill.
-D.LEVEL_XP = [0, 2, 5, 9, 14];
+D.LEVEL_XP = [0, 2, 5, 9, 14, 20, 27];
 G.lvl = function (u) { let l = 1; for (let i = 1; i < D.LEVEL_XP.length; i++) if ((u.xp || 0) >= D.LEVEL_XP[i]) l = i + 1; return l; };
-G.maxHp = u => D.UNITS[u.type].hp + (G.lvl(u) - 1) * 2;
-G.atkBonus = u => Math.floor((G.lvl(u) - 1) / 2);
+G.has = (u, k) => !!(u.skills && u.skills[k]);
+G.maxHp = u => D.UNITS[u.type].hp + (G.lvl(u) - 1) * 2 + (G.has(u, "tough") ? 4 : 0);
+G.atkBonus = u => Math.floor((G.lvl(u) - 1) / 2) + (G.has(u, "hard") ? 1 : 0);
+
+// ---------- skills: one point for every level after the first ----------
+D.SKILLS = {
+  tough:    { name: "Hard to kill",  who: "all",    text: "4 more health." },
+  hard:     { name: "Heavy hand",    who: "all",    text: "Every hit lands 1 harder." },
+  finisher: { name: "Finisher",      who: "all",    text: "2 harder against anyone under half health." },
+  stubborn: { name: "Stubborn",      who: "all",    text: "Once a fight, a blow that would put them down leaves them standing on 1 health." },
+  fleet:    { name: "Fleet",         who: "all",    text: "Moves one cell further each turn." },
+  wall:     { name: "Shield wall",   who: "melee",  text: "Takes 1 less from every hit." },
+  flanker:  { name: "Flanker",       who: "melee",  text: "2 harder, not 1, when a friend stands beside the target." },
+  mate:     { name: "Shield-mate",   who: "melee",  text: "Whoever stands beside them takes 1 less." },
+  marksman: { name: "Marksman",      who: "ranged", text: "2 harder when no enemy stands next to them." },
+  longarm:  { name: "Long arm",      who: "ranged", text: "Reaches one cell further." }
+};
+G.skillPool = function (u) { const d = D.UNITS[u.type], role = d.rng > 1 ? "ranged" : "melee"; return Object.keys(D.SKILLS).filter(k => (D.SKILLS[k].who === "all" || D.SKILLS[k].who === role) && !(k === "mate" && d.guard)); };
+G.skillPts = u => G.lvl(u) - 1 - Object.keys(u.skills || {}).length;
+G.learn = function (u, k) { if (G.skillPts(u) < 1 || G.has(u, k) || G.skillPool(u).indexOf(k) < 0) return false; if (!u.skills) u.skills = {}; u.skills[k] = 1; if (k === "tough" && !u.down) u.hp = Math.min(G.maxHp(u), u.hp + 4); return true; };
+G.pointsWaiting = () => G.s.units.reduce((n, u) => n + Math.max(0, G.skillPts(u)), 0);
 G.toNext = function (u) { const l = G.lvl(u); return l >= D.LEVEL_XP.length ? 0 : D.LEVEL_XP[l] - (u.xp || 0); };
 G.ready = () => G.s.units.filter(u => !(u.wounded > 0) && !u.down);
 // a day on the practice ground: it teaches as far as level 3 and no further
@@ -132,11 +151,11 @@ G.qFinish = function (id) {
 // ---------- screens ----------
 UI.storyPush = function () { G.qInit(); G.storyCheck().forEach(e => UI.queue.push(e)); };
 UI.questRows = function (site) {
-  G.qInit(); const s = G.s, offer = G.qOffered(site), here = G.qHere(site); if (!offer.length && !here.length) return "";
+  G.qInit(); const s = G.s, offer = G.qOffered(site), here = G.qHere(site), board = UI.boardRows(site); if (!offer.length && !here.length) return board;
   const row = (q, sub, btn) => '<div class="row job"><div class="t"><h3>' + esc(q.title) + '</h3><p>' + esc(sub) + '</p></div>' + btn + '</div>';
   return '<p class="sec">Work</p><div class="rows">' +
     here.map(q => row(q, G.qReady(q) ? "Done. Hand it in." : q.goal(s, s.qs[q.id]), '<button data-qdone="' + q.id + '"' + (G.qReady(q) ? ' class="go"' : " disabled") + '>Hand in</button>')).join("") +
-    offer.map(q => row(q, q.ask, '<button data-qtake="' + q.id + '">Take it on</button>')).join("") + '</div>';
+    offer.map(q => row(q, q.ask, '<button data-qtake="' + q.id + '">Take it on</button>')).join("") + '</div>' + board;
 };
 UI.healRows = function (site) {
   const f = G.fallen(); if (!f.length) return "";
@@ -144,7 +163,7 @@ UI.healRows = function (site) {
     return '<div class="row"><img src="' + src(G.uArt(u)) + '" alt=""><div class="t"><h3>' + esc(G.uName(u)) + '</h3><p>' + (ok ? "Down. The healer can have them walking by morning." : "You are " + G.short({ crowns: c }).join("") + " short.") + '</p></div><button data-heal="' + u.id + '"' + (ok ? "" : " disabled") + '>' + c + ' crowns</button></div>'; }).join("") + '</div>';
 };
 UI.wireWork = function (redo) {
-  const sc = $("screen"), s = G.s;
+  const sc = $("screen"), s = G.s; UI.wireBoard(redo);
   sc.querySelectorAll("[data-qtake]").forEach(b => b.onclick = () => { G.qTake(b.dataset.qtake); const q = G.quest(b.dataset.qtake); UI.toast("Taken on: " + q.title + "."); G.save(); redo(); });
   sc.querySelectorAll("[data-qdone]").forEach(b => b.onclick = () => { const q = G.quest(b.dataset.qdone), line = G.qFinish(q.id); if (!line) return redo(); G.save(); redo(); UI.modal({ title: q.title, text: line, opts: [{ t: "Good", fn: () => {} }] }); });
   sc.querySelectorAll("[data-heal]").forEach(b => b.onclick = () => { const u = s.units.find(x => x.id === +b.dataset.heal); if (!u || !u.down || !G.pay({ crowns: G.reviveCost(u) })) return redo(); G.revive(u); UI.toast(G.uName(u) + " is back on their feet."); G.save(); redo(); });
@@ -156,9 +175,58 @@ UI.goalHtml = function () {
 UI.journal = function () {
   G.qInit(); const s = G.s, c = G.chapter(), open = G.qOpen(), done = D.QUESTS.filter(q => s.qs[q.id] && s.qs[q.id].st === "done");
   const where = q => { const st = G.site(q.to || q.at); return G.siteName(st); };
+  const hauls = Object.keys(s.board || {}).filter(k => s.board[k] && s.board[k].taken).map(k => { const j = s.board[k]; return '<div class="row job"><div class="t"><h3>A load for ' + G.site(j.to).name + '</h3><p>Carry ' + j.n + " " + j.res + " to " + G.site(j.to).name + " for " + j.pay + ' crowns.</p></div></div>'; }).join("");
   const left = '<p class="sec">Chapter ' + Math.min(s.ch, D.STORY.length) + " of " + D.STORY.length + '</p><h3 class="jt">' + esc(c.title) + '</h3><div class="steps">' + c.steps.map(st => '<p class="' + (st.ok(s) ? "ok" : "todo") + '">' + esc(st.t(s)) + '</p>').join("") + '</div>' +
     '<p class="lede"><em>Camps broken: ' + G.campsDone() + " of 3." + (s.grey.length ? " The grey edge is moving west." : "") + '</em></p>';
-  const right = '<p class="sec">Work taken on</p>' + (open.length ? '<div class="rows">' + open.map(q => '<div class="row job"><div class="t"><h3>' + esc(q.title) + '</h3><p>' + esc(G.qReady(q) ? "Done. Hand it in at " + where(q) + "." : q.goal(s, s.qs[q.id])) + '</p></div></div>').join("") + '</div>' : '<p class="lede"><em>Nothing yet. Ask in the towns, and at your own hall.</em></p>') +
+  const right = '<p class="sec">Work taken on</p>' + (open.length || hauls ? '<div class="rows">' + open.map(q => '<div class="row job"><div class="t"><h3>' + esc(q.title) + '</h3><p>' + esc(G.qReady(q) ? "Done. Hand it in at " + where(q) + "." : q.goal(s, s.qs[q.id])) + '</p></div></div>').join("") + hauls + '</div>' : '<p class="lede"><em>Nothing yet. Ask in the towns, and at your own hall.</em></p>') +
     (done.length ? '<p class="sec">Finished</p><p class="lede">' + done.map(q => esc(q.title)).join(", ") + '.</p>' : "");
   UI.screen("bg_camp", '<h2>Journal</h2>', '<div class="cols"><div class="col">' + left + '</div><div class="col">' + right + '</div></div>');
+};
+
+// ---------- one fighter: what they are, and what you teach them ----------
+UI.soldier = function (id) {
+  const s = G.s, u = s.units.find(x => x.id === id); if (!u) return UI.warband();
+  const d = D.UNITS[u.type], c = D.COMPANIONS[u.type], lv = G.lvl(u), nx = G.toNext(u), pts = G.skillPts(u), atk = d.atk + G.atkBonus(u);
+  const kind = u.type === "hero" ? "Emberforged" : c ? c.role : d.name;
+  const stat = (t, v) => '<div class="lg"><span>' + t + '</span><b>' + v + '</b></div>';
+  const left = '<div class="who2"><img src="' + src(G.uArt(u)) + '" alt=""><div><h3 class="jt">' + esc(G.uName(u)) + '</h3><p class="lede">' + esc(kind) + ", level " + lv + '</p></div></div>' +
+    '<div class="xpb"><b style="width:' + (nx ? Math.round(100 * (u.xp - D.LEVEL_XP[lv - 1]) / (D.LEVEL_XP[lv] - D.LEVEL_XP[lv - 1])) : 100) + '%"></b></div><p class="lede">' + (nx ? nx + " more experience to level " + (lv + 1) + ". Fights won, kills, drill and hauling jobs all count." : "As good as they get.") + '</p>' +
+    stat("Health", (u.down ? 0 : u.hp) + " of " + G.maxHp(u)) + stat("Hits for", atk + " to " + (atk + 2)) + stat("Moves", d.mv + (G.has(u, "fleet") ? 1 : 0)) + stat("Reach", d.rng + (G.has(u, "longarm") ? 1 : 0)) + stat("Armour", d.def + (G.has(u, "wall") ? 1 : 0)) +
+    (u.down ? '<p class="lede"><em>Down. A night at your own hearth or a town healer gets them up.</em></p>' : "");
+  const right = '<p class="sec">Skills' + (pts > 0 ? ": " + pts + (pts === 1 ? " point" : " points") + " to spend" : "") + '</p><div class="rows">' + G.skillPool(u).map(k => { const sk = D.SKILLS[k], got = G.has(u, k);
+    return '<div class="row job' + (got ? " got" : "") + '"><div class="t"><h3>' + sk.name + '</h3><p>' + sk.text + '</p></div>' + (got ? '<span class="tick">Learnt</span>' : '<button data-sk="' + k + '"' + (pts > 0 ? ' class="go"' : " disabled") + '>Teach</button>') + '</div>'; }).join("") + '</div>' +
+    (pts < 1 && lv < D.LEVEL_XP.length ? '<p class="lede"><em>The next point comes at level ' + (lv + 1) + '.</em></p>' : "");
+  UI.screen("bg_camp", '<h2>' + esc(G.uName(u)) + '</h2><button class="quiet" id="so-back">Warband</button>', '<div class="cols"><div class="col">' + left + '</div><div class="col">' + right + '</div></div>');
+  $("so-back").onclick = UI.warband;
+  $("screen").querySelectorAll("[data-sk]").forEach(b => b.onclick = () => { if (G.learn(u, b.dataset.sk)) { UI.toast(G.uName(u) + " learns " + D.SKILLS[b.dataset.sk].name + "."); G.save(); } UI.soldier(id); });
+};
+
+// ---------- the notice board: work that never runs out ----------
+D.HAUL = { food: { n: [12, 16, 20], each: 1.3, word: "food" }, coal: { n: [8, 10, 12], each: 2, word: "coal" }, iron: { n: [3, 4, 5], each: 6, word: "iron" } };
+D.BOARD_TOWNS = ["ashford", "smeltgate", "slagford", "hearthward", "hearthmount"];
+G.board = function (site) { // one job on each town's board; a stale offer is replaced after six days
+  const s = G.s; if (!s.board) s.board = {}; if (D.BOARD_TOWNS.indexOf(site) < 0) return null;
+  const j = s.board[site]; if (j && (j.taken || s.day - j.day < 6)) return j;
+  const here = G.site(site), others = D.BOARD_TOWNS.filter(t => t !== site && !s.quiet[t]);
+  if (G.rnd() < 0.4 || !others.length) s.board[site] = { k: "bounty", day: s.day, pay: Math.min(70, 26 + Math.floor(s.day / 2)) };
+  else { const to = others[ri(others.length)], res = ["food", "coal", "iron"][ri(3)], h = D.HAUL[res], n = h.n[ri(3)]; s.board[site] = { k: "haul", day: s.day, to, res, n, pay: Math.round(n * h.each + hexDist(here.at, G.site(to).at) * 2.5) }; }
+  return s.board[site];
+};
+G.haulsFor = site => Object.keys(G.s.board || {}).filter(k => { const j = G.s.board[k]; return j && j.taken && j.k === "haul" && j.to === site; });
+G.haulDone = function (from) { const s = G.s, j = s.board[from]; if (!j || !j.taken || !G.pay({ [j.res]: j.n })) return null; G.gain({ crowns: j.pay }); G.ready().forEach(u => { if (u.type !== "hero") u.xp = (u.xp || 0) + 1; }); s.board[from] = null; return j; };
+UI.boardRows = function (site) {
+  const s = G.s, j = G.board(site), into = G.haulsFor(site); if (!j && !into.length) return "";
+  const row = (t, sub, btn) => '<div class="row job"><div class="t"><h3>' + t + '</h3><p>' + sub + '</p></div>' + btn + '</div>';
+  let h = "";
+  into.forEach(from => { const x = s.board[from], ok = G.can({ [x.res]: x.n }); h += row("Delivery from " + G.site(from).name, ok ? "Hand over " + x.n + " " + x.res + " for " + x.pay + " crowns." : "You are " + G.short({ [x.res]: x.n }).join("") + " short.", '<button data-bdone="' + from + '"' + (ok ? ' class="go"' : " disabled") + '>Hand over</button>'); });
+  if (j && j.k === "bounty") h += row("Raiders close by", "The town will pay " + j.pay + " crowns to anyone who runs them off. They are an hour up the road.", '<button data-bfight="' + site + '">Ride out</button>');
+  if (j && j.k === "haul" && !j.taken) h += row("A load for " + G.site(j.to).name, "They need " + j.n + " " + j.res + " there and will pay " + j.pay + " crowns on delivery. You bring the goods; everyone who walks it learns the road.", '<button data-btake="' + site + '">Take it on</button>');
+  if (j && j.k === "haul" && j.taken) h += row("A load for " + G.site(j.to).name, "Taken on. Carry " + j.n + " " + j.res + " to " + G.site(j.to).name + ".", "");
+  return '<p class="sec">Notice board</p><div class="rows">' + h + '</div>';
+};
+UI.wireBoard = function (redo) {
+  const sc = $("screen"), s = G.s;
+  sc.querySelectorAll("[data-btake]").forEach(b => b.onclick = () => { s.board[b.dataset.btake].taken = 1; UI.toast("Taken on. It is in your Journal."); G.save(); redo(); });
+  sc.querySelectorAll("[data-bdone]").forEach(b => b.onclick = () => { const j = G.haulDone(b.dataset.bdone); if (j) UI.toast("Delivered. +" + j.pay + " crowns, and the warband knows the road better."); G.save(); redo(); });
+  sc.querySelectorAll("[data-bfight]").forEach(b => b.onclick = () => { s.bounty = { site: b.dataset.bfight, pay: s.board[b.dataset.bfight].pay }; $("screen").hidden = true; UI.fightIntro("patrol", "Raiders close by", "They have a fire going in a dry gully and a lookout who isn't looking."); });
 };

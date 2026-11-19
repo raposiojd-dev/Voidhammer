@@ -146,7 +146,7 @@ UI.hud = function () {
   const left = 3 - G.campsDone(); let gd = 99; s.grey.forEach(k => { gd = Math.min(gd, hexDist(k.split(",").map(Number), [16, 7])); });
   $("goal").innerHTML = UI.goalHtml() + (s.flags.moved ? "" : "<br>Tap a place on the map to travel there") + (s.grey.length ? "<br>The grey edge is " + gd + (gd === 1 ? " hex" : " hexes") + " from your hold" + (G.fireRadius() ? "" : ", and no watchfire is lit") : "");
   const here = G.siteAt(s.pos[0], s.pos[1]);
-  $("dock").innerHTML = (here && G.siteLive(here) ? '<button class="go" id="d-here">' + (here.kind === "camp" ? "Attack" : here.kind === "lair" ? "Look closer" : "Enter " + esc(G.siteName(here))) + '</button>' : "") + '<button id="d-jour">Journal</button><button id="d-band">Warband</button>' + (here && here.id === "hold" ? "" : '<button id="d-hold">Find hold</button>') + '<button class="quiet" id="d-menu">Menu</button>';
+  $("dock").innerHTML = (here && G.siteLive(here) ? '<button class="go" id="d-here">' + (here.kind === "camp" ? "Attack" : here.kind === "lair" ? "Look closer" : "Enter " + esc(G.siteName(here))) + '</button>' : "") + '<button id="d-jour">Journal</button><button id="d-band">Warband' + (G.pointsWaiting() ? '<i class="dot"></i>' : "") + '</button>' + (here && here.id === "hold" ? "" : '<button id="d-hold">Find hold</button>') + '<button class="quiet" id="d-menu">Menu</button>';
   if ($("d-here")) $("d-here").onclick = () => UI.arrive(here, true);
   $("d-band").onclick = UI.warband; $("d-jour").onclick = UI.journal; $("d-menu").onclick = UI.menu;
   if ($("d-hold")) $("d-hold").onclick = () => { const p = M.center(16, 7); M.cx = p[0]; M.cy = p[1]; M.clamp(); M.tapHex([16, 7]); };
@@ -179,7 +179,7 @@ UI.queue = [];
 // ---------- travelling ----------
 UI.go = async function () {
   const s = G.s; if (!M.path || M.moving || s.over) return;
-  const steps = M.path.steps.slice(); M.moving = true; s.flags.moved = 1; M.sel = null; M.path = null; $("travel").hidden = true; $("dock").hidden = true;
+  const steps = M.path.steps.slice(); M.moving = true; s.bounty = null; s.flags.moved = 1; M.sel = null; M.path = null; $("travel").hidden = true; $("dock").hidden = true;
   let stop = null;
   for (const h of steps) {
     const a = M.center(s.pos[0], s.pos[1]), b = M.center(h[0], h[1]), cost = G.stepCost(h[0], h[1]), dur = UI.fast ? 0 : 150 + cost * 40, t0 = performance.now();
@@ -280,7 +280,7 @@ UI.battlePanel = function () {
 UI.afterFight = function (kind, res) {
   const s = G.s, site = G.siteAt(s.pos[0], s.pos[1]);
   if (res.won && site && (site.kind === "camp" || site.kind === "lair") && kind !== "patrol") s.done[site.id] = 1;
-  const out = G.afterBattle(kind, res); G.save();
+  const out = G.afterBattle(kind, res); let bountyPay = 0; if (s.bounty) { if (res.won) { bountyPay = s.bounty.pay; G.gain({ crowns: bountyPay }); s.board[s.bounty.site] = null; } s.bounty = null; } G.save();
   MUS.play("map");
   $("battle").hidden = true; ["hud", "dock", "goal"].forEach(i => $(i).hidden = false); UI.hud(); M.dirty = true;
   if (s.over === "dead") return UI.ending();
@@ -291,6 +291,7 @@ UI.afterFight = function (kind, res) {
   else text = "You go down. When you come round you are in your own hall, on a door somebody carried you home on, and a third of the crowns are gone." + (s.heroWounded ? "\n\nYou won't survive that twice before it heals." : "");
   if (out.levelled && out.levelled.length) html += '<p class="lede"><em>Up a level: ' + esc(out.levelled.join(", ")) + '.</em></p>';
   if (out.fallen && out.fallen.length) html += '<p class="lede"><em>Down: ' + esc(out.fallen.join(", ")) + '. A night at your own hearth or a town healer will get them up.</em></p>';
+  if (bountyPay) html += '<p class="lede"><em>The town pays the bounty: +' + bountyPay + ' crowns.</em></p>';
   UI.storyPush();
   if (out.lost.length) html += '<p class="lede"><em>Lost: ' + esc(out.lost.join(", ")) + '.</em></p>';
   if (out.hurt.length) html += '<p class="lede"><em>Hurt and out of the next fights: ' + esc(out.hurt.join(", ")) + '.</em></p>';
@@ -376,11 +377,12 @@ UI.warband = function () {
     if (u.type === "hero") sub = "Emberforged" + (s.heroWounded ? ". Hurt: another beating in the next " + s.heroWounded + " days will kill you" : "");
     else if (c) sub = c.role + ". " + mood(s.comp[u.type].ap) + ". " + c.wants;
     else { const p = G.canPromote(u, "x"); sub = d.name + (p ? ". " + (p.okXp ? "Ready to promote at a forge" : "Promotes after " + (p.rule.xp - u.xp) + " more experience") : ". Top rank"); }
-    return '<div class="unit' + (hurt ? " hurt" : "") + '"><img src="' + src(G.uArt(u)) + '" alt=""><div><h3>' + esc(G.uName(u)) + '</h3><div class="hpb"><b style="width:' + Math.round(u.hp / G.maxHp(u) * 100) + '%"></b></div><p><b class="lv">' + lvt + '</b><br>' + esc(sub) + (u.down ? ". Down: needs your hearth or a healer" : u.wounded > 0 ? ". Out for " + u.wounded + (u.wounded === 1 ? " day" : " days") : "") + '</p></div></div>'; }).join("");
-  UI.screen("bg_camp", '<h2>Warband</h2><p>' + s.units.length + " of " + G.cap() + ". Eats " + G.eats() + " food a day. Eight can take the field.</p>",
+    return '<div class="unit' + (hurt ? " hurt" : "") + (G.skillPts(u) > 0 ? " pts" : "") + '" data-u="' + u.id + '"><img src="' + src(G.uArt(u)) + '" alt=""><div><h3>' + esc(G.uName(u)) + '</h3><div class="hpb"><b style="width:' + Math.round(u.hp / G.maxHp(u) * 100) + '%"></b></div><p><b class="lv">' + lvt + '</b><br>' + esc(sub) + (G.skillPts(u) > 0 ? ". Tap to teach a skill" : "") + (u.down ? ". Down: needs your hearth or a healer" : u.wounded > 0 ? ". Out for " + u.wounded + (u.wounded === 1 ? " day" : " days") : "") + '</p></div></div>'; }).join("");
+  UI.screen("bg_camp", '<h2>Warband</h2><p>' + s.units.length + " of " + G.cap() + ". Eats " + G.eats() + " food a day. Eight can take the field. Tap a fighter to see them and teach skills.</p>",
     '<div class="ctl"><h3>Self-control: ' + st.name + '</h3><div class="meter"><b style="width:' + s.control + '%"></b><u style="width:' + (100 - s.ceiling) + '%"></u></div><p>' + st.line + (s.ceiling < 100 ? " The hatched part is gone for good." : " Every spell spends it. Spend deep enough and some never comes back.") + (st.surge ? " In a fight there is a " + Math.round(st.surge * 100) + "% chance each turn that the fire moves you instead." : "") + '</p></div><div class="band">' + cards + '</div>');
+  $("screen").querySelectorAll("[data-u]").forEach(el => el.onclick = () => UI.soldier(+el.dataset.u));
 };
-UI.menu = function () { UI.modal({ title: "The Ember March", text: "Day " + G.s.day + ". The game saves itself as you go.", opts: [{ t: "Keep playing", fn: () => {} }, { t: MUS.on ? "Turn the music off" : "Turn the music on", fn: () => MUS.set(!MUS.on) }, { t: "How to play", fn: () => UI.modal({ title: "How to play", text: "Tap the map to travel. Time only passes when you move, rest or build.\n\nFollow the chapters in your Journal, and take on work in the towns. Break the three raider camps. Keep the hold fed, and keep a watchfire lit: the grey edge will not cross firelight.\n\nCrowns come from hearth-dues, the storehouse, trade and what you take. Hired fighters draw wages every day and leave if you can't pay. Coal feeds the watchfire and the forge. You can't buy what you can't pay for.\n\nFighters gain levels from fights they win and from drill at your hold. One who loses all their health goes down: a night at your own hearth gets one back up, or a town healer will for crowns.\n\nYour spells win fights and cost self-control. Rest at your own hearth to get it back, up to whatever is left.", opts: [{ t: "Right", fn: () => {} }] }) }, { t: "Quit to the title", fn: () => { G.save(); UI.title(); } }] }); };
+UI.menu = function () { UI.modal({ title: "The Ember March", text: "Day " + G.s.day + ". The game saves itself as you go.", opts: [{ t: "Keep playing", fn: () => {} }, { t: MUS.on ? "Turn the music off" : "Turn the music on", fn: () => MUS.set(!MUS.on) }, { t: "How to play", fn: () => UI.modal({ title: "How to play", text: "Tap the map to travel. Time only passes when you move, rest or build.\n\nFollow the chapters in your Journal, and take on work in the towns. Break the three raider camps. Keep the hold fed, and keep a watchfire lit: the grey edge will not cross firelight.\n\nCrowns come from hearth-dues, the storehouse, trade and what you take. Hired fighters draw wages every day and leave if you can't pay. Coal feeds the watchfire and the forge. You can't buy what you can't pay for.\n\nFighters gain levels from fights they win, drill at your hold and hauling jobs. Every level after the first gives a skill point: open the Warband and tap a fighter to teach them. Each town has a notice board with fresh work. One who loses all their health goes down: a night at your own hearth gets one back up, or a town healer will for crowns.\n\nYour spells win fights and cost self-control. Rest at your own hearth to get it back, up to whatever is left.", opts: [{ t: "Right", fn: () => {} }] }) }, { t: "Quit to the title", fn: () => { G.save(); UI.title(); } }] }); };
 UI.ending = function () {
   const s = G.s, o = s.over; G.save();
   const t = { won: ["The March holds", "Three camps broken. The road to Hearthward is open and the carters are using it.\n\nThe silver had no face on it. Somebody is still paying, and you still don't know who.\n\n" + (s.ceiling < 100 ? "You held the March. You are not quite the person the Court sent out here: " + (100 - s.ceiling) + " parts in a hundred of your self-control are gone and will not grow back." : "You held the March and kept yourself whole doing it. Nobody at the Court expected both.")],
