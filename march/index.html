@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en-AU">
+<head>
+<meta charset="utf-8">
+<title>Voidhammer: The Ember March</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#14100d">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="description" content="Hold a hall on the Ember March. Build it, lead a warband, and decide how much of yourself the fire is allowed to take.">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="app">
+  <canvas id="map"></canvas>
+  <div id="vig"></div>
+  <header id="hud" hidden></header>
+  <div id="goal" hidden></div>
+  <div id="travel" hidden></div>
+  <nav id="dock" hidden></nav>
+  <div id="battle" hidden>
+    <div id="b-board"><canvas id="b-cv"></canvas><div id="b-say"></div></div>
+    <aside id="b-side"></aside>
+  </div>
+  <div id="screen" hidden></div>
+  <div id="modal" hidden></div>
+  <div id="toasts"></div>
+  <div id="rotate"><p>Turn your phone sideways.</p></div>
+  <div id="boot"><p>Lighting the hearth</p></div>
+</div>
+<script src="js/data.js"></script>
+<script src="js/game.js"></script>
+<script src="js/battle.js"></script>
+<script src="js/ui.js"></script>
+</body>
+</html>
