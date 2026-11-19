@@ -111,8 +111,11 @@ G.approve = function (id, n) { const c = G.s.comp[id]; if (!c || !c.with) return
 G.leaving = function () { // companions whose patience has run out
   const out = []; Object.keys(G.s.comp).forEach(id => { const c = G.s.comp[id]; if (c.with && c.ap <= -4) { c.with = 0; G.s.units = G.s.units.filter(u => u.type !== id); out.push(id); } }); return out;
 };
-G.can = cost => Object.keys(cost || {}).every(k => G.s.res[k] >= cost[k]);
-G.pay = cost => Object.keys(cost || {}).forEach(k => { G.s.res[k] -= cost[k]; });
+const RES = ["food", "coal", "iron", "crowns"];
+G.can = cost => RES.every(k => !(cost && cost[k] > 0) || G.s.res[k] >= cost[k]);
+G.short = cost => RES.filter(k => cost && cost[k] > 0 && G.s.res[k] < cost[k]).map(k => (cost[k] - G.s.res[k]) + " " + k);
+// the only way anything is ever paid for: all of it or none of it, and never below nothing
+G.pay = function (cost) { if (!G.can(cost)) return false; RES.forEach(k => { if (cost && cost[k] > 0) G.s.res[k] -= cost[k]; }); return true; };
 G.gain = get => Object.keys(get || {}).forEach(k => { if (k === "favour") G.s.favour += get[k]; else G.s.res[k] += get[k]; });
 
 // ---------- control (the price of Embercraft) ----------
@@ -133,7 +136,12 @@ G.rest = function () { // a night at a hearth
 };
 
 // ---------- clock and economy ----------
-G.income = function () { const b = G.s.b; return { food: b.field * 3, coal: b.coal * 2 - b.fire, crowns: b.store * 3 }; };
+G.hired = () => G.s.units.filter(u => u.type !== "hero" && !D.UNITS[u.type].comp).length;
+G.wages = () => Math.ceil(G.hired() / 2);
+// what comes in each day, before mouths and wages
+G.income = function () { const b = G.s.b; return { food: b.field * 3, coal: b.coal * 2 - b.fire, crowns: b.hall * 2 + b.store * 3 }; };
+// what each stock really changes by each day
+G.net = function () { const i = G.income(); return { food: i.food - G.eats(), coal: i.coal, crowns: i.crowns - G.wages() }; };
 G.eats = () => Math.ceil(G.s.units.length / 2);
 G.fireRadius = () => G.s.b.fire && G.s.res.coal > 0 ? G.s.b.fire + 1 : 0;
 G.lit = function (c, r) { // is this hex inside firelight?
@@ -146,7 +154,11 @@ G.tick = function () {
   if (s.q < 4) return out;
   s.q = 0; s.day++;
   const inc = G.income();
+  const hadCoal = s.res.coal > 0;
   s.res.food += inc.food; s.res.crowns += inc.crowns; s.res.coal = Math.max(0, s.res.coal + inc.coal);
+  if (s.b.fire && hadCoal && s.res.coal === 0) out.push({ k: "dark" });
+  s.res.crowns -= G.wages();
+  if (s.res.crowns < 0) { s.res.crowns = 0; s.unpaid = (s.unpaid || 0) + 1; if (s.unpaid === 1) out.push({ k: "unpaid" }); if (s.unpaid % 2 === 0) { const t = s.units.filter(u => !D.UNITS[u.type].comp && u.type !== "hero"); if (t.length) { const u = t[ri(t.length)]; s.units = s.units.filter(x => x !== u); out.push({ k: "quit", who: G.uName(u) }); } } } else s.unpaid = 0;
   s.res.food -= G.eats();
   if (s.res.food < 0) { s.res.food = 0; s.hungry = (s.hungry || 0) + 1; if (s.hungry === 1) G.approve("cadoc", -1); if (s.hungry % 2 === 0) { const t = s.units.filter(u => !D.UNITS[u.type].comp && u.type !== "hero"); if (t.length) { const u = t[ri(t.length)]; s.units = s.units.filter(x => x !== u); out.push({ k: "desert", who: G.uName(u) }); } } out.push({ k: "hungry" }); } else s.hungry = 0;
   if (s.build) { s.build.left--; if (s.build.left <= 0) { s.b[s.build.id]++; out.push({ k: "built", id: s.build.id }); s.build = null; } }
@@ -214,6 +226,6 @@ G.canPromote = function (u, where) { // where: "hold" or a site id
   const def = D.UNITS[u.type]; if (!def.up) return null;
   const nt = D.UNITS[def.up].tier, rule = D.PROMOTE[nt];
   const forge = where === "hold" ? G.s.b.forge : (where === "hearthmount" ? 2 : (where === "smeltgate" || where === "slagford") ? 1 : 0);
-  return { to: def.up, rule, okXp: u.xp >= rule.xp, okIron: G.s.res.iron >= rule.iron, okForge: forge >= rule.forge };
+  return { to: def.up, rule, okXp: u.xp >= rule.xp, okIron: G.can({ iron: rule.iron, coal: rule.coal }), okForge: forge >= rule.forge };
 };
-G.promote = function (u) { const def = D.UNITS[u.type]; const rule = D.PROMOTE[D.UNITS[def.up].tier]; G.s.res.iron -= rule.iron; u.type = def.up; u.hp = D.UNITS[u.type].hp; };
+G.promote = function (u) { const def = D.UNITS[u.type]; const rule = D.PROMOTE[D.UNITS[def.up].tier]; if (!G.pay({ iron: rule.iron, coal: rule.coal })) return false; u.type = def.up; u.hp = D.UNITS[u.type].hp; return true; };

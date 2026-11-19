@@ -164,3 +164,16 @@ button:focus-visible{outline:2px solid var(--glow);outline-offset:2px}
 @media (prefers-reduced-motion:reduce){.toast{animation:none}}
 
 .place{width:128px;height:128px;object-fit:contain;display:block;margin:0 0 6px -6px;filter:drop-shadow(0 8px 10px rgba(0,0,0,.6))}
+/* the purse: what you hold, on every screen where things are bought */
+.purse{display:flex;gap:4px;align-items:center;flex:none}
+.purse span{display:flex;align-items:center;gap:4px;height:30px;padding:0 8px;background:rgba(24,18,15,.9);border:1px solid var(--line);border-radius:15px;font-size:13px;white-space:nowrap}
+.purse svg{width:14px;height:14px;flex:none}
+.purse b{font-family:"Cinzel";font-weight:700}
+.purse small{color:var(--dim);font-size:11.5px}
+.purse .out b{color:#ff8f7a}
+#modal .purse{margin:8px 0 2px;flex-wrap:wrap}
+.lg{display:flex;justify-content:space-between;gap:12px;font-size:13.5px;padding:1px 0}
+.lg b{font-family:"Cinzel"}
+.lg:last-of-type{border-top:1px solid var(--line);margin-top:2px;padding-top:3px}
+.lgs{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin:6px 0}
+.lgs .sec{margin-top:0}

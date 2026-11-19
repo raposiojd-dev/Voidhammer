@@ -36,7 +36,7 @@ D.UNITS = {
   serpent:   { name: "Magma serpent",art: "serpent",  hp: 46, atk: 7, def: 2, mv: 2, rng: 1, side: 1, boss: 1, fireproof: 1 }
 };
 // xp needed and iron cost to promote into a tier
-D.PROMOTE = { 2: { xp: 3, iron: 3, forge: 1 }, 3: { xp: 8, iron: 6, forge: 2 } };
+D.PROMOTE = { 2: { xp: 3, iron: 3, coal: 2, forge: 1 }, 3: { xp: 8, iron: 6, coal: 4, forge: 2 } };
 
 D.SPELLS = {
   lance: { name: "Ember lance", cost: 6,  text: "Burn one enemy within 4. Hits harder the hotter you run." },
@@ -52,17 +52,18 @@ D.STAGES = [
 ];
 
 D.BUILDINGS = {
-  hall:  { name: "Hearth hall",    art: "bd_hall",  max: 3, what: "Everything else can only be built as high as the hall.", eff: l => "Other buildings up to level " + l },
+  hall:  { name: "Hearth hall",    art: "bd_hall",  max: 3, what: "Everything else can only be built as high as the hall. The folk who live round it pay hearth-dues.", eff: l => "Others up to level " + l + ", +" + (l * 2) + " crowns a day" },
   field: { name: "Emberseed plot", art: "bd_field", max: 3, what: "Feeds the hold and the warband.", eff: l => "+" + (l * 3) + " food a day" },
-  coal:  { name: "Coal pit",       art: "bd_coal",  max: 3, what: "Coal feeds the watchfire and sells well in the forge-towns.", eff: l => "+" + (l * 2) + " coal a day" },
-  fire:  { name: "Watchfire",      art: "bd_fire",  max: 3, what: "The grey edge will not cross firelight. Burns coal every day.", eff: l => l ? "Holds the grey " + (l + 1) + " hexes off, burns " + l + " coal a day" : "Not lit" },
+  coal:  { name: "Coal pit",       art: "bd_coal",  max: 3, what: "Coal feeds the watchfire, lights beacons, fires the forge, and sells well in the forge-towns.", eff: l => "+" + (l * 2) + " coal a day" },
+  fire:  { name: "Watchfire",      art: "bd_fire",  max: 3, what: "The grey edge will not cross firelight. Burns coal every day, and goes dark the day the coal runs out.", eff: l => l ? "Holds the grey " + (l + 1) + " hexes off, burns " + l + " coal a day" : "Not lit" },
   wall:  { name: "Palisade",       art: "bd_wall",  max: 3, what: "Turns raids away while you are on the road.", eff: l => l ? "Beats raids up to strength " + (l * 2) : "No wall" },
-  long:  { name: "Longhouse",      art: "bd_long",  max: 3, what: "Room for more fighters, and levies to hire at home.", eff: l => "Room for " + (6 + l * 2) + " hired fighters" },
-  forge: { name: "Forge",          art: "bd_forge", max: 2, what: "Promote fighters at home instead of in the forge-towns.", eff: l => l ? (l > 1 ? "Promotes to Emberclad" : "Promotes to second rank") : "No forge" },
+  long:  { name: "Longhouse",      art: "bd_long",  max: 3, what: "Room for more fighters, and levies to hire at home. Every two hired fighters cost a crown a day in wages.", eff: l => "Room for " + (6 + l * 2) + " hired fighters" },
+  forge: { name: "Forge",          art: "bd_forge", max: 2, what: "Promote fighters at home instead of in the forge-towns. Promotions take iron and coal.", eff: l => l ? (l > 1 ? "Promotes to Emberclad" : "Promotes to second rank") : "No forge" },
   store: { name: "Storehouse",     art: "bd_store", max: 3, what: "Carters buy your surplus.", eff: l => l ? "+" + (l * 3) + " crowns a day" : "No trade" }
 };
 // cost to build level n (1-based): crowns, iron, days
-D.BUILD_COST = lvl => ({ crowns: [0, 30, 60, 110][lvl], iron: [0, 2, 5, 9][lvl], days: [0, 2, 3, 5][lvl] });
+// the watchfire and the forge are built hot: they also take coal to raise
+D.BUILD_COST = (lvl, id) => ({ crowns: [0, 30, 60, 110][lvl], iron: [0, 2, 5, 9][lvl], coal: id === "fire" || id === "forge" ? [0, 4, 8, 12][lvl] : 0, days: [0, 2, 3, 5][lvl] });
 
 D.SITES = [
   { id: "hold",        kind: "hold",    name: "Your hold",    art: "s_hold",    at: [16, 7] },
@@ -153,7 +154,7 @@ D.EVENTS = {
     art: "r_axe", title: "A toll",
     text: () => "Six men across the road, and a rope. \"Fifteen crowns for the March road. New rule.\"",
     opts: [
-      { t: "Pay the 15 crowns", yield: 1, need: { crowns: 15 }, fx: g => { g.res.crowns -= 15; G.approve("tavish", -1); }, say: "They wave you through. Tavish doesn't speak for an hour." },
+      { t: "Pay the 15 crowns", yield: 1, need: { crowns: 15 }, fx: g => { G.pay({ crowns: 15 }); G.approve("tavish", -1); }, say: "They wave you through. Tavish doesn't speak for an hour." },
       { t: "Refuse", fight: "patrol", say: "" }
     ]
   },
@@ -161,7 +162,7 @@ D.EVENTS = {
     art: "bg_camp", title: "Carters from the east",
     text: () => "Three families with one cart between them. They left a farm two days east. The eldest can't tell you why. \"The fields were there. Then we couldn't think what they were for.\"",
     opts: [
-      { t: "Give them 8 food", need: { food: 8 }, fx: g => { g.res.food -= 8; g.favour += 1; G.approve("cadoc", 1); }, say: "They'll say your name in Hearthmount. Cadoc carries the sacks over himself." },
+      { t: "Give them 8 food", need: { food: 8 }, fx: g => { if (!G.pay({ food: 8 })) return; g.favour += 1; G.approve("cadoc", 1); }, say: "They'll say your name in Hearthmount. Cadoc carries the sacks over himself." },
       { t: "You can't spare it", fx: g => { G.approve("cadoc", -1); }, say: "They move on west. Cadoc watches them go." }
     ]
   },
