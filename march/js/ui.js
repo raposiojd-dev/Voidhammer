@@ -144,11 +144,11 @@ UI.hud = function () {
     '<div class="sp"></div><div class="chip">' + ICON.men + '<span class="num">' + s.units.length + '/' + G.cap() + '</span></div><div class="chip flame" id="h-ctl"><small>Self-control</small><i><b style="width:' + s.control + '%"></b></i></div>';
   $("h-ctl").onclick = UI.warband;
   const left = 3 - G.campsDone(); let gd = 99; s.grey.forEach(k => { gd = Math.min(gd, hexDist(k.split(",").map(Number), [16, 7])); });
-  $("goal").innerHTML = "<b>Break the raider camps:</b> " + G.campsDone() + " of 3" + (s.flags.moved ? "" : "<br>Tap a place on the map to travel there") + (s.grey.length ? "<br>The grey edge is " + gd + (gd === 1 ? " hex" : " hexes") + " from your hold" + (G.fireRadius() ? "" : ", and no watchfire is lit") : "");
+  $("goal").innerHTML = UI.goalHtml() + (s.flags.moved ? "" : "<br>Tap a place on the map to travel there") + (s.grey.length ? "<br>The grey edge is " + gd + (gd === 1 ? " hex" : " hexes") + " from your hold" + (G.fireRadius() ? "" : ", and no watchfire is lit") : "");
   const here = G.siteAt(s.pos[0], s.pos[1]);
-  $("dock").innerHTML = (here && G.siteLive(here) ? '<button class="go" id="d-here">' + (here.kind === "camp" ? "Attack" : here.kind === "lair" ? "Look closer" : "Enter " + esc(G.siteName(here))) + '</button>' : "") + '<button id="d-band">Warband</button>' + (here && here.id === "hold" ? "" : '<button id="d-hold">Find hold</button>') + '<button class="quiet" id="d-menu">Menu</button>';
+  $("dock").innerHTML = (here && G.siteLive(here) ? '<button class="go" id="d-here">' + (here.kind === "camp" ? "Attack" : here.kind === "lair" ? "Look closer" : "Enter " + esc(G.siteName(here))) + '</button>' : "") + '<button id="d-jour">Journal</button><button id="d-band">Warband</button>' + (here && here.id === "hold" ? "" : '<button id="d-hold">Find hold</button>') + '<button class="quiet" id="d-menu">Menu</button>';
   if ($("d-here")) $("d-here").onclick = () => UI.arrive(here, true);
-  $("d-band").onclick = UI.warband; $("d-menu").onclick = UI.menu;
+  $("d-band").onclick = UI.warband; $("d-jour").onclick = UI.journal; $("d-menu").onclick = UI.menu;
   if ($("d-hold")) $("d-hold").onclick = () => { const p = M.center(16, 7); M.cx = p[0]; M.cy = p[1]; M.clamp(); M.tapHex([16, 7]); };
 };
 UI.travel = function () {
@@ -200,6 +200,7 @@ UI.go = async function () {
   M.moving = false; $("dock").hidden = false; M.dirty = true; G.save(); UI.hud();
   if (s.over) return UI.ending();
   const gone = G.leaving(); if (gone.length) { await UI.farewell(gone); }
+  UI.storyPush(); if (!stop && UI.queue.length) stop = UI.queue.shift();
   if (stop === "ambush") return UI.fightIntro("patrol", "Raiders on the road", "They were waiting in the " + (G.tile(s.pos[0], s.pos[1]) === "wood" ? "charwood" : "rocks") + ".");
   if (stop && stop !== "site") return UI.event(stop);
   const st = G.siteAt(s.pos[0], s.pos[1]); if (st) UI.arrive(st, false);
@@ -211,9 +212,11 @@ UI.arrive = function (st, asked) {
   const s = G.s; if (!G.siteLive(st)) { if (asked) UI.toast(s.done[st.id] ? "Nothing left here but ash and tent pegs." : "Nobody answers. The place has gone quiet."); return; }
   if (st.kind === "camp") { if (st.camp === 3) { s.flags.seen3 = 1; if (!s.flags.offer) { s.flags.offer = 1; return UI.event("offer"); } } return UI.fightIntro(st.id, G.siteName(st), st.camp === 3 ? "He has more men than you were told." : "Tents, a stake fence, and too many cookfires for honest travellers."); }
   if (st.kind === "lair") return UI.event("lair");
-  if (st.id === "ashford" && !s.comp.tavish && !s.visited.ashford) { s.visited.ashford = 1; return UI.event("tavish"); }
+  if (st.id === "ashford" && !s.comp.tavish && !s.visited.ashford) { s.visited.ashford = 1; UI.storyPush(); return UI.event("tavish"); }
   if (st.id === "bellows" && !s.comp.dilys) { s.visited.bellows = 1; return UI.event("dilys"); }
   s.visited[st.id] = 1;
+  const beat = G.storyArrive(st); UI.storyPush(); if (beat) UI.queue.unshift(beat);
+  if (UI.queue.length) { UI.hud(); return UI.event(UI.queue.shift()); }
   if (st.id === "hold") { if (!s.flags.hintHold) { s.flags.hintHold = 1; UI.toast(D.HINTS.hold, 5500); } return UI.hold(); }
   UI.site(st);
 };
@@ -227,7 +230,7 @@ UI.modal = function (o) {
   m.querySelectorAll("button").forEach(btn => { btn.onclick = () => { const b = o.opts[+btn.dataset.i]; m.hidden = true; if (b.fn) b.fn(); }; });
 };
 UI.event = function (id) {
-  const ev = D.EVENTS[id], s = G.s;
+  const ev = typeof id === "string" ? D.EVENTS[id] : id, s = G.s;
   const opts = ev.opts.map(o => {
     const b = { t: o.t };
     if (o.yield && G.yieldLocked()) { b.off = true; b.why = "You can't make yourself back down."; }
@@ -235,7 +238,7 @@ UI.event = function (id) {
     b.fn = () => {
       if (o.fx) o.fx(s);
       G.save(); UI.hud(); M.dirty = true;
-      const next = () => { if (o.fight) UI.startFight(o.fight === "camp3" ? "camp3" : o.fight); else { const gone = G.leaving(); if (gone.length) UI.farewell(gone); } };
+      const next = () => { if (o.fight) UI.startFight(o.fight === "camp3" ? "camp3" : o.fight); else { const gone = G.leaving(); const more = () => { if (UI.queue.length) UI.event(UI.queue.shift()); }; if (gone.length) UI.farewell(gone).then(more); else more(); } };
       if (o.say) UI.modal({ art: ev.art, title: ev.title, text: o.say, opts: [{ t: "Go on", fn: next }] }); else next();
     };
     return b;
@@ -246,7 +249,7 @@ UI.stageNote = function (id) { const st = D.STAGES.find(x => x.id === id); UI.to
 
 // ---------- fights ----------
 UI.fightIntro = function (kind, title, line) {
-  const foes = G.foeList(kind.indexOf("camp") === 0 ? kind : kind), ready = G.s.units.filter(u => !(u.wounded > 0)).length, n = {};
+  const foes = G.foeList(kind.indexOf("camp") === 0 ? kind : kind), ready = G.ready().length, n = {};
   foes.forEach(f => { n[D.UNITS[f].name] = (n[D.UNITS[f].name] || 0) + 1; });
   const html = '<p class="lede"><em>' + Object.keys(n).map(k => n[k] + " × " + k).join(", ") + ". You can field " + Math.min(8, ready) + ".</em></p>";
   const lock = G.yieldLocked();
@@ -262,9 +265,9 @@ UI.battlePanel = function () {
   const st = B.st, el = $("b-side"); if (!st) return; const u = st.sel, s = G.s, stage = G.stage();
   let h = "";
   if (u) {
-    const d = D.UNITS[u.type]; h += '<div class="who"><img src="' + src(u.art) + '" alt=""><div><h3>' + esc(u.name) + '</h3><p>' + u.hp + ' of ' + u.max + ' health</p></div></div><p>Hits for ' + d.atk + '–' + (d.atk + 2) + (d.rng > 1 ? ", reach " + d.rng : "") + (d.guard ? ". Shields whoever stands beside them" : "") + '.</p>';
+    const d = D.UNITS[u.type]; h += '<div class="who"><img src="' + src(u.art) + '" alt=""><div><h3>' + esc(u.name) + '</h3><p>' + (u.lv ? "Level " + u.lv + ". " : "") + u.hp + ' of ' + u.max + ' health</p></div></div><p>Hits for ' + (d.atk + (u.ab || 0)) + '–' + (d.atk + (u.ab || 0) + 2) + (d.rng > 1 ? ", reach " + d.rng : "") + (d.guard ? ". Shields whoever stands beside them" : "") + '.</p>';
     if (u.type === "hero" && !u.acted) {
-      h += Object.keys(D.SPELLS).map(k => '<button class="sp' + (st.mode === k ? " on" : "") + '" data-sp="' + k + '">' + D.SPELLS[k].name + '<span>−' + D.SPELLS[k].cost + '</span></button>').join("");
+      h += Object.keys(D.SPELLS).map(k => '<button class="sp' + (st.mode === k ? " on" : "") + '" data-sp="' + k + '">' + D.SPELLS[k].name + '<span>−' + B.spCost(k) + '</span></button>').join("");
       h += '<p>' + (st.mode ? D.SPELLS[st.mode].text : "Fire costs self-control. Some of it never comes back.") + '</p>';
     }
   } else h += '<p class="sec">' + (st.turn === "player" ? "Your turn" : "Their turn") + '</p><p>Tap one of yours. Gold cells are where they can go. A red ring is who they can hit.</p>';
@@ -286,6 +289,9 @@ UI.afterFight = function (kind, res) {
     const l = out.loot; html = '<div class="loot">' + Object.keys(l).filter(k => k !== "favour").map(k => "<span>+" + l[k] + " " + k + "</span>").join("") + (l.favour ? "<span>The Hearth Court hears of it</span>" : "") + "</div>";
   } else if (res.fled) text = "You pull them back in good order. It costs you nothing but the ground.";
   else text = "You go down. When you come round you are in your own hall, on a door somebody carried you home on, and a third of the crowns are gone." + (s.heroWounded ? "\n\nYou won't survive that twice before it heals." : "");
+  if (out.levelled && out.levelled.length) html += '<p class="lede"><em>Up a level: ' + esc(out.levelled.join(", ")) + '.</em></p>';
+  if (out.fallen && out.fallen.length) html += '<p class="lede"><em>Down: ' + esc(out.fallen.join(", ")) + '. A night at your own hearth or a town healer will get them up.</em></p>';
+  UI.storyPush();
   if (out.lost.length) html += '<p class="lede"><em>Lost: ' + esc(out.lost.join(", ")) + '.</em></p>';
   if (out.hurt.length) html += '<p class="lede"><em>Hurt and out of the next fights: ' + esc(out.hurt.join(", ")) + '.</em></p>';
   if (out.burnt && out.burnt.length) html += '<p class="lede"><em>Burnt out: ' + esc(out.burnt.join(", ")) + '. Every fight burns a few.</em></p>';
@@ -310,7 +316,7 @@ UI.ledger = function () {
 
 // ---------- places ----------
 UI.screen = function (bg, bar, body, foot) { $("toasts").innerHTML = ""; const sc = $("screen"); sc.className = ""; sc.style.backgroundImage = "url(" + src(bg) + ")"; sc.hidden = false; sc.innerHTML = '<div class="bar">' + bar + '<div class="sp"></div>' + UI.purse() + '<button id="s-x">Back to the map</button></div><div class="body">' + body + '</div>' + (foot ? '<div class="foot">' + foot + '</div>' : ""); $("s-x").onclick = UI.closeScreen; };
-UI.closeScreen = function () { MUS.play("map"); $("screen").hidden = true; UI.hud(); M.dirty = true; G.save(); if (G.s.over) return UI.ending(); if (UI.queue.length) UI.event(UI.queue.shift()); };
+UI.closeScreen = function () { MUS.play("map"); $("screen").hidden = true; UI.storyPush(); UI.hud(); M.dirty = true; G.save(); if (G.s.over) return UI.ending(); if (UI.queue.length) UI.event(UI.queue.shift()); };
 UI.passDay = function (after) { for (let i = 0; i < 4; i++) UI.news(G.tick()); const gone = G.leaving(); if (gone.length) { $("screen").hidden = true; UI.hud(); return UI.farewell(gone); } if (G.s.over) { $("screen").hidden = true; return UI.ending(); } after(); };
 UI.recruitRows = function (id) {
   const s = G.s, list = (D.RECRUIT[id] || []).filter(t => !(id === "hold" && !s.b.long)); if (!list.length) return "";
@@ -333,24 +339,25 @@ UI.site = function (st) {
   const left = '<img class="place" src="' + src(st.art) + '" alt=""><p class="lede">' + esc(D.SITE_LINE[st.id] || "") + '</p>' + (st.id === "hearthmount" && s.favour ? '<p class="lede"><em>The Hearth Court knows your name' + (s.favour > 2 ? " well" : "") + '.</em></p>' : "");
   let right = "";
   if (tr.length) right += '<p class="sec">Trade</p><div class="rows">' + tr.map((t, i) => '<div class="row"><div class="t"><h3>' + t.t + '</h3><p>' + (G.can(t.pay) ? (t.pay.crowns ? "Costs " + t.pay.crowns + " crowns" : "They pay " + t.get.crowns + " crowns") : (t.pay.crowns ? "You are " + G.short(t.pay).join("") + " short." : "You only have " + s.res[Object.keys(t.pay)[0]] + " " + Object.keys(t.pay)[0] + ".")) + '</p></div><button data-trade="' + i + '"' + (G.can(t.pay) ? "" : " disabled") + '>' + (t.pay.crowns ? "Buy" : "Sell") + '</button></div>').join("") + '</div>';
-  right += UI.recruitRows(st.id) + UI.promoRows(st.id);
+  right = UI.questRows(st.id) + UI.healRows(st.id) + right + UI.recruitRows(st.id) + UI.promoRows(st.id);
   const canBeacon = !s.beacons[st.id] && st.kind !== "caves";
   const foot = '<p>' + (s.beacons[st.id] ? "Your beacon burns here. The grey won't cross it." : "") + '</p>' + (canBeacon ? '<button id="s-beacon"' + (G.can({ coal: 10 }) ? "" : " disabled") + '>Light a beacon, 10 coal</button>' : "") + '<button id="s-rest">Rest a day</button>';
   UI.screen(st.id === "hearthmount" ? "bg_title" : "bg_camp", '<h2>' + esc(G.siteName(st)) + '</h2>', '<div class="cols"><div class="col">' + left + '</div><div class="col">' + (right || '<p class="lede"><em>Nothing to buy and nobody to hire.</em></p>') + '</div></div>', foot);
-  UI.wire(redo, st.id);
+  UI.wire(redo, st.id); UI.wireWork(redo);
   if ($("s-beacon")) $("s-beacon").onclick = () => { if (!G.pay({ coal: 10 })) return redo(); s.beacons[st.id] = 1; UI.toast("The beacon catches. " + G.siteName(st) + " will hold."); redo(); };
-  $("s-rest").onclick = () => UI.passDay(() => { s.units.forEach(u => { u.hp = D.UNITS[u.type].hp; }); UI.toast("A day's rest. Wounds are dressed. Your self-control only comes back at your own hearth."); redo(); });
+  $("s-rest").onclick = () => UI.passDay(() => { s.units.forEach(u => { if (!u.down) u.hp = G.maxHp(u); }); UI.toast("A day's rest. Wounds are dressed. Your self-control only comes back at your own hearth."); redo(); });
 };
 UI.hold = function () {
   MUS.play("hold"); const s = G.s, inc = G.income(), redo = UI.hold;
   const cards = Object.keys(D.BUILDINGS).map(id => { const b = D.BUILDINGS[id], l = s.b[id], busy = s.build && s.build.id === id;
     return '<div class="bld' + (l ? "" : " none") + (busy ? " busy" : "") + '" data-b="' + id + '"><img src="' + src(b.art) + '" alt=""><h3>' + b.name + '</h3><div class="pips">' + Array.from({ length: b.max }, (_, i) => '<i class="' + (i < l ? "on" : "") + '"></i>').join("") + '</div><p>' + (busy ? "Building, " + s.build.left + (s.build.left === 1 ? " day" : " days") + " left" : b.eff(l)) + '</p></div>'; }).join("");
-  const side = UI.recruitRows("hold") + UI.promoRows("hold");
+  const side = UI.questRows("hold") + UI.recruitRows("hold") + UI.promoRows("hold"), nf = G.fallen().length;
   UI.screen("bg_hold", '<h2>' + esc(s.holdName) + '</h2><button class="quiet" id="h-led">Ledger</button>',
-    '<div class="grid">' + cards + '</div>' + side, '<p>' + (s.build ? D.BUILDINGS[s.build.id].name + " is going up." : "Tap a building to raise it.") + '</p><button id="h-rest" class="go">Rest a night at your hearth</button>');
-  UI.wire(redo, "hold"); $("h-led").onclick = UI.ledger;
+    '<div class="grid">' + cards + '</div>' + side, '<p>' + (s.build ? D.BUILDINGS[s.build.id].name + " is going up." : (nf ? nf + (nf === 1 ? " fighter is down. " : " fighters are down. ") + "A night at your hearth gets one back up." : "Tap a building to raise it.")) + '</p><button id="h-drill"' + (G.canDrill() ? "" : " disabled") + '>Drill a day</button><button id="h-rest" class="go">Rest a night at your hearth</button>');
+  UI.wire(redo, "hold"); UI.wireWork(redo); $("h-led").onclick = UI.ledger;
+  $("h-drill").onclick = () => UI.passDay(() => { const up = G.drill(); UI.toast(up.length ? "A day at drill. Up a level: " + up.join(", ") + "." : "A day at drill. They are sharper for it."); redo(); });
   $("screen").querySelectorAll("[data-b]").forEach(el => el.onclick = () => UI.building(el.dataset.b));
-  $("h-rest").onclick = () => UI.passDay(() => { const g = G.rest(); const st = G.stage(); UI.toast(g > 0 ? "You sleep at your own hearth. Self-control back to " + s.control + (s.control < 100 ? ". That's as high as it goes now." : ".") : "You sleep at your own hearth. " + (st.id === "toll" ? "Nothing to mend." : "It doesn't come back any further than this.")); redo(); });
+  $("h-rest").onclick = () => UI.passDay(() => { const g = G.rest(); const st = G.stage(); UI.toast(g > 0 ? "You sleep at your own hearth. Self-control back to " + s.control + (s.control < 100 ? ". That's as high as it goes now." : ".") : "You sleep at your own hearth. " + (st.id === "toll" ? "Nothing to mend." : "It doesn't come back any further than this.")); if (s.lastUp) UI.toast(s.lastUp + " is back on their feet."); redo(); });
 };
 UI.building = function (id) {
   const s = G.s, b = D.BUILDINGS[id], l = s.b[id], next = l + 1, cost = next <= b.max ? D.BUILD_COST(next, id) : null;
@@ -365,15 +372,15 @@ UI.building = function (id) {
 };
 UI.warband = function () {
   const s = G.s, st = G.stage(), mood = ap => ap >= 2 ? "Glad to be here" : ap >= -1 ? "Steady" : ap >= -3 ? "Uneasy" : "About to leave";
-  const cards = s.units.map(u => { const d = D.UNITS[u.type], c = D.COMPANIONS[u.type], hurt = u.wounded > 0 || (u.type === "hero" && s.heroWounded > 0); let sub;
+  const cards = s.units.map(u => { const d = D.UNITS[u.type], c = D.COMPANIONS[u.type], hurt = u.wounded > 0 || (u.type === "hero" && s.heroWounded > 0), lv = G.lvl(u), nx = G.toNext(u), lvt = "Level " + lv + (nx ? ", " + nx + " to next" : ", top"); let sub;
     if (u.type === "hero") sub = "Emberforged" + (s.heroWounded ? ". Hurt: another beating in the next " + s.heroWounded + " days will kill you" : "");
     else if (c) sub = c.role + ". " + mood(s.comp[u.type].ap) + ". " + c.wants;
-    else { const p = G.canPromote(u, "x"); sub = d.name + (p ? ". " + (p.okXp ? "Ready to promote at a forge" : (p.rule.xp - u.xp) + " more fights to promote") : ". Top rank"); }
-    return '<div class="unit' + (hurt ? " hurt" : "") + '"><img src="' + src(G.uArt(u)) + '" alt=""><div><h3>' + esc(G.uName(u)) + '</h3><div class="hpb"><b style="width:' + Math.round(u.hp / d.hp * 100) + '%"></b></div><p>' + esc(sub) + (u.wounded > 0 ? ". Out for " + u.wounded + (u.wounded === 1 ? " day" : " days") : "") + '</p></div></div>'; }).join("");
+    else { const p = G.canPromote(u, "x"); sub = d.name + (p ? ". " + (p.okXp ? "Ready to promote at a forge" : "Promotes after " + (p.rule.xp - u.xp) + " more experience") : ". Top rank"); }
+    return '<div class="unit' + (hurt ? " hurt" : "") + '"><img src="' + src(G.uArt(u)) + '" alt=""><div><h3>' + esc(G.uName(u)) + '</h3><div class="hpb"><b style="width:' + Math.round(u.hp / G.maxHp(u) * 100) + '%"></b></div><p><b class="lv">' + lvt + '</b><br>' + esc(sub) + (u.down ? ". Down: needs your hearth or a healer" : u.wounded > 0 ? ". Out for " + u.wounded + (u.wounded === 1 ? " day" : " days") : "") + '</p></div></div>'; }).join("");
   UI.screen("bg_camp", '<h2>Warband</h2><p>' + s.units.length + " of " + G.cap() + ". Eats " + G.eats() + " food a day. Eight can take the field.</p>",
     '<div class="ctl"><h3>Self-control: ' + st.name + '</h3><div class="meter"><b style="width:' + s.control + '%"></b><u style="width:' + (100 - s.ceiling) + '%"></u></div><p>' + st.line + (s.ceiling < 100 ? " The hatched part is gone for good." : " Every spell spends it. Spend deep enough and some never comes back.") + (st.surge ? " In a fight there is a " + Math.round(st.surge * 100) + "% chance each turn that the fire moves you instead." : "") + '</p></div><div class="band">' + cards + '</div>');
 };
-UI.menu = function () { UI.modal({ title: "The Ember March", text: "Day " + G.s.day + ". The game saves itself as you go.", opts: [{ t: "Keep playing", fn: () => {} }, { t: MUS.on ? "Turn the music off" : "Turn the music on", fn: () => MUS.set(!MUS.on) }, { t: "How to play", fn: () => UI.modal({ title: "How to play", text: "Tap the map to travel. Time only passes when you move, rest or build.\n\nBreak the three raider camps. Keep the hold fed, and keep a watchfire lit: the grey edge will not cross firelight.\n\nCrowns come from hearth-dues, the storehouse, trade and what you take. Hired fighters draw wages every day and leave if you can't pay. Coal feeds the watchfire and the forge. You can't buy what you can't pay for.\n\nYour spells win fights and cost self-control. Rest at your own hearth to get it back, up to whatever is left.", opts: [{ t: "Right", fn: () => {} }] }) }, { t: "Quit to the title", fn: () => { G.save(); UI.title(); } }] }); };
+UI.menu = function () { UI.modal({ title: "The Ember March", text: "Day " + G.s.day + ". The game saves itself as you go.", opts: [{ t: "Keep playing", fn: () => {} }, { t: MUS.on ? "Turn the music off" : "Turn the music on", fn: () => MUS.set(!MUS.on) }, { t: "How to play", fn: () => UI.modal({ title: "How to play", text: "Tap the map to travel. Time only passes when you move, rest or build.\n\nFollow the chapters in your Journal, and take on work in the towns. Break the three raider camps. Keep the hold fed, and keep a watchfire lit: the grey edge will not cross firelight.\n\nCrowns come from hearth-dues, the storehouse, trade and what you take. Hired fighters draw wages every day and leave if you can't pay. Coal feeds the watchfire and the forge. You can't buy what you can't pay for.\n\nFighters gain levels from fights they win and from drill at your hold. One who loses all their health goes down: a night at your own hearth gets one back up, or a town healer will for crowns.\n\nYour spells win fights and cost self-control. Rest at your own hearth to get it back, up to whatever is left.", opts: [{ t: "Right", fn: () => {} }] }) }, { t: "Quit to the title", fn: () => { G.save(); UI.title(); } }] }); };
 UI.ending = function () {
   const s = G.s, o = s.over; G.save();
   const t = { won: ["The March holds", "Three camps broken. The road to Hearthward is open and the carters are using it.\n\nThe silver had no face on it. Somebody is still paying, and you still don't know who.\n\n" + (s.ceiling < 100 ? "You held the March. You are not quite the person the Court sent out here: " + (100 - s.ceiling) + " parts in a hundred of your self-control are gone and will not grow back." : "You held the March and kept yourself whole doing it. Nobody at the Court expected both.")],

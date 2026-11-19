@@ -9,14 +9,14 @@ const cheb = (a, b) => Math.max(Math.abs(a.x - b.x), Math.abs(a.y - b.y));
 
 B.start = function (kind, onEnd) {
   const s = G.s, foes = G.foeList(kind);
-  const ready = s.units.filter(u => !(u.wounded > 0));
+  const ready = G.ready();
   const rank = u => u.type === "hero" ? 9 : D.UNITS[u.type].comp ? 8 : (D.UNITS[u.type].tier || 1) + u.xp / 100;
   const pick = ready.slice().sort((a, b) => rank(b) - rank(a)).slice(0, 8);
   const st = { kind, units: [], rocks: {}, haz: {}, fire: {}, turn: "player", round: 1, sel: null, mode: null, heat: 0, kills: {}, downed: [], startFoes: foes.length, over: false, onEnd, bg: D.TERRAIN[G.tile(s.pos[0], s.pos[1])].battle, log: "" };
   const place = (list, side) => {
     const melee = list.filter(u => D.UNITS[u.type].rng === 1), ranged = list.filter(u => D.UNITS[u.type].rng > 1);
     const rows = [2, 1, 3, 0, 4];
-    const put = (arr, x, x2) => arr.forEach((u, i) => { const def = D.UNITS[u.type]; st.units.push({ id: st.units.length + 1, wid: u.id || 0, type: u.type, side, x: i < 5 ? x : x2, y: rows[i % 5], hp: side ? def.hp : Math.max(1, Math.min(u.hp, def.hp)), max: def.hp, acted: false, moved: false, name: side ? def.name : G.uName(u), art: side ? def.art : G.uArt(u), dx: 0, dy: 0, flash: 0 }); });
+    const put = (arr, x, x2) => arr.forEach((u, i) => { const def = D.UNITS[u.type]; st.units.push({ id: st.units.length + 1, wid: u.id || 0, type: u.type, side, x: i < 5 ? x : x2, y: rows[i % 5], hp: side ? def.hp : Math.max(1, Math.min(u.hp, G.maxHp(u))), max: side ? def.hp : G.maxHp(u), ab: side ? 0 : G.atkBonus(u), lv: side ? 0 : G.lvl(u), acted: false, moved: false, name: side ? def.name : G.uName(u), art: side ? def.art : G.uArt(u), dx: 0, dy: 0, flash: 0 }); });
     if (side === 0) { put(melee, 1, 2); put(ranged, 0, 1); } else { put(melee, 7, 6); put(ranged, 8, 7); }
   };
   place(pick, 0); place(foes.map(t => ({ type: t })), 1);
@@ -49,8 +49,9 @@ B.reach = function (u, mv) { // cells reachable this turn -> { "x,y": [path] }
     [[1, 0], [-1, 0], [0, 1], [0, -1]].forEach(d => { const x = c[0] + d[0], y = c[1] + d[1], k = bk(x, y); if (seen[k] || !B.open(x, y, u) || B.at(x, y)) return; seen[k] = 1; const p = c[2].concat([[x, y]]); out[k] = p; q.push([x, y, p]); }); }
   return out;
 };
+B.spCost = m => Math.max(1, D.SPELLS[m].cost - (G.s.flags.banked ? 1 : 0));
 B.dmg = function (a, t, bonus) { // [min, max]
-  const A = D.UNITS[a.type], T = D.UNITS[t.type]; let base = A.atk + (bonus || 0) - T.def;
+  const A = D.UNITS[a.type], T = D.UNITS[t.type]; let base = A.atk + (a.ab || 0) + (bonus || 0) - T.def;
   if (B.st.units.some(o => o.hp > 0 && o.side === a.side && o !== a && man(o, t) === 1)) base += 1;
   if (B.st.units.some(o => o.hp > 0 && o.side === t.side && o !== t && D.UNITS[o.type].guard && man(o, t) === 1)) base -= 1;
   if (A.fire && T.fireproof) base = Math.ceil(base / 2);
@@ -93,7 +94,7 @@ B.checkEnd = function () {
 B.finish = function (res) {
   const st = B.st; st.over = true; B.busy = true;
   st.units.forEach(u => { if (u.side === 0 && u.hp > 0) { const w = G.s.units.find(x => x.id === u.wid); if (w) w.hp = u.hp; } });
-  res.downed = st.downed; res.kills = st.kills; res.fled = !!res.fled; res.fought = st.units.filter(u => u.side === 0).map(u => u.wid);
+  res.downed = st.downed; res.kills = st.kills; res.casts = st.casts || 0; res.fled = !!res.fled; res.fought = st.units.filter(u => u.side === 0).map(u => u.wid);
   setTimeout(() => { cancelAnimationFrame(B.raf); st.onEnd(res); }, B.fast ? 0 : 700); return true;
 };
 
@@ -132,7 +133,7 @@ B.cast = async function (m, x, y) {
   if (m === "lance") { if (!t || t.side !== 1 || man(h, t) > 4) { st.mode = null; B.say("No target there."); UI.battlePanel(); return; } }
   if (m === "wall") { if (Math.abs(x - h.x) + Math.abs(y - h.y) > 3 || !B.open(x, y)) { st.mode = null; B.say("Not there."); UI.battlePanel(); return; } }
   B.busy = true; st.mode = null;
-  const entered = G.spend(sp.cost); if (G.stage().id !== "toll") G.approve("dilys", -1);
+  st.casts = (st.casts || 0) + 1; const entered = G.spend(B.spCost(m)); if (G.stage().id !== "toll") G.approve("dilys", -1);
   if (m === "lance") { B.fx.push({ line: [h.x, h.y, t.x, t.y], fire: 1, big: 1, t: 0 }); let n = 7 + pow + ri(2); if (D.UNITS[t.type].fireproof) n = Math.ceil(n / 2); await B.hurt(t, n, h); }
   if (m === "wall") { for (const yy of [y - 1, y, y + 1]) { if (yy < 0 || yy >= BH || st.rocks[bk(x, yy)]) continue; st.fire[bk(x, yy)] = 2; const o = B.at(x, yy); if (o && !D.UNITS[o.type].fireproof) await B.hurt(o, 4, h); } }
   if (m === "flare") { B.fx.push({ burst: [h.x, h.y], t: 0 }); for (const o of st.units.filter(o => o.hp > 0 && o !== h && cheb(o, h) <= 1)) { let n = 8 + pow; if (D.UNITS[o.type].fireproof) n = Math.ceil(n / 2); await B.hurt(o, n, h); } }

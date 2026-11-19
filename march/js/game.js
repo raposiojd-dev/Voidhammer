@@ -65,7 +65,7 @@ G.newGame = function (opts) {
     comp: { cadoc: { ap: 0, with: 1 } }, uid: 10, names: names.slice(4),
     b: { hall: 1, field: 1, coal: 0, fire: 0, wall: 0, long: 0, forge: 0, store: 0 }, build: null,
     grey: [], greyNext: 8, beacons: {}, quiet: {}, done: {}, flags: {}, visited: { hold: 1 },
-    lastFight: 1, nextRaid: 9, log: [], over: null
+    lastFight: 1, nextRaid: 9, log: [], over: null, ch: 1, qs: {}, n: { wins: 0, clean: 0 }
   };
   s.units[0].art = opts.art;
   G.s = s; G.tiles = G.genWorld(seed); G.save(); return s;
@@ -130,7 +130,9 @@ G.rest = function () { // a night at a hearth
   const s = G.s; const before = s.control; const st = G.stage().id;
   const top = (st === "arrears" || st === "reckoning") ? Math.min(s.ceiling, 69) : s.ceiling;
   s.control = Math.max(s.control, top);
-  s.units.forEach(u => { u.hp = D.UNITS[u.type].hp; });
+  s.units.forEach(u => { if (!u.down) u.hp = G.maxHp(u); });
+  // your own hearth gets one fallen fighter back on their feet each night
+  const f = G.fallen()[0]; s.lastUp = null; if (f) { G.revive(f); s.lastUp = G.uName(f); }
   G.approve("dilys", 1);
   return s.control - before;
 };
@@ -162,7 +164,7 @@ G.tick = function () {
   s.res.food -= G.eats();
   if (s.res.food < 0) { s.res.food = 0; s.hungry = (s.hungry || 0) + 1; if (s.hungry === 1) G.approve("cadoc", -1); if (s.hungry % 2 === 0) { const t = s.units.filter(u => !D.UNITS[u.type].comp && u.type !== "hero"); if (t.length) { const u = t[ri(t.length)]; s.units = s.units.filter(x => x !== u); out.push({ k: "desert", who: G.uName(u) }); } } out.push({ k: "hungry" }); } else s.hungry = 0;
   if (s.build) { s.build.left--; if (s.build.left <= 0) { s.b[s.build.id]++; out.push({ k: "built", id: s.build.id }); s.build = null; } }
-  s.units.forEach(u => { if (u.wounded > 0) u.wounded--; });
+  s.units.forEach(u => { if (u.wounded > 0 && !u.down) u.wounded--; });
   if (s.heroWounded > 0) s.heroWounded--;
   // the grey edge
   if (s.day >= s.greyNext) { s.greyNext = s.day + 3; if (G.spreadGrey()) out.push({ k: "grey" }); }
@@ -200,15 +202,16 @@ G.afterBattle = function (kind, res) {
   // res: { won, fled, downed: [unit ids], kills: {id: n}, heroDown }
   const s = G.s, out = { lost: [], hurt: [], loot: null, promoted: [] };
   s.lastFight = s.day;
+  G.qInit(); out.levelled = []; out.fallen = [];
   s.units.slice().forEach(u => {
-    const down = res.downed.indexOf(u.id) >= 0;
-    if (res.won && !down) u.xp += 1 + (res.kills[u.id] || 0);
+    const down = res.downed.indexOf(u.id) >= 0, before = G.lvl(u);
+    if (res.won && !down) { u.xp = (u.xp || 0) + 1 + (res.kills[u.id] || 0); if (G.lvl(u) > before) { out.levelled.push(G.uName(u) + " to level " + G.lvl(u)); u.hp = Math.min(G.maxHp(u), u.hp + 2 * (G.lvl(u) - before)); } }
     if (!down) return;
-    const def = D.UNITS[u.type];
-    if (u.type === "hero") { u.hp = Math.ceil(def.hp / 2); return; }
-    if (def.comp) { if (u.wounded > 0) { s.units = s.units.filter(x => x !== u); s.comp[u.type].with = 0; s.comp[u.type].dead = 1; out.lost.push(G.uName(u)); } else { u.wounded = 6; u.hp = Math.ceil(def.hp / 2); out.hurt.push(G.uName(u)); } return; }
-    if (G.rnd() < 0.5) { s.units = s.units.filter(x => x !== u); out.lost.push(G.uName(u)); } else { u.wounded = 4; u.hp = Math.ceil(def.hp / 2); out.hurt.push(G.uName(u)); }
+    if (u.type === "hero") { u.hp = Math.ceil(G.maxHp(u) / 2); return; }
+    // nobody is buried after a fight: they go down, and stay down until a hearth or a healer gets them up
+    u.down = 1; u.wounded = 1; u.hp = 0; out.fallen.push(G.uName(u));
   });
+  if (res.won && kind !== "lair") { s.n.wins++; if (!res.casts) s.n.clean++; }
   // canon: "every fight burns a few out". Emberforged troops who fought may not come back from it.
   out.burnt = [];
   s.units.slice().forEach(u => { if (u.type === "adept" && res.downed.indexOf(u.id) < 0 && res.fought && res.fought.indexOf(u.id) >= 0 && G.rnd() < 0.15) { s.units = s.units.filter(x => x !== u); out.burnt.push(G.uName(u)); } });
@@ -228,4 +231,4 @@ G.canPromote = function (u, where) { // where: "hold" or a site id
   const forge = where === "hold" ? G.s.b.forge : (where === "hearthmount" ? 2 : (where === "smeltgate" || where === "slagford") ? 1 : 0);
   return { to: def.up, rule, okXp: u.xp >= rule.xp, okIron: G.can({ iron: rule.iron, coal: rule.coal }), okForge: forge >= rule.forge };
 };
-G.promote = function (u) { const def = D.UNITS[u.type]; const rule = D.PROMOTE[D.UNITS[def.up].tier]; if (!G.pay({ iron: rule.iron, coal: rule.coal })) return false; u.type = def.up; u.hp = D.UNITS[u.type].hp; return true; };
+G.promote = function (u) { const def = D.UNITS[u.type]; const rule = D.PROMOTE[D.UNITS[def.up].tier]; if (!G.pay({ iron: rule.iron, coal: rule.coal })) return false; u.type = def.up; u.hp = G.maxHp(u); return true; };
