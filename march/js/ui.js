@@ -64,7 +64,7 @@ UI.create = function () {
   const sc = $("screen"); sc.className = ""; sc.style.backgroundImage = "url(" + src("bg_hold") + ")";
   const nm = D.NAMES[ri(D.NAMES.length)];
   sc.innerHTML = '<div class="bar"><h2>Who holds the March?</h2></div><div class="body"><div class="cols"><div class="col"><p class="lede">You are Emberforged: you throw fire, and it costs you your self-control, a little each time and for good.\n\nThe Hearth Court has given you one hall on the Stonehold border.</p></div><div class="col">' +
-    '<div class="pick"><label><input type="radio" name="art" value="hero_f" checked><img src="' + src("hero_f") + '" alt="A woman with ember-cracks along her jaw"></label><label><input type="radio" name="art" value="hero_m"><img src="' + src("hero_m") + '" alt="A bearded man with ember-cracks at his temple"></label></div>' +
+    '<div class="pick"><label><input type="radio" name="art" value="hero_f" checked><img src="' + src("hero_f") + '" alt="A woman with ember-cracks up her forearms"></label><label><input type="radio" name="art" value="hero_m"><img src="' + src("hero_m") + '" alt="A bearded man with ember-cracks across his hands"></label></div>' +
     '<div class="field"><span>Your name</span><input id="c-name" maxlength="14" value="' + nm + '" autocomplete="off"></div><div class="field"><span>Your hold</span><input id="c-hold" maxlength="16" value="Marchfire" autocomplete="off"></div>' +
     '<div class="field"><button class="go" id="c-go">Take the hall</button><button class="quiet" id="c-back">Back</button></div></div></div></div>';
   $("c-back").onclick = UI.title;
@@ -387,7 +387,7 @@ UI.ending = function () {
   const s = G.s, o = s.over; G.save();
   const t = { won: ["The March holds", "Three camps broken. The road to Hearthward is open and the carters are using it.\n\nThe silver had no face on it. Somebody is still paying, and you still don't know who.\n\n" + (s.ceiling < 100 ? "You held the March. You are not quite the person the Court sent out here: " + (100 - s.ceiling) + " parts in a hundred of your self-control are gone and will not grow back." : "You held the March and kept yourself whole doing it. Nobody at the Court expected both.")],
     grey: ["The hold goes quiet", "The grey edge reached " + s.holdName + ". Nobody died. They put their tools down, one after another, and could not think what the place was for.\n\nA watchfire, fed every day, would have held it."],
-    dead: ["You fall", "You were already hurt, and you went back in. They bury you on the March with your shield over your face, the way it is done."] }[o];
+    dead: ["You fall", "You were already hurt, and you went back in. They burn you where you fell on the March, and someone carries a coal home to your hall."] }[o];
   UI.modal({ art: o === "won" ? "bg_title" : o === "grey" ? "t_grey" : "bg_camp", title: t[0], text: t[1] + "\n\nDay " + s.day + ". Camps broken: " + G.campsDone() + " of 3.", opts: [{ t: "Play again", fn: () => { G.wipe(); UI.title(); } }] });
 };
 addEventListener("DOMContentLoaded", UI.boot);

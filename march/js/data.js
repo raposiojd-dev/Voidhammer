@@ -4,8 +4,8 @@
 "use strict";
 const D = {};
 
-D.NAMES = ["Aedra","Caela","Dilys","Glenna","Rhiann","Cadoc","Davan","Emrys","Gethin","Rhodri","Brann","Ren","Taran","Coll"];
-D.TROOP_NAMES = ["Aedra","Caela","Glenna","Rhiann","Davan","Emrys","Gethin","Rhodri","Brann","Ren","Taran","Coll","Wenna","Idris","Hesk","Torra","Ashe"];
+D.NAMES = ["Aedra","Caela","Glenna","Rhiann","Davan","Emrys","Gethin","Rhodri","Brann","Ren","Taran","Coll"];
+D.TROOP_NAMES = ["Aedra","Caela","Glenna","Rhiann","Davan","Emrys","Gethin","Rhodri","Brann","Ren","Taran","Coll","Ashe"];
 
 // Terrain: cost in quarter-days per hex.
 D.TERRAIN = {
@@ -20,12 +20,12 @@ D.TERRAIN = {
 // Unit types. mv = cells per turn, rng = attack range (1 = melee).
 D.UNITS = {
   hero:      { name: "You",          art: "hero_f",   hp: 24, atk: 5, def: 1, mv: 3, rng: 1, side: 0 },
-  cadoc:     { name: "Cadoc",        art: "cadoc",    hp: 26, atk: 4, def: 3, mv: 2, rng: 1, side: 0, guard: 1, comp: 1 },
+  cadoc:     { name: "Garreth",    art: "cadoc",    hp: 26, atk: 4, def: 3, mv: 2, rng: 1, side: 0, guard: 1, comp: 1 },
   tavish:    { name: "Tavish",       art: "tavish",   hp: 15, atk: 4, def: 0, mv: 3, rng: 4, side: 0, comp: 1 },
-  dilys:     { name: "Dilys",        art: "dilys",    hp: 17, atk: 5, def: 0, mv: 3, rng: 3, side: 0, comp: 1, fire: 1 },
+  dilys:     { name: "Madda",      art: "dilys",    hp: 17, atk: 5, def: 0, mv: 3, rng: 3, side: 0, comp: 1, fire: 1 },
   levy:      { name: "Levy",         art: "levy",     hp: 14, atk: 4, def: 0, mv: 3, rng: 1, side: 0, tier: 1, up: "shieldaxe", cost: 15 },
-  shieldaxe: { name: "Shield-axe",   art: "shieldaxe",hp: 20, atk: 5, def: 1, mv: 3, rng: 1, side: 0, tier: 2, up: "emberclad", guard: 1, cost: 35 },
-  emberclad: { name: "Emberclad",    art: "emberclad",hp: 26, atk: 7, def: 2, mv: 3, rng: 1, side: 0, tier: 3 },
+  shieldaxe: { name: "Cinderblade",   art: "shieldaxe",hp: 20, atk: 5, def: 1, mv: 3, rng: 1, side: 0, tier: 2, up: "emberclad", guard: 1, cost: 35 },
+  emberclad: { name: "Veteran",      art: "emberclad",hp: 26, atk: 7, def: 2, mv: 3, rng: 1, side: 0, tier: 3 },
   thrower:   { name: "Thrower",      art: "thrower",  hp: 11,  atk: 3, def: 0, mv: 3, rng: 3, side: 0, tier: 1, up: "firejav", cost: 20 },
   firejav:   { name: "Fire-javelin", art: "firejav",  hp: 15, atk: 5, def: 0, mv: 3, rng: 3, side: 0, tier: 2, fire: 1 },
   adept:     { name: "Emberforged",  art: "adept",    hp: 14, atk: 6, def: 0, mv: 3, rng: 3, side: 0, tier: 2, fire: 1, cost: 60 },
@@ -58,7 +58,7 @@ D.BUILDINGS = {
   fire:  { name: "Watchfire",      art: "bd_fire",  max: 3, what: "The grey edge will not cross firelight. Burns coal every day, and goes dark the day the coal runs out.", eff: l => l ? "Holds the grey " + (l + 1) + " hexes off, burns " + l + " coal a day" : "Not lit" },
   wall:  { name: "Palisade",       art: "bd_wall",  max: 3, what: "Turns raids away while you are on the road.", eff: l => l ? "Beats raids up to strength " + (l * 2) : "No wall" },
   long:  { name: "Longhouse",      art: "bd_long",  max: 3, what: "Room for more fighters, and levies to hire at home. Every two hired fighters cost a crown a day in wages.", eff: l => "Room for " + (6 + l * 2) + " hired fighters" },
-  forge: { name: "Forge",          art: "bd_forge", max: 2, what: "Promote fighters at home instead of in the forge-towns. Promotions take iron and coal.", eff: l => l ? (l > 1 ? "Promotes to Emberclad" : "Promotes to second rank") : "No forge" },
+  forge: { name: "Forge",          art: "bd_forge", max: 2, what: "Promote fighters at home instead of in the forge-towns. Promotions take iron and coal.", eff: l => l ? (l > 1 ? "Promotes to veteran" : "Promotes to second rank") : "No forge" },
   store: { name: "Storehouse",     art: "bd_store", max: 3, what: "Carters buy your surplus.", eff: l => l ? "+" + (l * 3) + " crowns a day" : "No trade" }
 };
 // cost to build level n (1-based): crowns, iron, days
@@ -118,9 +118,9 @@ D.SITE_LINE = {
 
 D.COMPANIONS = {
   cadoc: {
-    name: "Cadoc", role: "Shieldman", wants: "Wants the hold fed and walled before anything else.",
+    name: "Garreth", role: "Shieldman", wants: "Wants the hold fed and walled before anything else.",
     up: "The hold is fed and walled.", down: "The hold went hungry or was raided.",
-    leave: "Cadoc sets his shield down by your door. \"I said I'd follow somebody who kept the fire in. That isn't what this is.\" He walks back towards the March."
+    leave: "Garreth sets his shield down by your door. \"I said I'd follow somebody who kept the fire in. That isn't what this is.\" He walks back towards the March."
   },
   tavish: {
     name: "Tavish", role: "Javelin-thrower", wants: "Wants a fight worth telling. Hates walking away from one.",
@@ -128,16 +128,16 @@ D.COMPANIONS = {
     leave: "Tavish shoulders his javelins. \"I came to throw these at somebody.\" He takes the Hearthmount road and doesn't look round."
   },
   dilys: {
-    name: "Dilys", role: "Emberforged", wants: "Wants you to bank the fire. Counts every time you throw it when you're already in debt.",
+    name: "Madda", role: "Emberforged", wants: "Wants you to bank the fire. Counts every time you throw it when you're already in debt.",
     up: "You rested and let it cool.", down: "You threw fire while already in debt.",
-    leave: "Dilys looks at your hands for a while. \"I've watched this before. I'm not watching it again.\" She goes back to the caves."
+    leave: "Madda looks at your hands for a while. \"I've watched this before. I'm not watching it again.\" She goes back to the caves."
   }
 };
 
 D.EVENTS = {
   open: {
     art: "bg_hold", title: "The Ember March",
-    text: h => "The Hearth Court gave you a hall on the border and a short instruction: hold it.\n\nRaiders are hitting the March, paid in coin nobody will name. And out east the carters say the land has started to look unfinished.",
+    text: h => "The Hearth Court gave you a hall on the border and a short instruction: hold it.\n\nRaiders are hitting the March, paid in coin nobody will name. And out east the carters say the land has started to look forgotten.",
     opts: [{ t: "Start" }]
   },
   tavish: {
@@ -148,7 +148,7 @@ D.EVENTS = {
   dilys: {
     art: "dilys", title: "The Bellows",
     text: () => "In the mouth of a wind-cave a woman is holding a flame in her palm, perfectly still, while the mountain roars around her. Her hands are crazed with old pale lines.\n\n\"You run hot,\" she says, without looking up. \"I could hear it from the road.\"",
-    opts: [{ t: "Ask her to come with you", fx: g => G.joinCompanion("dilys"), say: "\"Somebody should be standing next to you when it goes wrong.\" Dilys joins the warband." }, { t: "Leave her to it", say: "She nods. The flame doesn't move." , fx: g => { g.flags.dilysLater = 1; } }]
+    opts: [{ t: "Ask her to come with you", fx: g => G.joinCompanion("dilys"), say: "\"Somebody should be standing next to you when it goes wrong.\" Madda joins the warband." }, { t: "Leave her to it", say: "She nods. The flame doesn't move." , fx: g => { g.flags.dilysLater = 1; } }]
   },
   toll: {
     art: "r_axe", title: "A toll",
@@ -162,13 +162,13 @@ D.EVENTS = {
     art: "bg_camp", title: "Carters from the east",
     text: () => "Three families with one cart between them. They left a farm two days east. The eldest can't tell you why. \"The fields were there. Then we couldn't think what they were for.\"",
     opts: [
-      { t: "Give them 8 food", need: { food: 8 }, fx: g => { if (!G.pay({ food: 8 })) return; g.favour += 1; G.approve("cadoc", 1); }, say: "They'll say your name in Hearthmount. Cadoc carries the sacks over himself." },
-      { t: "You can't spare it", fx: g => { G.approve("cadoc", -1); }, say: "They move on west. Cadoc watches them go." }
+      { t: "Give them 8 food", need: { food: 8 }, fx: g => { if (!G.pay({ food: 8 })) return; g.favour += 1; G.approve("cadoc", 1); }, say: "They'll say your name in Hearthmount. Garreth carries the sacks over himself." },
+      { t: "You can't spare it", fx: g => { G.approve("cadoc", -1); }, say: "They move on west. Garreth watches them go." }
     ]
   },
   grey: {
     art: "t_grey", title: "The grey edge",
-    text: () => "The ground ahead has no colour in it. The road is still there, drawn but not finished. Your fighters go quiet, and one of them asks what you all came out here for.\n\nFirelight holds it back. Nothing else you've tried does.",
+    text: () => "The ground ahead has no colour in it. The road is still there, but nobody could tell you where it goes. Your fighters go quiet, and one of them asks what you all came out here for.\n\nFirelight holds it back. Nothing else you've tried does.",
     opts: [{ t: "Keep the fires fed" }]
   },
   offer: {
