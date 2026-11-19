@@ -22,6 +22,22 @@ M.center = (c, r) => [M.pad + M.W * (c + 0.5 * (r & 1)) + M.W / 2, M.pad + M.R *
 M.size = () => [M.pad * 2 + M.W * (COLS + 0.5), M.pad * 2 + M.R * 1.5 * (ROWS - 1) + M.R * 2];
 M.hexPath = function (c, x, y, R) { c.beginPath(); for (let i = 0; i < 6; i++) { const a = Math.PI / 180 * (60 * i - 30); c[i ? "lineTo" : "moveTo"](x + R * Math.cos(a), y + R * Math.sin(a)); } c.closePath(); };
 
+// ---------- music ----------
+const MUS = { on: true, ok: false, want: null, cur: null, el: {}, vol: 0.55,
+  files: { title: "std_title", map: "std_frost", hold: "rv_ember_1", fight: "std_frost_fight", boss: "std_tremor_boss" } };
+try { if (localStorage.getItem("vh_march_music") === "off") MUS.on = false; } catch (e) {}
+MUS.get = function (k) { if (!MUS.el[k]) { const a = new Audio("../mus/" + MUS.files[k] + ".mp3"); a.loop = true; a.preload = "none"; a.volume = 0; MUS.el[k] = a; } return MUS.el[k]; };
+MUS.fade = function (a, to, done) { clearInterval(a._f); a._f = setInterval(() => { const v = a.volume + (to > a.volume ? 0.05 : -0.05); if ((to > a.volume && v >= to) || (to <= a.volume && v <= to)) { a.volume = to; clearInterval(a._f); if (done) done(); } else a.volume = Math.max(0, Math.min(1, v)); }, 60); };
+MUS.play = function (k) {
+  MUS.want = k; if (!MUS.on || !MUS.ok || UI.fast) return; if (MUS.cur === k && !MUS.get(k).paused) return;
+  const old = MUS.cur && MUS.cur !== k ? MUS.el[MUS.cur] : null; if (old) MUS.fade(old, 0, () => old.pause());
+  MUS.cur = k; const a = MUS.get(k); const pr = a.play(); if (pr && pr.catch) pr.catch(() => {}); MUS.fade(a, MUS.vol);
+};
+MUS.stop = function () { Object.keys(MUS.el).forEach(k => { clearInterval(MUS.el[k]._f); MUS.el[k].pause(); }); MUS.cur = null; };
+MUS.set = function (on) { MUS.on = on; try { localStorage.setItem("vh_march_music", on ? "on" : "off"); } catch (e) {} if (on) MUS.play(MUS.want || "map"); else MUS.stop(); };
+addEventListener("pointerdown", () => { if (MUS.ok) return; MUS.ok = true; if (MUS.want) MUS.play(MUS.want); }, true);
+document.addEventListener("visibilitychange", () => { if (document.hidden) MUS.stop(); else if (MUS.want) MUS.play(MUS.want); });
+
 // ---------- boot ----------
 UI.boot = function () {
   let left = ART.length; const done = () => { if (--left <= 0) { $("boot").hidden = true; UI.title(); } };
@@ -35,7 +51,7 @@ UI.boot = function () {
 
 // ---------- title and new game ----------
 UI.title = function () {
-  const sc = $("screen"); sc.className = "title"; sc.style.backgroundImage = "url(" + src("bg_title") + ")"; sc.hidden = false;
+  const sc = $("screen"); MUS.play("title"); sc.className = "title"; sc.style.backgroundImage = "url(" + src("bg_title") + ")"; sc.hidden = false;
   ["hud", "dock", "goal", "travel"].forEach(i => $(i).hidden = true);
   const cont = G.hasSave();
   sc.innerHTML = '<div class="in"><div><h1><span>VOIDHAMMER</span>The Ember March</h1><p class="sub">Hold a hall on the border. Lead a warband. Decide how much of yourself the fire gets.</p></div><div class="btns">' +
@@ -54,7 +70,7 @@ UI.create = function () {
   $("c-go").onclick = () => { const art = document.querySelector('input[name=art]:checked').value; G.newGame({ name: ($("c-name").value || nm).trim().slice(0, 14) || nm, art, holdName: ($("c-hold").value || "Marchfire").trim().slice(0, 16) || "Marchfire" }); UI.enterMap(); UI.event("open"); };
 };
 UI.enterMap = function () {
-  IMG.hero = IMG[G.s.art]; B.tok = {};
+  IMG.hero = IMG[G.s.art]; B.tok = {}; MUS.play("map");
   $("screen").hidden = true; $("battle").hidden = true; $("modal").hidden = true;
   ["hud", "dock", "goal"].forEach(i => $(i).hidden = false);
   M.buildBase(); const p = M.center(G.s.pos[0], G.s.pos[1]); M.cx = p[0]; M.cy = p[1]; M.sel = null; M.path = null; M.clamp(); UI.hud(); M.dirty = true;
@@ -235,6 +251,7 @@ UI.fightIntro = function (kind, title, line) {
 UI.startFight = function (kind) {
   const key = kind.indexOf("camp") === 0 || kind === "patrol" ? kind : kind;
   ["hud", "dock", "goal", "travel"].forEach(i => $(i).hidden = true); $("battle").hidden = false; $("toasts").innerHTML = "";
+  MUS.play(/^lair/.test(kind) || kind === "camp3" ? "boss" : "fight");
   B.start(key, res => UI.afterFight(kind, res));
 };
 UI.battlePanel = function () {
@@ -257,6 +274,7 @@ UI.afterFight = function (kind, res) {
   const s = G.s, site = G.siteAt(s.pos[0], s.pos[1]);
   if (res.won && site && (site.kind === "camp" || site.kind === "lair") && kind !== "patrol") s.done[site.id] = 1;
   const out = G.afterBattle(kind, res); G.save();
+  MUS.play("map");
   $("battle").hidden = true; ["hud", "dock", "goal"].forEach(i => $(i).hidden = false); UI.hud(); M.dirty = true;
   if (s.over === "dead") return UI.ending();
   let text, html = "";
@@ -273,7 +291,7 @@ UI.afterFight = function (kind, res) {
 
 // ---------- places ----------
 UI.screen = function (bg, bar, body, foot) { $("toasts").innerHTML = ""; const sc = $("screen"); sc.className = ""; sc.style.backgroundImage = "url(" + src(bg) + ")"; sc.hidden = false; sc.innerHTML = '<div class="bar">' + bar + '<div class="sp"></div><button id="s-x">Back to the map</button></div><div class="body">' + body + '</div>' + (foot ? '<div class="foot">' + foot + '</div>' : ""); $("s-x").onclick = UI.closeScreen; };
-UI.closeScreen = function () { $("screen").hidden = true; UI.hud(); M.dirty = true; G.save(); if (G.s.over) return UI.ending(); if (UI.queue.length) UI.event(UI.queue.shift()); };
+UI.closeScreen = function () { MUS.play("map"); $("screen").hidden = true; UI.hud(); M.dirty = true; G.save(); if (G.s.over) return UI.ending(); if (UI.queue.length) UI.event(UI.queue.shift()); };
 UI.passDay = function (after) { for (let i = 0; i < 4; i++) UI.news(G.tick()); const gone = G.leaving(); if (gone.length) { $("screen").hidden = true; UI.hud(); return UI.farewell(gone); } if (G.s.over) { $("screen").hidden = true; return UI.ending(); } after(); };
 UI.recruitRows = function (id) {
   const s = G.s, list = (D.RECRUIT[id] || []).filter(t => !(id === "hold" && !s.b.long)); if (!list.length) return "";
@@ -305,7 +323,7 @@ UI.site = function (st) {
   $("s-rest").onclick = () => UI.passDay(() => { s.units.forEach(u => { u.hp = D.UNITS[u.type].hp; }); UI.toast("A day's rest. Wounds are dressed. Your self-control only comes back at your own hearth."); redo(); });
 };
 UI.hold = function () {
-  const s = G.s, inc = G.income(), redo = UI.hold;
+  MUS.play("hold"); const s = G.s, inc = G.income(), redo = UI.hold;
   const cards = Object.keys(D.BUILDINGS).map(id => { const b = D.BUILDINGS[id], l = s.b[id], busy = s.build && s.build.id === id;
     return '<div class="bld' + (l ? "" : " none") + (busy ? " busy" : "") + '" data-b="' + id + '"><img src="' + src(b.art) + '" alt=""><h3>' + b.name + '</h3><div class="pips">' + Array.from({ length: b.max }, (_, i) => '<i class="' + (i < l ? "on" : "") + '"></i>').join("") + '</div><p>' + (busy ? "Building, " + s.build.left + (s.build.left === 1 ? " day" : " days") + " left" : b.eff(l)) + '</p></div>'; }).join("");
   const side = UI.recruitRows("hold") + UI.promoRows("hold");
@@ -335,7 +353,7 @@ UI.warband = function () {
   UI.screen("bg_camp", '<h2>Warband</h2><p>' + s.units.length + " of " + G.cap() + ". Eats " + G.eats() + " food a day. Eight can take the field.</p>",
     '<div class="ctl"><h3>Self-control: ' + st.name + '</h3><div class="meter"><b style="width:' + s.control + '%"></b><u style="width:' + (100 - s.ceiling) + '%"></u></div><p>' + st.line + (s.ceiling < 100 ? " The hatched part is gone for good." : " Every spell spends it. Spend deep enough and some never comes back.") + (st.surge ? " In a fight there is a " + Math.round(st.surge * 100) + "% chance each turn that the fire moves you instead." : "") + '</p></div><div class="band">' + cards + '</div>');
 };
-UI.menu = function () { UI.modal({ title: "The Ember March", text: "Day " + G.s.day + ". The game saves itself as you go.", opts: [{ t: "Keep playing", fn: () => {} }, { t: "How to play", fn: () => UI.modal({ title: "How to play", text: "Tap the map to travel. Time only passes when you move, rest or build.\n\nBreak the three raider camps. Keep the hold fed, and keep a watchfire lit: the grey edge will not cross firelight.\n\nYour spells win fights and cost self-control. Rest at your own hearth to get it back, up to whatever is left.", opts: [{ t: "Right", fn: () => {} }] }) }, { t: "Quit to the title", fn: () => { G.save(); UI.title(); } }] }); };
+UI.menu = function () { UI.modal({ title: "The Ember March", text: "Day " + G.s.day + ". The game saves itself as you go.", opts: [{ t: "Keep playing", fn: () => {} }, { t: MUS.on ? "Turn the music off" : "Turn the music on", fn: () => MUS.set(!MUS.on) }, { t: "How to play", fn: () => UI.modal({ title: "How to play", text: "Tap the map to travel. Time only passes when you move, rest or build.\n\nBreak the three raider camps. Keep the hold fed, and keep a watchfire lit: the grey edge will not cross firelight.\n\nYour spells win fights and cost self-control. Rest at your own hearth to get it back, up to whatever is left.", opts: [{ t: "Right", fn: () => {} }] }) }, { t: "Quit to the title", fn: () => { G.save(); UI.title(); } }] }); };
 UI.ending = function () {
   const s = G.s, o = s.over; G.save();
   const t = { won: ["The March holds", "Three camps broken. The road to Hearthward is open and the carters are using it.\n\nThe silver had no face on it. Somebody is still paying, and you still don't know who.\n\n" + (s.ceiling < 100 ? "You held the March. You are not quite the person the Court sent out here: " + (100 - s.ceiling) + " parts in a hundred of your self-control are gone and will not grow back." : "You held the March and kept yourself whole doing it. Nobody at the Court expected both.")],
