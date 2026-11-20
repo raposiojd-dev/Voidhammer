@@ -143,8 +143,8 @@ UI.hud = function () {
   $("hud").innerHTML = '<div class="chip day"><span class="num">Day ' + s.day + '</span></div>' + chip("food", s.res.food, inc.food - eat, s.res.food < eat * 3) + chip("coal", s.res.coal, inc.coal, s.b.fire && s.res.coal < 4) + chip("iron", s.res.iron, null) + chip("crowns", s.res.crowns, inc.crowns - G.wages(), s.res.crowns < G.wages() * 2) +
     '<div class="sp"></div><div class="chip">' + ICON.men + '<span class="num">' + s.units.length + '/' + G.cap() + '</span></div><div class="chip flame" id="h-ctl"><small>Self-control</small><i><b style="width:' + s.control + '%"></b></i></div>';
   $("h-ctl").onclick = UI.warband;
-  const left = 3 - G.campsDone(); let gd = 99; s.grey.forEach(k => { gd = Math.min(gd, hexDist(k.split(",").map(Number), [16, 7])); });
-  $("goal").innerHTML = UI.goalHtml() + (s.flags.moved ? "" : "<br>Tap a place on the map to travel there") + (s.grey.length ? "<br>The grey edge is " + gd + (gd === 1 ? " hex" : " hexes") + " from your hold" + (G.fireRadius() ? "" : ", and no watchfire is lit") : "");
+  const left = 3 - G.campsDone();
+  $("goal").innerHTML = UI.goalHtml() + (s.flags.moved ? "" : "<br>Tap a place on the map to travel there") + (s.raided ? "<br>Raiders have hit your hold " + s.raided + (s.raided === 1 ? " time" : " times") + ". A third time and it burns" + (s.b.wall ? "" : ", and there is no palisade") : "");
   const here = G.siteAt(s.pos[0], s.pos[1]);
   $("dock").innerHTML = (here && G.siteLive(here) ? '<button class="go" id="d-here">' + (here.kind === "camp" ? "Attack" : here.kind === "lair" ? "Look closer" : "Enter " + esc(G.siteName(here))) + '</button>' : "") + '<button id="d-jour">Journal</button><button id="d-band">Warband' + (G.pointsWaiting() ? '<i class="dot"></i>' : "") + '</button>' + (here && here.id === "hold" ? "" : '<button id="d-hold">Find hold</button>') + '<button class="quiet" id="d-menu">Menu</button>';
   if ($("d-here")) $("d-here").onclick = () => UI.arrive(here, true);
@@ -169,7 +169,7 @@ UI.news = function (list) {
     if (n.k === "dark") UI.toast("The coal has run out. The watchfire at " + G.s.holdName + " has gone dark.", 4500);
     if (n.k === "hungry") UI.toast("The food has run out. People will start leaving.");
     if (n.k === "desert") UI.toast(n.who + " left in the night. Nobody fights hungry for long.");
-    if (n.k === "raid") UI.toast("Raiders hit " + G.s.holdName + " while you were away: " + n.food + " food and " + n.coal + " coal gone.", 4500);
+    if (n.k === "raid") UI.toast("Raiders hit " + G.s.holdName + " while you were away: " + n.food + " food and " + n.coal + " coal gone." + (n.n === 2 ? " Once more and they burn it." : ""), 4500);
     if (n.k === "raidHeld") UI.toast("Raiders came to " + G.s.holdName + " and the palisade turned them away.", 4000);
     if (n.k === "grey") { if (!G.s.flags.greySeen) { G.s.flags.greySeen = 1; UI.queue.push("grey"); } }
   });
@@ -386,6 +386,7 @@ UI.menu = function () { UI.modal({ title: "The Ember March", text: "Day " + G.s.
 UI.ending = function () {
   const s = G.s, o = s.over; G.save();
   const t = { won: ["The March holds", "Three camps broken. The road to Hearthward is open and the carters are using it.\n\nThe silver had no face on it. Somebody is still paying, and you still don't know who.\n\n" + (s.ceiling < 100 ? "You held the March. You are not quite the person the Court sent out here: " + (100 - s.ceiling) + " parts in a hundred of your self-control are gone and will not grow back." : "You held the March and kept yourself whole doing it. Nobody at the Court expected both.")],
+    raided: ["The hold burns", "Raiders came to " + s.holdName + " a third time, and nothing stood in their way. They took the last of the stores and fired the hall behind them.\n\nA palisade, built up before you rode out, would have turned them back."],
     grey: ["The hold goes quiet", "The grey edge reached " + s.holdName + ". Nobody died. They put their tools down, one after another, and could not think what the place was for.\n\nA watchfire, fed every day, would have held it."],
     dead: ["You fall", "You were already hurt, and you went back in. They burn you where you fell on the March, and someone carries a coal home to your hall."] }[o];
   UI.modal({ art: o === "won" ? "bg_title" : o === "grey" ? "t_grey" : "bg_camp", title: t[0], text: t[1] + "\n\nDay " + s.day + ". Camps broken: " + G.campsDone() + " of 3.", opts: [{ t: "Play again", fn: () => { G.wipe(); UI.title(); } }] });

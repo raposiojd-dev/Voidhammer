@@ -192,7 +192,7 @@ D.EVENTS = {
 };
 
 D.HINTS = {
-  hint: "Tap a place on the map to travel there. Break the three raider camps before the grey edge reaches your hold.",
+  hint: "Tap a place on the map to travel there. Break the three raider camps before the raiders burn your hold.",
   hold: "At the hold you build, rest and promote. Build the watchfire early.",
   battle: "Tap a fighter, tap where to go, tap who to hit. Then end your turn."
 };

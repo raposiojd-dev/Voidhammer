@@ -167,7 +167,7 @@ G.tick = function () {
   s.units.forEach(u => { if (u.wounded > 0 && !u.down) u.wounded--; });
   if (s.heroWounded > 0) s.heroWounded--;
   // the grey edge
-  if (s.day >= s.greyNext) { s.greyNext = s.day + 3; if (G.spreadGrey()) out.push({ k: "grey" }); }
+  if (s.day >= s.greyNext) { s.greyNext = s.day + 8; if (G.spreadGrey()) out.push({ k: "grey" }); }
   // raids on the hold while you are away
   if (s.day >= s.nextRaid) {
     s.nextRaid = s.day + 7 + ri(5);
@@ -175,23 +175,23 @@ G.tick = function () {
     if (campsLeft && !(s.pos[0] === 16 && s.pos[1] === 7)) {
       const str = 1 + campsLeft + Math.floor(s.day / 18);
       if (s.b.wall * 2 >= str) { out.push({ k: "raidHeld" }); G.approve("cadoc", 1); }
-      else { const lf = Math.min(s.res.food, 8 + str * 2), lc = Math.min(s.res.coal, 4 + str); s.res.food -= lf; s.res.coal -= lc; out.push({ k: "raid", food: lf, coal: lc }); G.approve("cadoc", -1); }
+      else { const lf = Math.min(s.res.food, 8 + str * 2), lc = Math.min(s.res.coal, 4 + str); s.res.food -= lf; s.res.coal -= lc; s.raided = (s.raided || 0) + 1; out.push({ k: "raid", food: lf, coal: lc, n: s.raided }); G.approve("cadoc", -1); if (s.raided >= 3) s.over = "raided"; }
     }
   }
   if (s.day - s.lastFight === 12) G.approve("tavish", -1);
   if (s.b.wall >= 1 && s.b.field >= 2 && !s.flags.cadocGlad) { s.flags.cadocGlad = 1; G.approve("cadoc", 2); }
-  if (G.isGrey(16, 7)) s.over = "grey";
   return out;
 };
 G.spreadGrey = function () {
   const s = G.s; let added = 0;
-  if (!s.grey.length) { for (let r = 0; r < ROWS; r++) if (G.tile(COLS - 1, r) !== "lava" && G.rnd() < 0.6) { s.grey.push(key(COLS - 1, r)); added++; } if (!added) { s.grey.push(key(COLS - 1, 7)); added++; } return added; }
+  if (!s.grey.length) { for (let r = 0; r < ROWS; r++) if (G.tile(COLS - 1, r) !== "lava" && !G.siteAt(COLS - 1, r) && G.rnd() < 0.3) { s.grey.push(key(COLS - 1, r)); added++; } if (!added) { s.grey.push(key(COLS - 1, 7)); added++; } return added; }
   const front = [];
-  s.grey.forEach(k => { const p = k.split(",").map(Number); nbrs(p[0], p[1]).forEach(n => { const nk = key(n[0], n[1]); if (s.grey.indexOf(nk) < 0 && front.indexOf(nk) < 0 && G.tile(n[0], n[1]) !== "lava" && !G.lit(n[0], n[1])) front.push(nk); }); });
+  s.grey.forEach(k => { const p = k.split(",").map(Number); nbrs(p[0], p[1]).forEach(n => { const nk = key(n[0], n[1]); if (s.grey.indexOf(nk) < 0 && front.indexOf(nk) < 0 && G.tile(n[0], n[1]) !== "lava" && !G.lit(n[0], n[1]) && !G.siteAt(n[0], n[1]) && hexDist(n, [16, 7]) > 1) front.push(nk); }); });
   // the grey leans west, towards the hold
   front.sort((a, b) => { const A = a.split(",").map(Number), B = b.split(","). map(Number); return (hexDist(A, [16, 7]) + G.rnd() * 3) - (hexDist(B, [16, 7]) + G.rnd() * 3); });
-  const n = Math.min(front.length, 3 + Math.floor(s.day / 12));
-  for (let i = 0; i < n; i++) { s.grey.push(front[i]); added++; const p = front[i].split(",").map(Number); const st = G.siteAt(p[0], p[1]); if (st && st.id !== "hold" && st.kind !== "camp" && st.kind !== "lair") s.quiet[st.id] = 1; }
+  const n = Math.min(front.length, 1 + Math.floor(s.day / 40));
+  // canon (O23, 21 Nov): grey edges are rare and faint before the Edict, so the grey never takes a named place or the hold
+  for (let i = 0; i < n; i++) { s.grey.push(front[i]); added++; }
   return added;
 };
 G.campsDone = () => [1, 2, 3].filter(n => G.s.done["camp" + n]).length;
