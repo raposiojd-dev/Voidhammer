@@ -71,7 +71,7 @@ G.newGame = function (opts) {
   G.s = s; G.tiles = G.genWorld(seed); G.save(); return s;
 };
 G.save = function () { try { localStorage.setItem(SAVE_KEY, JSON.stringify(G.s)); } catch (e) {} };
-G.load = function () { try { const j = localStorage.getItem(SAVE_KEY); if (!j) return null; const s = JSON.parse(j); if (!s || s.v !== 1) return null; G.s = s; G.tiles = G.genWorld(s.seed); return s; } catch (e) { return null; } };
+G.load = function () { try { const j = localStorage.getItem(SAVE_KEY); if (!j) return null; const s = JSON.parse(j); if (!s || s.v !== 1) return null; if (s.over === "grey") return null; s.quiet = {}; G.s = s; G.tiles = G.genWorld(s.seed); return s; } catch (e) { return null; } };
 G.hasSave = function () { try { const j = localStorage.getItem(SAVE_KEY); return !!j && !JSON.parse(j).over; } catch (e) { return false; } };
 G.wipe = function () { try { localStorage.removeItem(SAVE_KEY); } catch (e) {} };
 

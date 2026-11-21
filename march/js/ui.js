@@ -126,7 +126,7 @@ M.draw = function () {
     if (st.camp === 3 && G.campsDone() < 2 && !s.flags.seen3) return;
     const p = M.center(st.at[0], st.at[1]), im = IMG[st.art], gone = s.done[st.id] || s.quiet[st.id], z = st.kind === "city" ? 78 : st.kind === "hold" ? 64 : 56;
     c.globalAlpha = gone ? .38 : 1; if (im && im.width) c.drawImage(im, p[0] - z / 2, p[1] - z * .62, z, z); c.globalAlpha = 1;
-    const label = G.siteName(st) + (s.done[st.id] ? " (broken)" : s.quiet[st.id] ? " (gone quiet)" : "");
+    const label = G.siteName(st) + (s.done[st.id] ? " (broken)" : "");
     c.font = (st.kind === "city" || st.kind === "hold" ? "700 12.5px" : "700 11px") + " Cinzel, serif"; c.lineWidth = 3.5; c.strokeStyle = "rgba(10,7,5,.92)"; c.strokeText(label, p[0], p[1] + z * .46 + 4); c.fillStyle = st.kind === "camp" || st.kind === "lair" ? "#c7d3d9" : "#f3d2b4"; c.fillText(label, p[0], p[1] + z * .46 + 4);
   });
   // the warband
@@ -209,7 +209,7 @@ UI.farewell = function (ids) { return new Promise(res => { const id = ids[0], c 
 
 // ---------- arriving ----------
 UI.arrive = function (st, asked) {
-  const s = G.s; if (!G.siteLive(st)) { if (asked) UI.toast(s.done[st.id] ? "Nothing left here but ash and tent pegs." : "Nobody answers. The place has gone quiet."); return; }
+  const s = G.s; if (!G.siteLive(st)) { if (asked) UI.toast("Nothing left here but ash and tent pegs."); return; }
   if (st.kind === "camp") { if (st.camp === 3) { s.flags.seen3 = 1; if (!s.flags.offer) { s.flags.offer = 1; return UI.event("offer"); } } return UI.fightIntro(st.id, G.siteName(st), st.camp === 3 ? "He has more men than you were told." : "Tents, a stake fence, and too many cookfires for honest travellers."); }
   if (st.kind === "lair") return UI.event("lair");
   if (st.id === "ashford" && !s.comp.tavish && !s.visited.ashford) { s.visited.ashford = 1; UI.storyPush(); return UI.event("tavish"); }
@@ -387,8 +387,7 @@ UI.ending = function () {
   const s = G.s, o = s.over; G.save();
   const t = { won: ["The March holds", "Three camps broken. The road to Hearthward is open and the carters are using it.\n\nThe silver had no face on it. Somebody is still paying, and you still don't know who.\n\n" + (s.ceiling < 100 ? "You held the March. You are not quite the person the Court sent out here: " + (100 - s.ceiling) + " parts in a hundred of your self-control are gone and will not grow back." : "You held the March and kept yourself whole doing it. Nobody at the Court expected both.")],
     raided: ["The hold burns", "Raiders came to " + s.holdName + " a third time, and nothing stood in their way. They took the last of the stores and fired the hall behind them.\n\nA palisade, built up before you rode out, would have turned them back."],
-    grey: ["The hold goes quiet", "The grey edge reached " + s.holdName + ". Nobody died. They put their tools down, one after another, and could not think what the place was for.\n\nA watchfire, fed every day, would have held it."],
     dead: ["You fall", "You were already hurt, and you went back in. They burn you where you fell on the March, and someone carries a coal home to your hall."] }[o];
-  UI.modal({ art: o === "won" ? "bg_title" : o === "grey" ? "t_grey" : "bg_camp", title: t[0], text: t[1] + "\n\nDay " + s.day + ". Camps broken: " + G.campsDone() + " of 3.", opts: [{ t: "Play again", fn: () => { G.wipe(); UI.title(); } }] });
+  UI.modal({ art: o === "won" ? "bg_title" : "bg_camp", title: t[0], text: t[1] + "\n\nDay " + s.day + ". Camps broken: " + G.campsDone() + " of 3.", opts: [{ t: "Play again", fn: () => { G.wipe(); UI.title(); } }] });
 };
 addEventListener("DOMContentLoaded", UI.boot);
